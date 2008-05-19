@@ -829,7 +829,7 @@ eval_tag(const char *__restrict__ pattern, const TagLib_Tag *__restrict__ tag)
     do {                                                                        \
         matcher = first_match(result, (pattern), REG_EXTENDED);                 \
         if (matcher != NULL) {                                                  \
-            (void) snprintf(buf, len(buf), "%u", (taglib_tag_ ## x)(tag));      \
+            (void) snprintf(buf, len(buf), "%02u", (taglib_tag_ ## x)(tag));    \
             inplacesub_match(&result, matcher, buf);                            \
         }                                                                       \
     } while (0)
@@ -1010,14 +1010,18 @@ tagutil_rename(const char *__restrict__ path, TagLib_File *__restrict__ f, const
     result_size = 1;
     dirname = xdirname(path);
     result = xcalloc(result_size, sizeof(char));
-    concat(&result, &result_size, dirname);
-    concat(&result, &result_size, "/");
+    if (strcmp(dirname, ".") != 0) {
+        concat(&result, &result_size, dirname);
+        concat(&result, &result_size, "/");
+    }
     concat(&result, &result_size, new_fname);
 
     /* ask user for confirmation and rename if user want to */
-    (void) printf("rename \"%s\" to \"%s\" ", path, result);
-    if (yesno(NULL))
-        safe_rename(path, result);
+    if (strcmp(path, result) != 0) {
+        (void) printf("rename \"%s\" to \"%s\" ", path, result);
+        if (yesno(NULL))
+            safe_rename(path, result);
+    }
 
     free((void *)dirname);
     free((void *)new_fname);
