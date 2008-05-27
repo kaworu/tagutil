@@ -1,5 +1,5 @@
 CFLAGS += -std=c89 -pedantic -I/usr/include/taglib -D_XOPEN_SOURCE=500
-#CFLAGS += -std=c99 -O2 -I/usr/include/taglib -D_XOPEN_SOURCE=500 -DNDEBUG
+#CFLAGS += -std=c99 -O2 -I/usr/include/taglib -D_XOPEN_SOURCE=500
 LDFLAGS=-ltag_c
 
 clean:
