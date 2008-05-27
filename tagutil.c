@@ -47,6 +47,7 @@
 #include <errno.h>
 #include <string.h>
 #include <regex.h>
+#include <unistd.h>
 #include <libgen.h> /* for dirname() POSIX.1-2001 */
 
 #include <tag_c.h>
@@ -234,9 +235,10 @@ bool tagutil_genre(const char *__restrict__ path, TagLib_File *__restrict__ f, c
 int main(int argc, char *argv[])
 {
     int i;
-    char *current_file, *apply_arg;
+    char *current_filename, *apply_arg;
     TagLib_File *f;
     tagutil_f apply;
+    struct stat current_filestat;
 
     INIT_ALLOC_COUNTER;
     progname = argv[0];
@@ -252,14 +254,22 @@ int main(int argc, char *argv[])
      * iter through all files arguments
      */
     for (; i < argc; i++) {
-        current_file = argv[i];
-        f = taglib_file_new(current_file);
+        current_filename = argv[i];
+
+        /* we have to check first if the file exist and if it's a "regular file" */
+        if (stat(current_filename, &current_filestat) != 0)
+            die(("can't access %s: ", current_filename));
+        if (!S_ISREG(current_filestat.st_mode))
+            die(("%s: not a regular file\n", current_filename));
+
+
+        f = taglib_file_new(current_filename);
 
         if (f == NULL) {
-            die(("%s: not a music file\n", current_file));
+            die(("%s: not a music file\n", current_filename));
         }
 
-        (void) (*apply)(current_file, f, apply_arg);
+        (void) (*apply)(current_filename, f, apply_arg);
 
         taglib_tag_free_strings();
         taglib_file_free(f);
