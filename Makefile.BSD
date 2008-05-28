@@ -1,0 +1,6 @@
+PROG     = tagutil
+
+CFLAGS  += -std=c99 -Wall -I/usr/local/include/ -D_XOPEN_SOURCE=500
+LDFLAGS += -ltag_c -L/usr/local/lib
+
+.include <bsd.prog.mk>

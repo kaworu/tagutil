@@ -1,9 +1,10 @@
-#CFLAGS += -std=c89 -pedantic -I/usr/include/taglib -D_XOPEN_SOURCE=500 # dev flags
+PROG = tagutil
 
-CFLAGS += -std=c99 -Wall -O2 -pipe -I/usr/include/taglib -D_XOPEN_SOURCE=500
-LDFLAGS=-ltag_c
+#CFLAGS  += -g -Wall -std=c89 -pedantic -D_XOPEN_SOURCE=500 # dev flags
+CFLAGS  += -std=c99 -Wall -O2 -pipe -D_XOPEN_SOURCE=500
+LDFLAGS += -ltag_c
 
 clean:
-	@rm tagutil &>/dev/null || true
-tags: *.c
-	ctags tagutil.c
+	@rm $(PROG) &>/dev/null || true
+tags: $(PROG).c
+	ctags $(PROG).c

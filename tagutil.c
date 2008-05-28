@@ -9,7 +9,7 @@
  * tagutil is a simple command line tool to edit music file's tag. It use
  * taglib (http://developer.kde.org/~wheeler/taglib.html) to get and set music
  * file's tags so be sure to install it before trying to compile tagutil.
- * for a help lauch taglib without argument.
+ * for a help lauch tagutil without argument.
  *
  * Copyright (c) 2008, Perrin Alexandre <kaworu@kaworu.ch>
  * All rights reserved.
@@ -50,7 +50,7 @@
 #include <unistd.h>
 #include <libgen.h> /* for dirname() POSIX.1-2001 */
 
-#include <tag_c.h>
+#include <taglib/tag_c.h>
 
 #define __TAGUTIL_VERSION__ "1.1"
 #define __TAGUTIL_AUTHOR__ "kAworu"
@@ -89,7 +89,7 @@ typedef unsigned char bool;
 #endif /* C99 */
 
 /* use gcc attribute when available */
-#if !defined(__GNUC__)
+#if !defined(__GNUC__) && !defined(__attribute__)
 #  define __attribute__(x)
 #endif
 
@@ -265,9 +265,8 @@ int main(int argc, char *argv[])
 
         f = taglib_file_new(current_filename);
 
-        if (f == NULL) {
+        if (f == NULL)
             die(("%s: not a music file\n", current_filename));
-        }
 
         (void) (*apply)(current_filename, f, apply_arg);
 
@@ -287,25 +286,25 @@ usage()
 {
 
     (void) fprintf(stderr,  "TagUtil v"__TAGUTIL_VERSION__" by "__TAGUTIL_AUTHOR__".\n\n");
-    (void) fprintf(stderr,  "usage: %s <opt> [optarg] <files>\n", progname);
+    (void) fprintf(stderr,  "usage: %s [opt  [optarg]] [files]...\n", progname);
     (void) fprintf(stderr, "Modify or output music file's tag.\n");
     (void) fprintf(stderr, "\n");
     (void) fprintf(stderr, "Options:\n");
-    (void) fprintf(stderr, "    -- <files>             : only show files tag. -- is not needed but useful if the first file\n");
+    (void) fprintf(stderr, "    -- [files]             : only show files tag. -- is not needed but useful if the first file\n");
     (void) fprintf(stderr, "                             argument may be a file that could match an option.\n");
-    (void) fprintf(stderr, "    -e <files>             : show tag and prompt for editing (need $EDITOR environment variable)\n");
-    (void) fprintf(stderr, "    -r <PATTERN> <files>   : rename files with the given PATTERN. you can use keywords in PATTERN:\n");
+    (void) fprintf(stderr, "    -e [files]             : show tag and prompt for editing (need $EDITOR environment variable)\n");
+    (void) fprintf(stderr, "    -r [PATTERN] [files]   : rename files with the given PATTERN. you can use keywords in PATTERN:\n");
     (void) fprintf(stderr, "                             title(%s), album(%s), artist(%s), year(%s), track(%s), comment(%s),\n",
                                                          kTITLE,    kALBUM,    kARTIST,    kYEAR,    kTRACK,    kCOMMENT);
     (void) fprintf(stderr, "                             and genre(%s). example: \"%s - %s - (%s) - %s\"\n",
                                                              kGENRE,               kARTIST, kALBUM, kTRACK, kTITLE);
-    (void) fprintf(stderr, "    -t <TITLE> <files>     : change title tag to TITLE for all given files\n");
-    (void) fprintf(stderr, "    -a <ALBUM> <files>     : change album tag to ALBUM for all given files\n");
-    (void) fprintf(stderr, "    -A <ARTIST> <files>    : change artist tag to ARTIST for all given files\n");
-    (void) fprintf(stderr, "    -y <YEAR> <files>      : change year tag to YEAR for all given files\n");
-    (void) fprintf(stderr, "    -T <TRACK> <files>     : change track tag to TRACK for all given files\n");
-    (void) fprintf(stderr, "    -c <COMMENT> <files>   : change comment tag to COMMENT for all given files\n");
-    (void) fprintf(stderr, "    -g <GENRE> <files>     : change genre tag to GENRE for all given files\n");
+    (void) fprintf(stderr, "    -t [TITLE]   [files]   : change title tag to TITLE for all given files\n");
+    (void) fprintf(stderr, "    -a [ALBUM]   [files]   : change album tag to ALBUM for all given files\n");
+    (void) fprintf(stderr, "    -A [ARTIST]  [files]   : change artist tag to ARTIST for all given files\n");
+    (void) fprintf(stderr, "    -y [YEAR]    [files]   : change year tag to YEAR for all given files\n");
+    (void) fprintf(stderr, "    -T [TRACK]   [files]   : change track tag to TRACK for all given files\n");
+    (void) fprintf(stderr, "    -c [COMMENT] [files]   : change comment tag to COMMENT for all given files\n");
+    (void) fprintf(stderr, "    -g [GENRE]   [files]   : change genre tag to GENRE for all given files\n");
 
     exit(EXIT_SUCCESS);
 }
@@ -558,9 +557,10 @@ create_tmpfile()
     concat(&tmp_file, &tmpfile_size, progname);
     concat(&tmp_file, &tmpfile_size, "XXXXXX");
 
-    if (mkstemp(tmp_file) == -1)
+    if (mkstemp(tmp_file) == -1) {
         die(("call to mkstemp failed, can't create %s file\n", tmp_file));
         /* NOTREACHED */
+    }
     else
         return (tmp_file);
 }
@@ -616,7 +616,7 @@ first_match(const char *__restrict__ str, const char *__restrict__ pattern, cons
     error = regcomp(&regex, pattern, flags);
 
     if (error != 0)
-        goto error;
+        goto error_label;
 
     error = regexec(&regex, str, 1, regmatch, 0);
     regfree(&regex);
@@ -628,7 +628,7 @@ first_match(const char *__restrict__ str, const char *__restrict__ pattern, cons
         free(regmatch);
         return ((regmatch_t *)NULL);
     default:
-error:
+error_label:
         errbuf = xcalloc(BUFSIZ, sizeof(char));
         (void) regerror(error, &regex, errbuf, BUFSIZ);
         die(("%s", errbuf));
@@ -667,6 +667,7 @@ has_match(const char *__restrict__ str, const char *__restrict__ pattern)
  * new char* created.  * flags are REG_ICASE | REG_EXTENDED | REG_NEWLINE
  * (see regex(3)).
  *
+ * get_match() can return NULL if no match was found, but when a match occur
  * return value has to be freed.
  */
 char *
@@ -694,7 +695,7 @@ get_match(const char *__restrict__ str, const char *__restrict__ pattern)
 
 /*
  * replace the part defined by match in str by replace. for example
- * sub_match("foo bar", <regmatch_t that match the bar parT>, "oni") will return
+ * sub_match("foo bar", {.rm_so=3, .rm_eo=6}, "oni") will return
  * "foo oni". sub_match doesn't modify it's arguments, it return a new string.
  *
  * return value has to be freed.
@@ -786,6 +787,10 @@ user_edit(const char *__restrict__ path)
     editor = getenv("EDITOR");
     if (editor == NULL)
         die(("please, set the $EDITOR environment variable.\n"));
+    else if (has_match(editor, "x?emacs")) {
+        /* FIXME: I still don't really know if it's a troll or not. */
+        (void) fprintf(stderr, "Starting emacs. please wait...\n");
+    }
 
     concat(&editcmd, &editcmd_size, editor);
     concat(&editcmd, &editcmd_size, " ");
@@ -823,7 +828,7 @@ update_tag(TagLib_Tag *__restrict__ tag, FILE *__restrict__ fp)
                 val++; /* glup. we jump over the first char " that's why we free(val - 1) below. */
 
 /* yet another sexy macro. */
-#define _SETTER_CALL_IF_MATCH(what, new_value)          \
+#define _CALL_SETTER_IF_MATCH(what, new_value)          \
     do {                                                \
         if (strcmp(key, #what) == 0) {                  \
             (taglib_tag_set_ ## what)(tag, new_value);  \
@@ -831,13 +836,13 @@ update_tag(TagLib_Tag *__restrict__ tag, FILE *__restrict__ fp)
         }                                               \
     } while (/*CONSTCOND*/0)
 
-                _SETTER_CALL_IF_MATCH(title,     val);
-                _SETTER_CALL_IF_MATCH(album,     val);
-                _SETTER_CALL_IF_MATCH(artist,    val);
-                _SETTER_CALL_IF_MATCH(comment,   val);
-                _SETTER_CALL_IF_MATCH(genre,     val);
-                _SETTER_CALL_IF_MATCH(year,      atoi(val));
-                _SETTER_CALL_IF_MATCH(track,     atoi(val));
+                _CALL_SETTER_IF_MATCH(title,     val);
+                _CALL_SETTER_IF_MATCH(album,     val);
+                _CALL_SETTER_IF_MATCH(artist,    val);
+                _CALL_SETTER_IF_MATCH(comment,   val);
+                _CALL_SETTER_IF_MATCH(genre,     val);
+                _CALL_SETTER_IF_MATCH(year,      atoi(val));
+                _CALL_SETTER_IF_MATCH(track,     atoi(val));
 
                 die(("parser error on line:\n%s\n", line));
 cleanup:
@@ -857,7 +862,7 @@ cleanup:
  *
  * This function use the following algorithm:
  * 1) start from the end of pattern.
- * 2) search backward for a keyword that we use.
+ * 2) search backward for a keyword that we use (like %a, %t etc.)
  * 3) when a keyword is found, replace it by it's value.
  * 4) go to step 2) until we process all the pattern.
  *
@@ -1000,7 +1005,8 @@ parse_argv(int argc, char *argv[], int *first_fname, char **apply_arg)
  * print the given file's tag to stdin.
  */
 bool
-tagutil_print(const char *__restrict__ path, TagLib_File *__restrict__ f, const char *__restrict__ arg __attribute__ ((__unused__)))
+tagutil_print(const char *__restrict__ path, TagLib_File *__restrict__ f,
+        const char *__restrict__ arg __attribute__ ((__unused__)))
 {
     char *infos;
     
@@ -1022,7 +1028,8 @@ tagutil_print(const char *__restrict__ path, TagLib_File *__restrict__ f, const 
  * parse the tempfile and update the file's tag.
  */
 bool
-tagutil_edit(const char *__restrict__ path, TagLib_File *__restrict__ f, const char *__restrict__ arg __attribute__ ((__unused__)))
+tagutil_edit(const char *__restrict__ path, TagLib_File *__restrict__ f,
+        const char *__restrict__ arg __attribute__ ((__unused__)))
 {
     char *tmp_file, *infos;
     FILE *fp;
