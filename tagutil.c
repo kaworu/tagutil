@@ -177,6 +177,7 @@ static __inline__ void safe_rename(const char *__restrict__ oldpath, const char 
 char* create_tmpfile(void);
 
 /* basic string operations */
+static __inline__ char* str_copy(const char *__restrict__ src) __attribute__ ((__nonnull__ (1)));
 void concat(char **dest, size_t *dest_size, const char *src) __attribute__ ((__nonnull__ (1, 2, 3)));
 
 /* regex string operations */
@@ -563,6 +564,27 @@ create_tmpfile()
     }
     else
         return (tmp_file);
+}
+
+
+/*
+ * make a copy of src.
+ *
+ * return value has to be freed.
+ */
+static __inline__ char *
+str_copy(const char *__restrict__ src)
+{
+    char *result;
+    size_t len;
+
+    assert(src != NULL);
+
+    len = strlen(src);
+    result = xcalloc(len + 1, sizeof(char));
+    strncpy(result, src, len);
+
+    return (result);
 }
 
 
