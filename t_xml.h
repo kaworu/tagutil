@@ -1,5 +1,14 @@
 #ifndef T_XML_H
 #define T_XML_H
+/*
+ * t_xml.h
+ *
+ * xml parser for tagutil.
+ * use expat.
+ */
+
+
+#include "config.h"
 
 struct xml_attr {
     char *key, *val;

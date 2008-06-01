@@ -1,3 +1,16 @@
+/*
+ * t_xml.c
+ *
+ * xml parser for tagutil.
+ * use expat.
+ */
+
+#include <stdlib.h>
+#include <expat.h>
+
+#include "t_toolkit.h"
+#include "t_xml.h"
+
 static struct XML_ParserStruct *parser;
 
 void xml_attr_delete(struct xml_attr *__restrict__ victim)

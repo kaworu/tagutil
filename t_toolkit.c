@@ -5,11 +5,11 @@
  */
 
 
-#include "t_toolkit.h"
 #include <stdarg.h>
 #include <assert.h>
 #include <errno.h>
 
+#include "t_toolkit.h"
 
 regmatch_t *
 first_match(const char *__restrict__ str, const char *__restrict__ pattern, const int flags)
