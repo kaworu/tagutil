@@ -21,6 +21,9 @@
 /* compute the length of a fixed size array */
 #define len(ary) (sizeof(ary) / sizeof((ary)[0]))
 
+#define assert_not_null(x) assert((x) != NULL)
+#define assert_null(x) assert((x) == NULL)
+
 /* true if the given string is empty (has only whitespace char) */
 #define EMPTY_LINE(l) has_match((l), "^\\s*$")
 
@@ -38,8 +41,8 @@
  * the ratio of alloc (tagutil VS taglib). It seems that tagutil make about 1%
  * of all the memory allocation (in alloc/free call and size).
  */
-static int _alloc_counter;
-static int _alloc_b;
+int _alloc_counter;
+int _alloc_b;
 #define INIT_ALLOC_COUNTER      \
     do {                        \
         _alloc_counter = 0;     \
@@ -85,7 +88,7 @@ static __inline__ void xfclose(FILE *__restrict__ fp)
     __attribute__ ((__nonnull__ (1), __unused__));
 
 
-static __inline__ bool xgetline(char **line, size_t *size, FILE *__restrict__ fp)
+bool xgetline(char **line, size_t *size, FILE *__restrict__ fp)
     __attribute__ ((__nonnull__ (1, 2, 3), __unused__));
 
 
@@ -265,42 +268,6 @@ xfclose(FILE *__restrict__ fp)
 }
 
 
-static __inline__ bool
-xgetline(char **line, size_t *size, FILE *__restrict__ fp)
-{
-    char *cursor;
-    size_t end;
-
-    assert(fp    != NULL);
-    assert(size  != NULL);
-    assert(line  != NULL);
-
-    end = 0;
-
-    if (feof(fp))
-        return (0);
-
-    for (;;) {
-        if (*line == NULL || end > 0) {
-            *size += BUFSIZ;
-            *line = xrealloc(*line, *size);
-        }
-        cursor = *line + end;
-        memset(*line, 0, BUFSIZ);
-        (void) fgets(cursor, BUFSIZ, fp);
-        end += strlen(cursor);
-
-        if (feof(fp) || (*line)[end - 1] == '\n') { /* end of file or end of line */
-        /* chomp trailing \n if any */
-            if ((*line)[0] != '\0' && (*line)[end - 1] == '\n')
-                (*line)[end - 1] = '\0';
-
-            return (end);
-        }
-    }
-}
-
-
 static __inline__ char *
 xdirname(const char *__restrict__ path)
 {
@@ -322,7 +289,7 @@ xdirname(const char *__restrict__ path)
     dirncpy = xcalloc(size, sizeof(char));
     memcpy(dirncpy, dirn, size);
 
-    free((void *)pathcpy);
+    free(pathcpy);
 
     return (dirncpy);
 }

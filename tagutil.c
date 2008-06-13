@@ -1,10 +1,10 @@
 /*
- *  _                    _   _ _ 
+ *  _                    _   _ _
  * | |_ __ _  __ _ _   _| |_(_) |
  * | __/ _` |/ _` | | | | __| | |
  * | || (_| | (_| | |_| | |_| | |
  *  \__\__,_|\__, |\__,_|\__|_|_|
- *           |___/               
+ *           |___/
  *
  * tagutil is a simple command line tool to edit music file's tag. It use
  * taglib (http://developer.kde.org/~wheeler/taglib.html) to get and set music
@@ -15,7 +15,7 @@
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
@@ -24,7 +24,7 @@
  *     * Neither the name of Perrin Alexandre, nor the names of its
  *       contributors may be used to endorse or promote products derived
  *       from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -39,17 +39,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#if 0
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <assert.h>
 #include <errno.h>
-#include <string.h>
-#include <regex.h>
-#include <unistd.h>
-#endif
 
 #include <taglib/tag_c.h>
 
@@ -119,7 +109,7 @@ usage()
 {
 
     (void) fprintf(stderr,  "TagUtil v"__TAGUTIL_VERSION__" by "__TAGUTIL_AUTHOR__".\n\n");
-    (void) fprintf(stderr,  "usage: %s [opt  [optarg]] [files]...\n", progname);
+    (void) fprintf(stderr,  "usage: %s [opt [optarg]] [files]...\n", progname);
     (void) fprintf(stderr, "Modify or output music file's tag.\n");
     (void) fprintf(stderr, "\n");
     (void) fprintf(stderr, "Options:\n");
@@ -148,12 +138,12 @@ safe_rename(const char *__restrict__ oldpath, const char *__restrict__ newpath)
 {
     struct stat dummy;
 
-    assert(oldpath != NULL);
-    assert(newpath != NULL);
+    assert_not_null(oldpath);
+    assert_not_null(newpath);
 
     if (stat(newpath, &dummy) == 0) {
-        /*errno = EEXIST;*/
-        die(("file \"%s\" already exist.\n", newpath));
+        errno = EEXIST;
+        die(("%s: ", newpath));
     }
 
     if (rename(oldpath, newpath) == -1)
@@ -165,27 +155,26 @@ char *
 create_tmpfile()
 {
     size_t tmpfile_size;
-    char *tmpdir, *tmp_file;
+    char *tmpdir, *tmpfile;
 
-    
     tmpfile_size = 1;
-    tmp_file = xcalloc(tmpfile_size, sizeof(char));
+    tmpfile = xcalloc(tmpfile_size, sizeof(char));
 
     tmpdir = getenv("TMPDIR");
     if (tmpdir == NULL)
         tmpdir = "/tmp";
 
-    concat(&tmp_file, &tmpfile_size, tmpdir);
-    concat(&tmp_file, &tmpfile_size, "/");
-    concat(&tmp_file, &tmpfile_size, progname);
-    concat(&tmp_file, &tmpfile_size, "XXXXXX");
+    concat(&tmpfile, &tmpfile_size, tmpdir);
+    concat(&tmpfile, &tmpfile_size, "/");
+    concat(&tmpfile, &tmpfile_size, progname);
+    concat(&tmpfile, &tmpfile_size, "XXXXXX");
 
-    if (mkstemp(tmp_file) == -1) {
-        die(("call to mkstemp failed, can't create %s file\n", tmp_file));
+    if (mkstemp(tmpfile) == -1) {
+        die(("call to mkstemp failed, can't create %s file\n", tmpfile));
         /* NOTREACHED */
     }
     else
-        return (tmp_file);
+        return (tmpfile);
 }
 
 
@@ -214,7 +203,7 @@ user_edit(const char *__restrict__ path)
     size_t editcmd_size;
     char *editor, *editcmd;
 
-    assert(path != NULL);
+    assert_not_null(path);
 
     editcmd_size = 1;
     editcmd = xcalloc(editcmd_size, sizeof(char));
@@ -222,8 +211,13 @@ user_edit(const char *__restrict__ path)
     if (editor == NULL)
         die(("please, set the $EDITOR environment variable.\n"));
     else if (has_match(editor, "x?emacs")) {
-        /* FIXME: I still don't really know if it's a troll or not. */
-        (void) fprintf(stderr, "Starting emacs. please wait...\n");
+        /*
+         * we're actually so cool, that we keep the user waiting if $EDITOR
+         * start slowly. The slow-editor-detection-algorithm used maybe not
+         * the best known at the time of writing, but it has shown really good
+         * results and is pretty short and clear.
+         */
+        (void) fprintf(stderr, "Starting %s. please wait...\n", editor);
     }
 
     concat(&editcmd, &editcmd_size, editor);
@@ -236,7 +230,7 @@ user_edit(const char *__restrict__ path)
 
     error = system(editcmd);
 
-    free((void *)editcmd);
+    free(editcmd);
     return (error == 0 ? true : false);
 }
 
@@ -277,14 +271,14 @@ update_tag(TagLib_Tag *__restrict__ tag, FILE *__restrict__ fp)
 
                 die(("parser error on line:\n%s\n", line));
 cleanup:
-                free((void *)(val - 1));
-                free((void *)key);
+                free((val - 1));
+                free(key);
             }
             else
                 die(("parser can't handle this line :(\n%s\n", line));
         }
     }
-    free((void *)line);
+    free(line);
 }
 
 
@@ -314,8 +308,8 @@ eval_tag(const char *__restrict__ pattern, const TagLib_Tag *__restrict__ tag)
     char *result;
     char buf[5]; /* used to convert track/year tag into string */
 
-    assert(pattern != NULL);
-    assert(tag != NULL);
+    assert_not_null(pattern);
+    assert_not_null(tag);
 
     /* init result with pattern */
     size = strlen(pattern) + 1;
@@ -433,15 +427,15 @@ tagutil_print(const char *__restrict__ path, TagLib_File *__restrict__ f,
         const char *__restrict__ arg __attribute__ ((__unused__)))
 {
     char *infos;
-    
-    assert(path != NULL);
-    assert(f != NULL);
+
+    assert_not_null(path);
+    assert_not_null(f);
 
     infos = printable_tag(taglib_file_tag(f));
     (void) printf("FILE: \"%s\"\n", path);
     (void) printf("%s\n\n", infos);
 
-    free((void *)infos);
+    free(infos);
     return (true);
 }
 
@@ -453,8 +447,8 @@ tagutil_edit(const char *__restrict__ path, TagLib_File *__restrict__ f,
     char *tmp_file, *infos;
     FILE *fp;
 
-    assert(path != NULL);
-    assert(f != NULL);
+    assert_not_null(path);
+    assert_not_null(f);
 
     infos = printable_tag(taglib_file_tag(f));
     (void) printf("FILE: \"%s\"\n", path);
@@ -468,7 +462,7 @@ tagutil_edit(const char *__restrict__ path, TagLib_File *__restrict__ f,
         xfclose(fp);
 
         if (!user_edit(tmp_file)) {
-            free((void *)infos);
+            free(infos);
             remove(tmp_file);
             return (false);
         }
@@ -481,26 +475,26 @@ tagutil_edit(const char *__restrict__ path, TagLib_File *__restrict__ f,
 
         xfclose(fp);
         remove(tmp_file);
-        free((void *)tmp_file);
+        free(tmp_file);
     }
 
-    free((void *)infos);
+    free(infos);
     return (true);
 }
 
 
 bool
 tagutil_rename(const char *__restrict__ path, TagLib_File *__restrict__ f, const char *__restrict__ arg)
-{    
+{
     char *ftype;
     TagLib_Tag *tag;
     char *result, *dirn, *new_fname;
     size_t result_size, new_fname_size;
 
-    assert(path != NULL);
-    assert(f    != NULL);
-    assert(arg  != NULL);
-    
+    assert_not_null(path);
+    assert_not_null(f);
+    assert_not_null(arg);
+
     if (arg[0] == '\0')
         die(("wrong rename pattern: %s\n", arg));
 
@@ -529,9 +523,9 @@ tagutil_rename(const char *__restrict__ path, TagLib_File *__restrict__ f, const
             safe_rename(path, result);
     }
 
-    free((void *)dirn);
-    free((void *)new_fname);
-    free((void *)result);
+    free(dirn);
+    free(new_fname);
+    free(result);
     return (true);
 }
 
@@ -544,9 +538,9 @@ tagutil_rename(const char *__restrict__ path, TagLib_File *__restrict__ f, const
                         TagLib_File *__restrict__ f,                \
                         const char  *__restrict__ arg)              \
     {                                                               \
-        assert(path != NULL);                                       \
-        assert(f    != NULL);                                       \
-        assert(arg  != NULL);                                       \
+        assert_not_null(path);                                      \
+        assert_not_null(f);                                         \
+        assert_not_null(arg);                                       \
         (taglib_tag_set_##what)(taglib_file_tag(f), hook(arg));     \
     if (!taglib_file_save(f))                                       \
         die(("can't save file %s.\n", path));                       \

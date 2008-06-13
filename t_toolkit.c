@@ -11,6 +11,43 @@
 
 #include "t_toolkit.h"
 
+
+bool
+xgetline(char **line, size_t *size, FILE *__restrict__ fp)
+{
+    char *cursor;
+    size_t end;
+
+    assert_not_null(fp);
+    assert_not_null(size);
+    assert_not_null(line);
+
+    end = 0;
+
+    if (feof(fp))
+        return (0);
+
+    for (;;) {
+        if (*line == NULL || end > 0) {
+            *size += BUFSIZ;
+            *line = xrealloc(*line, *size);
+        }
+        cursor = *line + end;
+        memset(*line, 0, BUFSIZ);
+        (void) fgets(cursor, BUFSIZ, fp);
+        end += strlen(cursor);
+
+        if (feof(fp) || (*line)[end - 1] == '\n') { /* end of file or end of line */
+        /* chomp trailing \n if any */
+            if ((*line)[0] != '\0' && (*line)[end - 1] == '\n')
+                (*line)[end - 1] = '\0';
+
+            return (end);
+        }
+    }
+}
+
+
 regmatch_t *
 first_match(const char *__restrict__ str, const char *__restrict__ pattern, const int flags)
 {
@@ -19,8 +56,8 @@ first_match(const char *__restrict__ str, const char *__restrict__ pattern, cons
     int error;
     char *errbuf;
 
-    assert(str != NULL);
-    assert(pattern != NULL);
+    assert_not_null(str);
+    assert_not_null(pattern);
 
     regmatch = xmalloc(sizeof(regmatch_t));
     error = regcomp(&regex, pattern, flags);
@@ -36,7 +73,7 @@ first_match(const char *__restrict__ str, const char *__restrict__ pattern, cons
         return (regmatch);
     case REG_NOMATCH:
         free(regmatch);
-        return ((regmatch_t *)NULL);
+        return (NULL);
     default:
 error_label:
         errbuf = xcalloc(BUFSIZ, sizeof(char));
@@ -52,7 +89,7 @@ has_match(const char *__restrict__ str, const char *__restrict__ pattern)
 {
     regmatch_t *match;
 
-    assert(pattern != NULL);
+    assert_not_null(pattern);
 
     if (str == NULL)
         return (false);
@@ -62,7 +99,7 @@ has_match(const char *__restrict__ str, const char *__restrict__ pattern)
     if (match == NULL)
         return (false);
     else {
-        free((void *)match);
+        free(match);
         return (true);
     }
 }
@@ -75,18 +112,18 @@ get_match(const char *__restrict__ str, const char *__restrict__ pattern)
     size_t match_size;
     char *match;
 
-    assert(str != NULL);
+    assert_not_null(str);
 
     regmatch = first_match(str, pattern, REG_ICASE | REG_EXTENDED | REG_NEWLINE);
     if (regmatch == NULL)
-        return ((char *)NULL);
+        return (NULL);
 
     match_size = regmatch->rm_eo - regmatch->rm_so;
     match = xcalloc(match_size + 1, sizeof(char));
-    
+
     memcpy(match, str + regmatch->rm_so, match_size);
 
-    free((void *)regmatch);
+    free(regmatch);
     return (match);
 }
 
@@ -97,9 +134,9 @@ sub_match(const char *str, const regmatch_t *__restrict__ match, const char *rep
     size_t final_size, replace_size, end_size;
     char *result, *cursor;
 
-    assert(str      != NULL);
-    assert(replace  != NULL);
-    assert(match    != NULL);
+    assert_not_null(str);
+    assert_not_null(replace);
+    assert_not_null(match);
     assert(match->rm_so >= 0);
     assert(match->rm_eo > match->rm_so);
 
@@ -122,15 +159,15 @@ sub_match(const char *str, const regmatch_t *__restrict__ match, const char *rep
 void inplacesub_match(char **str, regmatch_t *__restrict__ match, const char *replace)
 {
     char *old_str;
-    assert(str      != NULL);
-    assert(*str     != NULL);
-    assert(replace  != NULL);
-    assert(match    != NULL);
+    assert_not_null(str);
+    assert_not_null(*str);
+    assert_not_null(replace);
+    assert_not_null(match);
 
     old_str = *str;
     *str = sub_match(*str, match, replace);
 
-    free((void *)old_str);
+    free(old_str);
 }
 
 
@@ -139,14 +176,14 @@ _die(const char *__restrict__ fmt, ...)
 {
     va_list args;
 
-    assert(fmt != NULL);
+    assert_not_null(fmt);
 
     va_start(args, fmt);
     (void) vfprintf(stderr, fmt, args);
     va_end(args);
 
     if (errno != 0)
-        perror((char *)NULL);
+        perror(NULL);
 
     exit(errno == 0 ? -1: errno);
 }
