@@ -2,9 +2,7 @@
  * test.c
  */
 
-#include <stdlib.h>
 #include <stdio.h>
-#include <errno.h>
 
 #include "t_xml.h"
 #include "t_net.h"
@@ -15,7 +13,7 @@ int main(int argc, char *argv[])
     char *data;
     struct xml_tree *t;
 
-    data = mb_get(NULL);
+    data = net_get("localhost", "80", NULL);
     t = xml_parse(data);
 
     xml_tree_show(t);

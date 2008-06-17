@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <errno.h>
 
+#include "config.h"
 #include "t_toolkit.h"
 
 
@@ -78,7 +79,7 @@ first_match(const char *__restrict__ str, const char *__restrict__ pattern, cons
 error_label:
         errbuf = xcalloc(BUFSIZ, sizeof(char));
         (void) regerror(error, &regex, errbuf, BUFSIZ);
-        die(("%s", errbuf));
+        errx(-1, "%s", errbuf);
         /* NOTREACHED */
     }
 }
@@ -168,24 +169,6 @@ void inplacesub_match(char **str, regmatch_t *__restrict__ match, const char *re
     *str = sub_match(*str, match, replace);
 
     free(old_str);
-}
-
-
-void
-_die(const char *__restrict__ fmt, ...)
-{
-    va_list args;
-
-    assert_not_null(fmt);
-
-    va_start(args, fmt);
-    (void) vfprintf(stderr, fmt, args);
-    va_end(args);
-
-    if (errno != 0)
-        perror(NULL);
-
-    exit(errno == 0 ? -1: errno);
 }
 
 

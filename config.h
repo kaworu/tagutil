@@ -35,4 +35,12 @@ typedef unsigned char bool;
 #endif
 
 
+/* APP config */
+#define WITH_MB
+
+
+#if defined(WITH_MB)
+#define MB_DEFAULT_HOST "localhost"
+#define MB_DEFAULT_PORT "80"
+#endif
 #endif /* !T_CONFIG_H */

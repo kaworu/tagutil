@@ -51,7 +51,7 @@ tagutil_f parse_argv(int argc, char *argv[], int *first_fname, char **apply_arg)
 /* FILE FUNCTIONS */
 
 /*
- * rename path to new_path. die() if new_path already exist.
+ * rename path to new_path. err(3) if new_path already exist.
  */
 void safe_rename(const char *__restrict__ oldpath, const char *__restrict__ newpath)
     __attribute__ ((__nonnull__ (1, 2)));

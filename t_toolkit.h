@@ -13,6 +13,8 @@
 #include <regex.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
+#include <err.h>    /* These functions are non-standard BSD extensions. */
 #include <libgen.h> /* for dirname() POSIX.1-2001 */
 
 #include "config.h"
@@ -28,13 +30,6 @@
 #define EMPTY_LINE(l) has_match((l), "^\\s*$")
 
 #if !defined(NDEBUG)
-#define die(vargs)                              \
-    do {                                        \
-        (void) fprintf(stderr, "%s at %d:\n",   \
-                __FUNCNAME__, __LINE__);        \
-        _die vargs;                             \
-    } while (/*CONSTCOND*/0)
-
 /*
  * count how many times we call x*alloc. if needed, print their value at
  * the end of main. I used them to see how many alloc tagutil does, to see
@@ -55,7 +50,6 @@ int _alloc_b;
     } while (/*CONSTCOND*/0)
 #define SHOW_ALLOC_COUNTER (void) fprintf(stderr, "bytes alloc: %d, alloc calls: %d\n", _alloc_b, _alloc_counter)
 #else /* NDEBUG */
-#define die(vargs) _die vargs
 #define INIT_ALLOC_COUNTER
 #define INCR_ALLOC_COUNTER
 #define SHOW_ALLOC_COUNTER
@@ -127,7 +121,7 @@ static __inline__ void concat(char **dest, size_t *dest_size, const char *src)
 /*
  * compile the given pattern, match it with str and return the regmatch_t result.
  * if an error occure (during the compilation or the match), print the error message
- * and die(). return NULL if there was no match, and a pointer to the regmatch_t
+ * and err(3). return NULL if there was no match, and a pointer to the regmatch_t
  * otherwise.
  *
  * return value has to be freed.
@@ -178,14 +172,6 @@ void inplacesub_match(char **str, regmatch_t *__restrict__ match, const char *re
 /* OTHER */
 
 /*
- * print the fmt message, then if errno is set print the errno message and
- * exit with the errno exit status.
- */
-void _die(const char *__restrict__ fmt, ...)
-    __attribute__ ((__noreturn__, __format__ (__printf__, 1, 2), __nonnull__ (1), __unused__));
-
-
-/*
  * print the given question, and read user's input. input should match
  * y|yes|n|no.  yesno() loops until a valid response is given and then return
  * true if the response match y|yes, false if it match n|no.
@@ -204,7 +190,7 @@ xmalloc(const size_t size)
 
     ptr = malloc(size);
     if (size > 0 && ptr == NULL)
-        die(("malloc failed.\n"));
+        err(ENOMEM, NULL);
 
     return (ptr);
 }
@@ -219,7 +205,7 @@ xcalloc(const size_t nmemb, const size_t size)
 
     ptr = calloc(nmemb, size);
     if (ptr == NULL && size > 0 && nmemb > 0)
-        die(("calloc failed.\n"));
+        err(ENOMEM, NULL);
 
     return (ptr);
 }
@@ -234,7 +220,7 @@ xrealloc(void *old_ptr, const size_t new_size)
 
     ptr = realloc(old_ptr, new_size);
     if (ptr == NULL && new_size > 0)
-        die(("realloc failed.\n"));
+        err(ENOMEM, NULL);
 
     return (ptr);
 }
@@ -251,7 +237,7 @@ xfopen(const char *__restrict__ path, const char *__restrict__ mode)
     fp = fopen(path, mode);
 
     if (fp == NULL)
-        die(("can't open file %s\n", path));
+        err(errno, "can't open file %s", path);
 
     return (fp);
 }
@@ -264,7 +250,7 @@ xfclose(FILE *__restrict__ fp)
     assert(fp != NULL);
 
     if (fclose(fp) != 0)
-        die(("xclose failed.\n"));
+        err(errno, NULL);
 }
 
 

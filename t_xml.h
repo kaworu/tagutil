@@ -7,8 +7,8 @@
  * use expat.
  */
 
-
 #include "config.h"
+
 
 struct xml_attr {
     char *key, *val;
@@ -27,6 +27,10 @@ struct xml_tree {
         struct xml_tree **childv;   /* type == XML_NODE */
     } content;
     struct xml_tree *parent;
+
+#if !defined(NDEBUG)
+    bool frozen;
+#endif
 };
 
 

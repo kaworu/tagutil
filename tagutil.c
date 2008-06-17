@@ -44,8 +44,8 @@
 #include <taglib/tag_c.h>
 
 #include "config.h"
-#include "t_toolkit.h"
 #include "tagutil.h"
+#include "t_toolkit.h"
 
 /**********************************************************************/
 
@@ -83,16 +83,22 @@ int main(int argc, char *argv[])
         current_filename = argv[i];
 
         /* we have to check first if the file exist and if it's a "regular file" */
-        if (stat(current_filename, &current_filestat) != 0)
-            die(("can't access %s: ", current_filename));
-        if (!S_ISREG(current_filestat.st_mode))
-            die(("%s: not a regular file\n", current_filename));
+        if (stat(current_filename, &current_filestat) != 0) {
+            warn("can't access %s", current_filename);
+            continue;
+        }
+        else if (!S_ISREG(current_filestat.st_mode)) {
+            warnx("%s is not a regular file", current_filename);
+            continue;
+        }
 
 
         f = taglib_file_new(current_filename);
 
-        if (f == NULL)
-            die(("%s: not a music file\n", current_filename));
+        if (f == NULL) {
+            warnx("%s is not a music file", current_filename);
+            continue;
+        }
 
         (void) (*apply)(current_filename, f, apply_arg);
 
@@ -105,7 +111,7 @@ int main(int argc, char *argv[])
 
 
 void
-usage()
+usage(void)
 {
 
     (void) fprintf(stderr,  "TagUtil v"__TAGUTIL_VERSION__" by "__TAGUTIL_AUTHOR__".\n\n");
@@ -128,6 +134,8 @@ usage()
     (void) fprintf(stderr, "    -T [TRACK]   [files]   : change track tag to TRACK for all given files\n");
     (void) fprintf(stderr, "    -c [COMMENT] [files]   : change comment tag to COMMENT for all given files\n");
     (void) fprintf(stderr, "    -g [GENRE]   [files]   : change genre tag to GENRE for all given files\n");
+    (void) fprintf(stderr, "    -g [GENRE]   [files]   : change genre tag to GENRE for all given files\n");
+    (void) fprintf(stderr, "\n");
 
     exit(EXIT_SUCCESS);
 }
@@ -141,18 +149,16 @@ safe_rename(const char *__restrict__ oldpath, const char *__restrict__ newpath)
     assert_not_null(oldpath);
     assert_not_null(newpath);
 
-    if (stat(newpath, &dummy) == 0) {
-        errno = EEXIST;
-        die(("%s: ", newpath));
-    }
+    if (stat(newpath, &dummy) == 0)
+        err(errno = EEXIST, "%s", newpath);
 
     if (rename(oldpath, newpath) == -1)
-        die(("can't rename \"%s\" to \"%s\"\n", oldpath, newpath));
+        err(errno, NULL);
 }
 
 
 char *
-create_tmpfile()
+create_tmpfile(void)
 {
     size_t tmpfile_size;
     char *tmpdir, *tmpfile;
@@ -170,7 +176,7 @@ create_tmpfile()
     concat(&tmpfile, &tmpfile_size, "XXXXXX");
 
     if (mkstemp(tmpfile) == -1) {
-        die(("call to mkstemp failed, can't create %s file\n", tmpfile));
+        err(errno, "can't create %s file", tmpfile);
         /* NOTREACHED */
     }
     else
@@ -198,7 +204,6 @@ printable_tag(const TagLib_Tag *__restrict__ tag)
 bool
 user_edit(const char *__restrict__ path)
 {
-
     int error;
     size_t editcmd_size;
     char *editor, *editcmd;
@@ -209,7 +214,7 @@ user_edit(const char *__restrict__ path)
     editcmd = xcalloc(editcmd_size, sizeof(char));
     editor = getenv("EDITOR");
     if (editor == NULL)
-        die(("please, set the $EDITOR environment variable.\n"));
+        errx(-1, "please, set the $EDITOR environment variable.");
     else if (has_match(editor, "x?emacs")) {
         /*
          * we're actually so cool, that we keep the user waiting if $EDITOR
@@ -225,13 +230,13 @@ user_edit(const char *__restrict__ path)
     concat(&editcmd, &editcmd_size, path);
 
     /* test if the shell is avaiable */
-    if ((system(NULL) == 0))
-            die(("can't access shell :(\n"));
+    if (system(NULL) == 0)
+            err(errno, "can't access shell");
 
     error = system(editcmd);
 
     free(editcmd);
-    return (error == 0 ? true : false);
+    return (error == 0);
 }
 
 
@@ -269,13 +274,13 @@ update_tag(TagLib_Tag *__restrict__ tag, FILE *__restrict__ fp)
                 _CALL_SETTER_IF_MATCH(year,      atoi(val));
                 _CALL_SETTER_IF_MATCH(track,     atoi(val));
 
-                die(("parser error on line:\n%s\n", line));
+                warnx("parser error on line: %s", line);
 cleanup:
                 free((val - 1));
                 free(key);
             }
             else
-                die(("parser can't handle this line :(\n%s\n", line));
+                warnx("parser can't handle this line: %s", line);
         }
     }
     free(line);
@@ -407,11 +412,11 @@ parse_argv(int argc, char *argv[], int *first_fname, char **apply_arg)
         _ON_OPT("-g", genre, );
         _ON_OPT("-y", year,
             if (atoi(*apply_arg) <= 0 && strcmp(*apply_arg, "0") != 0)
-                die(("bad year argument: %s\n", *apply_arg));
+                errx(-1, "bad year argument: %s", *apply_arg);
         );
         _ON_OPT("-T", track,
             if (atoi(*apply_arg) <= 0 && strcmp(*apply_arg, "0") != 0)
-                die(("bad track argument: %s\n", *apply_arg));
+                errx(-1, "bad track argument: %s", *apply_arg);
         );
     }
 
@@ -471,7 +476,7 @@ tagutil_edit(const char *__restrict__ path, TagLib_File *__restrict__ f,
         update_tag(taglib_file_tag(f), fp);
 
         if (!taglib_file_save(f))
-            die(("can't save file %s.\n", path));
+            err(errno, "can't save file %s", path);
 
         xfclose(fp);
         remove(tmp_file);
@@ -496,14 +501,14 @@ tagutil_rename(const char *__restrict__ path, TagLib_File *__restrict__ f, const
     assert_not_null(arg);
 
     if (arg[0] == '\0')
-        die(("wrong rename pattern: %s\n", arg));
+        errx(-1, "wrong rename pattern: %s", arg);
 
     tag = taglib_file_tag(f);
     new_fname = eval_tag(arg, tag);
     /* add ftype to new_fname */
     new_fname_size = strlen(new_fname) + 1;
     if ((ftype = strrchr(path, '.')) == NULL)
-        die(("can't find file type: %s\n", path));
+        errx(-1, "can't find file extension: %s", path);
     concat(&new_fname, &new_fname_size, ftype);
 
     /* new_fname is now OK. store into result the full new path.  */
@@ -543,7 +548,7 @@ tagutil_rename(const char *__restrict__ path, TagLib_File *__restrict__ f, const
         assert_not_null(arg);                                       \
         (taglib_tag_set_##what)(taglib_file_tag(f), hook(arg));     \
     if (!taglib_file_save(f))                                       \
-        die(("can't save file %s.\n", path));                       \
+        err(errno, "can't save file %s", path);                     \
     return (true);                                                  \
 }
 

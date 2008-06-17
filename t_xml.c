@@ -7,8 +7,9 @@
 
 #include <expat.h>
 
-#include "t_toolkit.h"
+#include "config.h"
 #include "t_xml.h"
+#include "t_toolkit.h"
 
 
 /*
@@ -119,7 +120,7 @@ xml_tree_delete(struct xml_tree *__restrict__ victim)
             free(victim->content.childv);
         break;
     default:
-        die(("hoho.. unknown xml_trtype.\n"));
+        errx(-1, "hoho.. unknown xml_trtype.");
     }
 
     for (i = 0; i < victim->attrc; i++)
@@ -153,6 +154,9 @@ xml_push_data(struct xml_tree *__restrict__ elt, const char *__restrict__ data, 
     assert_not_null(elt);
     assert(elt->type == XML_LEAF);
     assert(len > 0);
+#if !defined(NDEBUG)
+    assert(!elt->frozen);
+#endif
 
     /* our parser don't care about blank lines and indent. */
     if (EMPTY_LINE(data))
@@ -181,6 +185,9 @@ xml_tree_new(struct xml_tree *__restrict__ parent, const char *__restrict__ name
     res->name = str_copy(name);
     res->type = XML_LEAF;
     res->parent = parent;
+#if !defined(NDEBUG)
+    res->frozen = false;
+#endif
 
     if (parent != NULL) {
         res->depth = parent->depth + 1;
@@ -210,6 +217,9 @@ xml_push_attr(struct xml_tree *__restrict__ elt, const char *__restrict__ key, c
     assert_not_null(val);
     assert(key[0] != '\0');
     assert(val[0] != '\0');
+#if !defined(NDEBUG)
+    assert(!elt->frozen);
+#endif
 
     elt->attrc++;
     elt->attrv = xrealloc(elt->attrv, elt->attrc * sizeof(struct xml_attr *));
@@ -262,6 +272,10 @@ xml_end(void *userdata, const char *el)
 
     assert(strcmp(tree->name, el) == 0);
     assert_not_null(tree->parent);
+#if !defined(NDEBUG)
+    assert(!tree->frozen);
+    tree->frozen = true;
+#endif
 
     XML_SetUserData(parser, tree->parent);
 }
@@ -277,7 +291,7 @@ xml_parse(const char *__restrict__ data)
     parser = XML_ParserCreate(NULL);
 
     if (parser == NULL)
-        die(("Couldn't allocate memory for parser\n"));
+        err(ENOMEM, "Couldn't allocate memory for parser\n");
 
     /* link handler functions to parser */
     XML_SetStartElementHandler(parser, xml_start);
@@ -287,9 +301,9 @@ xml_parse(const char *__restrict__ data)
 
     /* do the parsing */
     if (XML_Parse(parser, data, strlen(data), true) == XML_STATUS_ERROR)
-        die(("Parse error at line %lu" "u:\n%s\n",
+        errx(errno, "Parse error at line %lu: %s",
                     XML_GetCurrentLineNumber(parser),
-                    XML_ErrorString(XML_GetErrorCode(parser))));
+                    XML_ErrorString(XML_GetErrorCode(parser)));
 
     res = XML_GetUserData(parser);
     /* we don't need it anymore. It *won't* free the result */
@@ -298,9 +312,10 @@ xml_parse(const char *__restrict__ data)
     return (res);
 }
 
+
 #if 0
 /*
- * loosely main method that parse stin.
+ * loosely main method that parse stdin.
  */
 int
 main(int argc, char *argv[])
@@ -339,11 +354,11 @@ main(int argc, char *argv[])
         if (done)
             break;
     }
+
     printf("root_name: %s\n", ((struct xml_tree *)XML_GetUserData(parser))->name);
     xml_tree_show((struct xml_tree *)XML_GetUserData(parser));
     xml_tree_delete((struct xml_tree *)XML_GetUserData(parser));
     XML_ParserFree(parser);
             return (0);
 }
-
 #endif
