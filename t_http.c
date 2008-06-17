@@ -1,5 +1,5 @@
 /*
- * t_net.c
+ * t_http.c
  *
  * HTTP request function for tagutil.
  * loosely cp from client example of getaddrinfo(3) man page.
@@ -11,7 +11,7 @@
 #include <unistd.h>
 
 #include "config.h"
-#include "t_net.h"
+#include "t_http.h"
 #include "t_toolkit.h"
 
 

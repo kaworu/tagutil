@@ -8,5 +8,5 @@ clean:
 	@rm $(PROG) *.o &>/dev/null || true
 tags: $(PROG).c
 	ctags *.c
-tagutil: t_xml.o t_net.o t_toolkit.o tagutil.o
+tagutil: t_xml.o t_http.o t_toolkit.o tagutil.o
 	cc -o $(PROG) $(CFLAGS) $(LDFLAGS) $+

@@ -4,7 +4,7 @@
  * t_mb.h
  *
  * tagutil's MusicBrainz access lib.
- * glue methods for tagutil to t_net/t_xml.
+ * glue methods for tagutil to t_http/t_xml.
  */
 
 #include "config.h"

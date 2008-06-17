@@ -1,13 +1,13 @@
 /*
  * t_mb.h
  *
- * tagutil's MusicBrainz lib.
- * use t_net and t_xml.
+ * tagutil's MusicBrainz access lib.
+ * glue methods for tagutil to t_http/t_xml.
  */
 
 #include "t_mb.h"
 #include "t_toolkit.h"
-#include "t_net.h"
+#include "t_http.h"
 #include "t_xml.h"
 
 char *

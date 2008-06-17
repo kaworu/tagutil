@@ -1,7 +1,7 @@
 #ifndef T_NET_H
 #define T_NET_H
 /*
- * t_net.h
+ * t_http.h
  *
  * HTTP request function for tagutil.
  */
