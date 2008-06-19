@@ -11,11 +11,12 @@
 
 /*
  * query the MB server. arg is the argument encoded in a HTML way
- * ?foo=bar&oni=42. It use MB_HOST and MB_PORT env vars or the default values
- * defined at configure time.
- * It return the server's response.
+ * /page.php?foo=bar&oni=42. It use MB_HOST and MB_PORT env vars or the
+ * default values (so user can choose another web server that implement the
+ * MusicBrainz interface) It return the server's response.
  *
  * return value has to be freed.
  */
 char* mb_get(const char *__restrict__ arg);
+
 #endif /* !T_MB_H */

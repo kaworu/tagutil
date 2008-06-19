@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     char *data;
     struct xml_tree *t;
 
-    data = net_get("localhost", "80", NULL);
+    data = http_request("localhost", "80", HTTP_GET, NULL);
     t = xml_parse(data);
 
     xml_tree_show(t);

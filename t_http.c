@@ -15,12 +15,12 @@
 #include "t_toolkit.h"
 
 
-static int net_opensock(const char *__restrict__ host, const char *__restrict__ port)
+static int http_opensock(const char *__restrict__ host, const char *__restrict__ port)
     __attribute__ ((__nonnull__ (1, 2)));
 
 
 static int
-net_opensock(const char *__restrict__ host, const char *__restrict__ port)
+http_opensock(const char *__restrict__ host, const char *__restrict__ port)
 {
     int sfd; /* socket file descriptor */
     int ret;
@@ -61,33 +61,52 @@ net_opensock(const char *__restrict__ host, const char *__restrict__ port)
 
 
 char *
-net_get(const char *__restrict__ host, const char *__restrict__ port,
-        const char *__restrict__ arg)
+http_request(const char *__restrict__ host, const char *__restrict__ port,
+        const char *__restrict__ method, const char *__restrict__ arg)
 {
     int sfd; /* socket file descriptor */
-    char *getmsg; /* GET message to send. */
-    size_t getmsg_size;
+
+    char *http_request; /* GET|POST|PUT|DELETE command to send. */
+    size_t http_request_size;
+
     char *buf; /* buffer to store the server's response */
     size_t buf_size, end;
     char *cursor;
+
     ssize_t nread; /* number of char given by read(2) */
 
     assert_not_null(host);
     assert_not_null(port);
 
-    sfd = net_opensock(host, port);
+    sfd = http_opensock(host, port);
 
-    /* create the get message */
-    getmsg_size = 1;
-    getmsg = xcalloc(getmsg_size, sizeof(char));
-    concat(&getmsg, &getmsg_size, "GET http://");
-    concat(&getmsg, &getmsg_size, host);
-    concat(&getmsg, &getmsg_size, "/");
-    if (arg != NULL && arg[0] != '\0')
-        concat(&getmsg, &getmsg_size, arg);
-    concat(&getmsg, &getmsg_size, "\n");
+    /*
+     * create the request message.
+     * we need "$method http://$host/$arg\n"
+     */
+    http_request_size = 1;
+    http_request = xcalloc(http_request_size, sizeof(char));
 
-    if (write(sfd, getmsg, getmsg_size) == -1)
+    /* "$method" */
+    concat(&http_request, &http_request_size, method);
+    /* "http:// */
+    if (has_match(host, "^http://"))
+        concat(&http_request, &http_request_size, " ");
+    else
+        concat(&http_request, &http_request_size, " http://");
+    /* $host */
+    concat(&http_request, &http_request_size, host);
+    /* /$arg */
+    if (arg != NULL && arg[0] != '\0') {
+        assert(arg[0] == '/');
+        concat(&http_request, &http_request_size, arg);
+    }
+    else
+        concat(&http_request, &http_request_size, "/");
+    /* \n" */
+    concat(&http_request, &http_request_size, "\n");
+
+    if (write(sfd, http_request, http_request_size) == -1)
         err(errno, "write() failed");
 
     buf = NULL;
@@ -111,7 +130,7 @@ net_get(const char *__restrict__ host, const char *__restrict__ port,
     buf[end] = '\0'; /* ensure NULL-terminate string */
 
     close(sfd);
-    free(getmsg);
+    free(http_request);
 
     return (buf);
 }
@@ -127,7 +146,7 @@ int main(int argc, char *argv[])
         return (0);
     }
 
-    s = net_get(argv[1], "80", (argc > 2 ? argv[2] : NULL));
+    s = http_request(argv[1], "80", HTTP_GET, (argc > 2 ? argv[2] : NULL));
 
     printf("%s\n", s);
 

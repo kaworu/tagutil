@@ -20,5 +20,5 @@ mb_get(const char *__restrict__ arg)
     if ((port = getenv("MB_PORT")) == NULL)
         port = MB_DEFAULT_PORT;
 
-    return (net_get(host, port, arg));
+    return (http_request(host, port, HTTP_GET, arg));
 }
