@@ -30,16 +30,6 @@ static char* xml_push_data(struct xml_tree *__restrict__ elt, const char *data, 
 
 
 /*
- * create a new xml_tree struct under given parent. if parent is NULL, then
- * the new xml_tree struct is a root node.
- *
- * called by expat handlers.
- */
-static struct xml_tree* xml_tree_new(struct xml_tree *__restrict__ parent, const char *__restrict__ name)
-    __attribute__ ((__nonnull__ (2)));
-
-
-/*
  * add attribute to given xml_tree.
  *
  * called by expat handlers.
@@ -55,6 +45,38 @@ static void XMLCALL xml_end(void *userdata, const char *el);
 
 /* expat parser. */
 static struct XML_ParserStruct *parser;
+
+
+struct xml_tree *
+xml_parse(const char *__restrict__ data)
+{
+    struct xml_tree *res;
+
+    assert_not_null(data);
+
+    parser = XML_ParserCreate(NULL);
+
+    if (parser == NULL)
+        err(ENOMEM, "Couldn't allocate memory for parser\n");
+
+    /* link handler functions to parser */
+    XML_SetStartElementHandler(parser, xml_start);
+    XML_SetEndElementHandler(parser, xml_end);
+    XML_SetCharacterDataHandler(parser, xml_charhndl);
+    XML_SetUserData(parser, xml_tree_new(NULL, "__root__"));
+
+    /* do the parsing */
+    if (XML_Parse(parser, data, strlen(data), true) == XML_STATUS_ERROR)
+        errx(errno, "Parse error at line %lu: %s",
+                    XML_GetCurrentLineNumber(parser),
+                    XML_ErrorString(XML_GetErrorCode(parser)));
+
+    res = XML_GetUserData(parser);
+    /* we don't need it anymore. It *won't* free the result */
+    XML_ParserFree(parser);
+
+    return (res);
+}
 
 
 void
@@ -134,6 +156,26 @@ xml_tree_delete(struct xml_tree *__restrict__ victim)
 }
 
 
+struct xml_tree *
+xml_lookup(struct xml_tree *__restrict__ tree, const char *__restrict__ name)
+{
+    int i;
+
+    assert_not_null(tree);
+    assert_not_null(name);
+
+    if (tree->type != XML_NODE)
+        return (NULL);
+
+    for (i = 0; i < tree->content_len; i++) {
+        if (strcmp(tree->content.childv[i]->name, name) == 0)
+            return (tree->content.childv[i]);
+    }
+
+    return (NULL);
+}
+
+
 static __inline__ void
 xml_attr_delete(struct xml_attr *__restrict__ victim)
 {
@@ -172,7 +214,7 @@ xml_push_data(struct xml_tree *__restrict__ elt, const char *__restrict__ data, 
 }
 
 
-static struct xml_tree *
+struct xml_tree *
 xml_tree_new(struct xml_tree *__restrict__ parent, const char *__restrict__ name)
 {
     struct xml_tree *res;
@@ -278,38 +320,6 @@ xml_end(void *userdata, const char *el)
 #endif
 
     XML_SetUserData(parser, tree->parent);
-}
-
-
-struct xml_tree *
-xml_parse(const char *__restrict__ data)
-{
-    struct xml_tree *res;
-
-    assert_not_null(data);
-
-    parser = XML_ParserCreate(NULL);
-
-    if (parser == NULL)
-        err(ENOMEM, "Couldn't allocate memory for parser\n");
-
-    /* link handler functions to parser */
-    XML_SetStartElementHandler(parser, xml_start);
-    XML_SetEndElementHandler(parser, xml_end);
-    XML_SetCharacterDataHandler(parser, xml_charhndl);
-    XML_SetUserData(parser, xml_tree_new(NULL, "__root__"));
-
-    /* do the parsing */
-    if (XML_Parse(parser, data, strlen(data), true) == XML_STATUS_ERROR)
-        errx(errno, "Parse error at line %lu: %s",
-                    XML_GetCurrentLineNumber(parser),
-                    XML_ErrorString(XML_GetErrorCode(parser)));
-
-    res = XML_GetUserData(parser);
-    /* we don't need it anymore. It *won't* free the result */
-    XML_ParserFree(parser);
-
-    return (res);
 }
 
 

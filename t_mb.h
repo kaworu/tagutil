@@ -15,7 +15,7 @@
  * default values (so user can choose another web server that implement the
  * MusicBrainz interface) It return the server's response.
  *
- * return value has to be freed.
+ * returned value has to be freed.
  */
 char* mb_get(const char *__restrict__ arg);
 

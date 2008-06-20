@@ -23,7 +23,7 @@
  * for example (same effect as "{fetch,wget} http://www.kaworu.ch/index.html"):
  *      http_cmd("www.kaworu.ch", "80", HTTP_GET, "/index.html");
  *
- * return value has to be freed.
+ * returned value has to be freed.
  */
 char* http_request(const char *__restrict__ host, const char *__restrict__ port,
         const char *__restrict__ method, const char *__restrict__ arg)

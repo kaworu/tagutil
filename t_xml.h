@@ -35,6 +35,26 @@ struct xml_tree {
 
 
 /*
+ * create a new xml_tree struct under given parent. if parent is NULL, then
+ * the new xml_tree struct is a root node.
+ *
+ * called by expat handlers.
+ */
+struct xml_tree* xml_tree_new(struct xml_tree *__restrict__ parent, const char *__restrict__ name)
+    __attribute__ ((__nonnull__ (2)));
+
+
+/*
+ * parse the given xml string data and return a new
+ * xml_tree struct.
+ *
+ * returned value has to be freed.
+ */
+struct xml_tree* xml_parse(const char *__restrict__ data)
+    __attribute__ ((__nonnull__ (1)));
+
+
+/*
  * display a tree to stdout. debug.
  */
 void xml_tree_show(const struct xml_tree *__restrict__ tree)
@@ -49,12 +69,8 @@ void xml_tree_delete(struct xml_tree *__restrict__ victim)
 
 
 /*
- * parse the given xml string data and return a new
- * xml_tree struct.
- *
- * return value has to be freed.
+ * returned the first child with the name `name'.
  */
-struct xml_tree* xml_parse(const char *__restrict__ data)
-    __attribute__ ((__nonnull__ (1)));
-
+struct xml_tree* xml_lookup(struct xml_tree *__restrict__ tree, const char *__restrict__ name)
+    __attribute__ ((__nonnull__ (1, 2)));
 #endif /* !T_XML_H */

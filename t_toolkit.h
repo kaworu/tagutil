@@ -89,7 +89,7 @@ bool xgetline(char **line, size_t *size, FILE *__restrict__ fp)
 /*
  * try to have a *sane* dirname() function. dirname() implementation may change argument.
  *
- * return value has to be freed.
+ * returned value has to be freed.
  */
 static __inline__ char* xdirname(const char *__restrict__ path)
     __attribute__ ((__nonnull__ (1), __unused__));
@@ -100,7 +100,7 @@ static __inline__ char* xdirname(const char *__restrict__ path)
 /*
  * make a copy of src.
  *
- * return value has to be freed.
+ * returned value has to be freed.
  */
 static __inline__ char* str_copy(const char *__restrict__ src)
     __attribute__ ((__nonnull__ (1), __unused__));
@@ -110,7 +110,7 @@ static __inline__ char* str_copy(const char *__restrict__ src)
  * copy src at the end of dest. dest_size is the allocated size
  * of dest and is modified (dest is realloc).
  *
- * return value has to be freed.
+ * returned value has to be freed.
  */
 static __inline__ void concat(char **dest, size_t *dest_size, const char *src)
     __attribute__ ((__nonnull__ (1, 2, 3), __unused__));
@@ -124,7 +124,7 @@ static __inline__ void concat(char **dest, size_t *dest_size, const char *src)
  * and err(3). return NULL if there was no match, and a pointer to the regmatch_t
  * otherwise.
  *
- * return value has to be freed.
+ * returned value has to be freed.
  */
 regmatch_t* first_match(const char *__restrict__ str, const char *__restrict__ pattern, const int flags)
     __attribute__ ((__nonnull__ (1, 2), __unused__));
@@ -142,9 +142,9 @@ bool has_match(const char *__restrict__ str, const char *__restrict__ pattern)
  * match pattern to str. then copy the match part and return the fresh
  * new char* created.  * flags are REG_ICASE | REG_EXTENDED | REG_NEWLINE
  * (see regex(3)).
- *
  * get_match() can return NULL if no match was found, but when a match occur
- * return value has to be freed.
+ *
+ * returned value has to be freed.
  */
 char* get_match(const char *__restrict__ str, const char *__restrict__ pattern)
     __attribute__ ((__nonnull__ (1, 2), __unused__));
@@ -155,7 +155,7 @@ char* get_match(const char *__restrict__ str, const char *__restrict__ pattern)
  * sub_match("foo bar", {.rm_so=3, .rm_eo=6}, "oni") will return
  * "foo oni". sub_match doesn't modify it's arguments, it return a new string.
  *
- * return value has to be freed.
+ * returned value has to be freed.
  */
 char* sub_match(const char *str, const regmatch_t *__restrict__ match, const char *replace)
     __attribute__ ((__nonnull__ (1, 2, 3), __unused__));

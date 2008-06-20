@@ -61,7 +61,7 @@ void safe_rename(const char *__restrict__ oldpath, const char *__restrict__ newp
  * create a temporary file in $TMPDIR. if $TMPDIR is not set, /tmp is
  * used. return the full path to the temp file created.
  *
- * return value has to be freed.
+ * returned value has to be freed.
  */
 char* create_tmpfile(void);
 
@@ -71,7 +71,7 @@ char* create_tmpfile(void);
 /*
  * return a char* that contains all tag infos.
  *
- * return value has to be freed.
+ * returned value has to be freed.
  */
 char* printable_tag(const TagLib_Tag *__restrict__ tag)
     __attribute__ ((__nonnull__ (1)));
