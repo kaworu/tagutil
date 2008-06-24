@@ -4,6 +4,7 @@
  * xml parser for tagutil.
  * use expat.
  */
+#include <stdarg.h>
 
 #include <expat.h>
 
@@ -15,7 +16,7 @@
 /*
  * xml_tree_delete() helper.
  */
-static __inline__ void xml_attr_delete(struct xml_attr *__restrict__ victim)
+static inline void xml_attr_delete(struct xml_attr *restrict victim)
     __attribute__ ((__nonnull__ (1)));
 
 
@@ -25,7 +26,7 @@ static __inline__ void xml_attr_delete(struct xml_attr *__restrict__ victim)
  *
  * called by expat handlers.
  */
-static char* xml_push_data(struct xml_tree *__restrict__ elt, const char *data, size_t len)
+static char* xml_push_data(struct xml_tree *restrict elt, const char *data, size_t len)
     __attribute__ ((__nonnull__ (1, 2)));
 
 
@@ -34,7 +35,7 @@ static char* xml_push_data(struct xml_tree *__restrict__ elt, const char *data, 
  *
  * called by expat handlers.
  */
-static struct xml_attr* xml_push_attr(struct xml_tree *__restrict__ elt, const char *__restrict__ key, const char *__restrict__ val)
+static struct xml_attr* xml_push_attr(struct xml_tree *restrict elt, const char *restrict key, const char *restrict val)
     __attribute__ ((__nonnull__ (1, 2, 3)));
 
 
@@ -42,13 +43,12 @@ static struct xml_attr* xml_push_attr(struct xml_tree *__restrict__ elt, const c
 static void XMLCALL xml_start(void *userdata, const char *elt, const char **attr);
 static void XMLCALL xml_charhndl(void *userdata, const XML_Char *s, int len);
 static void XMLCALL xml_end(void *userdata, const char *el);
-
 /* expat parser. */
 static struct XML_ParserStruct *parser;
 
 
 struct xml_tree *
-xml_parse(const char *__restrict__ data)
+xml_parse(const char *restrict data)
 {
     struct xml_tree *res;
 
@@ -80,7 +80,7 @@ xml_parse(const char *__restrict__ data)
 
 
 void
-xml_tree_show(const struct xml_tree *__restrict__ tree)
+xml_tree_show(const struct xml_tree *restrict tree)
 {
     int i;
 
@@ -88,42 +88,45 @@ xml_tree_show(const struct xml_tree *__restrict__ tree)
         return;
 
     for (i = 0; i < tree->depth; i++)
-        (void) printf("  ");
+        (void)printf("  ");
 
     if (tree->type == XML_LEAF)
-        (void) printf("LEAF");
+        (void)printf("LEAF");
     else
-        (void) printf("NODE");
+        (void)printf("NODE");
 
-    (void) printf("(%s):", tree->name);
+    (void)printf("(%s):", tree->name);
 
     for (i = 0; i < tree->attrc; i++)
-        (void) printf(" attr(%s,%s)",
+        (void)printf(" attr(%s,%s)",
                 tree->attrv[i]->key, tree->attrv[i]->val);
 
-    (void) printf(" {\n");
+    (void)printf(" {\n");
     switch(tree->type) {
     case XML_LEAF:
         if (tree->content.data != NULL) {
             for (i = 0; i < tree->depth + 1; i++)
-                (void) printf("  ");
-            (void) printf("%s\n", tree->content.data);
+                (void)printf("  ");
+            (void)printf("%s\n", tree->content.data);
         }
         break;
     case XML_NODE:
         for (i = 0; i < tree->content_len; i++)
             xml_tree_show(tree->content.childv[i]);
         break;
+    default:
+        errx(-1, "bad xml_trtype in %s at %u", __FILE__, __LINE__);
+        /* NOTREACHED */
     }
 
     for (i = 0; i < tree->depth; i++)
-        (void) printf("  ");
-    (void) printf("}\n");
+        (void)printf("  ");
+    (void)printf("}\n");
 }
 
 
 void
-xml_tree_delete(struct xml_tree *__restrict__ victim)
+xml_tree_delete(struct xml_tree *restrict victim)
 {
     int i;
 
@@ -142,7 +145,8 @@ xml_tree_delete(struct xml_tree *__restrict__ victim)
             free(victim->content.childv);
         break;
     default:
-        errx(-1, "hoho.. unknown xml_trtype.");
+        errx(-1, "bad xml_trtype in %s at %u", __FILE__, __LINE__);
+        /* NOTREACHED */
     }
 
     for (i = 0; i < victim->attrc; i++)
@@ -157,7 +161,7 @@ xml_tree_delete(struct xml_tree *__restrict__ victim)
 
 
 struct xml_tree *
-xml_lookup(struct xml_tree *__restrict__ tree, const char *__restrict__ name)
+xml_lookup(const struct xml_tree *restrict tree, const char *restrict name)
 {
     int i;
 
@@ -176,8 +180,47 @@ xml_lookup(struct xml_tree *__restrict__ tree, const char *__restrict__ name)
 }
 
 
-static __inline__ void
-xml_attr_delete(struct xml_attr *__restrict__ victim)
+struct xml_tree *
+xml_reclookup(const struct xml_tree *restrict tree, unsigned int depth, ...)
+{
+    va_list ap;
+    struct xml_tree *current;
+
+    assert_not_null(tree);
+
+    va_start(ap, depth);
+    current = NULL;
+
+    while (depth--) {
+        current = xml_lookup(current == NULL ? tree : current, va_arg(ap, const char *));
+        if (current == NULL)
+            return (NULL);
+    }
+
+    va_end(ap);
+    return (current);
+}
+
+
+char *
+xml_attrlookup(const struct xml_tree *restrict tree, const char *restrict key)
+{
+    int i;
+
+    assert_not_null(tree);
+    assert_not_null(key);
+
+    for (i = 0; i < tree->attrc; i++) {
+        if (strcmp(tree->attrv[i]->key, key) == 0)
+            return (tree->attrv[i]->val);
+    }
+
+    return (NULL);
+}
+
+
+static inline void
+xml_attr_delete(struct xml_attr *restrict victim)
 {
 
     assert_not_null(victim);
@@ -189,7 +232,7 @@ xml_attr_delete(struct xml_attr *__restrict__ victim)
 
 
 static char *
-xml_push_data(struct xml_tree *__restrict__ elt, const char *__restrict__ data, size_t len)
+xml_push_data(struct xml_tree *restrict elt, const char *restrict data, size_t len)
 {
 
     assert_not_null(data);
@@ -201,7 +244,7 @@ xml_push_data(struct xml_tree *__restrict__ elt, const char *__restrict__ data, 
 #endif
 
     /* our parser don't care about blank lines and indent. */
-    if (EMPTY_LINE(data))
+    if (empty_line(data))
         return (NULL);
 
     elt->content.data =
@@ -215,7 +258,7 @@ xml_push_data(struct xml_tree *__restrict__ elt, const char *__restrict__ data, 
 
 
 struct xml_tree *
-xml_tree_new(struct xml_tree *__restrict__ parent, const char *__restrict__ name)
+xml_tree_new(struct xml_tree *restrict parent, const char *restrict name)
 {
     struct xml_tree *res;
 
@@ -224,7 +267,7 @@ xml_tree_new(struct xml_tree *__restrict__ parent, const char *__restrict__ name
 
     res = xcalloc(1, sizeof(struct xml_tree));
 
-    res->name = str_copy(name);
+    res->name = xstrdup(name);
     res->type = XML_LEAF;
     res->parent = parent;
 #if !defined(NDEBUG)
@@ -250,7 +293,7 @@ xml_tree_new(struct xml_tree *__restrict__ parent, const char *__restrict__ name
 
 
 static struct xml_attr *
-xml_push_attr(struct xml_tree *__restrict__ elt, const char *__restrict__ key, const char *__restrict__ val)
+xml_push_attr(struct xml_tree *restrict elt, const char *restrict key, const char *restrict val)
 {
     struct xml_attr *cur_attr;
 
@@ -267,8 +310,8 @@ xml_push_attr(struct xml_tree *__restrict__ elt, const char *__restrict__ key, c
     elt->attrv = xrealloc(elt->attrv, elt->attrc * sizeof(struct xml_attr *));
     cur_attr = elt->attrv[elt->attrc - 1] = xmalloc(sizeof(struct xml_attr));
 
-    cur_attr->key = str_copy(key);
-    cur_attr->val = str_copy(val);
+    cur_attr->key = xstrdup(key);
+    cur_attr->val = xstrdup(val);
 
     return (cur_attr);
 }

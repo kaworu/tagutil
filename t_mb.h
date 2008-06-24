@@ -7,7 +7,13 @@
  * glue methods for tagutil to t_http/t_xml.
  */
 
+#include <taglib/tag_c.h>
+
 #include "config.h"
+#include "t_xml.h"
+
+/* MusicBrainz duration response are in millisec. */
+#define mb_duration_to_seconds(x) ((x) / 1000)
 
 /*
  * query the MB server. arg is the argument encoded in a HTML way
@@ -17,6 +23,13 @@
  *
  * returned value has to be freed.
  */
-char* mb_get(const char *__restrict__ arg);
+char* mb_get(const char *restrict arg);
+
+
+/*
+ * FIXME: @return shouldn't be void.
+ */
+void mb_choice(const TagLib_File *restrict f, const struct xml_tree *restrict tree)
+    __attribute__ ((__nonnull__ (1, 2)));
 
 #endif /* !T_MB_H */

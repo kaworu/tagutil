@@ -4,9 +4,9 @@
  * HTTP request function for tagutil.
  * loosely cp from client example of getaddrinfo(3) man page.
  */
-
 #include <sys/types.h>
 #include <sys/socket.h>
+
 #include <netdb.h>
 #include <unistd.h>
 
@@ -15,17 +15,23 @@
 #include "t_toolkit.h"
 
 
-static int http_opensock(const char *__restrict__ host, const char *__restrict__ port)
+/*
+ * open a socket for given host:port (IPv4 or IPv6 with TCP).
+ *
+ * FIXME:   maybe it should take a *bool to say if all was OK, but then it also
+ *          need a char** to store the message. It would be strong, but messy.
+ */
+static int http_opensock(const char *restrict host, const char *restrict port)
     __attribute__ ((__nonnull__ (1, 2)));
 
 
 static int
-http_opensock(const char *__restrict__ host, const char *__restrict__ port)
+http_opensock(const char *restrict host, const char *restrict port)
 {
-    int sfd; /* socket file descriptor */
-    int ret;
     struct addrinfo hints;
     struct addrinfo *result, *rp;
+    int sfd; /* socket file descriptor */
+    int ret;
 
     /* Obtain address(es) matching host/port */
 
@@ -61,19 +67,16 @@ http_opensock(const char *__restrict__ host, const char *__restrict__ port)
 
 
 char *
-http_request(const char *__restrict__ host, const char *__restrict__ port,
-        const char *__restrict__ method, const char *__restrict__ arg)
+http_request(const char *restrict host, const char *restrict port,
+        const char *restrict method, const char *restrict arg)
 {
-    int sfd; /* socket file descriptor */
-
-    char *http_request; /* GET|POST|PUT|DELETE command to send. */
-    size_t http_request_size;
-
-    char *buf; /* buffer to store the server's response */
-    size_t buf_size, end;
-    char *cursor;
-
-    ssize_t nread; /* number of char given by read(2) */
+    int     sfd;    /* socket file descriptor */
+    char   *request;    /* GET|POST|PUT|DELETE command to send. */
+    size_t  request_size;
+    char   *buf;    /* buffer to store the server's response */
+    size_t  buf_size, end;
+    char   *cursor; /* cursor in buf */
+    ssize_t nread;  /* number of char given by read(2) */
 
     assert_not_null(host);
     assert_not_null(port);
@@ -84,29 +87,29 @@ http_request(const char *__restrict__ host, const char *__restrict__ port,
      * create the request message.
      * we need "$method http://$host/$arg\n"
      */
-    http_request_size = 1;
-    http_request = xcalloc(http_request_size, sizeof(char));
+    request_size = 1;
+    request = xcalloc(request_size, sizeof(char));
 
     /* "$method" */
-    concat(&http_request, &http_request_size, method);
+    concat(&request, &request_size, method);
     /* "http:// */
     if (has_match(host, "^http://"))
-        concat(&http_request, &http_request_size, " ");
+        concat(&request, &request_size, " ");
     else
-        concat(&http_request, &http_request_size, " http://");
+        concat(&request, &request_size, " http://");
     /* $host */
-    concat(&http_request, &http_request_size, host);
+    concat(&request, &request_size, host);
     /* /$arg */
     if (arg != NULL && arg[0] != '\0') {
         assert(arg[0] == '/');
-        concat(&http_request, &http_request_size, arg);
+        concat(&request, &request_size, arg);
     }
     else
-        concat(&http_request, &http_request_size, "/");
+        concat(&request, &request_size, "/");
     /* \n" */
-    concat(&http_request, &http_request_size, "\n");
+    concat(&request, &request_size, "\n");
 
-    if (write(sfd, http_request, http_request_size) == -1)
+    if (write(sfd, request, request_size) == -1)
         err(errno, "write() failed");
 
     buf = NULL;
@@ -124,16 +127,17 @@ http_request(const char *__restrict__ host, const char *__restrict__ port,
             err(errno, "read() failed");
         end += nread;
 
-        if (nread == 0 || nread < BUFSIZ)
+        if (nread < BUFSIZ)
             break;
     }
     buf[end] = '\0'; /* ensure NULL-terminate string */
 
     close(sfd);
-    free(http_request);
+    free(request);
 
     return (buf);
 }
+
 
 #if 0
 int main(int argc, char *argv[])

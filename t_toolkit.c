@@ -4,17 +4,16 @@
  * handy functions toolkit for tagutil.
  */
 
-
-#include <stdarg.h>
 #include <assert.h>
 #include <errno.h>
+#include <stdarg.h>
 
 #include "config.h"
 #include "t_toolkit.h"
 
 
 bool
-xgetline(char **line, size_t *size, FILE *__restrict__ fp)
+xgetline(char **line, size_t *size, FILE *restrict fp)
 {
     char *cursor;
     size_t end;
@@ -35,14 +34,13 @@ xgetline(char **line, size_t *size, FILE *__restrict__ fp)
         }
         cursor = *line + end;
         memset(*line, 0, BUFSIZ);
-        (void) fgets(cursor, BUFSIZ, fp);
+        (void)fgets(cursor, BUFSIZ, fp);
         end += strlen(cursor);
 
         if (feof(fp) || (*line)[end - 1] == '\n') { /* end of file or end of line */
         /* chomp trailing \n if any */
             if ((*line)[0] != '\0' && (*line)[end - 1] == '\n')
                 (*line)[end - 1] = '\0';
-
             return (end);
         }
     }
@@ -50,7 +48,7 @@ xgetline(char **line, size_t *size, FILE *__restrict__ fp)
 
 
 regmatch_t *
-first_match(const char *__restrict__ str, const char *__restrict__ pattern, const int flags)
+first_match(const char *restrict str, const char *restrict pattern, const int flags)
 {
     regex_t regex;
     regmatch_t *regmatch;
@@ -78,7 +76,7 @@ first_match(const char *__restrict__ str, const char *__restrict__ pattern, cons
     default:
 error_label:
         errbuf = xcalloc(BUFSIZ, sizeof(char));
-        (void) regerror(error, &regex, errbuf, BUFSIZ);
+        (void)regerror(error, &regex, errbuf, BUFSIZ);
         errx(-1, "%s", errbuf);
         /* NOTREACHED */
     }
@@ -86,7 +84,7 @@ error_label:
 
 
 bool
-has_match(const char *__restrict__ str, const char *__restrict__ pattern)
+has_match(const char *restrict str, const char *restrict pattern)
 {
     regmatch_t *match;
 
@@ -107,7 +105,7 @@ has_match(const char *__restrict__ str, const char *__restrict__ pattern)
 
 
 char *
-get_match(const char *__restrict__ str, const char *__restrict__ pattern)
+get_match(const char *restrict str, const char *restrict pattern)
 {
     regmatch_t *regmatch;
     size_t match_size;
@@ -130,7 +128,7 @@ get_match(const char *__restrict__ str, const char *__restrict__ pattern)
 
 
 char *
-sub_match(const char *str, const regmatch_t *__restrict__ match, const char *replace)
+sub_match(const char *str, const regmatch_t *restrict match, const char *replace)
 {
     size_t final_size, replace_size, end_size;
     char *result, *cursor;
@@ -147,7 +145,7 @@ sub_match(const char *str, const regmatch_t *__restrict__ match, const char *rep
     result = xcalloc(final_size, sizeof(char));
     cursor = result;
 
-    memcpy(cursor, str, (unsigned int) match->rm_so);
+    memcpy(cursor, str, (unsigned int)match->rm_so);
     cursor += match->rm_so;
     memcpy(cursor, replace, replace_size);
     cursor += replace_size;
@@ -157,9 +155,10 @@ sub_match(const char *str, const regmatch_t *__restrict__ match, const char *rep
 }
 
 
-void inplacesub_match(char **str, regmatch_t *__restrict__ match, const char *replace)
+void inplacesub_match(char **str, regmatch_t *restrict match, const char *replace)
 {
     char *old_str;
+
     assert_not_null(str);
     assert_not_null(*str);
     assert_not_null(replace);
@@ -173,7 +172,7 @@ void inplacesub_match(char **str, regmatch_t *__restrict__ match, const char *re
 
 
 bool
-yesno(const char *__restrict__ question)
+yesno(const char *restrict question)
 {
     char buffer[5]; /* strlen("yes\n\0") == 5 */
 
@@ -181,18 +180,13 @@ yesno(const char *__restrict__ question)
         if (feof(stdin))
             return (false);
 
-        (void) memset(buffer, '\0', len(buffer));
+        (void)memset(buffer, '\0', len(buffer));
 
         if (question != NULL)
-            (void) printf("%s ", question);
-        (void) printf("? [y/n] ");
+            (void)printf("%s", question);
+        (void)printf("? [y/n] ");
 
-        (void) fgets(buffer, len(buffer), stdin);
-
-        if (has_match(buffer, "^(n|no)$"))
-            return (false);
-        if (has_match(buffer, "^(y|yes)$"))
-            return (true);
+        (void)fgets(buffer, len(buffer), stdin);
 
         /* if any, eat stdin characters that didn't fit into buffer */
         if (buffer[strlen(buffer) - 1] != '\n') {
@@ -200,6 +194,42 @@ yesno(const char *__restrict__ question)
                 ;
         }
 
+        if (has_match(buffer, "^(n|no)$"))
+            return (false);
+        else if (has_match(buffer, "^(y|yes)$"))
+            return (true);
     }
 }
 
+#if 0
+int
+read_int(const int min, const int max)
+{
+    char buffer[5]; /* strlen("yes\n\0") == 5 */
+
+    for (;;) {
+        if (feof(stdin))
+            return (false);
+
+        (void)memset(buffer, '\0', len(buffer));
+
+        if (question != NULL)
+            (void)printf("%s", question);
+        (void)printf("? [y/n] ");
+
+        (void)fgets(buffer, len(buffer), stdin);
+
+        /* if any, eat stdin characters that didn't fit into buffer */
+        if (buffer[strlen(buffer) - 1] != '\n') {
+            while (getc(stdin) != '\n' && !feof(stdin))
+                ;
+        }
+
+        if (has_match(buffer, "^(n|no)$"))
+            return (false);
+        else if (has_match(buffer, "^(y|yes)$"))
+            return (true);
+    }
+}
+
+#endif

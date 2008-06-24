@@ -29,6 +29,7 @@ struct xml_tree {
     struct xml_tree *parent;
 
 #if !defined(NDEBUG)
+#include <stdbool.h>
     bool frozen;
 #endif
 };
@@ -40,8 +41,7 @@ struct xml_tree {
  *
  * called by expat handlers.
  */
-struct xml_tree* xml_tree_new(struct xml_tree *__restrict__ parent, const char *__restrict__ name)
-    __attribute__ ((__nonnull__ (2)));
+struct xml_tree* xml_tree_new(struct xml_tree *restrict parent, const char *restrict name) __attribute__ ((__nonnull__ (2)));
 
 
 /*
@@ -50,27 +50,42 @@ struct xml_tree* xml_tree_new(struct xml_tree *__restrict__ parent, const char *
  *
  * returned value has to be freed.
  */
-struct xml_tree* xml_parse(const char *__restrict__ data)
+struct xml_tree* xml_parse(const char *restrict data)
     __attribute__ ((__nonnull__ (1)));
 
 
 /*
  * display a tree to stdout. debug.
  */
-void xml_tree_show(const struct xml_tree *__restrict__ tree)
+void xml_tree_show(const struct xml_tree *restrict tree)
     __attribute__ ((__nonnull__ (1), __unused__));
 
 
 /*
  * free a struct xml_tree recursively.
  */
-void xml_tree_delete(struct xml_tree *__restrict__ victim)
+void xml_tree_delete(struct xml_tree *restrict victim)
     __attribute__ ((__nonnull__ (1)));
 
 
 /*
- * returned the first child with the name `name'.
+ * return the first child with the name `name'.
  */
-struct xml_tree* xml_lookup(struct xml_tree *__restrict__ tree, const char *__restrict__ name)
+struct xml_tree* xml_lookup(const struct xml_tree *restrict tree, const char *restrict name)
     __attribute__ ((__nonnull__ (1, 2)));
+
+
+/*
+ * return the first child with the name `name', recursively.
+ */
+struct xml_tree* xml_reclookup(const struct xml_tree *restrict tree, unsigned int depth, ...)
+    __attribute__ ((__nonnull__ (1)));
+
+
+/*
+ * return the first attr of given tree with the key `key'.
+ */
+char* xml_attrlookup(const struct xml_tree *restrict tree, const char *restrict key)
+    __attribute__ ((__nonnull__ (1, 2)));
+
 #endif /* !T_XML_H */

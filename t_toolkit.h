@@ -7,15 +7,15 @@
  *
  */
 
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <regex.h>
-#include <string.h>
 #include <assert.h>
 #include <errno.h>
-#include <err.h>    /* These functions are non-standard BSD extensions. */
+#include <err.h>    /* porting: These functions are non-standard BSD extensions. */
 #include <libgen.h> /* for dirname() POSIX.1-2001 */
+#include <regex.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "config.h"
 
@@ -23,66 +23,38 @@
 /* compute the length of a fixed size array */
 #define len(ary) (sizeof(ary) / sizeof((ary)[0]))
 
+/* some handy assert macros */
 #define assert_not_null(x) assert((x) != NULL)
 #define assert_null(x) assert((x) == NULL)
 
 /* true if the given string is empty (has only whitespace char) */
-#define EMPTY_LINE(l) has_match((l), "^\\s*$")
-
-#if !defined(NDEBUG)
-/*
- * count how many times we call x*alloc. if needed, print their value at
- * the end of main. I used them to see how many alloc tagutil does, to see
- * the ratio of alloc (tagutil VS taglib). It seems that tagutil make about 1%
- * of all the memory allocation (in alloc/free call and size).
- */
-int _alloc_counter;
-int _alloc_b;
-#define INIT_ALLOC_COUNTER      \
-    do {                        \
-        _alloc_counter = 0;     \
-        _alloc_b = 0;           \
-    } while (/*CONSTCOND*/0)
-#define INCR_ALLOC_COUNTER(x)   \
-    do {                        \
-        _alloc_counter++;       \
-        _alloc_b += (x);        \
-    } while (/*CONSTCOND*/0)
-#define SHOW_ALLOC_COUNTER (void) fprintf(stderr, "bytes alloc: %d, alloc calls: %d\n", _alloc_b, _alloc_counter)
-#else /* NDEBUG */
-#define INIT_ALLOC_COUNTER
-#define INCR_ALLOC_COUNTER
-#define SHOW_ALLOC_COUNTER
-#endif /* !NDEBUG */
-
-#if !defined(NDEBUG)
-#endif
+#define empty_line(l) has_match((l), "^\\s*$")
 
 
 /* MEMORY FUNCTIONS */
 
-static __inline__ void* xmalloc(const size_t size)
+static inline void* xmalloc(const size_t size)
     __attribute__ ((__malloc__, __unused__));
 
 
-static __inline__ void* xcalloc(const size_t nmemb, const size_t size)
+static inline void* xcalloc(const size_t nmemb, const size_t size)
     __attribute__ ((__malloc__, __unused__));
 
 
-static __inline__ void* xrealloc(void *old_ptr, const size_t new_size)
+static inline void* xrealloc(void *old_ptr, const size_t new_size)
     __attribute__ ((__malloc__, __unused__));
 
 
 /* FILE FUNCTIONS */
-static __inline__ FILE* xfopen(const char *__restrict__ path, const char *__restrict__ mode)
+static inline FILE* xfopen(const char *restrict path, const char *restrict mode)
     __attribute__ ((__nonnull__ (1, 2), __unused__));
 
 
-static __inline__ void xfclose(FILE *__restrict__ fp)
+static inline void xfclose(FILE *restrict fp)
     __attribute__ ((__nonnull__ (1), __unused__));
 
 
-bool xgetline(char **line, size_t *size, FILE *__restrict__ fp)
+bool xgetline(char **line, size_t *size, FILE *restrict fp)
     __attribute__ ((__nonnull__ (1, 2, 3), __unused__));
 
 
@@ -91,18 +63,13 @@ bool xgetline(char **line, size_t *size, FILE *__restrict__ fp)
  *
  * returned value has to be freed.
  */
-static __inline__ char* xdirname(const char *__restrict__ path)
+static inline char* xdirname(const char *restrict path)
     __attribute__ ((__nonnull__ (1), __unused__));
 
 
 /* BASIC STRING OPERATIONS */
 
-/*
- * make a copy of src.
- *
- * returned value has to be freed.
- */
-static __inline__ char* str_copy(const char *__restrict__ src)
+static inline char* xstrdup(const char *restrict src)
     __attribute__ ((__nonnull__ (1), __unused__));
 
 
@@ -112,7 +79,7 @@ static __inline__ char* str_copy(const char *__restrict__ src)
  *
  * returned value has to be freed.
  */
-static __inline__ void concat(char **dest, size_t *dest_size, const char *src)
+static inline void concat(char **dest, size_t *dest_size, const char *src)
     __attribute__ ((__nonnull__ (1, 2, 3), __unused__));
 
 
@@ -126,7 +93,7 @@ static __inline__ void concat(char **dest, size_t *dest_size, const char *src)
  *
  * returned value has to be freed.
  */
-regmatch_t* first_match(const char *__restrict__ str, const char *__restrict__ pattern, const int flags)
+regmatch_t* first_match(const char *restrict str, const char *restrict pattern, const int flags)
     __attribute__ ((__nonnull__ (1, 2), __unused__));
 
 
@@ -134,7 +101,7 @@ regmatch_t* first_match(const char *__restrict__ str, const char *__restrict__ p
  * return true if the regex pattern match the given str, false otherwhise.
  * flags are REG_ICASE | REG_EXTENDED | REG_NEWLINE | REG_NOSUB (see regex(3)).
  */
-bool has_match(const char *__restrict__ str, const char *__restrict__ pattern)
+bool has_match(const char *restrict str, const char *restrict pattern)
     __attribute__ ((__nonnull__ (2), __unused__));
 
 
@@ -146,7 +113,7 @@ bool has_match(const char *__restrict__ str, const char *__restrict__ pattern)
  *
  * returned value has to be freed.
  */
-char* get_match(const char *__restrict__ str, const char *__restrict__ pattern)
+char* get_match(const char *restrict str, const char *restrict pattern)
     __attribute__ ((__nonnull__ (1, 2), __unused__));
 
 
@@ -157,7 +124,7 @@ char* get_match(const char *__restrict__ str, const char *__restrict__ pattern)
  *
  * returned value has to be freed.
  */
-char* sub_match(const char *str, const regmatch_t *__restrict__ match, const char *replace)
+char* sub_match(const char *str, const regmatch_t *restrict match, const char *replace)
     __attribute__ ((__nonnull__ (1, 2, 3), __unused__));
 
 
@@ -165,7 +132,7 @@ char* sub_match(const char *str, const regmatch_t *__restrict__ match, const cha
  * same as sub_match but change the string reference given by str. *str will
  * be freed so it has to be malloc'd previously.
  */
-void inplacesub_match(char **str, regmatch_t *__restrict__ match, const char *replace)
+void inplacesub_match(char **str, regmatch_t *restrict match, const char *replace)
     __attribute__ ((__nonnull__ (1, 2, 3), __unused__));
 
 
@@ -176,63 +143,54 @@ void inplacesub_match(char **str, regmatch_t *__restrict__ match, const char *re
  * y|yes|n|no.  yesno() loops until a valid response is given and then return
  * true if the response match y|yes, false if it match n|no.
  */
-bool yesno(const char *__restrict__ question)
+bool yesno(const char *restrict question)
     __attribute__ ((__unused__));
 
 /**********************************************************************/
 
-static __inline__ void *
+static inline void *
 xmalloc(const size_t size)
 {
     void *ptr;
 
-    INCR_ALLOC_COUNTER(size);
-
-    ptr = malloc(size);
-    if (size > 0 && ptr == NULL)
+    if ((ptr = malloc(size)) == NULL)
         err(ENOMEM, NULL);
 
     return (ptr);
 }
 
 
-static __inline__ void *
+static inline void *
 xcalloc(const size_t nmemb, const size_t size)
 {
     void *ptr;
 
-    INCR_ALLOC_COUNTER(nmemb * size);
-
-    ptr = calloc(nmemb, size);
-    if (ptr == NULL && size > 0 && nmemb > 0)
+    if ((ptr = calloc(nmemb, size)) == NULL)
         err(ENOMEM, NULL);
 
     return (ptr);
 }
 
 
-static __inline__ void *
+static inline void *
 xrealloc(void *old_ptr, const size_t new_size)
 {
     void *ptr;
 
-    INCR_ALLOC_COUNTER(new_size);
-
-    ptr = realloc(old_ptr, new_size);
-    if (ptr == NULL && new_size > 0)
+    if ((ptr = realloc(old_ptr, new_size)) == NULL)
         err(ENOMEM, NULL);
 
     return (ptr);
 }
 
 
-static __inline__ FILE *
-xfopen(const char *__restrict__ path, const char *__restrict__ mode)
+static inline FILE *
+xfopen(const char *restrict path, const char *restrict mode)
 {
     FILE *fp;
 
-    assert(path != NULL);
-    assert(mode != NULL);
+    assert_not_null(path);
+    assert_not_null(mode);
 
     fp = fopen(path, mode);
 
@@ -243,69 +201,55 @@ xfopen(const char *__restrict__ path, const char *__restrict__ mode)
 }
 
 
-static __inline__ void
-xfclose(FILE *__restrict__ fp)
+static inline void
+xfclose(FILE *restrict fp)
 {
 
-    assert(fp != NULL);
+    assert_not_null(fp);
 
     if (fclose(fp) != 0)
         err(errno, NULL);
 }
 
 
-static __inline__ char *
-xdirname(const char *__restrict__ path)
+static inline char *
+xdirname(const char *restrict path)
 {
-    char *pathcpy, *dirncpy;
-    const char *dirn;
-    size_t size;
+    char *dirn, *garbage;
 
-    assert(path != NULL);
+    assert_not_null(path);
 
-    /* we need to copy path, because dirname() can change the path argument. */
-    size = strlen(path) + 1;
-    pathcpy = xcalloc(size, sizeof(char));
-    memcpy(pathcpy, path, size);
+    dirn = dirname(garbage = xstrdup(path));
+    free(garbage);  /* no more needed */
 
-    dirn = dirname(pathcpy);
+    if (dirn == NULL)
+        err(errno, NULL);
 
-    /* copy dirname to dirnamecpy */
-    size = strlen(dirn) + 1;
-    dirncpy = xcalloc(size, sizeof(char));
-    memcpy(dirncpy, dirn, size);
-
-    free(pathcpy);
-
-    return (dirncpy);
+    return (xstrdup(dirn));
 }
 
 
-static __inline__ char *
-str_copy(const char *__restrict__ src)
+static inline char *
+xstrdup(const char *restrict src)
 {
-    char *result;
-    size_t len;
+    char *ptr;
 
-    assert(src != NULL);
+    if ((ptr = strdup(src)) == NULL)
+        err(ENOMEM, NULL);
 
-    len = strlen(src);
-    result = xcalloc(len + 1, sizeof(char));
-    strncpy(result, src, len);
-
-    return (result);
+    return (ptr);
 }
 
 
-static __inline__ void
+static inline void
 concat(char **dest, size_t *dest_size, const char *src)
 {
     size_t start, src_size, final_size;
 
-    assert(dest         != NULL);
-    assert(*dest        != NULL);
-    assert(dest_size    != NULL);
-    assert(src          != NULL);
+    assert_not_null(dest);
+    assert_not_null(*dest);
+    assert_not_null(dest_size);
+    assert_not_null(src);
 
     start       = *dest_size - 1;
     src_size    = strlen(src);

@@ -36,9 +36,9 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 #include <sys/types.h>
 #include <sys/stat.h>
+
 #include <errno.h>
 
 #include <taglib/tag_c.h>
@@ -58,7 +58,8 @@ static char *progname;
  * parse what to do with the parse_argv function, and then apply it to each
  * file given in argument. usage() is called if an error is detected.
  */
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
     int i;
     char *current_filename, *apply_arg;
@@ -66,7 +67,6 @@ int main(int argc, char *argv[])
     tagutil_f apply;
     struct stat current_filestat;
 
-    INIT_ALLOC_COUNTER;
     progname = argv[0];
 
     /* parse_argv will set i, apply_arg, and return the function to use. */
@@ -92,15 +92,12 @@ int main(int argc, char *argv[])
             continue;
         }
 
-
-        f = taglib_file_new(current_filename);
-
-        if (f == NULL) {
+        if ((f = taglib_file_new(current_filename)) == NULL) {
             warnx("%s is not a music file", current_filename);
             continue;
         }
 
-        (void) (*apply)(current_filename, f, apply_arg);
+        (void)(*apply)(current_filename, f, apply_arg);
 
         taglib_tag_free_strings();
         taglib_file_free(f);
@@ -142,7 +139,7 @@ usage(void)
 
 
 void
-safe_rename(const char *__restrict__ oldpath, const char *__restrict__ newpath)
+safe_rename(const char *restrict oldpath, const char *restrict newpath)
 {
     struct stat dummy;
 
@@ -160,35 +157,34 @@ safe_rename(const char *__restrict__ oldpath, const char *__restrict__ newpath)
 char *
 create_tmpfile(void)
 {
-    size_t tmpfile_size;
-    char *tmpdir, *tmpfile;
+    size_t tmpf_size;
+    char *tmpdir, *tmpf;
 
-    tmpfile_size = 1;
-    tmpfile = xcalloc(tmpfile_size, sizeof(char));
+    tmpf_size = 1;
+    tmpf = xcalloc(tmpf_size, sizeof(char));
 
     tmpdir = getenv("TMPDIR");
     if (tmpdir == NULL)
         tmpdir = "/tmp";
 
-    concat(&tmpfile, &tmpfile_size, tmpdir);
-    concat(&tmpfile, &tmpfile_size, "/");
-    concat(&tmpfile, &tmpfile_size, progname);
-    concat(&tmpfile, &tmpfile_size, "XXXXXX");
+    concat(&tmpf, &tmpf_size, tmpdir);
+    concat(&tmpf, &tmpf_size, "/");
+    concat(&tmpf, &tmpf_size, progname);
+    concat(&tmpf, &tmpf_size, "XXXXXX");
 
-    if (mkstemp(tmpfile) == -1) {
-        err(errno, "can't create %s file", tmpfile);
-        /* NOTREACHED */
-    }
-    else
-        return (tmpfile);
+    if (mkstemp(tmpf) == -1)
+        err(errno, "can't create %s file", tmpf);
+
+    return (tmpf);
 }
 
 
 char *
-printable_tag(const TagLib_Tag *__restrict__ tag)
+printable_tag(const TagLib_Tag *restrict tag)
 {
     char *template;
 
+    /* mh. don't change this layout, or change also update_tag */
     template =  "title   - \""kTITLE"\"\n"
                 "album   - \""kALBUM"\"\n"
                 "artist  - \""kARTIST"\"\n"
@@ -202,7 +198,7 @@ printable_tag(const TagLib_Tag *__restrict__ tag)
 
 
 bool
-user_edit(const char *__restrict__ path)
+user_edit(const char *restrict path)
 {
     int error;
     size_t editcmd_size;
@@ -222,12 +218,15 @@ user_edit(const char *__restrict__ path)
          * the best known at the time of writing, but it has shown really good
          * results and is pretty short and clear.
          */
-        (void) fprintf(stderr, "Starting %s. please wait...\n", editor);
+        (void)fprintf(stderr, "Starting %s. please wait...\n", editor);
     }
 
     concat(&editcmd, &editcmd_size, editor);
-    concat(&editcmd, &editcmd_size, " ");
+    /* ok we really should not have a broken path (with space). but just in
+        case, we add the "'s */
+    concat(&editcmd, &editcmd_size, " \"");
     concat(&editcmd, &editcmd_size, path);
+    concat(&editcmd, &editcmd_size, "\"");
 
     /* test if the shell is avaiable */
     if (system(NULL) == 0)
@@ -241,7 +240,7 @@ user_edit(const char *__restrict__ path)
 
 
 void
-update_tag(TagLib_Tag *__restrict__ tag, FILE *__restrict__ fp)
+update_tag(TagLib_Tag *restrict tag, FILE *restrict fp)
 {
     size_t size;
     char *line, *key, *val;
@@ -250,8 +249,8 @@ update_tag(TagLib_Tag *__restrict__ tag, FILE *__restrict__ fp)
     line = xcalloc(size, sizeof(char));
 
     while (xgetline(&line, &size, fp)) {
-        if (!EMPTY_LINE(line)) {
-            if (has_match(line, "^(title|album|artist|year|track|comment|genre)\\s*-\\s*\".*\"$")) {
+        if (!empty_line(line)) {
+            if (has_match(line, "^(title|album|artist|year|track|comment|genre) *- *\".*\"$")) {
                 key = get_match(line, "^(title|album|artist|year|track|comment|genre)");
                 val = get_match(line, "\".*\"$");
                 val[strlen(val) - 1] = '\0'; /* trim the ending " */
@@ -304,22 +303,19 @@ cleanup:
  * the pattern into "MyTitle MyTitle MyTitle").
  */
 char *
-eval_tag(const char *__restrict__ pattern, const TagLib_Tag *__restrict__ tag)
+eval_tag(const char *restrict pattern, const TagLib_Tag *restrict tag)
 {
     regmatch_t matcher;
-    size_t size;
     int cursor;
     char *c;
     char *result;
-    char buf[5]; /* used to convert track/year tag into string */
+    char buf[5]; /* used to convert track/year tag into string. need to be fixed in year > 9999 */
 
     assert_not_null(pattern);
     assert_not_null(tag);
 
     /* init result with pattern */
-    size = strlen(pattern) + 1;
-    result = xcalloc(size, sizeof(char));
-    memcpy(result, pattern, size);
+    result = xstrdup(pattern);
 
 #define _REPLACE_BY_STRING_IF_MATCH(pattern, x)                                     \
     do {                                                                            \
@@ -344,16 +340,17 @@ eval_tag(const char *__restrict__ pattern, const TagLib_Tag *__restrict__ tag)
             if (strncmp(c, pattern, strlen(pattern)) == 0) {                        \
                 matcher.rm_so = cursor;                                             \
                 matcher.rm_eo = cursor + strlen(pattern);                           \
-                (void) snprintf(buf, len(buf), "%02u", (taglib_tag_ ## x)(tag));    \
+                (void)snprintf(buf, len(buf), "%02u", (taglib_tag_ ## x)(tag));     \
                 inplacesub_match(&result, &matcher, buf);                           \
                 cursor--;                                                           \
                 goto next_loop_iter;                                                \
             }                                                                       \
     } while (/*CONSTCOND*/0)
 
-    for(cursor = size - 3; cursor >= 0; cursor--) {
+    for(cursor = strlen(pattern) - 3; cursor >= 0; cursor--) {
         c = &result[cursor];
         if (*c == '%') {
+            /*TODO: implement kESCAPE %% */
             _REPLACE_BY_STRING_IF_MATCH (kTITLE,   title);
             _REPLACE_BY_STRING_IF_MATCH (kALBUM,   album);
             _REPLACE_BY_STRING_IF_MATCH (kARTIST,  artist);
@@ -428,8 +425,8 @@ parse_argv(int argc, char *argv[], int *first_fname, char **apply_arg)
 
 
 bool
-tagutil_print(const char *__restrict__ path, TagLib_File *__restrict__ f,
-        const char *__restrict__ arg __attribute__ ((__unused__)))
+tagutil_print(const char *restrict path, TagLib_File *restrict f,
+        const char *restrict arg __attribute__ ((__unused__)))
 {
     char *infos;
 
@@ -437,8 +434,8 @@ tagutil_print(const char *__restrict__ path, TagLib_File *__restrict__ f,
     assert_not_null(f);
 
     infos = printable_tag(taglib_file_tag(f));
-    (void) printf("FILE: \"%s\"\n", path);
-    (void) printf("%s\n\n", infos);
+    (void)printf("FILE: \"%s\"\n", path);
+    (void)printf("%s\n\n", infos);
 
     free(infos);
     return (true);
@@ -446,8 +443,8 @@ tagutil_print(const char *__restrict__ path, TagLib_File *__restrict__ f,
 
 
 bool
-tagutil_edit(const char *__restrict__ path, TagLib_File *__restrict__ f,
-        const char *__restrict__ arg __attribute__ ((__unused__)))
+tagutil_edit(const char *restrict path, TagLib_File *restrict f,
+        const char *restrict arg __attribute__ ((__unused__)))
 {
     char *tmp_file, *infos;
     FILE *fp;
@@ -456,14 +453,14 @@ tagutil_edit(const char *__restrict__ path, TagLib_File *__restrict__ f,
     assert_not_null(f);
 
     infos = printable_tag(taglib_file_tag(f));
-    (void) printf("FILE: \"%s\"\n", path);
-    (void) printf("%s\n\n", infos);
+    (void)printf("FILE: \"%s\"\n", path);
+    (void)printf("%s\n\n", infos);
 
     if (yesno("edit this file")) {
         tmp_file = create_tmpfile();
 
         fp = xfopen(tmp_file, "w");
-        (void) fprintf(fp, "%s\n", infos);
+        (void)fprintf(fp, "%s\n", infos);
         xfclose(fp);
 
         if (!user_edit(tmp_file)) {
@@ -479,6 +476,7 @@ tagutil_edit(const char *__restrict__ path, TagLib_File *__restrict__ f,
             err(errno, "can't save file %s", path);
 
         xfclose(fp);
+        /* FIXME: get remove int status */
         remove(tmp_file);
         free(tmp_file);
     }
@@ -489,7 +487,7 @@ tagutil_edit(const char *__restrict__ path, TagLib_File *__restrict__ f,
 
 
 bool
-tagutil_rename(const char *__restrict__ path, TagLib_File *__restrict__ f, const char *__restrict__ arg)
+tagutil_rename(const char *restrict path, TagLib_File *restrict f, const char *restrict arg)
 {
     char *ftype;
     TagLib_Tag *tag;
@@ -523,7 +521,7 @@ tagutil_rename(const char *__restrict__ path, TagLib_File *__restrict__ f, const
 
     /* ask user for confirmation and rename if user want to */
     if (strcmp(path, result) != 0) {
-        (void) printf("rename \"%s\" to \"%s\" ", path, result);
+        (void)printf("rename \"%s\" to \"%s\" ", path, result);
         if (yesno(NULL))
             safe_rename(path, result);
     }
@@ -539,9 +537,9 @@ tagutil_rename(const char *__restrict__ path, TagLib_File *__restrict__ f, const
  * tagutil_f generator.
  */
 #define _MAKE_TAGUTIL_FUNC(what, hook)                              \
-    bool tagutil_##what (const char *__restrict__ path,             \
-                        TagLib_File *__restrict__ f,                \
-                        const char  *__restrict__ arg)              \
+    bool tagutil_##what (const char *restrict path,                 \
+                        TagLib_File *restrict f,                    \
+                        const char  *restrict arg)                  \
     {                                                               \
         assert_not_null(path);                                      \
         assert_not_null(f);                                         \

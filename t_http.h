@@ -8,7 +8,6 @@
 
 #include "config.h"
 
-
 #define HTTP_GET    "GET"
 #define HTTP_POST   "POST"
 #define HTTP_PUT    "PUT"
@@ -25,8 +24,8 @@
  *
  * returned value has to be freed.
  */
-char* http_request(const char *__restrict__ host, const char *__restrict__ port,
-        const char *__restrict__ method, const char *__restrict__ arg)
+char* http_request(const char *restrict host, const char *restrict port,
+        const char *restrict method, const char *restrict arg)
     __attribute__ ((__nonnull__ (1, 2, 3)));
 
 #endif /* !T_NET_H */
