@@ -48,13 +48,6 @@
 #include "tagutil.h"
 #include "t_toolkit.h"
 
-/**********************************************************************/
-
-/* the program name */
-static char *progname;
-
-/**********************************************************************/
-
 /*
  * get action with getopt(3) and then apply it to all files given in argument.
  * usage() is called if an error is detected.
@@ -69,7 +62,6 @@ main(int argc, char *argv[])
     char *apply_arg;
     struct stat current_filestat;
 
-    progname    = argv[0];
     apply       = NULL;
     apply_arg   = NULL;
 
@@ -194,7 +186,7 @@ usage(void)
 {
 
     (void) fprintf(stderr,  "TagUtil v"__TAGUTIL_VERSION__" by "__TAGUTIL_AUTHOR__".\n\n");
-    (void) fprintf(stderr,  "usage: %s [opt [optarg]] [files]...\n", progname);
+    (void) fprintf(stderr,  "usage: %s [opt [optarg]] [files]...\n", getprogname());
     (void) fprintf(stderr, "Modify or output music file's tag.\n");
     (void) fprintf(stderr, "\n");
     (void) fprintf(stderr, "Options:\n");
@@ -250,7 +242,7 @@ create_tmpfile(void)
 
     concat(&tmpf, &tmpf_size, tmpdir);
     concat(&tmpf, &tmpf_size, "/");
-    concat(&tmpf, &tmpf_size, progname);
+    concat(&tmpf, &tmpf_size, getprogname());
     concat(&tmpf, &tmpf_size, "XXXXXX");
 
     if (mkstemp(tmpf) == -1)
