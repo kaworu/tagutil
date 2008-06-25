@@ -40,6 +40,7 @@
 #include <sys/stat.h>
 
 #include <errno.h>
+#include <unistd.h> /* getopt(3) */
 
 #include <taglib/tag_c.h>
 
@@ -55,22 +56,103 @@ static char *progname;
 /**********************************************************************/
 
 /*
- * parse what to do with the parse_argv function, and then apply it to each
- * file given in argument. usage() is called if an error is detected.
+ * get action with getopt(3) and then apply it to all files given in argument.
+ * usage() is called if an error is detected.
  */
 int
 main(int argc, char *argv[])
 {
-    int i;
-    char *current_filename, *apply_arg;
+    int i, ch;
+    char *current_filename;
     TagLib_File *f;
     tagutil_f apply;
+    char *apply_arg;
     struct stat current_filestat;
 
-    progname = argv[0];
+    progname    = argv[0];
+    apply       = NULL;
+    apply_arg   = NULL;
 
-    /* parse_argv will set i, apply_arg, and return the function to use. */
-    apply = parse_argv(argc, argv, &i, &apply_arg);
+    if (argc < 2)
+        usage();
+
+    /* tagutil has side effect (like modifying file's properties, so if we
+        detect an error in options, we err to end the program. */
+    while ((ch = getopt(argc, argv, "ept:r:a:A:c:g:y:T:")) != -1) {
+        switch ((char)ch) {
+        case 'e':
+            if (apply != NULL)
+                errx(-1, "too much options given.");
+            apply = tagutil_edit;
+            break;
+        case 'p':
+            if (apply != NULL)
+                errx(-1, "too much options given.");
+            apply = tagutil_print;
+            break;
+        case 't':
+            if (apply != NULL)
+                errx(-1, "too much options given.");
+            apply = tagutil_title;
+            apply_arg = optarg;
+            break;
+        case 'r':
+            if (apply != NULL)
+                errx(-1, "too much options given.");
+            apply = tagutil_rename;
+            apply_arg = optarg;
+            break;
+        case 'a':
+            if (apply != NULL)
+                errx(-1, "too much options given.");
+            apply = tagutil_album;
+            apply_arg = optarg;
+            break;
+        case 'A':
+            if (apply != NULL)
+                errx(-1, "too much options given.");
+            apply = tagutil_artist;
+            apply_arg = optarg;
+            break;
+        case 'c':
+            if (apply != NULL)
+                errx(-1, "too much options given.");
+            apply = tagutil_comment;
+            apply_arg = optarg;
+            break;
+        case 'g':
+            if (apply != NULL)
+                errx(-1, "too much options given.");
+            apply = tagutil_genre;
+            apply_arg = optarg;
+            break;
+        case 'y':
+            if (apply != NULL)
+                errx(-1, "too much options given.");
+            if (atoi(optarg) <= 0)
+                errx(-1, "Invalid year argument: %s", optarg);
+            apply = tagutil_year;
+            apply_arg = optarg;
+            break;
+        case 'T':
+            if (apply != NULL)
+                errx(-1, "too much options given.");
+            if (atoi(optarg) <= 0)
+                errx(-1, "Invalid track argument: %s", optarg);
+            apply = tagutil_track;
+            apply_arg = optarg;
+            break;
+        case '?':
+        default:
+            usage();
+            /* NOTREACHED */
+        }
+    }
+    argc -= optind;
+    argv += optind;
+
+    if (apply == NULL) /* no action given, fallback to default */
+        apply = tagutil_print;
 
     /* taglib specific init */
     taglib_set_strings_unicode(has_match(getenv("LC_ALL"), "utf-?8"));
@@ -79,12 +161,12 @@ main(int argc, char *argv[])
     /*
      * iter through all files arguments
      */
-    for (; i < argc; i++) {
+    for (i = 0; i < argc; i++) {
         current_filename = argv[i];
 
         /* we have to check first if the file exist and if it's a "regular file" */
         if (stat(current_filename, &current_filestat) != 0) {
-            warn("can't access %s", current_filename);
+            warn("%s", current_filename);
             continue;
         }
         else if (!S_ISREG(current_filestat.st_mode)) {
@@ -116,7 +198,7 @@ usage(void)
     (void) fprintf(stderr, "Modify or output music file's tag.\n");
     (void) fprintf(stderr, "\n");
     (void) fprintf(stderr, "Options:\n");
-    (void) fprintf(stderr, "    -- [files]             : only show files tag. -- is not needed but useful if the first file\n");
+    (void) fprintf(stderr, "    -p [files]             : only show files tag. -p is not needed but useful if the first file\n");
     (void) fprintf(stderr, "                             argument may be a file that could match an option.\n");
     (void) fprintf(stderr, "    -e [files]             : show tag and prompt for editing (need $EDITOR environment variable)\n");
     (void) fprintf(stderr, "    -r [PATTERN] [files]   : rename files with the given PATTERN. you can use keywords in PATTERN:\n");
@@ -130,7 +212,6 @@ usage(void)
     (void) fprintf(stderr, "    -y [YEAR]    [files]   : change year tag to YEAR for all given files\n");
     (void) fprintf(stderr, "    -T [TRACK]   [files]   : change track tag to TRACK for all given files\n");
     (void) fprintf(stderr, "    -c [COMMENT] [files]   : change comment tag to COMMENT for all given files\n");
-    (void) fprintf(stderr, "    -g [GENRE]   [files]   : change genre tag to GENRE for all given files\n");
     (void) fprintf(stderr, "    -g [GENRE]   [files]   : change genre tag to GENRE for all given files\n");
     (void) fprintf(stderr, "\n");
 
@@ -250,6 +331,7 @@ update_tag(TagLib_Tag *restrict tag, FILE *restrict fp)
 
     while (xgetline(&line, &size, fp)) {
         if (!empty_line(line)) {
+            /* XXX: use only re_format(7) regexp (no \d,\s,\w for example) */
             if (has_match(line, "^(title|album|artist|year|track|comment|genre) *- *\".*\"$")) {
                 key = get_match(line, "^(title|album|artist|year|track|comment|genre)");
                 val = get_match(line, "\".*\"$");
@@ -364,63 +446,6 @@ next_loop_iter:
     }
 
     return (result);
-}
-
-
-tagutil_f
-parse_argv(int argc, char *argv[], int *first_fname, char **apply_arg)
-{
-    char *cmd;
-
-    if (argc < 2)
-        usage();
-
-    cmd = argv[1];
-
-    if (has_match(cmd, "^-.$")) { /* option */
-        if (argc < 3)
-            usage();
-
-        *first_fname = 2;
-        *apply_arg = NULL;
-
-#define _ON_OPT(opt, func, hook)        \
-    do {                                \
-        if (strcmp(cmd, opt) == 0) {    \
-            hook                        \
-            return (tagutil_ ## func);  \
-        }                               \
-    } while (/*CONSTCOND*/0)
-
-        _ON_OPT("-e", edit, );
-        _ON_OPT("--", print, );
-
-        /* other opts than -e need more args. */
-        if (argc < 4)
-            usage();
-        *first_fname = 3;
-        *apply_arg = argv[2];
-
-        _ON_OPT("-t", title, );
-        _ON_OPT("-r", rename, );
-        _ON_OPT("-a", album, );
-        _ON_OPT("-A", artist, );
-        _ON_OPT("-c", comment, );
-        _ON_OPT("-g", genre, );
-        _ON_OPT("-y", year,
-            if (atoi(*apply_arg) <= 0 && strcmp(*apply_arg, "0") != 0)
-                errx(-1, "bad year argument: %s", *apply_arg);
-        );
-        _ON_OPT("-T", track,
-            if (atoi(*apply_arg) <= 0 && strcmp(*apply_arg, "0") != 0)
-                errx(-1, "bad track argument: %s", *apply_arg);
-        );
-    }
-
-    /* no option, fallback to print */
-    *first_fname = 1;
-    *apply_arg = NULL;
-    return (tagutil_print);
 }
 
 

@@ -40,14 +40,6 @@ typedef bool (*tagutil_f)(const char *restrict, TagLib_File *restrict, const cha
 void usage(void) __attribute__ ((__noreturn__));
 
 
-/*
- * parse argv to find the tagutil_f to use and apply_arg is a pointer to its argument.
- * first_fname is updated to the index of the first file name in argv.
- */
-tagutil_f parse_argv(int argc, char *argv[], int *first_fname, char **apply_arg)
-    __attribute__ ((__nonnull__ (2, 3, 4)));
-
-
 /* FILE FUNCTIONS */
 
 /*
