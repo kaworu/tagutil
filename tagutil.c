@@ -70,7 +70,7 @@ main(int argc, char *argv[])
 
     /* tagutil has side effect (like modifying file's properties, so if we
         detect an error in options, we err to end the program. */
-    while ((ch = getopt(argc, argv, "ept:r:a:A:c:g:y:T:")) != -1) {
+    while ((ch = getopt(argc, argv, "epht:r:a:A:c:g:y:T:")) != -1) {
         switch ((char)ch) {
         case 'e':
             if (apply != NULL)
@@ -134,6 +134,7 @@ main(int argc, char *argv[])
             apply = tagutil_track;
             apply_arg = optarg;
             break;
+        case 'h':
         case '?':
         default:
             usage();
@@ -142,6 +143,9 @@ main(int argc, char *argv[])
     }
     argc -= optind;
     argv += optind;
+
+    if (argc == 0)
+        errx(-1, "No file argument given, run `%s -h' to see help.", getprogname());
 
     if (apply == NULL) /* no action given, fallback to default */
         apply = tagutil_print;
@@ -187,9 +191,10 @@ usage(void)
 
     (void) fprintf(stderr,  "TagUtil v"__TAGUTIL_VERSION__" by "__TAGUTIL_AUTHOR__".\n\n");
     (void) fprintf(stderr,  "usage: %s [opt [optarg]] [files]...\n", getprogname());
-    (void) fprintf(stderr, "Modify or output music file's tag.\n");
+    (void) fprintf(stderr, "Modify or display music file's tag.\n");
     (void) fprintf(stderr, "\n");
     (void) fprintf(stderr, "Options:\n");
+    (void) fprintf(stderr, "    -h                     : show this help\n");
     (void) fprintf(stderr, "    -p [files]             : only show files tag. -p is not needed but useful if the first file\n");
     (void) fprintf(stderr, "                             argument may be a file that could match an option.\n");
     (void) fprintf(stderr, "    -e [files]             : show tag and prompt for editing (need $EDITOR environment variable)\n");

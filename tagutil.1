@@ -1,0 +1,179 @@
+.\" Copyright (c) 2008, Perrin Alexandre <kaworu@kaworu.ch>
+.\" All rights reserved.
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions are met:
+.\"
+.\" *   Redistributions of source code must retain the above copyright
+.\"     notice, this list of conditions and the following disclaimer.
+.\" *   Redistributions in binary form must reproduce the above copyright
+.\"     notice, this list of conditions and the following disclaimer in the
+.\"     documentation and/or other materials provided with the distribution.
+.\" *   Neither the name of Perrin Alexandre, nor the names of its
+.\"     contributors may be used to endorse or promote products derived
+.\"     from this software without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND ANY
+.\" EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+.\" WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+.\" DISCLAIMED. IN NO EVENT SHALL THE REGENTS AND CONTRIBUTORS BE LIABLE FOR ANY
+.\" DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+.\" (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+.\" LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+.\" ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+.\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+.\" SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+.Dd June 26, 2008
+.Dt TAGUTIL 1
+.Os
+.Sh NAME
+.Nm tagutil
+.Nd edit music files tags
+.Sh SYNOPSIS
+.Nm
+.Fl A Ar artist
+.Op Ar
+.Nm
+.Fl a Ar album
+.Op Ar
+.Nm
+.Fl c Ar comment
+.Op Ar
+.Nm
+.Fl e
+.Op Ar
+.Nm
+.Fl g Ar genre
+.Op Ar
+.Nm
+.Fl p
+.Op Ar
+.Nm
+.Fl r Ar pattern
+.Op Ar
+.Nm
+.Fl T Ar trackno
+.Op Ar
+.Nm
+.Fl t Ar title
+.Op Ar
+.Nm
+.Fl y Ar yearno
+.Op Ar
+.Sh DESCRIPTION
+.Nm
+display and change tags of musics files. It support ogg, mp3 flac and more
+(see taglib documentation). If an option is given, the corresponding action will
+be applied for each
+.Ar file .
+If no option is given, the default action is
+.Fl p
+.Sq print .
+.Pp
+The options are as follows:
+.Bl -tag -width indent
+.It Fl A Ar artist-name
+set
+.Sq artist
+tag to
+.Ar artist-name .
+.It Fl a Ar album-name
+set
+.Sq album
+tag to
+.Ar album-name .
+.It Fl c Ar a-comment
+set
+.Sq comment
+tag to
+.Ar a-comment .
+.It Fl e
+edit mode. for each
+.Ar file
+display its tag and ask if edit is needed. If response is
+.Sq y
+or
+.Sq yes
+,
+.Nm
+launch your favourite editor. It use the environment variable
+.Ev EDITOR
+.It Fl g Ar a-genre
+set
+.Sq genre
+tag to
+.Ar a-genre
+.It Fl p
+display all tags. This is the default action if no option is given.
+.It Fl r Ar pattern
+rename files with given
+.Ar pattern .
+The
+.Ar pattern
+can contains special keywords that will be expanded with file's tag.
+confirmation is always asked before rename.
+
+The keywords are as follows:
+.Bl -tag -width indent
+.It Sq \%%A
+artist
+.It Sq \%%a
+album
+.It Sq \%%c
+comment
+.It Sq \%%g
+genre
+.It Sq \%%T
+track
+.It Sq \%%t
+title
+.It Sq \%%y
+year
+.El
+.It Fl T Ar track-no
+set
+.Sq track
+tag to
+.Ar track-no
+.It Fl t Ar a-title
+set
+.Sq title
+tag to
+.Ar a-title
+.It Fl y Ar year-no
+set
+.Sq year
+tag to
+.Ar year-no
+.El
+.Sh ENVIRONMENT
+The
+.Ev LC_ALL, EDITOR
+and
+.Ev TMPDIR
+environment variables affect the execution of
+.Nm .
+Additionally, some environment variables
+.Ev MB_HOST
+and
+.Ev MB_PORT
+can be set to change the
+.Nm
+default behaviour.
+.Bl -tag -width indent
+.It Ev LC_ALL
+used to set the taglib encoding for reading and setting tags.
+.It Ev EDITOR
+used when the
+.Sq Fl e
+option is given.
+.It Ev TMPDIR
+used to store a temporary file when
+.Sq Fl e
+option is given.
+.It Ev MB_HOST
+the uri of a MusicBrainz server.
+.It Ev MB_PORT
+the port of the MusicBrainz server.
+.El
+.Sh EXIT STATUS
+.Ex -std
