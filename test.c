@@ -5,6 +5,7 @@
 
 #include <taglib/tag_c.h>
 
+#include "config.h"
 #include "t_mb.h"
 #include "t_xml.h"
 #include "t_http.h"

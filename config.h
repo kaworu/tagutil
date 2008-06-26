@@ -10,12 +10,21 @@
 #if !defined(__GNUC__)
 #  define __attribute__(x)
 #endif
-
 /* avoid lint to complain for non C89 keywords */
 #if defined(lint)
 #define inline
 #define restrict
 #endif
+
+/* OS config */
+
+/*
+ * dirname(3)
+ * Some implementations define a const char * as argument, which is a *sane* dirname.
+ */
+#if !defined(__FreeBSD__) && !defined(__OpenBSD__)
+#define WITH_INSANE_DIRNAME
+#endif /* !__FreeBSD__ && !__OpenBSD__ */
 
 /* APP config */
 #define WITH_MB

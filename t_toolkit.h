@@ -215,12 +215,19 @@ xfclose(FILE *restrict fp)
 static inline char *
 xdirname(const char *restrict path)
 {
-    char *dirn, *garbage;
+    char *dirn;
+#if defined(WITH_INSANE_DIRNAME)
+    char *garbage;
+#endif
 
     assert_not_null(path);
 
+#if defined(WITH_INSANE_DIRNAME)
     dirn = dirname(garbage = xstrdup(path));
     free(garbage);  /* no more needed */
+#else
+    dirn = dirname(path);
+#endif
 
     if (dirn == NULL)
         err(errno, NULL);
