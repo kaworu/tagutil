@@ -5,4 +5,7 @@ LDFLAGS		= -L/usr/local/lib -lexpat -ltag_c
 MAKEOBJSDIR	= obj
 DEBUG_FLAGS	= -g -Wextra -Wformat-security -Wnonnull -Wswitch-default -Wswitch-enum -Waggregate-return -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow -Wstrict-prototypes -Winline
 
+depend:
+	gcc -E -MM ../*.c > ../.depend
+
 .include <bsd.prog.mk>

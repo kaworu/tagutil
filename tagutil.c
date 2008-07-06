@@ -426,7 +426,7 @@ eval_tag(const char *restrict pattern, const TagLib_Tag *restrict tag)
             }                                                                       \
     } while (/*CONSTCOND*/0)
 
-    for(cursor = strlen(pattern) - 3; cursor >= 0; cursor--) {
+    for(cursor = strlen(pattern) - 2; cursor >= 0; cursor--) {
         c = &result[cursor];
         if (*c == '%') {
             /*TODO: implement kESCAPE %% */
