@@ -327,7 +327,7 @@ update_tag(TagLib_Tag *restrict tag, FILE *restrict fp)
     line = xcalloc(size, sizeof(char));
 
     while (xgetline(&line, &size, fp)) {
-        if (!empty_line(line)) {
+        if (!empty_line(line) && !has_match(line, "^[ \t]*#")) {
             /* XXX: use only re_format(7) regexp (no \d,\s,\w for example) */
             if (has_match(line, "^(title|album|artist|year|track|comment|genre) *- *\".*\"$")) {
                 key = get_match(line, "^(title|album|artist|year|track|comment|genre)");
@@ -482,6 +482,7 @@ tagutil_edit(const char *restrict path, TagLib_File *restrict f,
         tmp_file = create_tmpfile();
 
         fp = xfopen(tmp_file, "w");
+        (void)fprintf(fp, "# %s\n", path);
         (void)fprintf(fp, "%s\n", infos);
         xfclose(fp);
 
