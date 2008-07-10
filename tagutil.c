@@ -224,11 +224,16 @@ safe_rename(const char *restrict oldpath, const char *restrict newpath)
     assert_not_null(oldpath);
     assert_not_null(newpath);
 
-    if (stat(newpath, &dummy) == 0)
-        err(errno = EEXIST, "%s", newpath);
+    /* check if we don't have a / in filename because it's valid in a file's tag */
+    if (strchr(newpath, (int)'/') != NULL)
+        warnx("can't rename '%s' to '%s' (/ in new path)", oldpath, newpath);
+    else {
+        if (stat(newpath, &dummy) == 0)
+            err(errno = EEXIST, "%s", newpath);
 
-    if (rename(oldpath, newpath) == -1)
-        err(errno, NULL);
+        if (rename(oldpath, newpath) == -1)
+            err(errno, NULL);
+    }
 }
 
 
@@ -482,7 +487,7 @@ tagutil_edit(const char *restrict path, TagLib_File *restrict f,
         tmp_file = create_tmpfile();
 
         fp = xfopen(tmp_file, "w");
-        (void)fprintf(fp, "# %s\n", path);
+        (void)fprintf(fp, "# %s\n\n", path);
         (void)fprintf(fp, "%s\n", infos);
         xfclose(fp);
 

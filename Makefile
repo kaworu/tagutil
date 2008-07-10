@@ -6,6 +6,9 @@ MAKEOBJSDIR	= obj
 DEBUG_FLAGS	= -g -Wextra -Wformat-security -Wnonnull -Wswitch-default -Wswitch-enum -Waggregate-return -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow -Wstrict-prototypes -Winline
 
 depend:
-	gcc -E -MM ../*.c > ../.depend
+	: > ../.depend
+.for s in ${SRCS}
+	gcc -E -MM ../${s} >> ../.depend
+.endfor
 
 .include <bsd.prog.mk>
