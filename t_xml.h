@@ -9,6 +9,7 @@
 
 #include "config.h"
 
+#define XML_ROOT "__root__"
 
 struct xml_attr {
     char *key, *val;

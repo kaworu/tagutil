@@ -12,30 +12,32 @@
  * for a help lauch tagutil without argument.
  *
  * Copyright (c) 2008, Perrin Alexandre <kaworu@kaworu.ch>
+ *
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer
+ *    in this position and unchanged.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. The name of the author may not be used to endorse or promote products
+ *    derived from this software without specific prior written permission
  *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of Perrin Alexandre, nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND ANY
- * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE REGENTS AND CONTRIBUTORS BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -47,6 +49,7 @@
 #include "config.h"
 #include "tagutil.h"
 #include "t_toolkit.h"
+
 
 /*
  * get action with getopt(3) and then apply it to all files given in argument.
@@ -189,28 +192,28 @@ void
 usage(void)
 {
 
-    (void) fprintf(stderr,  "TagUtil v"__TAGUTIL_VERSION__" by "__TAGUTIL_AUTHOR__".\n\n");
-    (void) fprintf(stderr,  "usage: %s [opt [optarg]] [files]...\n", getprogname());
-    (void) fprintf(stderr, "Modify or display music file's tag.\n");
-    (void) fprintf(stderr, "\n");
-    (void) fprintf(stderr, "Options:\n");
-    (void) fprintf(stderr, "    -h                     : show this help\n");
-    (void) fprintf(stderr, "    -p [files]             : only show files tag. -p is not needed but useful if the first file\n");
-    (void) fprintf(stderr, "                             argument may be a file that could match an option.\n");
-    (void) fprintf(stderr, "    -e [files]             : show tag and prompt for editing (need $EDITOR environment variable)\n");
-    (void) fprintf(stderr, "    -r [PATTERN] [files]   : rename files with the given PATTERN. you can use keywords in PATTERN:\n");
-    (void) fprintf(stderr, "                             title(%s), album(%s), artist(%s), year(%s), track(%s), comment(%s),\n",
+    (void)fprintf(stderr,  "TagUtil v"__TAGUTIL_VERSION__" by "__TAGUTIL_AUTHOR__".\n\n");
+    (void)fprintf(stderr,  "usage: %s [opt [optarg]] [files]...\n", getprogname());
+    (void)fprintf(stderr, "Modify or display music file's tag.\n");
+    (void)fprintf(stderr, "\n");
+    (void)fprintf(stderr, "Options:\n");
+    (void)fprintf(stderr, "    -h                     : show this help\n");
+    (void)fprintf(stderr, "    -p [files]             : only show files tag. -p is not needed but useful if the first file\n");
+    (void)fprintf(stderr, "                             argument may be a file that could match an option.\n");
+    (void)fprintf(stderr, "    -e [files]             : show tag and prompt for editing (need $EDITOR environment variable)\n");
+    (void)fprintf(stderr, "    -r [PATTERN] [files]   : rename files with the given PATTERN. you can use keywords in PATTERN:\n");
+    (void)fprintf(stderr, "                             title(%s), album(%s), artist(%s), year(%s), track(%s), comment(%s),\n",
                                                          kTITLE,    kALBUM,    kARTIST,    kYEAR,    kTRACK,    kCOMMENT);
-    (void) fprintf(stderr, "                             and genre(%s). example: \"%s - %s - (%s) - %s\"\n",
+    (void)fprintf(stderr, "                             and genre(%s). example: \"%s - %s - (%s) - %s\"\n",
                                                              kGENRE,               kARTIST, kALBUM, kTRACK, kTITLE);
-    (void) fprintf(stderr, "    -t [TITLE]   [files]   : change title tag to TITLE for all given files\n");
-    (void) fprintf(stderr, "    -a [ALBUM]   [files]   : change album tag to ALBUM for all given files\n");
-    (void) fprintf(stderr, "    -A [ARTIST]  [files]   : change artist tag to ARTIST for all given files\n");
-    (void) fprintf(stderr, "    -y [YEAR]    [files]   : change year tag to YEAR for all given files\n");
-    (void) fprintf(stderr, "    -T [TRACK]   [files]   : change track tag to TRACK for all given files\n");
-    (void) fprintf(stderr, "    -c [COMMENT] [files]   : change comment tag to COMMENT for all given files\n");
-    (void) fprintf(stderr, "    -g [GENRE]   [files]   : change genre tag to GENRE for all given files\n");
-    (void) fprintf(stderr, "\n");
+    (void)fprintf(stderr, "    -t [TITLE]   [files]   : change title tag to TITLE for all given files\n");
+    (void)fprintf(stderr, "    -a [ALBUM]   [files]   : change album tag to ALBUM for all given files\n");
+    (void)fprintf(stderr, "    -A [ARTIST]  [files]   : change artist tag to ARTIST for all given files\n");
+    (void)fprintf(stderr, "    -y [YEAR]    [files]   : change year tag to YEAR for all given files\n");
+    (void)printf(stderr, "    -T [TRACK]   [files]   : change track tag to TRACK for all given files\n");
+    (void)fprintf(stderr, "    -c [COMMENT] [files]   : change comment tag to COMMENT for all given files\n");
+    (void)fprintf(stderr, "    -g [GENRE]   [files]   : change genre tag to GENRE for all given files\n");
+    (void)fprintf(stderr, "\n");
 
     exit(EXIT_SUCCESS);
 }
@@ -226,14 +229,13 @@ safe_rename(const char *restrict oldpath, const char *restrict newpath)
 
     /* check if we don't have a / in filename because it's valid in a file's tag */
     if (strchr(newpath, (int)'/') != NULL)
-        warnx("can't rename '%s' to '%s' (/ in new path)", oldpath, newpath);
-    else {
-        if (stat(newpath, &dummy) == 0)
-            err(errno = EEXIST, "%s", newpath);
+        warnx("warning: rename (/ in new path): %s -> %s", oldpath, newpath);
 
-        if (rename(oldpath, newpath) == -1)
-            err(errno, NULL);
-    }
+    if (stat(newpath, &dummy) == 0)
+        err(errno = EEXIST, "%s", newpath);
+
+    if (rename(oldpath, newpath) == -1)
+        err(errno, NULL);
 }
 
 
@@ -294,7 +296,7 @@ user_edit(const char *restrict path)
     editor = getenv("EDITOR");
     if (editor == NULL)
         errx(-1, "please, set the $EDITOR environment variable.");
-    else if (has_match(editor, "x?emacs")) {
+    else if (has_match(editor, "x?emacs"))
         /*
          * we're actually so cool, that we keep the user waiting if $EDITOR
          * start slowly. The slow-editor-detection-algorithm used maybe not
@@ -302,7 +304,6 @@ user_edit(const char *restrict path)
          * results and is pretty short and clear.
          */
         (void)fprintf(stderr, "Starting %s. please wait...\n", editor);
-    }
 
     concat(&editcmd, &editcmd_size, editor);
     /* ok we really should not have a broken path (with space). but just in
@@ -322,11 +323,14 @@ user_edit(const char *restrict path)
 }
 
 
-void
+bool
 update_tag(TagLib_Tag *restrict tag, FILE *restrict fp)
 {
+    bool ret;
     size_t size;
     char *line, *key, *val;
+
+    ret = true;
 
     size = BUFSIZ;
     line = xcalloc(size, sizeof(char));
@@ -358,15 +362,20 @@ update_tag(TagLib_Tag *restrict tag, FILE *restrict fp)
                 _CALL_SETTER_IF_MATCH(track,     atoi(val));
 
                 warnx("parser error on line: %s", line);
+                ret = false;
 cleanup:
                 free((val - 1));
                 free(key);
             }
-            else
+            else {
                 warnx("parser can't handle this line: %s", line);
+                ret = false;
+            }
         }
     }
+
     free(line);
+    return (ret);
 }
 
 
@@ -498,10 +507,12 @@ tagutil_edit(const char *restrict path, TagLib_File *restrict f,
         }
 
         fp = xfopen(tmp_file, "r");
-        update_tag(taglib_file_tag(f), fp);
-
-        if (!taglib_file_save(f))
-            err(errno, "can't save file %s", path);
+        if (!update_tag(taglib_file_tag(f), fp))
+            warnx("file '%s' not saved.", path);
+        else {
+            if (!taglib_file_save(f))
+                err(errno, "can't save file %s", path);
+        }
 
         xfclose(fp);
         /* FIXME: get remove int status */

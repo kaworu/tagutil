@@ -12,7 +12,6 @@
 #include "t_xml.h"
 #include "t_toolkit.h"
 
-
 /*
  * xml_tree_delete() helper.
  */
@@ -63,7 +62,7 @@ xml_parse(const char *restrict data)
     XML_SetStartElementHandler(parser, xml_start);
     XML_SetEndElementHandler(parser, xml_end);
     XML_SetCharacterDataHandler(parser, xml_charhndl);
-    XML_SetUserData(parser, xml_tree_new(NULL, "__root__"));
+    XML_SetUserData(parser, xml_tree_new(NULL, XML_ROOT));
 
     /* do the parsing */
     if (XML_Parse(parser, data, strlen(data), true) == XML_STATUS_ERROR)
@@ -145,7 +144,7 @@ xml_tree_delete(struct xml_tree *restrict victim)
             free(victim->content.childv);
         break;
     default:
-        errx(-1, "bad xml_trtype in %s at %u", __FILE__, __LINE__);
+        errx(-1, "bad xml_trtype");
         /* NOTREACHED */
     }
 
@@ -380,25 +379,25 @@ main(int argc, char *argv[])
     parser = XML_ParserCreate((const XML_Char *)NULL);
 
     if (parser == NULL) {
-        fprintf(stderr, "Couldn't allocate memory for parser\n");
+        (void)fprintf(stderr, "Couldn't allocate memory for parser\n");
         exit(-1);
     }
 
     XML_SetStartElementHandler(parser, xml_start);
     XML_SetEndElementHandler(parser, xml_end);
     XML_SetCharacterDataHandler(parser, xml_charhndl);
-    XML_SetUserData(parser, xml_tree_new(NULL, "__root__"));
+    XML_SetUserData(parser, xml_tree_new(NULL, XML_ROOT));
 
     for (;;) {
         len = (int) fread(buf, 1, BUFSIZ, stdin);
         if (ferror(stdin)) {
-            fprintf(stderr, "Read error\n");
+            (void)fprintf(stderr, "Read error\n");
             exit(-1);
         }
         done = feof(stdin);
 
         if (XML_Parse(parser, buf, len, done) == XML_STATUS_ERROR) {
-            fprintf(stderr, "Parse error at line %lu" "u:\n%s\n",
+            (void)fprintf(stderr, "Parse error at line %lu" "u:\n%s\n",
                     XML_GetCurrentLineNumber(parser),
                     XML_ErrorString(XML_GetErrorCode(parser)));
             exit(-1);
@@ -408,7 +407,7 @@ main(int argc, char *argv[])
             break;
     }
 
-    printf("root_name: %s\n", ((struct xml_tree *)XML_GetUserData(parser))->name);
+    (void)printf("root_name: %s\n", ((struct xml_tree *)XML_GetUserData(parser))->name);
     xml_tree_show((struct xml_tree *)XML_GetUserData(parser));
     xml_tree_delete((struct xml_tree *)XML_GetUserData(parser));
     XML_ParserFree(parser);

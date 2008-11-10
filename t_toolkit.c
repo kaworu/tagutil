@@ -11,7 +11,6 @@
 #include "config.h"
 #include "t_toolkit.h"
 
-
 bool
 xgetline(char **line, size_t *size, FILE *restrict fp)
 {

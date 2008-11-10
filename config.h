@@ -22,9 +22,11 @@
  * dirname(3)
  * Some implementations define a const char * as argument, which is a *sane* dirname.
  */
-#if !defined(__FreeBSD__) && !defined(__OpenBSD__)
-#  define WITH_INSANE_DIRNAME
-#endif /* !__FreeBSD__ && !__OpenBSD__ */
+#if !defined(WITH_INSANE_DIRNAME)
+#  if !defined(__FreeBSD__) && !defined(__OpenBSD__)
+#    define WITH_INSANE_DIRNAME
+#  endif
+#endif
 
 
 /* APP config */
@@ -32,4 +34,4 @@
 #define MB_DEFAULT_HOST "localhost"
 #define MB_DEFAULT_PORT "80"
 
-#endif /* !T_CONFIG_H */
+#endif /* not T_CONFIG_H */

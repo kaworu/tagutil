@@ -106,8 +106,8 @@ http_request(const char *restrict host, const char *restrict port,
     }
     else
         concat(&request, &request_size, "/");
-    /* \n" */
-    concat(&request, &request_size, "\n");
+    /* all the stuff */
+    concat(&request, &request_size, " HTTP/1.0\nUser-Agent: Tagutil " __TAGUTIL_VERSION__ " by " __TAGUTIL_AUTHOR__ "\n\n");
 
     if (write(sfd, request, request_size) == -1)
         err(errno, "write() failed");

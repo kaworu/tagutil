@@ -13,7 +13,6 @@
 #include "t_http.h"
 #include "t_xml.h"
 
-
 /*
  * cmp function to honor qsort_r(3)
  * data is an int: the duration of the current track.
@@ -45,7 +44,7 @@ mb_choice(const TagLib_File *restrict f, const struct xml_tree *restrict tree)
 
     assert_not_null(f);
     assert_not_null(tree);
-    assert(strcmp(tree->name, "__root__") == 0);
+    assert(strcmp(tree->name, XML_ROOT) == 0);
 
     track_duration = taglib_audioproperties_length(taglib_file_audioproperties(f));
 

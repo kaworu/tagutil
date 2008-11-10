@@ -78,8 +78,9 @@ bool user_edit(const char *restrict path)
 
 /*
  * read fp and tag. the format of the text should bethe same as tagutil_print.
+ * return false if a line can't be parsed, true if all went smoothly.
  */
-void update_tag(TagLib_Tag *restrict tag, FILE *restrict fp)
+bool update_tag(TagLib_Tag *restrict tag, FILE *restrict fp)
     __attribute__ ((__nonnull__(1, 2)));
 
 
