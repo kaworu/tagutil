@@ -236,22 +236,27 @@ usage(void)
 void
 safe_rename(const char *restrict oldpath, const char *restrict newpath)
 {
-    struct stat dummy;
+    struct stat st;
+    char *olddirn, *newdirn;
 
     assert_not_null(oldpath);
     assert_not_null(newpath);
 
-    /* check if we don't have a / in filename because it's valid in a file's tag */
-    /* FIXME: well, should be clever here:
-     *      tagutil -r '%t' foo/bar.flac
-     * is is valid, and will rename to foo/%t.flac, with a /, and warn. but it's OK.
-     * so we need to check the newpath's dirname, and compare it to the oldpath's dirname.
-     * if tagutil's rename change the file's directory, something is wrong.
-     */
-    if (strchr(newpath, (int)'/') != NULL)
-        warnx("warning: rename (/ in new path): %s -> %s", oldpath, newpath);
+    olddirn = xdirname(oldpath);
+    newdirn = xdirname(newpath);
+    if (strcmp(olddirn, newdirn) != 0) {
+    /* srcdir != destdir, we need to check if destdir is OK */
+        if (stat(newpath, &st) == 0 && S_ISDIR(st.st_mode))
+            /* destdir exists, so let's try */;
+        else {
+            err(errno, "can't rename \"%s\" to \"%s\" destination directory doesn't exist",
+                    oldpath, newpath);
+        }
+    }
+    free(olddirn);
+    free(newdirn);
 
-    if (stat(newpath, &dummy) == 0)
+    if (stat(newpath, &st) == 0)
         err(errno = EEXIST, "%s", newpath);
 
     if (rename(oldpath, newpath) == -1)
