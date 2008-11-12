@@ -5,6 +5,8 @@
  * used by the filter function.
  */
 
+#include <string.h>
+
 #include "config.h"
 #include "t_lexer.h"
 #include "t_parser.h"
@@ -46,8 +48,6 @@ new_node(struct ast *restrict lhs, enum tokenkind tkind, struct ast *restrict rh
 static inline struct ast *
 new_leaf(enum tokenkind tkind, void *value)
 {
-    int error;
-    char *errbuf;
     struct ast *ret;
 
     ret = xmalloc(sizeof(struct ast));
@@ -60,16 +60,7 @@ new_leaf(enum tokenkind tkind, void *value)
         ret->value.string = (char *)value;
         break;
     case TREGEX:
-        error = regcomp(&ret->value.regex, (char *)value,
-                REG_ICASE | REG_EXTENDED | REG_NEWLINE | REG_NOSUB);
-
-        if (error != 0) {
-            errbuf = xcalloc(BUFSIZ, sizeof(char));
-            (void)regerror(error, &ret->value.regex, errbuf, BUFSIZ);
-            errx(-1, "parser error, can't compile regex \"%s\": %s",
-                    (char *)value, errbuf);
-        }
-        free(value); /* Free the regex string, no more needed */
+        memcpy(&ret->value.regex, value, sizeof(regex_t));
         break;
     case TINT:
         ret->value.integer = *(int *)value;
@@ -213,8 +204,8 @@ parse_cmp(struct lexer *restrict L)
         ret = parse_not(L);
         break;
     default:
-        errx(-1, "parser error at %d: expected keyword or TNOT or TOPAREN, got %s",
-                L->index, token_to_s(L->current.kind));
+        errx(-1, "parser error at %d-%d: expected keyword or TNOT or TOPAREN, got %s",
+                L->current.start, L->current.end, token_to_s(L->current.kind));
         /* NOTREACHED */
     }
 
@@ -245,8 +236,8 @@ parse_intcmp(struct lexer *restrict L)
         tkind = L->current.kind;
         break;
     default:
-        errx(-1, "parser error at %d: expected TEQ or TLT or TLE or TGL or TGE or TDIFF, got %s",
-                L->index, token_to_s(L->current.kind));
+        errx(-1, "parser error at %d-%d: expected TEQ or TLT or TLE or TGL or TGE or TDIFF, got %s",
+                L->current.start, L->current.end, token_to_s(L->current.kind));
         /* NOTREACHED */
     }
 
@@ -257,8 +248,8 @@ parse_intcmp(struct lexer *restrict L)
         lex(L);
         break;
     default:
-        errx(-1, "parser error at %d: expected TINT, got %s",
-                L->index, token_to_s(L->current.kind));
+        errx(-1, "parser error at %d-%d: expected TINT, got %s",
+                L->current.start, L->current.end, token_to_s(L->current.kind));
         /* NOTREACHED */
     }
 
@@ -284,35 +275,46 @@ parse_strcmp(struct lexer *restrict L)
 
     lex(L);
     switch (L->current.kind) {
-    case TMATCH:
-        regex = true;
-        /* FALLTHROUGH */
     case TEQ: /* FALLTHROUGH */
     case TLT: /* FALLTHROUGH */
     case TLE: /* FALLTHROUGH */
     case TGT: /* FALLTHROUGH */
     case TGE: /* FALLTHROUGH */
+    case TMATCH: /* FALLTHROUGH */
     case TDIFF:
         tkind = L->current.kind;
         break;
     default:
-        errx(-1, "parser error at %d: expected TEQ or TLT or TLE or TGL or TGE or TDIFF or TMATCH, got %s",
-                L->index, token_to_s(L->current.kind));
+        errx(-1, "parser error at %d-%d: expected TEQ or TLT or TLE or TGL or TGE or TDIFF or TMATCH, got %s",
+                L->current.start, L->current.end, token_to_s(L->current.kind));
         /* NOTREACHED */
     }
 
     lex(L);
     switch (L->current.kind) {
     case TSTRING:
-        ret = new_node(lhs, tkind, new_leaf(regex ? TREGEX : TSTRING, L->current.value.string));
-        lex(L);
+        if (tkind == TMATCH) {
+            errx(-1, "parser error at %d-%d: expected TREGEX, got %s",
+                L->current.start, L->current.end, token_to_s(L->current.kind));
+        }
+        ret = new_node(lhs, tkind, new_leaf(TSTRING, L->current.value.string));
+        break;
+    case TREGEX:
+        if (tkind != TMATCH) {
+            errx(-1, "parser error at %d-%d: expected TSTRING, got %s",
+                L->current.start, L->current.end, token_to_s(L->current.kind));
+        }
+        ret = new_node(lhs, tkind, new_leaf(TREGEX, &L->current.value.regex));
         break;
     default:
-        errx(-1, "parser error at %d: expected TSTRING, got %s",
-                L->index, token_to_s(L->current.kind));
+        errx(-1, "parser error at %d-%d: expected %s, got %s",
+                L->current.start,
+                L->current.end, tkind == TMATCH ? "TREGEX" : "TSTRING",
+                token_to_s(L->current.kind));
         /* NOTREACHED */
     }
 
+    lex(L);
     return (ret);
 }
 
@@ -334,8 +336,8 @@ parse_nestedcond(struct lexer *restrict L)
         lex(L);
         break;
     default:
-        errx(-1, "parser error at %d: expected TOPAREN, got %s",
-                L->index, token_to_s(L->current.kind));
+        errx(-1, "parser error at %d-%d: expected TOPAREN, got %s",
+                L->current.start, L->current.end, token_to_s(L->current.kind));
         /* NOTREACHED */
     }
 
@@ -346,8 +348,8 @@ parse_nestedcond(struct lexer *restrict L)
         lex(L);
         break;
     default:
-        errx(-1, "parser error at %d: expected TCPAREN, got %s",
-                L->index, token_to_s(L->current.kind));
+        errx(-1, "parser error at %d-%d: expected TCPAREN, got %s",
+                L->current.start, L->current.end, token_to_s(L->current.kind));
         /* NOTREACHED */
     }
 
@@ -372,8 +374,8 @@ parse_not(struct lexer *restrict L)
         lex(L);
         break;
     default:
-        errx(-1, "parser error at %d: expected TNOT, got %s",
-                L->index, token_to_s(L->current.kind));
+        errx(-1, "parser error at %d-%d: expected TNOT, got %s",
+                L->current.start, L->current.end, token_to_s(L->current.kind));
         /* NOTREACHED */
     }
 

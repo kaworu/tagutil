@@ -12,13 +12,16 @@
  * Filter     ::= <Condition>
  * Condition  ::= <Condition> ( '||' | '&&' ) <Condition>
  * Condition  ::= <IntKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <INTEGER>
- * Condition  ::= <StrKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' | '=~' ) <STRING>
+ * Condition  ::= <StrKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <STRING>
+ * Condition  ::= <StrKeyword> '=~' <REGEX>
  * Condition  ::= '!' '(' <Condition> ')'
  * Condition  ::=     '(' <Condition> ')'
  * IntKeyword ::= 'track' | 'year'
  * StrKeyword ::= 'title' | 'album' | 'artist' | 'comment' | 'genre'
  * INTEGER    ::= [0-9]+
- * STRING     ::= '"' [^"]* '"'
+ * STRING     ::= '"' ('\' . | [^"] )* '"'
+ * REGEX      ::= '/' ('\' . | [^/] )* '/' <REGOPTS>?
+ * REGOPTS    ::= 'i' | 'm' | 'im' | 'mi'
  */
 
 #include <regex.h>

@@ -6,6 +6,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <strings.h> /* strncasecmp(3) */
 
 #include "config.h"
@@ -36,9 +37,12 @@ lex(struct lexer *restrict L)
     const char *source;
     int *Lindex;
     struct token *current;
-    /* String */
+    /* String & Regexp */
     size_t skip;
     char c;
+    char *s, *errbuf;
+    int error;
+    bool iflag, mflag;
     /* keywords */
     bool found;
     size_t i;
@@ -176,7 +180,7 @@ lex(struct lexer *restrict L)
         skip = 0;
         current->kind = (c == '"' ? TSTRING : TREGEX);
         current->start = *Lindex;
-        *Lindex += 1; /* skip " or / */
+        *Lindex += 1;
         while (source[*Lindex] != '\0' && source[*Lindex] != c) {
             if (source[*Lindex] == '\\') {
                 *Lindex += 2;
@@ -210,8 +214,44 @@ lex(struct lexer *restrict L)
         }
 
         current->value.string[current->alloclen - 1] = '\0';
-        *Lindex += 1; /* skip trailling " or / */
-        /* FIXME: add regex options */
+        *Lindex += 1;
+
+        /* handle regex options */
+        if (current->kind == TREGEX) {
+            iflag = mflag = false;
+
+            while (source[*Lindex] != '\0' && strchr("im", source[*Lindex]) != NULL) {
+                switch (source[*Lindex]) {
+                case 'i':
+                    if (iflag)
+                        errx(-1, "lexer error at %d: option %c given twice", *Lindex, source[*Lindex]);
+                    iflag = true;
+                    break;
+                case 'm':
+                    if (mflag)
+                        errx(-1, "lexer error at %d: option %c given twice", *Lindex, source[*Lindex]);
+                    mflag = true;
+                    break;
+                default:
+                    errx(-1, "lexer nasty bug.");
+                    /* NOTREACHED */
+                }
+                *Lindex += 1;
+            }
+            current->end = *Lindex - 1;
+            s = current->value.string;
+            error = regcomp(&current->value.regex, s,
+                    REG_NOSUB | REG_EXTENDED  |
+                    (iflag ? REG_ICASE   : 0) |
+                    (mflag ? REG_NEWLINE : 0) );
+
+            if (error != 0) {
+                errbuf = xcalloc(BUFSIZ, sizeof(char));
+                (void)regerror(error, &current->value.regex, errbuf, BUFSIZ);
+                errx(-1, "lexer error, can't compile regex \"%s\": %s", s, errbuf);
+            }
+            free(s); /* Free the regex string, no more needed */
+        }
         break;
     default:
         /* keyword, not optimized at all, no gperf or so */

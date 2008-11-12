@@ -8,6 +8,7 @@
  */
 
 #include <stdlib.h>
+#include <regex.h>
 
 #include "config.h"
 
@@ -80,8 +81,9 @@ struct token {
     enum tokenkind kind;
     int start, end;
     union {
-        char *string; /* defined if kind == TSTRING */
-        int integer;  /* defined if kind == TINT    */
+        char *string;   /* defined if kind == TSTRING */
+        int integer;    /* defined if kind == TINT    */
+        regex_t regex;  /* defined if tkind == TREGEX */
     } value;
     size_t alloclen; /* defined if kind == TSTRING */
 };
