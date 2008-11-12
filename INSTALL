@@ -1,2 +1,15 @@
-TODO
+Note
+----
 
+*Someone* will have to port this program to GNU autotools (well, say when the
+number of user will be more than just me).
+
+
+Installation
+------------
+
+apply all the patches in p/${YOUR_OS} directory, then type "make" and
+pray.
+There is no install target right now. just copy the tagutil executable where
+you want (let's say, in your $PATH). It might work under FreeBSD, since it use
+the mk share files.

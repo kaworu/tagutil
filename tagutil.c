@@ -46,12 +46,13 @@
 
 #include <taglib/tag_c.h>
 
-#include "config.h"
+#include "t_config.h"
 #include "t_lexer.h"
 #include "t_parser.h"
 #include "t_interpreter.h"
-#include "tagutil.h"
 #include "t_toolkit.h"
+
+#include "tagutil.h"
 
 
 /*
@@ -343,7 +344,7 @@ user_edit(const char *restrict path)
 
 
 bool
-update_tag(TagLib_Tag *restrict tag, FILE *restrict fp)
+update_tag(TagLib_Tag *restrict tag, FILE *restrict stream)
 {
     bool ret;
     size_t size;
@@ -354,7 +355,7 @@ update_tag(TagLib_Tag *restrict tag, FILE *restrict fp)
     size = BUFSIZ;
     line = xcalloc(size, sizeof(char));
 
-    while (xgetline(&line, &size, fp)) {
+    while (xgetline(&line, &size, stream)) {
         if (!empty_line(line) && !has_match(line, "^[ \t]*#")) {
             /* XXX: use only re_format(7) regexp (no \d,\s,\w for example) */
             if (has_match(line, "^(title|album|artist|year|track|comment|genre) *- *\".*\"$")) {
@@ -481,7 +482,7 @@ next_loop_iter:
 
 bool
 tagutil_print(const char *restrict path, TagLib_File *restrict f,
-        const void *restrict arg __attribute__ ((__unused__)))
+        __unused const void *restrict arg)
 {
     char *infos;
 
@@ -499,10 +500,10 @@ tagutil_print(const char *restrict path, TagLib_File *restrict f,
 
 bool
 tagutil_edit(const char *restrict path, TagLib_File *restrict f,
-        const void *restrict arg __attribute__ ((__unused__)))
+        __unused const void *restrict arg)
 {
     char *tmp_file, *infos;
-    FILE *fp;
+    FILE *stream;
 
     assert_not_null(path);
     assert_not_null(f);
@@ -514,10 +515,10 @@ tagutil_edit(const char *restrict path, TagLib_File *restrict f,
     if (yesno("edit this file")) {
         tmp_file = create_tmpfile();
 
-        fp = xfopen(tmp_file, "w");
-        (void)fprintf(fp, "# %s\n\n", path);
-        (void)fprintf(fp, "%s\n", infos);
-        xfclose(fp);
+        stream = xfopen(tmp_file, "w");
+        (void)fprintf(stream, "# %s\n\n", path);
+        (void)fprintf(stream, "%s\n", infos);
+        xfclose(stream);
 
         if (!user_edit(tmp_file)) {
             free(infos);
@@ -525,15 +526,15 @@ tagutil_edit(const char *restrict path, TagLib_File *restrict f,
             return (false);
         }
 
-        fp = xfopen(tmp_file, "r");
-        if (!update_tag(taglib_file_tag(f), fp))
+        stream = xfopen(tmp_file, "r");
+        if (!update_tag(taglib_file_tag(f), stream))
             warnx("file '%s' not saved.", path);
         else {
             if (!taglib_file_save(f))
                 err(errno, "can't save file %s", path);
         }
 
-        xfclose(fp);
+        xfclose(stream);
         /* FIXME: get remove int status */
         remove(tmp_file);
         free(tmp_file);

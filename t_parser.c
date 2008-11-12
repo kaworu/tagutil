@@ -7,30 +7,67 @@
 
 #include <string.h>
 
-#include "config.h"
+#include "t_config.h"
 #include "t_lexer.h"
 #include "t_parser.h"
 #include "t_toolkit.h"
 
-static inline struct ast *
-new_node(struct ast *restrict lhs, enum tokenkind tkind, struct ast *restrict rhs);
 
-static inline struct ast *
-new_leaf(enum tokenkind tkind, void *value);
+static inline struct ast * new_node(struct ast *restrict lhs,
+        enum tokenkind tkind, struct ast *restrict rhs);
 
-/* struct ast * parse_filter(struct lexer *restrict L); */
+static inline struct ast * new_leaf(enum tokenkind tkind, void *value);
+
+/* private parse_filter helpers. */
+__nonnull(1)
 static struct ast * parse_condition(struct lexer *restrict L);
+
+/*
+ * Condition ::= <Condition> '||' <Condition>
+ */
+__nonnull(1)
 static struct ast * parse_or(struct lexer *restrict L);
+
+/*
+ * Condition ::= <Condition> '&&' <Condition>
+ */
+__nonnull(1)
 static struct ast * parse_and(struct lexer *restrict L);
+
+/*
+ * choose which factory we need.
+ */
+__nonnull(1)
 static struct ast * parse_cmp(struct lexer *restrict L);
+
+/*
+ * Condition ::= <IntKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <INTEGER>
+ */
+__nonnull(1)
 static struct ast * parse_intcmp(struct lexer *restrict L);
+
+/*
+ * Condition ::= <StrKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' | '=~' ) <STRING>
+ */
+__nonnull(1)
 static struct ast * parse_strcmp(struct lexer *restrict L);
-static struct ast * parse_nestedcond(struct lexer *restrict L);
+
+/*
+ * Condition ::= '!' '(' <Condition> ')'
+ */
+__nonnull(1)
 static struct ast * parse_not(struct lexer *restrict L);
 
+/*
+ * Condition ::= '(' <Condition> ')'
+ */
+__nonnull(1)
+static struct ast * parse_nestedcond(struct lexer *restrict L);
+
 
 static inline struct ast *
-new_node(struct ast *restrict lhs, enum tokenkind tkind, struct ast *restrict rhs)
+new_node(struct ast *restrict lhs, enum tokenkind tkind,
+        struct ast *restrict rhs)
 {
     struct ast *ret;
 
@@ -107,9 +144,6 @@ destroy_ast(struct ast *restrict victim)
 }
 
 
-/*
- * Filter ::= <Condition>
- */
 struct ast *
 parse_filter(struct lexer *restrict L)
 {
@@ -151,13 +185,11 @@ parse_condition(struct lexer *restrict L)
 {
 
     assert_not_null(L);
+
     return (parse_or(L));
 }
 
 
-/*
- * Condition ::= <Condition> '||' <Condition>
- */
 static struct ast *
 parse_or(struct lexer *restrict L)
 {
@@ -175,9 +207,6 @@ parse_or(struct lexer *restrict L)
 }
 
 
-/*
- * Condition ::= <Condition> '&&' <Condition>
- */
 struct ast *
 parse_and(struct lexer *restrict L)
 {
@@ -195,9 +224,6 @@ parse_and(struct lexer *restrict L)
 }
 
 
-/*
- * choose which factory we need.
- */
 static struct ast *
 parse_cmp(struct lexer *restrict L)
 {
@@ -236,9 +262,6 @@ parse_cmp(struct lexer *restrict L)
 }
 
 
-/*
- * Condition ::= <IntKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <INTEGER>
- */
 static struct ast *
 parse_intcmp(struct lexer *restrict L)
 {
@@ -280,9 +303,6 @@ parse_intcmp(struct lexer *restrict L)
 }
 
 
-/*
- * Condition ::= <StrKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' | '=~' ) <STRING>
- */
 static struct ast *
 parse_strcmp(struct lexer *restrict L)
 {
@@ -342,9 +362,31 @@ parse_strcmp(struct lexer *restrict L)
 }
 
 
-/*
- * Condition ::= '(' <Condition> ')'
- */
+static struct ast *
+parse_not(struct lexer *restrict L)
+{
+    struct ast *cond;
+
+    assert_not_null(L);
+
+    cond = NULL;
+
+    switch (L->current.kind) {
+    case TNOT:
+        lex(L);
+        break;
+    default:
+        errx(-1, "parser error at %d-%d: expected TNOT, got %s",
+                L->current.start, L->current.end, token_to_s(L->current.kind));
+        /* NOTREACHED */
+    }
+
+    cond = parse_nestedcond(L);
+
+    return (new_node(NULL, TNOT, cond));
+}
+
+
 static struct ast *
 parse_nestedcond(struct lexer *restrict L)
 {
@@ -377,34 +419,6 @@ parse_nestedcond(struct lexer *restrict L)
     }
 
     return (ret);
-}
-
-
-/*
- * Condition ::= '!' '(' <Condition> ')'
- */
-static struct ast *
-parse_not(struct lexer *restrict L)
-{
-    struct ast *cond;
-
-    assert_not_null(L);
-
-    cond = NULL;
-
-    switch (L->current.kind) {
-    case TNOT:
-        lex(L);
-        break;
-    default:
-        errx(-1, "parser error at %d-%d: expected TNOT, got %s",
-                L->current.start, L->current.end, token_to_s(L->current.kind));
-        /* NOTREACHED */
-    }
-
-    cond = parse_nestedcond(L);
-
-    return (new_node(NULL, TNOT, cond));
 }
 
 

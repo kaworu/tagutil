@@ -8,22 +8,23 @@
 #include <errno.h>
 #include <stdarg.h>
 
-#include "config.h"
+#include "t_config.h"
 #include "t_toolkit.h"
 
+
 bool
-xgetline(char **line, size_t *size, FILE *restrict fp)
+xgetline(char **line, size_t *size, FILE *restrict stream)
 {
     char *cursor;
     size_t end;
 
-    assert_not_null(fp);
+    assert_not_null(stream);
     assert_not_null(size);
     assert_not_null(line);
 
     end = 0;
 
-    if (feof(fp))
+    if (feof(stream))
         return (0);
 
     for (;;) {
@@ -33,10 +34,10 @@ xgetline(char **line, size_t *size, FILE *restrict fp)
         }
         cursor = *line + end;
         memset(*line, 0, BUFSIZ);
-        (void)fgets(cursor, BUFSIZ, fp);
+        (void)fgets(cursor, BUFSIZ, stream);
         end += strlen(cursor);
 
-        if (feof(fp) || (*line)[end - 1] == '\n') { /* end of file or end of line */
+        if (feof(stream) || (*line)[end - 1] == '\n') { /* end of file or end of line */
         /* chomp trailing \n if any */
             if ((*line)[0] != '\0' && (*line)[end - 1] == '\n')
                 (*line)[end - 1] = '\0';
@@ -200,6 +201,7 @@ yesno(const char *restrict question)
     }
 }
 
+
 #if 0
 int
 read_int(const int min, const int max)
@@ -230,5 +232,4 @@ read_int(const int min, const int max)
             return (true);
     }
 }
-
 #endif

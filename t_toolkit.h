@@ -9,15 +9,15 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <err.h>    /* porting: These functions are non-standard BSD extensions. */
-#include <libgen.h> /* for dirname() POSIX.1-2001 */
+#include <err.h>
+#include <libgen.h> /* dirname(3) */
 #include <regex.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "config.h"
+#include "t_config.h"
 
 
 /* compute the length of a fixed size array */
@@ -33,45 +33,43 @@
 
 /* MEMORY FUNCTIONS */
 
-static inline void * xmalloc(const size_t size)
-    __attribute__ ((__malloc__, __unused__));
+__unused
+static inline void * xmalloc(const size_t size);
 
+__unused
+static inline void * xcalloc(const size_t nmemb, const size_t size);
 
-static inline void * xcalloc(const size_t nmemb, const size_t size)
-    __attribute__ ((__malloc__, __unused__));
-
-
-static inline void * xrealloc(void *old_ptr, const size_t new_size)
-    __attribute__ ((__malloc__, __unused__));
+__unused
+static inline void * xrealloc(void *ptr, const size_t size);
 
 
 /* FILE FUNCTIONS */
-static inline FILE * xfopen(const char *restrict path, const char *restrict mode)
-    __attribute__ ((__nonnull__ (1, 2), __unused__));
 
+__unused __nonnull(1) __nonnull(2)
+static inline FILE * xfopen(const char *restrict path, const char *restrict mode);
 
-static inline void xfclose(FILE *restrict fp)
-    __attribute__ ((__nonnull__ (1), __unused__));
+__unused __nonnull(1)
+static inline void xfclose(FILE *restrict stream);
 
-
-bool xgetline(char **line, size_t *size, FILE *restrict fp)
-    __attribute__ ((__nonnull__ (1, 2, 3), __unused__));
-
+__unused __nonnull(1) __nonnull(2) __nonnull(3)
+bool xgetline(char **line, size_t *size, FILE *restrict stream);
 
 /*
- * try to have a *sane* dirname() function. dirname() implementation may change argument.
+ * try to have a sane dirname,
+ * FreeBSD and OpenBSD define:
+ *
+ *      char * dirname(const char *)
  *
  * returned value has to be freed.
  */
-static inline char * xdirname(const char *restrict path)
-    __attribute__ ((__nonnull__ (1), __unused__));
+__unused __nonnull(1)
+static inline char * xdirname(const char *restrict path);
 
 
 /* BASIC STRING OPERATIONS */
 
-static inline char * xstrdup(const char *restrict src)
-    __attribute__ ((__nonnull__ (1), __unused__));
-
+__unused __nonnull(1)
+static inline char * xstrdup(const char *restrict src);
 
 /*
  * copy src at the end of dest. dest_size is the allocated size
@@ -79,8 +77,8 @@ static inline char * xstrdup(const char *restrict src)
  *
  * returned value has to be freed.
  */
-static inline void concat(char **dest, size_t *dest_size, const char *src)
-    __attribute__ ((__nonnull__ (1, 2, 3), __unused__));
+__unused __nonnull(1) __nonnull(2) __nonnull(3)
+static inline void concat(char **dest, size_t *destlen, const char *src);
 
 
 /* REGEX STRING OPERATIONS */
@@ -93,29 +91,26 @@ static inline void concat(char **dest, size_t *dest_size, const char *src)
  *
  * returned value has to be freed.
  */
-regmatch_t* first_match(const char *restrict str, const char *restrict pattern, const int flags)
-    __attribute__ ((__nonnull__ (1, 2), __unused__));
-
+__unused __nonnull(1) __nonnull(2)
+regmatch_t * first_match(const char *restrict str, const char *restrict pattern, const int flags);
 
 /*
  * return true if the regex pattern match the given str, false otherwhise.
  * flags are REG_ICASE | REG_EXTENDED | REG_NEWLINE | REG_NOSUB (see regex(3)).
  */
-bool has_match(const char *restrict str, const char *restrict pattern)
-    __attribute__ ((__nonnull__ (2), __unused__));
-
+__unused __nonnull(2)
+bool has_match(const char *restrict str, const char *restrict pattern);
 
 /*
  * match pattern to str. then copy the match part and return the fresh
- * new char* created.  * flags are REG_ICASE | REG_EXTENDED | REG_NEWLINE
- * (see regex(3)).
- * get_match() can return NULL if no match was found, but when a match occur
+ * new char * created.
+ * flags are REG_ICASE | REG_EXTENDED | REG_NEWLINE (see regex(3)).
+ * get_match() can return NULL if no match was found.
  *
  * returned value has to be freed.
  */
-char* get_match(const char *restrict str, const char *restrict pattern)
-    __attribute__ ((__nonnull__ (1, 2), __unused__));
-
+__unused __nonnull(1) __nonnull(2)
+char * get_match(const char *restrict str, const char *restrict pattern);
 
 /*
  * replace the part defined by match in str by replace. for example
@@ -124,16 +119,15 @@ char* get_match(const char *restrict str, const char *restrict pattern)
  *
  * returned value has to be freed.
  */
-char* sub_match(const char *str, const regmatch_t *restrict match, const char *replace)
-    __attribute__ ((__nonnull__ (1, 2, 3), __unused__));
-
+__unused __nonnull(1) __nonnull(2) __nonnull(3)
+char * sub_match(const char *str, const regmatch_t *restrict match, const char *replace);
 
 /*
  * same as sub_match but change the string reference given by str. *str will
  * be freed so it has to be malloc'd previously.
  */
-void inplacesub_match(char **str, regmatch_t *restrict match, const char *replace)
-    __attribute__ ((__nonnull__ (1, 2, 3), __unused__));
+__unused __nonnull(1) __nonnull(2) __nonnull(3)
+void inplacesub_match(char **str, regmatch_t *restrict match, const char *replace);
 
 
 /* OTHER */
@@ -143,8 +137,8 @@ void inplacesub_match(char **str, regmatch_t *restrict match, const char *replac
  * y|yes|n|no.  yesno() loops until a valid response is given and then return
  * true if the response match y|yes, false if it match n|no.
  */
-bool yesno(const char *restrict question)
-    __attribute__ ((__unused__));
+__unused
+bool yesno(const char *restrict question);
 
 /**********************************************************************/
 
@@ -187,27 +181,27 @@ xrealloc(void *old_ptr, const size_t new_size)
 static inline FILE *
 xfopen(const char *restrict path, const char *restrict mode)
 {
-    FILE *fp;
+    FILE *stream;
 
     assert_not_null(path);
     assert_not_null(mode);
 
-    fp = fopen(path, mode);
+    stream = fopen(path, mode);
 
-    if (fp == NULL)
+    if (stream == NULL)
         err(errno, "can't open file %s", path);
 
-    return (fp);
+    return (stream);
 }
 
 
 static inline void
-xfclose(FILE *restrict fp)
+xfclose(FILE *restrict stream)
 {
 
-    assert_not_null(fp);
+    assert_not_null(stream);
 
-    if (fclose(fp) != 0)
+    if (fclose(stream) != 0)
         err(errno, NULL);
 }
 
@@ -216,20 +210,10 @@ static inline char *
 xdirname(const char *restrict path)
 {
     char *dirn;
-#if defined(WITH_INSANE_DIRNAME)
-    char *garbage;
-#endif
 
     assert_not_null(path);
 
-#if defined(WITH_INSANE_DIRNAME)
-    dirn = dirname(garbage = xstrdup(path));
-    free(garbage);  /* no more needed */
-#else
-    dirn = dirname(path);
-#endif
-
-    if (dirn == NULL)
+    if ((dirn = dirname(path)) == NULL)
         err(errno, NULL);
 
     return (xstrdup(dirn));

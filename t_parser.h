@@ -26,8 +26,9 @@
 
 #include <regex.h>
 
-#include "config.h"
+#include "t_config.h"
 #include "t_lexer.h"
+
 
 enum astkind {
     ANODE,
@@ -47,7 +48,18 @@ struct ast {
 };
 
 
+/*
+ * free given ast recursivly.
+ */
 void destroy_ast(struct ast *restrict victim);
+
+/*
+ * parse the filter with the given lexer.
+ * free the given lexer after parsing.
+ *
+ * returned value has to be freed (use destroy_ast)
+ */
+__nonnull(1)
 struct ast * parse_filter(struct lexer *restrict L);
 
 #endif /* not T_PARSER_H */

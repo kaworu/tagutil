@@ -1,9 +1,9 @@
-Tagutil is primarily developped on/for FreeBSD.
+tagutil is developped on FreeBSD.
 We try to use the C extensions that FreeBSD provide, even if non standard (like
-err(3) functions family) to minimize our code/work. Then we try to port Tagutil
+err(3) functions family) to minimize our code/work. Then we try to port tagutil
 to the following OS (this list may change):
 GNU/Linux, OpenBSD, NetBSD.
-We also try to follow the KNF guideline (see style(9)) in general.
+We also try to ~follow the KNF guideline (see style(9)) in general.
 
 The standard workflow is the following:
 
@@ -19,11 +19,9 @@ The standard workflow is the following:
     available, and copy / glue if not.
 
 --------------------------------------------------------------------------------
-- qsort_r(3)
 - getprogname(3)
 - err(3) family functions.
-- dirname(3)
+- dirname(3) -- const char * argument
 - strdup(3)
-- strlcpy(3) and strlcat(3)
 --------------------------------------------------------------------------------
 v1.1

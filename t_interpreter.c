@@ -4,19 +4,23 @@
  * the tagutil's filter interpreter.
  */
 
-#include "config.h"
+#include "t_config.h"
 #include "t_toolkit.h"
 #include "t_lexer.h"
 #include "t_parser.h"
 #include "t_interpreter.h"
 
-static unsigned int int_tag(enum tokenkind tkind, const TagLib_Tag *restrict tag);
-static const char * str_tag(const char *restrict filename,
+__nonnull(2)
+static inline unsigned int int_tag(enum tokenkind tkind,
+        const TagLib_Tag *restrict tag);
+
+__nonnull(1) __nonnull(3)
+static inline const char * str_tag(const char *restrict filename,
         enum tokenkind tkind, const TagLib_Tag *restrict tag);
 
+
 bool
-eval(const char *restrict filename,
-        const TagLib_Tag *restrict tag,
+eval(const char *restrict filename, const TagLib_Tag *restrict tag,
         const struct ast *restrict filter)
 #define EVAL(e) (eval(filename, tag, (e)))
 #define INT_TAG(k) (int_tag((k), tag))
@@ -104,7 +108,7 @@ eval(const char *restrict filename,
     return (ret);
 }
 
-static unsigned int
+static inline unsigned int
 int_tag(enum tokenkind tkind, const TagLib_Tag *restrict tag)
 {
     unsigned int ret;
@@ -125,7 +129,7 @@ int_tag(enum tokenkind tkind, const TagLib_Tag *restrict tag)
     return (ret);
 }
 
-static const char *
+static inline const char *
 str_tag(const char *restrict filename,
         enum tokenkind tkind,
         const TagLib_Tag *restrict tag)
@@ -159,3 +163,4 @@ str_tag(const char *restrict filename,
 
     return (ret);
 }
+

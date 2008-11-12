@@ -9,7 +9,7 @@
 #include <string.h>
 #include <strings.h> /* strncasecmp(3) */
 
-#include "config.h"
+#include "t_config.h"
 #include "t_lexer.h"
 #include "t_toolkit.h"
 
@@ -250,7 +250,7 @@ lex(struct lexer *restrict L)
                 (void)regerror(error, &current->value.regex, errbuf, BUFSIZ);
                 errx(-1, "lexer error, can't compile regex \"%s\": %s", s, errbuf);
             }
-            free(s); /* Free the regex string, no more needed */
+            free(s); /* free the regex string, no more needed */
         }
         break;
     default:

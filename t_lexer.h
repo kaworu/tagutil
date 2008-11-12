@@ -10,11 +10,13 @@
 #include <stdlib.h>
 #include <regex.h>
 
-#include "config.h"
+#include "t_config.h"
+
 
 #define is_letter(c) ((c) >= 'a' && (c) <= 'z')
 #define is_number(i) ((i) >= '0' && (i) <= '9')
 #define is_blank(c)  ((c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r')
+
 
 enum tokenkind {
     TFILENAME,
@@ -47,6 +49,7 @@ enum tokenkind {
     TEOS,
     TSTART,
 };
+
 
 #define token_to_s(x) ( \
     (x) == TFILENAME ? "TFILENAME" : \
@@ -112,7 +115,11 @@ struct lexer {
     struct token current;
 };
 
+
+__nonnull(1)
 struct lexer * new_lexer(const char *restrict str);
-void lex(struct lexer *restrict l) __attribute__ ((__nonnull__ (1)));
+
+__nonnull(1)
+void lex(struct lexer *restrict L);
 
 #endif /* not T_LEXER_H */
