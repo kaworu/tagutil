@@ -42,7 +42,7 @@ enum tokenkind {
 
     TINT,
     TSTRING,
-    TREGEX, /* used by parser. lexer will only see TSTRINGs */
+    TREGEX,
     TEOS,
     TSTART,
 };

@@ -38,6 +38,7 @@ lex(struct lexer *restrict L)
     struct token *current;
     /* String */
     size_t skip;
+    char c;
     /* keywords */
     bool found;
     size_t i;
@@ -169,12 +170,14 @@ lex(struct lexer *restrict L)
         }
         current->end = *Lindex - 1;
         break;
+    case '/': /* FALLTHROUGH */
     case '"':
+        c = source[*Lindex];
         skip = 0;
-        current->kind = TSTRING;
+        current->kind = (c == '"' ? TSTRING : TREGEX);
         current->start = *Lindex;
-        *Lindex += 1; /* skip " */
-        while (source[*Lindex] != '\0' && source[*Lindex] != '"') {
+        *Lindex += 1; /* skip " or / */
+        while (source[*Lindex] != '\0' && source[*Lindex] != c) {
             if (source[*Lindex] == '\\') {
                 *Lindex += 2;
                 skip += 1;
@@ -183,19 +186,21 @@ lex(struct lexer *restrict L)
                 *Lindex += 1;
         }
 
-        if (source[*Lindex] == '"')
+        if (source[*Lindex] == c)
             current->end = *Lindex;
         else {
-            errx(-1, "lexer error at %d: got '%c', expected '\"' for STRING, string %s?",
-                    *Lindex, source[*Lindex], source[*Lindex] == '\0' ? "not ended" : "too long");
+            errx(-1, "lexer error at %d: got '%c', expected '%c' for %s, %s?",
+                    *Lindex, source[*Lindex], c,
+                    current->kind == TSTRING ? "STRING" : "REGEX",
+                    source[*Lindex] == '\0' ? "not ended" : "too long");
         }
 
+        /* do the copy */
         current->alloclen = current->end - current->start - skip;
         current->value.string = xcalloc(current->alloclen, sizeof(char));
         *Lindex = current->start + 1;
         skip = 0;
-
-        while (source[*Lindex] != '"') {
+        while (source[*Lindex] != c) {
             if (source[*Lindex] == '\\') {
                 *Lindex += 1;
                 skip += 1;
@@ -205,7 +210,8 @@ lex(struct lexer *restrict L)
         }
 
         current->value.string[current->alloclen - 1] = '\0';
-        *Lindex += 1; /* skip " */
+        *Lindex += 1; /* skip trailling " or / */
+        /* FIXME: add regex options */
         break;
     default:
         /* keyword, not optimized at all, no gperf or so */
