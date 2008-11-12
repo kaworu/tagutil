@@ -1,3 +1,3 @@
 tags
-obj/*
 .depend
+.*\.(o|mp3|ogg|flac)$
