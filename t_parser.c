@@ -48,6 +48,8 @@ static struct ast * parse_intcmp(struct lexer *restrict L);
 
 /*
  * Condition ::= <StrKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' | '=~' ) <STRING>
+ * Condition ::= <StrKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' | '=~' ) <StrKeyword>
+ * Condition ::= <StrKeyword> '=~' <REGEX>
  */
 __nonnull(1)
 static struct ast * parse_strcmp(struct lexer *restrict L);
@@ -335,12 +337,19 @@ parse_strcmp(struct lexer *restrict L)
 
     lex(L);
     switch (L->current.kind) {
+    case TTITLE:    /* FALLTHROUGH */
+    case TALBUM:    /* FALLTHROUGH */
+    case TARTIST:   /* FALLTHROUGH */
+    case TCOMMENT:  /* FALLTHROUGH */
+    case TGENRE:    /* FALLTHROUGH */
+    case TFILENAME: /* FALLTHROUGH */
     case TSTRING:
         if (tkind == TMATCH) {
             errx(-1, "parser error at %d-%d: expected TREGEX, got %s",
                 L->current.start, L->current.end, token_to_s(L->current.kind));
         }
-        ret = new_node(lhs, tkind, new_leaf(TSTRING, L->current.value.string));
+        ret = new_node(lhs, tkind, new_leaf(L->current.kind,
+                    L->current.kind == TSTRING ? L->current.value.string : NULL));
         break;
     case TREGEX:
         if (tkind != TMATCH) {

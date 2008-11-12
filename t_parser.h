@@ -13,6 +13,7 @@
  * Condition  ::= <Condition> ( '||' | '&&' ) <Condition>
  * Condition  ::= <IntKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <INTEGER>
  * Condition  ::= <StrKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <STRING>
+ * Condition  ::= <StrKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <StrKeyword>
  * Condition  ::= <StrKeyword> '=~' <REGEX>
  * Condition  ::= '!' '(' <Condition> ')'
  * Condition  ::=     '(' <Condition> ')'
