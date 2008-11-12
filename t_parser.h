@@ -47,6 +47,7 @@ struct ast {
 };
 
 
+void destroy_ast(struct ast *restrict victim);
 struct ast * parse_filter(struct lexer *restrict L);
 
 #endif /* not T_PARSER_H */

@@ -84,6 +84,29 @@ new_leaf(enum tokenkind tkind, void *value)
 }
 
 
+void
+destroy_ast(struct ast *restrict victim)
+{
+    if (victim != NULL) {
+        switch (victim->kind) {
+        case ANODE:
+            destroy_ast(victim->lhs);
+            destroy_ast(victim->rhs);
+            free(victim);
+            break;
+        case ALEAF:
+            if (victim->tkind == TSTRING)
+                free(victim->value.string);
+            free(victim);
+            break;
+        default:
+            errx(-1, "error in destroy_ast: AST without kind.");
+            /* NOTREACHED */
+        }
+    }
+}
+
+
 /*
  * Filter ::= <Condition>
  */

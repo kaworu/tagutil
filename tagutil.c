@@ -76,7 +76,7 @@ main(int argc, char *argv[])
 
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
-    while ((ch = getopt(argc, argv, "epht:r:f:a:A:c:g:y:T:")) != -1) {
+    while ((ch = getopt(argc, argv, "epht:r:x:a:A:c:g:y:T:")) != -1) {
         switch ((char)ch) {
         case 'e':
             if (apply != NULL)
@@ -100,11 +100,11 @@ main(int argc, char *argv[])
             apply = tagutil_rename;
             apply_arg = optarg;
             break;
-        case 'f':
+        case 'x':
             if (apply != NULL)
                 errx(-1, "too much options given.");
             apply = tagutil_filter;
-            apply_arg = parse_filter(new_lexer(optarg)); /* TODO: Free AST */
+            apply_arg = parse_filter(new_lexer(optarg));
             break;
         case 'a':
             if (apply != NULL)
@@ -193,6 +193,9 @@ main(int argc, char *argv[])
         taglib_file_free(f);
     }
 
+    if (apply == tagutil_filter)
+        destroy_ast((struct ast *)apply_arg);
+
     return (EXIT_SUCCESS);
 }
 
@@ -215,7 +218,7 @@ usage(void)
                                                          kTITLE,    kALBUM,    kARTIST,    kYEAR,    kTRACK,    kCOMMENT);
     (void)fprintf(stderr, "                             and genre(%s). example: \"%s - %s - (%s) - %s\"\n",
                                                              kGENRE,               kARTIST, kALBUM, kTRACK, kTITLE);
-    (void)fprintf(stderr, "    -f [FILTER]  [files]   : print file in given files that match given FILTER\n");
+    (void)fprintf(stderr, "    -x [FILTER]  [files]   : print file in given files that match given FILTER\n");
     (void)fprintf(stderr, "    -t [TITLE]   [files]   : change title tag to TITLE for all given files\n");
     (void)fprintf(stderr, "    -a [ALBUM]   [files]   : change album tag to ALBUM for all given files\n");
     (void)fprintf(stderr, "    -A [ARTIST]  [files]   : change artist tag to ARTIST for all given files\n");
