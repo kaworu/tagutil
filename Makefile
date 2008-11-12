@@ -1,5 +1,5 @@
 PROG		= tagutil
-SRCS		= tagutil.c t_toolkit.c
+SRCS		= tagutil.c t_toolkit.c t_lexer.c t_parser.c t_interpreter.c
 CFLAGS		+= -Wall -I/usr/local/include/
 CSTD		?= c99
 LDADD		= -L/usr/local/lib -ltag_c
@@ -11,13 +11,13 @@ LDADD		+= -lexpat
 .endif
 
 .if defined(DEBUG)
-DEBUG_FLAGS	= -g -Wextra -Wformat-security -Wnonnull -Wswitch-default -Wswitch-enum -Waggregate-return -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow -Wstrict-prototypes -Winline
+CFLAGS	= -std=iso9899:1999 -g -Wextra -Wformat-security -Wnonnull -Wswitch-default -Waggregate-return -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow -Wstrict-prototypes -Winline -Wall -I/usr/local/include/
 .endif
 
 depend:
-	: > ../.depend
+	: > .depend
 .for s in ${SRCS}
-	gcc -E -MM ../${s} >> ../.depend
+	gcc -E -MM ${s} >> .depend
 .endfor
 
 .include <bsd.prog.mk>

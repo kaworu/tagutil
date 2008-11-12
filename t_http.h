@@ -28,4 +28,4 @@ char* http_request(const char *restrict host, const char *restrict port,
         const char *restrict method, const char *restrict arg)
     __attribute__ ((__nonnull__ (1, 2, 3)));
 
-#endif /* !T_NET_H */
+#endif /* not T_NET_H */

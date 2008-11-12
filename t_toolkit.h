@@ -33,20 +33,20 @@
 
 /* MEMORY FUNCTIONS */
 
-static inline void* xmalloc(const size_t size)
+static inline void * xmalloc(const size_t size)
     __attribute__ ((__malloc__, __unused__));
 
 
-static inline void* xcalloc(const size_t nmemb, const size_t size)
+static inline void * xcalloc(const size_t nmemb, const size_t size)
     __attribute__ ((__malloc__, __unused__));
 
 
-static inline void* xrealloc(void *old_ptr, const size_t new_size)
+static inline void * xrealloc(void *old_ptr, const size_t new_size)
     __attribute__ ((__malloc__, __unused__));
 
 
 /* FILE FUNCTIONS */
-static inline FILE* xfopen(const char *restrict path, const char *restrict mode)
+static inline FILE * xfopen(const char *restrict path, const char *restrict mode)
     __attribute__ ((__nonnull__ (1, 2), __unused__));
 
 
@@ -63,13 +63,13 @@ bool xgetline(char **line, size_t *size, FILE *restrict fp)
  *
  * returned value has to be freed.
  */
-static inline char* xdirname(const char *restrict path)
+static inline char * xdirname(const char *restrict path)
     __attribute__ ((__nonnull__ (1), __unused__));
 
 
 /* BASIC STRING OPERATIONS */
 
-static inline char* xstrdup(const char *restrict src)
+static inline char * xstrdup(const char *restrict src)
     __attribute__ ((__nonnull__ (1), __unused__));
 
 
@@ -268,4 +268,4 @@ concat(char **dest, size_t *dest_size, const char *src)
     *dest_size = final_size;
 }
 
-#endif /* !T_TOOLKIT_H */
+#endif /* not T_TOOLKIT_H */

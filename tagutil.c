@@ -47,6 +47,9 @@
 #include <taglib/tag_c.h>
 
 #include "config.h"
+#include "t_lexer.h"
+#include "t_parser.h"
+#include "t_interpreter.h"
 #include "tagutil.h"
 #include "t_toolkit.h"
 
@@ -62,7 +65,7 @@ main(int argc, char *argv[])
     char *current_filename;
     TagLib_File *f;
     tagutil_f apply;
-    char *apply_arg;
+    void *apply_arg;
     struct stat current_filestat;
 
     apply       = NULL;
@@ -71,9 +74,9 @@ main(int argc, char *argv[])
     if (argc < 2)
         usage();
 
-    /* tagutil has side effect (like modifying file's properties, so if we
+    /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
-    while ((ch = getopt(argc, argv, "epht:r:a:A:c:g:y:T:")) != -1) {
+    while ((ch = getopt(argc, argv, "epht:r:f:a:A:c:g:y:T:")) != -1) {
         switch ((char)ch) {
         case 'e':
             if (apply != NULL)
@@ -96,6 +99,12 @@ main(int argc, char *argv[])
                 errx(-1, "too much options given.");
             apply = tagutil_rename;
             apply_arg = optarg;
+            break;
+        case 'f':
+            if (apply != NULL)
+                errx(-1, "too much options given.");
+            apply = tagutil_filter;
+            apply_arg = parse_filter(new_lexer(optarg)); /* TODO: Free AST */
             break;
         case 'a':
             if (apply != NULL)
@@ -137,8 +146,8 @@ main(int argc, char *argv[])
             apply = tagutil_track;
             apply_arg = optarg;
             break;
-        case 'h':
-        case '?':
+        case 'h': /* FALLTHROUGH */
+        case '?': /* FALLTHROUGH */
         default:
             usage();
             /* NOTREACHED */
@@ -206,11 +215,12 @@ usage(void)
                                                          kTITLE,    kALBUM,    kARTIST,    kYEAR,    kTRACK,    kCOMMENT);
     (void)fprintf(stderr, "                             and genre(%s). example: \"%s - %s - (%s) - %s\"\n",
                                                              kGENRE,               kARTIST, kALBUM, kTRACK, kTITLE);
+    (void)fprintf(stderr, "    -f [FILTER]  [files]   : print file in given files that match given FILTER\n");
     (void)fprintf(stderr, "    -t [TITLE]   [files]   : change title tag to TITLE for all given files\n");
     (void)fprintf(stderr, "    -a [ALBUM]   [files]   : change album tag to ALBUM for all given files\n");
     (void)fprintf(stderr, "    -A [ARTIST]  [files]   : change artist tag to ARTIST for all given files\n");
     (void)fprintf(stderr, "    -y [YEAR]    [files]   : change year tag to YEAR for all given files\n");
-    (void)printf(stderr, "    -T [TRACK]   [files]   : change track tag to TRACK for all given files\n");
+    (void)fprintf(stderr, "    -T [TRACK]   [files]   : change track tag to TRACK for all given files\n");
     (void)fprintf(stderr, "    -c [COMMENT] [files]   : change comment tag to COMMENT for all given files\n");
     (void)fprintf(stderr, "    -g [GENRE]   [files]   : change genre tag to GENRE for all given files\n");
     (void)fprintf(stderr, "\n");
@@ -228,6 +238,12 @@ safe_rename(const char *restrict oldpath, const char *restrict newpath)
     assert_not_null(newpath);
 
     /* check if we don't have a / in filename because it's valid in a file's tag */
+    /* FIXME: well, should be clever here:
+     *      tagutil -r '%t' foo/bar.flac
+     * is is valid, and will rename to foo/%t.flac, with a /, and warn. but it's OK.
+     * so we need to check the newpath's dirname, and compare it to the oldpath's dirname.
+     * if tagutil's rename change the file's directory, something is wrong.
+     */
     if (strchr(newpath, (int)'/') != NULL)
         warnx("warning: rename (/ in new path): %s -> %s", oldpath, newpath);
 
@@ -453,7 +469,7 @@ eval_tag(const char *restrict pattern, const TagLib_Tag *restrict tag)
             _REPLACE_BY_INT_IF_MATCH    (kTRACK,   track);
         }
 next_loop_iter:
-        /* NOP */;
+        /* NOOP */;
     }
 
     return (result);
@@ -462,7 +478,7 @@ next_loop_iter:
 
 bool
 tagutil_print(const char *restrict path, TagLib_File *restrict f,
-        const char *restrict arg __attribute__ ((__unused__)))
+        const void *restrict arg __attribute__ ((__unused__)))
 {
     char *infos;
 
@@ -480,7 +496,7 @@ tagutil_print(const char *restrict path, TagLib_File *restrict f,
 
 bool
 tagutil_edit(const char *restrict path, TagLib_File *restrict f,
-        const char *restrict arg __attribute__ ((__unused__)))
+        const void *restrict arg __attribute__ ((__unused__)))
 {
     char *tmp_file, *infos;
     FILE *fp;
@@ -524,11 +540,11 @@ tagutil_edit(const char *restrict path, TagLib_File *restrict f,
     return (true);
 }
 
-
 bool
-tagutil_rename(const char *restrict path, TagLib_File *restrict f, const char *restrict arg)
+tagutil_rename(const char *restrict path, TagLib_File *restrict f, const void *restrict arg)
 {
     char *ftype;
+    const char *strarg;
     TagLib_Tag *tag;
     char *result, *dirn, *new_fname;
     size_t result_size, new_fname_size;
@@ -537,11 +553,13 @@ tagutil_rename(const char *restrict path, TagLib_File *restrict f, const char *r
     assert_not_null(f);
     assert_not_null(arg);
 
-    if (arg[0] == '\0')
-        errx(-1, "wrong rename pattern: %s", arg);
+    strarg = (const char *)arg;
+
+    if (strarg[0] == '\0')
+        errx(-1, "wrong rename pattern: %s", strarg);
 
     tag = taglib_file_tag(f);
-    new_fname = eval_tag(arg, tag);
+    new_fname = eval_tag(strarg, tag);
     /* add ftype to new_fname */
     new_fname_size = strlen(new_fname) + 1;
     if ((ftype = strrchr(path, '.')) == NULL)
@@ -552,6 +570,7 @@ tagutil_rename(const char *restrict path, TagLib_File *restrict f, const char *r
     result_size = 1;
     dirn = xdirname(path);
     result = xcalloc(result_size, sizeof(char));
+    /* add the directory to result if needed */
     if (strcmp(dirn, ".") != 0) {
         concat(&result, &result_size, dirn);
         concat(&result, &result_size, "/");
@@ -572,18 +591,41 @@ tagutil_rename(const char *restrict path, TagLib_File *restrict f, const char *r
 }
 
 
+bool
+tagutil_filter(const char *restrict path, TagLib_File *restrict f, const void *restrict arg)
+{
+    bool ret;
+
+    assert_not_null(path);
+    assert_not_null(f);
+    assert_not_null(arg);
+
+    ret = eval(path, taglib_file_tag(f), (struct ast *)arg);
+
+    if (ret)
+        (void)printf("%s\n", path);
+
+    return (ret);
+}
+
+
 /*
  * tagutil_f generator.
  */
 #define _MAKE_TAGUTIL_FUNC(what, hook)                              \
     bool tagutil_##what (const char *restrict path,                 \
                         TagLib_File *restrict f,                    \
-                        const char  *restrict arg)                  \
+                        const void  *restrict arg)                  \
     {                                                               \
+                                                                    \
+        const char *str;                                            \
+                                                                    \
         assert_not_null(path);                                      \
         assert_not_null(f);                                         \
         assert_not_null(arg);                                       \
-        (taglib_tag_set_##what)(taglib_file_tag(f), hook(arg));     \
+                                                                    \
+        str = (const char *)arg;                                    \
+        (taglib_tag_set_##what)(taglib_file_tag(f), hook(str));     \
     if (!taglib_file_save(f))                                       \
         err(errno, "can't save file %s", path);                     \
     return (true);                                                  \

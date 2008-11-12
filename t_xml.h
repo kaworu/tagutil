@@ -89,4 +89,4 @@ struct xml_tree* xml_reclookup(const struct xml_tree *restrict tree, unsigned in
 char* xml_attrlookup(const struct xml_tree *restrict tree, const char *restrict key)
     __attribute__ ((__nonnull__ (1, 2)));
 
-#endif /* !T_XML_H */
+#endif /* not T_XML_H */

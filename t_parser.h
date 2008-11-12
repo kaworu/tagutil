@@ -1,0 +1,49 @@
+#ifndef T_PARSER_H
+#define T_PARSER_H
+/*
+ * t_parser.c
+ *
+ * a LL(1) recursive descend parser for tagutil.
+ * used by the filter function.
+ *
+ *
+ * tagutil's filter grammar:
+ *
+ * Filter     ::= <Condition>
+ * Condition  ::= <Condition> ( '||' | '&&' ) <Condition>
+ * Condition  ::= <IntKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <INTEGER>
+ * Condition  ::= <StrKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' | '=~' ) <STRING>
+ * Condition  ::= '!' '(' <Condition> ')'
+ * Condition  ::=     '(' <Condition> ')'
+ * IntKeyword ::= 'track' | 'year'
+ * StrKeyword ::= 'title' | 'album' | 'artist' | 'comment' | 'genre'
+ * INTEGER    ::= [0-9]+
+ * STRING     ::= '"' [^"]* '"'
+ */
+
+#include <regex.h>
+
+#include "config.h"
+#include "t_lexer.h"
+
+enum astkind {
+    ANODE,
+    ALEAF,
+};
+
+struct ast {
+    enum astkind kind;
+    struct ast *lhs, *rhs; /* defined if kind == ANODE */
+
+    enum tokenkind tkind;
+    union {
+        char *string;   /* defined if tkind == TSTRING */
+        int integer;    /* defined if tkind == TINT    */
+        regex_t regex;  /* defined if tkind == TREGEX  */
+    } value;
+};
+
+
+struct ast * parse_filter(struct lexer *restrict L);
+
+#endif /* not T_PARSER_H */

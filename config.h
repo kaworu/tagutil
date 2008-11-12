@@ -2,7 +2,7 @@
 #define T_CONFIG_H
 
 
-#define __TAGUTIL_VERSION__ "1.2_pre2"
+#define __TAGUTIL_VERSION__ "2.0_pre1"
 #define __TAGUTIL_AUTHOR__ "kAworu"
 
 

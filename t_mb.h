@@ -32,4 +32,4 @@ char* mb_get(const char *restrict arg);
 void mb_choice(const TagLib_File *restrict f, const struct xml_tree *restrict tree)
     __attribute__ ((__nonnull__ (1, 2)));
 
-#endif /* !T_MB_H */
+#endif /* not T_MB_H */
