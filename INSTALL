@@ -7,6 +7,8 @@ number of user will be more than just me).
 
 Installation
 ------------
+You need taglib (http://developer.kde.org/~wheeler/taglib.html), and some
+POSIX and BSD C functions to compile tagutil.
 
 apply all the patches in p/${YOUR_OS} directory, then type "make" and
 pray.
