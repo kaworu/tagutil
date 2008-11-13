@@ -11,8 +11,14 @@
 #  define restrict
 #endif /* lint */
 
-#define __t__unused     __unused
-#define __t__nonnull(x) __nonnull(x)
-#define __t__dead2      __dead2
+#if defined(T_NO_DEV)
+#  define __t__unused
+#  define __t__nonnull(x)
+#  define __t__dead2
+#else
+#  define __t__unused     __unused
+#  define __t__nonnull(x) __nonnull(x)
+#  define __t__dead2      __dead2
+#endif /* T_NO_DEV */
 
 #endif /* not T_CONFIG_H */

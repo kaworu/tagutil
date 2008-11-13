@@ -1,7 +1,7 @@
-diff -r e0180568a854 Makefile
---- a/Makefile	Thu Nov 13 10:33:57 2008 +0100
-+++ b/Makefile	Thu Nov 13 10:34:12 2008 +0100
-@@ -6,11 +6,17 @@
+diff -r 4f0d58c6b736 Makefile
+--- a/Makefile	Thu Nov 13 10:38:41 2008 +0100
++++ b/Makefile	Thu Nov 13 11:24:34 2008 +0100
+@@ -6,11 +6,20 @@
  DESTDIR		 = ${PREFIX}
  
  CSTD		 = c99
@@ -9,7 +9,10 @@ diff -r e0180568a854 Makefile
 +LDADD		 = -ltag_c
  
 -CFLAGS		+= -Wall -I/usr/local/include/
-+CFLAGS		+= -Wall -D_XOPEN_SOURCE=500 -std=${CSTD}
++GLUEFLAGS	 = -DT_INSANE_DIRNAME \
++			   -DT_LACK_OF_GETPROGNAME \
++			   -DT_NO_DEV
++CFLAGS		+= -Wall -D_XOPEN_SOURCE=500 -std=${CSTD} ${GLUEFLAGS}
 +LDFLAGS		+= ${LDADD}
 +
 +all: ${SRCS:%.c=%.o}
