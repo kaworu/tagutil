@@ -487,7 +487,7 @@ next_loop_iter:
 
 bool
 tagutil_print(const char *restrict path, TagLib_File *restrict f,
-        __unused const void *restrict arg)
+        __t__unused const void *restrict arg)
 {
     char *infos;
 
@@ -505,7 +505,7 @@ tagutil_print(const char *restrict path, TagLib_File *restrict f,
 
 bool
 tagutil_edit(const char *restrict path, TagLib_File *restrict f,
-        __unused const void *restrict arg)
+        __t__unused const void *restrict arg)
 {
     char *tmp_file, *infos;
     FILE *stream;

@@ -60,7 +60,7 @@ void destroy_ast(struct ast *restrict victim);
  *
  * returned value has to be freed (use destroy_ast)
  */
-__nonnull(1)
+__t__nonnull(1)
 struct ast * parse_filter(struct lexer *restrict L);
 
 #endif /* not T_PARSER_H */

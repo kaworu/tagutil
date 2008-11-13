@@ -33,25 +33,25 @@
 
 /* MEMORY FUNCTIONS */
 
-__unused
+__t__unused
 static inline void * xmalloc(const size_t size);
 
-__unused
+__t__unused
 static inline void * xcalloc(const size_t nmemb, const size_t size);
 
-__unused
+__t__unused
 static inline void * xrealloc(void *ptr, const size_t size);
 
 
 /* FILE FUNCTIONS */
 
-__unused __nonnull(1) __nonnull(2)
+__t__unused __t__nonnull(1) __t__nonnull(2)
 static inline FILE * xfopen(const char *restrict path, const char *restrict mode);
 
-__unused __nonnull(1)
+__t__unused __t__nonnull(1)
 static inline void xfclose(FILE *restrict stream);
 
-__unused __nonnull(1) __nonnull(2) __nonnull(3)
+__t__unused __t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
 bool xgetline(char **line, size_t *size, FILE *restrict stream);
 
 /*
@@ -62,13 +62,13 @@ bool xgetline(char **line, size_t *size, FILE *restrict stream);
  *
  * returned value has to be freed.
  */
-__unused __nonnull(1)
+__t__unused __t__nonnull(1)
 static inline char * xdirname(const char *restrict path);
 
 
 /* BASIC STRING OPERATIONS */
 
-__unused __nonnull(1)
+__t__unused __t__nonnull(1)
 static inline char * xstrdup(const char *restrict src);
 
 /*
@@ -77,7 +77,7 @@ static inline char * xstrdup(const char *restrict src);
  *
  * returned value has to be freed.
  */
-__unused __nonnull(1) __nonnull(2) __nonnull(3)
+__t__unused __t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
 static inline void concat(char **dest, size_t *destlen, const char *src);
 
 
@@ -91,14 +91,14 @@ static inline void concat(char **dest, size_t *destlen, const char *src);
  *
  * returned value has to be freed.
  */
-__unused __nonnull(1) __nonnull(2)
+__t__unused __t__nonnull(1) __t__nonnull(2)
 regmatch_t * first_match(const char *restrict str, const char *restrict pattern, const int flags);
 
 /*
  * return true if the regex pattern match the given str, false otherwhise.
  * flags are REG_ICASE | REG_EXTENDED | REG_NEWLINE | REG_NOSUB (see regex(3)).
  */
-__unused __nonnull(2)
+__t__unused __t__nonnull(2)
 bool has_match(const char *restrict str, const char *restrict pattern);
 
 /*
@@ -109,7 +109,7 @@ bool has_match(const char *restrict str, const char *restrict pattern);
  *
  * returned value has to be freed.
  */
-__unused __nonnull(1) __nonnull(2)
+__t__unused __t__nonnull(1) __t__nonnull(2)
 char * get_match(const char *restrict str, const char *restrict pattern);
 
 /*
@@ -119,14 +119,14 @@ char * get_match(const char *restrict str, const char *restrict pattern);
  *
  * returned value has to be freed.
  */
-__unused __nonnull(1) __nonnull(2) __nonnull(3)
+__t__unused __t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
 char * sub_match(const char *str, const regmatch_t *restrict match, const char *replace);
 
 /*
  * same as sub_match but change the string reference given by str. *str will
  * be freed so it has to be malloc'd previously.
  */
-__unused __nonnull(1) __nonnull(2) __nonnull(3)
+__t__unused __t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
 void inplacesub_match(char **str, regmatch_t *restrict match, const char *replace);
 
 
@@ -137,7 +137,7 @@ void inplacesub_match(char **str, regmatch_t *restrict match, const char *replac
  * y|yes|n|no.  yesno() loops until a valid response is given and then return
  * true if the response match y|yes, false if it match n|no.
  */
-__unused
+__t__unused
 bool yesno(const char *restrict question);
 
 /**********************************************************************/
@@ -210,10 +210,20 @@ static inline char *
 xdirname(const char *restrict path)
 {
     char *dirn;
+#if defined(T_INSANE_DIRNAME)
+    char *garbage;
+#endif
 
     assert_not_null(path);
 
-    if ((dirn = dirname(path)) == NULL)
+#if defined(T_INSANE_DIRNAME)
+    dirn = dirname(garbage = xstrdup(path));
+    free(garbage);  /* no more needed */
+#else
+    dirn = dirname(path);
+#endif
+
+    if (dirn == NULL)
         err(errno, NULL);
 
     return (xstrdup(dirn));

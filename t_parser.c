@@ -19,31 +19,31 @@ static inline struct ast * new_node(struct ast *restrict lhs,
 static inline struct ast * new_leaf(enum tokenkind tkind, void *value);
 
 /* private parse_filter helpers. */
-__nonnull(1)
+__t__nonnull(1)
 static struct ast * parse_condition(struct lexer *restrict L);
 
 /*
  * Condition ::= <Condition> '||' <Condition>
  */
-__nonnull(1)
+__t__nonnull(1)
 static struct ast * parse_or(struct lexer *restrict L);
 
 /*
  * Condition ::= <Condition> '&&' <Condition>
  */
-__nonnull(1)
+__t__nonnull(1)
 static struct ast * parse_and(struct lexer *restrict L);
 
 /*
  * choose which factory we need.
  */
-__nonnull(1)
+__t__nonnull(1)
 static struct ast * parse_cmp(struct lexer *restrict L);
 
 /*
  * Condition ::= <IntKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <INTEGER>
  */
-__nonnull(1)
+__t__nonnull(1)
 static struct ast * parse_intcmp(struct lexer *restrict L);
 
 /*
@@ -51,19 +51,19 @@ static struct ast * parse_intcmp(struct lexer *restrict L);
  * Condition ::= <StrKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' | '=~' ) <StrKeyword>
  * Condition ::= <StrKeyword> '=~' <REGEX>
  */
-__nonnull(1)
+__t__nonnull(1)
 static struct ast * parse_strcmp(struct lexer *restrict L);
 
 /*
  * Condition ::= '!' '(' <Condition> ')'
  */
-__nonnull(1)
+__t__nonnull(1)
 static struct ast * parse_not(struct lexer *restrict L);
 
 /*
  * Condition ::= '(' <Condition> ')'
  */
-__nonnull(1)
+__t__nonnull(1)
 static struct ast * parse_nestedcond(struct lexer *restrict L);
 
 

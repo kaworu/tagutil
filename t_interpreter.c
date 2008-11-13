@@ -10,11 +10,11 @@
 #include "t_parser.h"
 #include "t_interpreter.h"
 
-__nonnull(1) __nonnull(2)
+__t__nonnull(1) __t__nonnull(2)
 static inline unsigned int int_leaf(struct ast *restrict leaf,
         const TagLib_Tag *restrict tag);
 
-__nonnull(1) __nonnull(2) __nonnull(3)
+__t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
 static inline const char * str_leaf(const char *restrict filename,
         const struct ast *restrict leaf, const TagLib_Tag *restrict tag);
 

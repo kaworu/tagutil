@@ -16,7 +16,7 @@
 #define is_int_tkeyword(t) ((t) == TTRACK || (t) == TYEAR)
 
 
-__nonnull(1) __nonnull(2) __nonnull(3)
+__t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
 bool eval(const char *restrict filename, const TagLib_Tag *restrict tag,
         const struct ast *restrict filter);
 

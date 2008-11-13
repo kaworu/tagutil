@@ -116,10 +116,10 @@ struct lexer {
 };
 
 
-__nonnull(1)
+__t__nonnull(1)
 struct lexer * new_lexer(const char *restrict str);
 
-__nonnull(1)
+__t__nonnull(1)
 void lex(struct lexer *restrict L);
 
 #endif /* not T_LEXER_H */
