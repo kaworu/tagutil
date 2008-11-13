@@ -5,14 +5,12 @@ PREFIX		?= /usr/local
 BINDIR		?= /bin
 DESTDIR		 = ${PREFIX}
 
-CFLAGS		+= -Wall -I/usr/local/include/
 CSTD		 = c99
 LDADD		 = -L/usr/local/lib -ltag_c
 
+CFLAGS		+= -Wall -I/usr/local/include/
+
 depends:
-	@: > .depend
-.for s in ${SRCS}
-	@${CC} -E -MM ${s} >> .depend
-.endfor
+	@${CC} -E -MM ${SRCS} > .depend
 
 .include <bsd.prog.mk>
