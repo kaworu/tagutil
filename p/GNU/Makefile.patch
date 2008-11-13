@@ -16,7 +16,7 @@ diff -r e0180568a854 Makefile
 +	${CC} -o ${PROG} ${LDFLAGS} $+
 +
 +clean:
-+	-@rm -f ${PROG} *.o &>/dev/null
++	-rm -f ${PROG} ${SRCS:%.c=%.o}
  
  depends:
  	@${CC} -E -MM ${SRCS} > .depend
