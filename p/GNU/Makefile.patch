@@ -1,0 +1,24 @@
+diff -r e0180568a854 Makefile
+--- a/Makefile	Thu Nov 13 10:33:57 2008 +0100
++++ b/Makefile	Thu Nov 13 10:34:12 2008 +0100
+@@ -6,11 +6,17 @@
+ DESTDIR		 = ${PREFIX}
+ 
+ CSTD		 = c99
+-LDADD		 = -L/usr/local/lib -ltag_c
++LDADD		 = -ltag_c
+ 
+-CFLAGS		+= -Wall -I/usr/local/include/
++CFLAGS		+= -Wall -D_XOPEN_SOURCE=500 -std=${CSTD}
++LDFLAGS		+= ${LDADD}
++
++all: ${SRCS:%.c=%.o}
++	${CC} -o ${PROG} ${LDFLAGS} $+
++
++clean:
++	-@rm -f ${PROG} *.o &>/dev/null
+ 
+ depends:
+ 	@${CC} -E -MM ${SRCS} > .depend
+ 
+-.include <bsd.prog.mk>
