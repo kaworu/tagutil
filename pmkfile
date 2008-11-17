@@ -10,7 +10,6 @@ SWITCHES {
 }
 
 # constants
-
 DEFINE {
     PACKAGE = "tagutil"
 	BINDIR  = "bin"
@@ -24,7 +23,7 @@ DEFINE {
 IF(devel) {
     DEFINE {
         CFLAGS = "-std=c99 -g -Wall"
-        CFLAGSMOD = " ="
+        CFLAGSMOD = "="
     }
 }
 ELSE(devel) {
@@ -47,8 +46,10 @@ CHECK_BINARY(bin_gzip) {
     VARIABLE = "GZIP"
 }
 
+
 # C types
 
+# We require C99
 CHECK_TYPE(c_type_bool) {
 	NAME = "bool"
     HEADER = "stdbool.h"
@@ -103,13 +104,18 @@ CHECK_PKG_CONFIG(taglib_c_pc) {
 
 # Optional stuff
 
+# FreeBSD and OpenBSD define a sane dirname function:
+#   char *dirname(const char *)
+# while POSIX does only require
+#   char *dirname(char *)
+# since we think that the first one is far more superior, we try to use it when
+# available.
 CHECK_VARIABLE(os_freebsd) {
     REQUIRED = FALSE
     NAME = "OS_NAME"
     VALUE = "FreeBSD"
     DEFS = ("SANE_DIRNAME")
 }
-
 IF(!os_freebsd) {
     CHECK_VARIABLE(os_openbsd) {
         REQUIRED = FALSE
@@ -119,13 +125,18 @@ IF(!os_freebsd) {
     }
 }
 
-
+# We need getprogname(3). If not available, we define a getprogname(3) function
+# that use the char *__progname globale variable.
 CHECK_HEADER(c_function_getprogname) {
     NAME = "stdlib.h"
     REQUIRED = FALSE
     FUNCTION = ("getprogname")
 }
 
+# we need getopt(3). glibc define getopt(3) in its own header <getopt.h>
+# (included in <unistd.h>) while *BSD define it in <unistd.h>. PreMakeKit is
+# not smart enough to detect included headers (it should), so we detect it by
+# hand
 CHECK_HEADER(c_function_getopt) {
     REQUIRED = FALSE
     NAME = "unistd.h"
@@ -139,6 +150,11 @@ IF(!c_function_getopt) {
     }
 }
 
+# glibc __nonnull(x) macro declaration is not compatible with the FreeBSD's.
+# tagutil's __t__nonnull(x) macro act as the FreeBSD's __nonnull(x) macros.
+# Then even if the __nonnull(x) macros is defined, we need to check if we are
+# under a glibc based system. The only way to do it now with PreMakeKit is to
+# check if we're running on GNU/Linux.
 CHECK_VARIABLE(os_linux) {
     REQUIRED = FALSE
     NAME = "OS_NAME"
