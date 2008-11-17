@@ -31,17 +31,28 @@ CHECK_VARIABLE(os_linux) {
 # needed for strdup(3) (and maybe others).
 IF(os_linux) {
     DEFINE {
-        CFLAGS = "-D_BSD_SOURCE"
+        BSD_SOURCE_CFLAGS = "-D_BSD_SOURCE"
+    }
+}
+ELSE(os_linux) {
+    DEFINE {
+        BSD_SOURCE_CFLAGS = ""
     }
 }
 
-# set CFLAGS.
 IF(devel) {
     DEFINE {
-        CFLAGS = "-g -Wall"
+        DEBUG_CFLAGS = "-g -Wall"
         CFLAGSMOD = "="
     }
 }
+ELSE(devel) {
+    DEFINE {
+        DEBUG_CFLAGS = ""
+    }
+}
+
+# Program checks
 
 CHECK_BINARY(bin_make) {
     NAME = "make"
