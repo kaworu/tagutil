@@ -167,9 +167,11 @@ CHECK_HEADER(c_macro___nonnull) {
     MACRO = ("__nonnull")
 }
 
+# PreMakeKit macro detection doesn't work well :(
 CHECK_HEADER(c_macro___unused) {
     NAME = "sys/cdefs.h"
     REQUIRED = FALSE
+    DEPEND = ("!os_linux")
     MACRO = ("__unused")
 }
 
