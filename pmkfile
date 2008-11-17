@@ -21,6 +21,20 @@ DEFINE {
     AUTHORS = "kAworu"
 }
 
+
+CHECK_VARIABLE(os_linux) {
+    REQUIRED = FALSE
+    NAME = "OS_NAME"
+    VALUE = "Linux"
+}
+
+# needed for strdup(3) (and maybe others).
+IF(os_linux) {
+    DEFINE {
+        CFLAGS = "-D_BSD_SOURCE"
+    }
+}
+
 # set CFLAGS.
 IF(devel) {
     DEFINE {
@@ -151,19 +165,6 @@ IF(!c_function_getopt) {
 # Then even if the __nonnull(x) macros is defined, we need to check if we are
 # under a glibc based system. The only way to do it now with PreMakeKit is to
 # check if we're running on GNU/Linux.
-CHECK_VARIABLE(os_linux) {
-    REQUIRED = FALSE
-    NAME = "OS_NAME"
-    VALUE = "Linux"
-}
-
-# needed for strdup(3) (and maybe others).
-IF(os_linux) {
-    DEFINE {
-        CFLAGS = "-D_BSD_SOURCE"
-    }
-}
-
 CHECK_HEADER(c_macro___nonnull) {
     NAME = "sys/cdefs.h"
     REQUIRED = FALSE
