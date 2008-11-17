@@ -6,8 +6,8 @@ GZIP		= @GZIP@
 
 CFLAGS		@CFLAGSMOD@ @CFLAGS@ @BSD_SOURCE_CFLAGS@ @DEBUG_CFLAGS@
 LDFLAGS		= @LIBS@
-SRCS		= tagutil.c t_toolkit.c t_lexer.c t_parser.c t_interpreter.c t_compat.c
-OBJS		= tagutil.o t_toolkit.o t_lexer.o t_parser.o t_interpreter.o t_compat.o
+SRCS		= tagutil.c t_toolkit.c t_lexer.c t_parser.c t_interpreter.c t_compat.c t_yaml.c
+OBJS		= tagutil.o t_toolkit.o t_lexer.o t_parser.o t_interpreter.o t_compat.o t_yaml.o
 
 MAN1		= ${PROG}.1
 MAN		= ${MAN1}.gz

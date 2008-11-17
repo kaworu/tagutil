@@ -42,7 +42,7 @@ ELSE(os_linux) {
 
 IF(devel) {
     DEFINE {
-        DEBUG_CFLAGS = "-g -Wall"
+        DEBUG_CFLAGS = "-g -Wextra -Wformat-security -Wnonnull -Wswitch-default -Waggregate-return -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow -Wstrict-prototypes -Winline -Wall"
         CFLAGSMOD = "="
     }
 }
@@ -152,6 +152,11 @@ CHECK_HEADER(c_function_getprogname) {
     REQUIRED = FALSE
     NAME = "stdlib.h"
     FUNCTION = ("getprogname")
+}
+
+CHECK_HEADER(c_function_mkstemp) {
+    NAME = "unistd.h"
+    FUNCTION = ("mkstemp")
 }
 
 # we need getopt(3). glibc define getopt(3) in its own header <getopt.h>
