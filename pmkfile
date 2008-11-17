@@ -28,10 +28,10 @@ CHECK_VARIABLE(os_linux) {
     VALUE = "Linux"
 }
 
-# needed for strdup(3) (and maybe others).
+# GNU/Linux noise.
 IF(os_linux) {
     DEFINE {
-        BSD_SOURCE_CFLAGS = "-D_BSD_SOURCE"
+        BSD_SOURCE_CFLAGS = "-D_BSD_SOURCE -D__USE_POSIX2"
     }
 }
 ELSE(os_linux) {
@@ -149,8 +149,8 @@ IF(!os_freebsd) {
 # We need getprogname(3). If not available, we define a getprogname(3) function
 # that use the char *__progname globale variable.
 CHECK_HEADER(c_function_getprogname) {
-    NAME = "stdlib.h"
     REQUIRED = FALSE
+    NAME = "stdlib.h"
     FUNCTION = ("getprogname")
 }
 
@@ -177,23 +177,24 @@ IF(!c_function_getopt) {
 # under a glibc based system. The only way to do it now with PreMakeKit is to
 # check if we're running on GNU/Linux.
 CHECK_HEADER(c_macro___nonnull) {
-    NAME = "sys/cdefs.h"
-    REQUIRED = FALSE
     DEPEND = ("!os_linux")
+    REQUIRED = FALSE
+    NAME = "sys/cdefs.h"
     MACRO = ("__nonnull")
 }
 
 # PreMakeKit macro detection doesn't work well :(
 CHECK_HEADER(c_macro___unused) {
-    NAME = "sys/cdefs.h"
-    REQUIRED = FALSE
     DEPEND = ("!os_linux")
+    REQUIRED = FALSE
+    NAME = "sys/cdefs.h"
     MACRO = ("__unused")
 }
 
 CHECK_HEADER(c_macro___dead2) {
-    NAME = "sys/cdefs.h"
+    DEPEND = ("!os_linux")
     REQUIRED = FALSE
+    NAME = "sys/cdefs.h"
     MACRO = ("__dead2")
 }
 
