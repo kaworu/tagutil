@@ -4,7 +4,7 @@ SETTINGS {
     LANG    = "C"
 }
 
-# devel or release ?
+# devel or release?
 SWITCHES {
     devel = FALSE
 }
@@ -92,7 +92,6 @@ CHECK_HEADER(c_header_sys_stat_h) {
 }
 CHECK_HEADER(c_header_unistd_h) {
     NAME = "unistd.h"
-    FUNCTION = ("getopt")
 }
 
 # pkg-config
@@ -108,6 +107,19 @@ CHECK_HEADER(c_function_getprogname) {
     NAME = "stdlib.h"
     REQUIRED = FALSE
     FUNCTION = ("getprogname")
+}
+
+CHECK_HEADER(c_function_getopt) {
+    REQUIRED = FALSE
+    NAME = "unistd.h"
+    FUNCTION = ("getopt")
+}
+
+IF(!c_function_getopt) {
+    CHECK_HEADER(c_header_getopt_h) {
+        NAME = "getopt.h"
+        FUNCTION = ("getopt")
+    }
 }
 
 CHECK_HEADER(c_macro___nonnull) {
@@ -143,3 +155,4 @@ IF(!os_freebsd) {
         DEFS = ("SANE_DIRNAME")
     }
 }
+
