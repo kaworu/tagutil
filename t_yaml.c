@@ -22,13 +22,13 @@ tags_to_yaml(const char *restrict path, const TagLib_Tag *restrict tags)
 
     template =  "\n"
                 "---\n"
-                "title:   \"%t\""
-                "album:   \"%a\""
-                "artist:  \"%A\""
-                "year:    \"%y\""
-                "track:   \"%T\""
-                "comment: \"%c\""
-                "genre:   \"%g\"";
+                "title:   \"%t\"\n"
+                "album:   \"%a\"\n"
+                "artist:  \"%A\"\n"
+                "year:    \"%y\"\n"
+                "track:   \"%T\"\n"
+                "comment: \"%c\"\n"
+                "genre:   \"%g\"\n";
 
     retlen = 1;
     ret = xcalloc(retlen, sizeof(char));
@@ -49,17 +49,20 @@ tags_to_yaml(const char *restrict path, const TagLib_Tag *restrict tags)
  * dummy yaml parser. Only handle our YAML output.
  */
 bool
-yaml_to_tags(const TagLib_Tag *restrict tags, FILE *restrict stream)
+yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
 {
     bool set_somethin; /* true if we have set at least 1 field */
     bool is_intval;
     void *setter;
     char c;
     int line;
-    char keyword[8]; /* longest is: comment */
+    char keyword[9]; /* longest is: comment */
 
     char *value;
     size_t valuelen, i, valueidx;
+
+    assert_not_null(tags);
+    assert_not_null(stream);
 
     set_somethin = false;
     line = 1;
@@ -68,6 +71,8 @@ yaml_to_tags(const TagLib_Tag *restrict tags, FILE *restrict stream)
 
     /* eat first line: ^# <filename>$ */;
     while (!feof(stream) && getc(stream) != '\n')
+        ;
+
     if (feof(stream)) {
         warnx("yaml_to_tags at line %d: EOF reached before header.", line);
         goto free_ret_false;
@@ -78,9 +83,11 @@ yaml_to_tags(const TagLib_Tag *restrict tags, FILE *restrict stream)
     /* eat header: ^---$ */
     if (getc(stream) != '-' || getc(stream) != '-' ||
             getc(stream) != '-' || getc(stream) != '\n') {
-        warnx("yaml_to_tags at line %d: EOF reached before data.", line);
+        warnx("yaml_to_tags at line %d: bad YAML header", line);
         goto free_ret_false;
     }
+
+    c = getc(stream);
 
     for (;;) {
         /* ^keyword:  "value"$ */
@@ -93,7 +100,7 @@ yaml_to_tags(const TagLib_Tag *restrict tags, FILE *restrict stream)
         }
 
         if (!is_letter(c)) {
-            warnx("yaml_to_tags at line %d: need a letter to begin.", line);
+            warnx("yaml_to_tags at line %d: need a letter to begin, got '%c'", line, c);
             goto free_ret_false;
         }
 
@@ -103,7 +110,7 @@ yaml_to_tags(const TagLib_Tag *restrict tags, FILE *restrict stream)
             keyword[i] = c;
             c = getc(stream);
         }
-        keyword[i + 1] = '\0';
+        keyword[i] = '\0';
 
         /* get the keyword's setter method */
         is_intval = false;
@@ -137,8 +144,9 @@ yaml_to_tags(const TagLib_Tag *restrict tags, FILE *restrict stream)
             goto free_ret_false;
         }
 
-        while (!feof(stream) && is_blank(c = getc(stream)))
-            /* eat blank chars */;
+        c = getc(stream);
+        while (is_blank(c))
+            c = getc(stream);
 
         if (c != '"') {
             warnx("yaml_to_tags at line %d: expected '\"' but got '%c'", line, c);
@@ -170,18 +178,30 @@ yaml_to_tags(const TagLib_Tag *restrict tags, FILE *restrict stream)
                 }
                 value[valueidx++] = c;
             }
-            else if (c == '"')
+            else if (c == '"') {
+                if ((c = getc(stream)) != '\n') {
+                    warnx("yaml_to_tags at line %d: expected EOL after String, got '%c'",
+                            line, c);
+                    goto free_ret_false;
+                }
+                line += 1;
                 break;
-            else
+            }
+            else {
                 value[valueidx++] = c;
+                if (c == '\n')
+                    line += 1;
+            }
         }
         value[valueidx] = '\0';
 
         /* set the value */
         if (is_intval)
-            ((void (*)(TagLib_Tag *, unsigned int))setter)(tags, atoi(value));
+            (*(void (*)(TagLib_Tag *, unsigned int))setter)(tags, atoi(value));
         else
-            ((void (*)(TagLib_Tag *, const char *))setter)(tags, value);
+            (*(void (*)(TagLib_Tag *, const char *))setter)(tags, value);
+
+        c = getc(stream);
         set_somethin = true;
     }
 

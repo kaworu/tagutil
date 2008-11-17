@@ -53,6 +53,7 @@
 #include "t_lexer.h"
 #include "t_parser.h"
 #include "t_interpreter.h"
+#include "t_yaml.h"
 #include "t_toolkit.h"
 
 #include "tagutil.h"
@@ -490,16 +491,15 @@ next_loop_iter:
 
 bool
 tagutil_print(const char *restrict path, TagLib_File *restrict f,
-        const void *restrict arg)
+        __t__unused const void *restrict arg)
 {
     char *infos;
 
     assert_not_null(path);
     assert_not_null(f);
 
-    infos = printable_tag(taglib_file_tag(f));
-    (void)printf("FILE: \"%s\"\n", path);
-    (void)printf("%s\n\n", infos);
+    infos = tags_to_yaml(path, taglib_file_tag(f));
+    (void)printf("%s\n", infos);
 
     free(infos);
     return (true);
@@ -508,7 +508,7 @@ tagutil_print(const char *restrict path, TagLib_File *restrict f,
 
 bool
 tagutil_edit(const char *restrict path, TagLib_File *restrict f,
-        const void *restrict arg)
+        __t__unused const void *restrict arg)
 {
     char *tmp_file, *infos;
     FILE *stream;
@@ -516,16 +516,14 @@ tagutil_edit(const char *restrict path, TagLib_File *restrict f,
     assert_not_null(path);
     assert_not_null(f);
 
-    infos = printable_tag(taglib_file_tag(f));
-    (void)printf("FILE: \"%s\"\n", path);
-    (void)printf("%s\n\n", infos);
+    infos = tags_to_yaml(path, taglib_file_tag(f));
+    (void)printf("%s\n", infos);
 
     if (yesno("edit this file")) {
         tmp_file = create_tmpfile();
 
         stream = xfopen(tmp_file, "w");
-        (void)fprintf(stream, "# %s\n\n", path);
-        (void)fprintf(stream, "%s\n", infos);
+        (void)fprintf(stream, "%s", infos);
         xfclose(stream);
 
         if (!user_edit(tmp_file)) {
@@ -535,7 +533,7 @@ tagutil_edit(const char *restrict path, TagLib_File *restrict f,
         }
 
         stream = xfopen(tmp_file, "r");
-        if (!update_tag(taglib_file_tag(f), stream))
+        if (!yaml_to_tags(taglib_file_tag(f), stream))
             warnx("file '%s' not saved.", path);
         else {
             if (!taglib_file_save(f))

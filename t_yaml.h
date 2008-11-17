@@ -16,4 +16,4 @@ char * tags_to_yaml(const char *restrict path,
 
 
 __t__nonnull(1) __t__nonnull(2)
-bool yaml_to_tags(const TagLib_Tag *restrict tags, FILE *restrict stream);
+bool yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream);
