@@ -103,6 +103,23 @@ CHECK_PKG_CONFIG(taglib_c_pc) {
 
 # Optional stuff
 
+CHECK_VARIABLE(os_freebsd) {
+    REQUIRED = FALSE
+    NAME = "OS_NAME"
+    VALUE = "FreeBSD"
+    DEFS = ("SANE_DIRNAME")
+}
+
+IF(!os_freebsd) {
+    CHECK_VARIABLE(os_openbsd) {
+        REQUIRED = FALSE
+        NAME = "OS_NAME"
+        VALUE = "OpenBSD"
+        DEFS = ("SANE_DIRNAME")
+    }
+}
+
+
 CHECK_HEADER(c_function_getprogname) {
     NAME = "stdlib.h"
     REQUIRED = FALSE
@@ -122,9 +139,15 @@ IF(!c_function_getopt) {
     }
 }
 
+CHECK_VARIABLE(os_linux) {
+    REQUIRED = FALSE
+    NAME = "OS_NAME"
+    VALUE = "Linux"
+}
 CHECK_HEADER(c_macro___nonnull) {
     NAME = "sys/cdefs.h"
     REQUIRED = FALSE
+    DEPENDS = ("!os_linux")
     MACRO = ("__nonnull")
 }
 
@@ -138,21 +161,5 @@ CHECK_HEADER(c_macro___dead2) {
     NAME = "sys/cdefs.h"
     REQUIRED = FALSE
     MACRO = ("__dead2")
-}
-
-CHECK_VARIABLE(os_freebsd) {
-    REQUIRED = FALSE
-    NAME = "OS_NAME"
-    VALUE = "FreeBSD"
-    DEFS = ("SANE_DIRNAME")
-}
-
-IF(!os_freebsd) {
-    CHECK_VARIABLE(os_openbsd) {
-        REQUIRED = FALSE
-        NAME = "OS_NAME"
-        VALUE = "OpenBSD"
-        DEFS = ("SANE_DIRNAME")
-    }
 }
 
