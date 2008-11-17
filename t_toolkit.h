@@ -218,13 +218,13 @@ static inline char *
 xdirname(const char *restrict path)
 {
     char *dirn;
-#if defined(T_INSANE_DIRNAME)
+#if !defined(HAVE_SANE_DIRNAME)
     char *garbage;
 #endif
 
     assert_not_null(path);
 
-#if defined(T_INSANE_DIRNAME)
+#if !defined(HAVE_SANE_DIRNAME)
     dirn = dirname(garbage = xstrdup(path));
     free(garbage);  /* no more needed */
 #else
@@ -269,16 +269,5 @@ concat(char **dest, size_t *dest_size, const char *src)
     memcpy(*dest + start, src, src_size + 1);
     *dest_size = final_size;
 }
-
-#if defined(T_LACK_OF_GETPROGNAME)
-__t__unused
-static inline const char *
-getprogname(void)
-{
-    extern char *__progname;
-
-    return (__progname);
-}
-#endif
 
 #endif /* not T_TOOLKIT_H */

@@ -1,0 +1,145 @@
+# globals settings
+SETTINGS {
+    TARGET  = ("Makefile.in", "t_config.h.in")
+    LANG    = "C"
+}
+
+# devel or release ?
+SWITCHES {
+    devel = FALSE
+}
+
+# constants
+
+DEFINE {
+    PACKAGE = "tagutil"
+	BINDIR  = "bin"
+	MANDIR  = "man"
+	MAN1DIR = "\\${MANDIR}/man1"
+    VERSION = "2.0_rc1"
+    AUTHORS = "kAworu"
+}
+
+# set CFLAGS.
+IF(devel) {
+    DEFINE {
+        CFLAGS = "-std=c99 -g -Wall"
+        CFLAGSMOD = " ="
+    }
+}
+ELSE(devel) {
+    DEFINE {
+        CFLAGS = "-std=c99"
+        CFLAGSMOD = "+="
+    }
+}
+
+CHECK_BINARY(bin_make) {
+    NAME = "make"
+}
+CHECK_BINARY(bin_rm) {
+    NAME = "rm"
+    VARIABLE = "RM"
+}
+CHECK_BINARY(bin_gzip) {
+# needed to compress manual page
+    NAME = "gzip"
+    VARIABLE = "GZIP"
+}
+
+# C types
+
+CHECK_TYPE(c_type_bool) {
+	NAME = "bool"
+    HEADER = "stdbool.h"
+}
+
+# C headers
+
+CHECK_HEADER(c_header_assert_h) {
+    NAME = "assert.h"
+}
+CHECK_HEADER(c_header_err_h) {
+    NAME = "err.h"
+}
+CHECK_HEADER(c_header_errno_h) {
+    NAME = "errno.h"
+}
+CHECK_HEADER(c_header_libgen_h) {
+    NAME = "libgen.h"
+    FUNCTION = ("dirname")
+}
+CHECK_HEADER(c_header_regex_h) {
+    NAME = "regex.h"
+}
+CHECK_HEADER(c_header_stdio_h) {
+    NAME = "stdio.h"
+}
+CHECK_HEADER(c_header_stdlib_h) {
+    NAME = "stdlib.h"
+}
+CHECK_HEADER(c_header_string_h) {
+    NAME = "string.h"
+}
+CHECK_HEADER(c_header_strings_h) {
+    NAME = "strings.h"
+}
+CHECK_HEADER(c_header_sys_types_h) {
+    NAME = "sys/types.h"
+}
+CHECK_HEADER(c_header_sys_stat_h) {
+    NAME = "sys/stat.h"
+}
+CHECK_HEADER(c_header_unistd_h) {
+    NAME = "unistd.h"
+    FUNCTION = ("getopt")
+}
+
+# pkg-config
+
+CHECK_PKG_CONFIG(taglib_c_pc) {
+    NAME = "taglib_c"
+    VERSION = "1.5"
+}
+
+# Optional stuff
+
+CHECK_HEADER(c_function_getprogname) {
+    NAME = "stdlib.h"
+    REQUIRED = FALSE
+    FUNCTION = ("getprogname")
+}
+
+CHECK_HEADER(c_macro___nonnull) {
+    NAME = "sys/cdefs.h"
+    REQUIRED = FALSE
+    MACRO = ("__nonnull")
+}
+
+CHECK_HEADER(c_macro___unused) {
+    NAME = "sys/cdefs.h"
+    REQUIRED = FALSE
+    MACRO = ("__unused")
+}
+
+CHECK_HEADER(c_macro___dead2) {
+    NAME = "sys/cdefs.h"
+    REQUIRED = FALSE
+    MACRO = ("__dead2")
+}
+
+CHECK_VARIABLE(os_freebsd) {
+    REQUIRED = FALSE
+    NAME = "OS_NAME"
+    VALUE = "FreeBSD"
+    DEFS = ("SANE_DIRNAME")
+}
+
+IF(!os_freebsd) {
+    CHECK_VARIABLE(os_openbsd) {
+        REQUIRED = FALSE
+        NAME = "OS_NAME"
+        VALUE = "OpenBSD"
+        DEFS = ("SANE_DIRNAME")
+    }
+}

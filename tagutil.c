@@ -44,7 +44,7 @@
 #include <errno.h>
 #include <unistd.h> /* getopt(3) */
 
-#include <taglib/tag_c.h>
+#include <tag_c.h>
 
 #include "t_config.h"
 #include "t_lexer.h"
@@ -205,7 +205,7 @@ void
 usage(void)
 {
 
-    (void)fprintf(stderr,  "TagUtil v"__TAGUTIL_VERSION__" by "__TAGUTIL_AUTHOR__".\n\n");
+    (void)fprintf(stderr,  "TagUtil v"__TAGUTIL_VERSION__" by "__TAGUTIL_AUTHORS__".\n\n");
     (void)fprintf(stderr,  "usage: %s [opt [optarg]] [files]...\n", getprogname());
     (void)fprintf(stderr, "Modify or display music file's tag.\n");
     (void)fprintf(stderr, "\n");

@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
-#include <taglib/tag_c.h>
+#include <tag_c.h>
 
 #include "t_config.h"
 

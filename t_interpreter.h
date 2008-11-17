@@ -6,7 +6,7 @@
  * the tagutil's filter interpreter.
  */
 
-#include <taglib/tag_c.h>
+#include <tag_c.h>
 #include <stdbool.h>
 
 #include "t_config.h"

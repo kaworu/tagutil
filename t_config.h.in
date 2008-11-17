@@ -1,0 +1,61 @@
+#ifndef T_CONFIG_H
+#define T_CONFIG_H
+
+#define __TAGUTIL_VERSION__ "@VERSION@"
+#define __TAGUTIL_AUTHORS__ "@AUTHORS@"
+
+/* avoid lint to complain for non C89 keywords and macros */
+#if defined(lint)
+#  define inline
+#  define restrict
+#  define __t__unused
+#  define __t__nonnull(x)
+#  define __t__dead2
+#endif /* lint */
+
+@DEF__GETPROGNAME@
+#if !defined(HAVE_GETPROGNAME)
+__t__unused
+const char * getprogname(void);
+#endif /* not HAVE_GETPROGNAME */
+
+
+@DEF____UNUSED@
+#if !defined(HAVE___UNUSED)
+#  if __GNUC_PREREQ__(2, 7) || defined(__INTEL_COMPILER)
+#    define	__t__unused	__attribute__((__unused__))
+#  else
+#    define	__t__unused
+#  endif /* __GNUC_PREREQ__(2, 7) || __INTEL_COMPILER */
+#else
+#  define __t__unused __unused
+#endif /* not HAVE___UNUSED */
+
+
+@DEF____DEAD2@
+#if !defined(HAVE___DEAD2)
+#  if __GNUC_PREREQ__(2, 7) || defined(__INTEL_COMPILER)
+#    define	__t__dead2	__attribute__((__noreturn__))
+#  else
+#    define	__t__dead2
+#  endif /* __GNUC_PREREQ__(2, 7) || __INTEL_COMPILER */
+#else
+#  define __t__dead2 __dead2
+#endif /* not HAVE___DEAD2 */
+
+
+@DEF____NONNULL@
+#if !defined(HAVE___NONNULL)
+#  if __GNUC_PREREQ__(3, 3)
+#    define	__t__nonnull(x)	__attribute__((__nonnull__(x)))
+#  else
+#    define	__t__nonnull(x)
+#  endif /* __GNUC_PREREQ__(3, 3) */
+#else
+#  define __t__nonnull(x) __nonnull(x)
+#endif /* not HAVE___NONNULL */
+
+
+@DEF__SANE_DIRNAME@
+
+#endif /* not T_CONFIG_H */
