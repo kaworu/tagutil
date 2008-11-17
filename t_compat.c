@@ -6,7 +6,7 @@
 #include "t_config.h"
 
 
-#if !defined(HAS_GETPROGNAME)
+#if !defined(HAVE_GETPROGNAME)
 const char *
 getprogname(void)
 {
@@ -14,4 +14,4 @@ getprogname(void)
 
     return (__progname);
 }
-#endif
+#endif /* not HAVE_GETPROGNAME */

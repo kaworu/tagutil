@@ -147,7 +147,7 @@ CHECK_VARIABLE(os_linux) {
 CHECK_HEADER(c_macro___nonnull) {
     NAME = "sys/cdefs.h"
     REQUIRED = FALSE
-    DEPENDS = ("!os_linux")
+    DEPEND = ("!os_linux")
     MACRO = ("__nonnull")
 }
 
