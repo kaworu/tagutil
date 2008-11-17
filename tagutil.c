@@ -249,7 +249,7 @@ safe_rename(const char *restrict oldpath, const char *restrict newpath)
     newdirn = xdirname(newpath);
     if (strcmp(olddirn, newdirn) != 0) {
     /* srcdir != destdir, we need to check if destdir is OK */
-        if (stat(newpath, &st) == 0 && S_ISDIR(st.st_mode))
+        if (stat(newdirn, &st) == 0 && S_ISDIR(st.st_mode))
             /* destdir exists, so let's try */;
         else {
             err(errno, "can't rename \"%s\" to \"%s\" destination directory doesn't exist",
