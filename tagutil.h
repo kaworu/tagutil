@@ -1,12 +1,13 @@
 #ifndef T_TAGUTIL_H
 #define T_TAGUTIL_H
-
+/*
+ * tagutil main header.
+ */
+#include "t_config.h"
 
 #include <stdio.h>
 #include <stdbool.h>
 #include <tag_c.h>
-
-#include "t_config.h"
 
 
 /*

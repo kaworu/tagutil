@@ -6,11 +6,10 @@
  * a hand writted lexer for tagutil.
  * used by the filter function.
  */
+#include "t_config.h"
 
 #include <stdlib.h>
 #include <regex.h>
-
-#include "t_config.h"
 
 
 #define is_letter(c) ((c) >= 'a' && (c) <= 'z')

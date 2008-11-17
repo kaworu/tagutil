@@ -5,11 +5,11 @@
  *
  * the tagutil's filter interpreter.
  */
+#include "t_config.h"
 
 #include <tag_c.h>
 #include <stdbool.h>
 
-#include "t_config.h"
 #include "t_parser.h"
 
 

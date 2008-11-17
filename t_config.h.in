@@ -80,4 +80,10 @@ const char * getprogname(void);
  */
 @DEF__SANE_DIRNAME@
 
+
+/*
+ * getopt header
+ */
+@DEF__GETOPT_H@
+
 #endif /* not T_CONFIG_H */

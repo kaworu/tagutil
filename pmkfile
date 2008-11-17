@@ -31,7 +31,7 @@ CHECK_VARIABLE(os_linux) {
 # GNU/Linux noise.
 IF(os_linux) {
     DEFINE {
-        BSD_SOURCE_CFLAGS = "-D_BSD_SOURCE -D__USE_POSIX2"
+        BSD_SOURCE_CFLAGS = "-D_BSD_SOURCE"
     }
 }
 ELSE(os_linux) {
@@ -158,15 +158,14 @@ CHECK_HEADER(c_function_getprogname) {
 # (included in <unistd.h>) while *BSD define it in <unistd.h>. PreMakeKit is
 # not smart enough to detect included headers (it should), so we detect it by
 # hand
-CHECK_HEADER(c_function_getopt) {
+CHECK_HEADER(c_header_getopt_h) {
     REQUIRED = FALSE
-    NAME = "unistd.h"
+    NAME = "getopt.h"
     FUNCTION = ("getopt")
 }
-
-IF(!c_function_getopt) {
-    CHECK_HEADER(c_header_getopt_h) {
-        NAME = "getopt.h"
+IF(!c_header_getopt_h) {
+    CHECK_HEADER(c_function_getopt) {
+        NAME = "unistd.h"
         FUNCTION = ("getopt")
     }
 }

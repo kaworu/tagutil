@@ -3,12 +3,13 @@
  *
  * the tagutil's filter interpreter.
  */
-
 #include "t_config.h"
+
 #include "t_toolkit.h"
 #include "t_lexer.h"
 #include "t_parser.h"
 #include "t_interpreter.h"
+
 
 __t__nonnull(1) __t__nonnull(2)
 static inline unsigned int int_leaf(struct ast *restrict leaf,

@@ -3,12 +3,11 @@
  *
  * handy functions toolkit for tagutil.
  */
+#include "t_config.h"
 
 #include <assert.h>
 #include <errno.h>
-/*#include <stdarg.h>*/
 
-#include "t_config.h"
 #include "t_toolkit.h"
 
 

@@ -4,12 +4,12 @@
  * a hand writted lexer for tagutil.
  * used by the filter function.
  */
+#include "t_config.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h> /* strncasecmp(3) */
 
-#include "t_config.h"
 #include "t_lexer.h"
 #include "t_toolkit.h"
 

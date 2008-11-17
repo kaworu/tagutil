@@ -37,16 +37,19 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include "t_config.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include <errno.h>
 #include <unistd.h> /* getopt(3) */
+#if defined(HAVE_GETOPT_H)
+#include <getopt.h>
+#endif /* HAVE_GETOPT_H */
 
 #include <tag_c.h>
 
-#include "t_config.h"
 #include "t_lexer.h"
 #include "t_parser.h"
 #include "t_interpreter.h"

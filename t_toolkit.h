@@ -6,6 +6,7 @@
  * handy functions toolkit for tagutil.
  *
  */
+#include "t_config.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -16,8 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "t_config.h"
 
 
 /* compute the length of a fixed size array */
