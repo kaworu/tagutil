@@ -15,6 +15,8 @@ DEFINE {
 	BINDIR  = "bin"
 	MANDIR  = "man"
 	MAN1DIR = "\\${MANDIR}/man1"
+    CFLAGS  = "-std=c99"
+    CFLAGSMOD = "+="
     VERSION = "2.0_rc1"
     AUTHORS = "kAworu"
 }
@@ -22,14 +24,8 @@ DEFINE {
 # set CFLAGS.
 IF(devel) {
     DEFINE {
-        CFLAGS = "-std=c99 -g -Wall"
+        CFLAGS = "-g -Wall"
         CFLAGSMOD = "="
-    }
-}
-ELSE(devel) {
-    DEFINE {
-        CFLAGS = "-std=c99"
-        CFLAGSMOD = "+="
     }
 }
 
@@ -160,6 +156,14 @@ CHECK_VARIABLE(os_linux) {
     NAME = "OS_NAME"
     VALUE = "Linux"
 }
+
+# needed for strdup(3) (and maybe others).
+IF(os_linux) {
+    DEFINE {
+        CFLAGS = "-D_BSD_SOURCE"
+    }
+}
+
 CHECK_HEADER(c_macro___nonnull) {
     NAME = "sys/cdefs.h"
     REQUIRED = FALSE
