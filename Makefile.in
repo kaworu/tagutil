@@ -30,7 +30,7 @@ ${MAN}: ${MAN1}
 	${GZIP} -cn ${MAN1} > ${MAN}
 
 depends:
-	@${CC} -E -MM ${SRCS} > .depend
+	@${CC} ${CFLAGS} -E -MM ${SRCS} > .depend
 
 clean:
 	-${RM} ${OBJS} ${PROG} ${MAN}

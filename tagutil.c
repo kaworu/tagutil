@@ -222,14 +222,14 @@ usage(void)
                                                          kTITLE,    kALBUM,    kARTIST,    kYEAR,    kTRACK,    kCOMMENT);
     (void)fprintf(stderr, "                             and genre(%s). example: \"%s - %s - (%s) - %s\"\n",
                                                              kGENRE,               kARTIST, kALBUM, kTRACK, kTITLE);
-    (void)fprintf(stderr, "    -x [FILTER]  [files]   : print file in given files that match given FILTER\n");
-    (void)fprintf(stderr, "    -t [TITLE]   [files]   : change title tag to TITLE for all given files\n");
-    (void)fprintf(stderr, "    -a [ALBUM]   [files]   : change album tag to ALBUM for all given files\n");
-    (void)fprintf(stderr, "    -A [ARTIST]  [files]   : change artist tag to ARTIST for all given files\n");
-    (void)fprintf(stderr, "    -y [YEAR]    [files]   : change year tag to YEAR for all given files\n");
-    (void)fprintf(stderr, "    -T [TRACK]   [files]   : change track tag to TRACK for all given files\n");
-    (void)fprintf(stderr, "    -c [COMMENT] [files]   : change comment tag to COMMENT for all given files\n");
-    (void)fprintf(stderr, "    -g [GENRE]   [files]   : change genre tag to GENRE for all given files\n");
+    (void)fprintf(stderr, "    -x [FILTER]  [files]   : print files in matching FILTER\n");
+    (void)fprintf(stderr, "    -t [TITLE]   [files]   : update title tag to TITLE for all given files\n");
+    (void)fprintf(stderr, "    -a [ALBUM]   [files]   : update album tag to ALBUM for all given files\n");
+    (void)fprintf(stderr, "    -A [ARTIST]  [files]   : update artist tag to ARTIST for all given files\n");
+    (void)fprintf(stderr, "    -y [YEAR]    [files]   : update year tag to YEAR for all given files\n");
+    (void)fprintf(stderr, "    -T [TRACK]   [files]   : update track tag to TRACK for all given files\n");
+    (void)fprintf(stderr, "    -c [COMMENT] [files]   : update comment tag to COMMENT for all given files\n");
+    (void)fprintf(stderr, "    -g [GENRE]   [files]   : update genre tag to GENRE for all given files\n");
     (void)fprintf(stderr, "\n");
 
     exit(EXIT_SUCCESS);
@@ -604,7 +604,8 @@ tagutil_rename(const char *restrict path, TagLib_File *restrict f, const void *r
 
 
 bool
-tagutil_filter(const char *restrict path, TagLib_File *restrict f, const void *restrict arg)
+tagutil_filter(const char *restrict path, TagLib_File *restrict f,
+        const void *restrict arg)
 {
     bool ret;
 
@@ -621,32 +622,134 @@ tagutil_filter(const char *restrict path, TagLib_File *restrict f, const void *r
 }
 
 
-/*
- * tagutil_f generator.
- */
-#define _MAKE_TAGUTIL_FUNC(what, hook)                              \
-    bool tagutil_##what (const char *restrict path,                 \
-                        TagLib_File *restrict f,                    \
-                        const void  *restrict arg)                  \
-    {                                                               \
-                                                                    \
-        const char *str;                                            \
-                                                                    \
-        assert_not_null(path);                                      \
-        assert_not_null(f);                                         \
-        assert_not_null(arg);                                       \
-                                                                    \
-        str = (const char *)arg;                                    \
-        (taglib_tag_set_##what)(taglib_file_tag(f), hook(str));     \
-    if (!taglib_file_save(f))                                       \
-        err(errno, "can't save file %s", path);                     \
-    return (true);                                                  \
+bool
+tagutil_title(const char *restrict path, TagLib_File *restrict f,
+        const void *restrict arg)
+{
+    const char *str;
+
+    assert_not_null(path);
+    assert_not_null(f);
+    assert_not_null(arg);
+
+    str = (const char *)arg;
+    taglib_tag_set_title(taglib_file_tag(f), str);
+    if (!taglib_file_save(f))
+        err(errno, "can't save file %s", path);
+
+    return (true);
 }
 
-_MAKE_TAGUTIL_FUNC(title,)
-_MAKE_TAGUTIL_FUNC(album,)
-_MAKE_TAGUTIL_FUNC(artist,)
-_MAKE_TAGUTIL_FUNC(year, atoi)
-_MAKE_TAGUTIL_FUNC(track, atoi)
-_MAKE_TAGUTIL_FUNC(comment,)
-_MAKE_TAGUTIL_FUNC(genre,)
+
+bool
+tagutil_album(const char *restrict path, TagLib_File *restrict f,
+        const void *restrict arg)
+{
+    const char *str;
+
+    assert_not_null(path);
+    assert_not_null(f);
+    assert_not_null(arg);
+
+    str = (const char *)arg;
+    taglib_tag_set_album(taglib_file_tag(f), str);
+    if (!taglib_file_save(f))
+        err(errno, "can't save file %s", path);
+
+    return (true);
+}
+
+
+bool
+tagutil_artist(const char *restrict path, TagLib_File *restrict f,
+        const void *restrict arg)
+{
+    const char *str;
+
+    assert_not_null(path);
+    assert_not_null(f);
+    assert_not_null(arg);
+
+    str = (const char *)arg;
+    taglib_tag_set_artist(taglib_file_tag(f), str);
+    if (!taglib_file_save(f))
+        err(errno, "can't save file %s", path);
+
+    return (true);
+}
+
+
+bool
+tagutil_year(const char *restrict path, TagLib_File *restrict f,
+        const void *restrict arg)
+{
+    const char *str;
+
+    assert_not_null(path);
+    assert_not_null(f);
+    assert_not_null(arg);
+
+    str = (const char *)arg;
+    taglib_tag_set_year(taglib_file_tag(f), atoi(str));
+    if (!taglib_file_save(f))
+        err(errno, "can't save file %s", path);
+
+    return (true);
+}
+
+
+bool
+tagutil_track(const char *restrict path, TagLib_File *restrict f,
+        const void *restrict arg)
+{
+    const char *str;
+
+    assert_not_null(path);
+    assert_not_null(f);
+    assert_not_null(arg);
+
+    str = (const char *)arg;
+    taglib_tag_set_track(taglib_file_tag(f), atoi(str));
+    if (!taglib_file_save(f))
+        err(errno, "can't save file %s", path);
+
+    return (true);
+}
+
+
+bool
+tagutil_comment(const char *restrict path, TagLib_File *restrict f,
+        const void *restrict arg)
+{
+    const char *str;
+
+    assert_not_null(path);
+    assert_not_null(f);
+    assert_not_null(arg);
+
+    str = (const char *)arg;
+    taglib_tag_set_comment(taglib_file_tag(f), str);
+    if (!taglib_file_save(f))
+        err(errno, "can't save file %s", path);
+
+    return (true);
+}
+
+
+bool
+tagutil_genre(const char *restrict path, TagLib_File *restrict f,
+        const void *restrict arg)
+{
+    const char *str;
+
+    assert_not_null(path);
+    assert_not_null(f);
+    assert_not_null(arg);
+
+    str = (const char *)arg;
+    taglib_tag_set_genre(taglib_file_tag(f), str);
+    if (!taglib_file_save(f))
+        err(errno, "can't save file %s", path);
+
+    return (true);
+}

@@ -9,9 +9,7 @@ The standard workflow is the following:
 
 1) devel
 2) tag to vX.Y when a FreeBSD release is ready
-3) adapt the code to compil / run unders other targets OS. We have a directory
-    per OS with patchs needed to compil / run tagutil. Changes to the base
-    should be avoided unless impossible.
+3) adapt the code to compil / run unders other targets OS.
 4) tag to vX.Yp and release.
 
 - between steps 1) and 2), add here when a non-standard feature / function is used.
