@@ -17,7 +17,7 @@ DEFINE {
 	MAN1DIR = "\\${MANDIR}/man1"
     CFLAGS  = "-std=c99"
     CFLAGSMOD = "+="
-    VERSION = "2.0_rc1"
+    VERSION = "2.0_rc2"
     AUTHORS = "kAworu"
 }
 

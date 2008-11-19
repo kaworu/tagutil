@@ -134,8 +134,16 @@ destroy_ast(struct ast *restrict victim)
             free(victim);
             break;
         case ALEAF:
-            if (victim->tkind == TSTRING)
+            switch(victim->tkind) {
+            case TSTRING:
                 free(victim->value.string);
+                break;
+            case TREGEX:
+                regfree(&victim->value.regex);
+                break;
+            default:
+                /* do nada */;
+            }
             free(victim);
             break;
         default:
