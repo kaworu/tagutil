@@ -224,16 +224,17 @@ xdirname(const char *restrict path)
     assert_not_null(path);
 
 #if !defined(HAVE_SANE_DIRNAME)
-    dirn = dirname(garbage = xstrdup(path));
-    free(garbage);  /* no more needed */
+    if ((dirn = dirname(garbage = xstrdup(path))) == NULL)
 #else
-    dirn = dirname(path);
+    if ((dirn = dirname(path)) == NULL)
 #endif
-
-    if (dirn == NULL)
         err(errno, NULL);
+    dirn = xstrdup(dirn);
 
-    return (xstrdup(dirn));
+#if !defined(HAVE_SANE_DIRNAME)
+    free(garbage);  /* no more needed */
+#endif
+    return (dirn);
 }
 
 
