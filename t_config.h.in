@@ -82,7 +82,7 @@ const char * getprogname(void);
 
 
 /*
- * getopt header
+ * getopt(3) header
  */
 @DEF__GETOPT_H@
 

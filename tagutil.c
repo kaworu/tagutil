@@ -43,9 +43,10 @@
 #include <sys/stat.h>
 
 #include <errno.h>
-#include <unistd.h> /* getopt(3) */
 #if defined(HAVE_GETOPT_H)
-#include <getopt.h>
+#  include <getopt.h>
+#else
+#  include <unistd.h> /* getopt(3) */
 #endif /* HAVE_GETOPT_H */
 
 #include <tag_c.h>
@@ -208,7 +209,7 @@ void
 usage(void)
 {
 
-    (void)fprintf(stderr,  "TagUtil v"__TAGUTIL_VERSION__" by "__TAGUTIL_AUTHORS__".\n\n");
+    (void)fprintf(stderr,  "tagutil v"__TAGUTIL_VERSION__" by "__TAGUTIL_AUTHORS__".\n\n");
     (void)fprintf(stderr,  "usage: %s [opt [optarg]] [files]...\n", getprogname());
     (void)fprintf(stderr, "Modify or display music file's tag.\n");
     (void)fprintf(stderr, "\n");
