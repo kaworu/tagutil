@@ -1,43 +1,102 @@
 /*
  * t_yaml.c
  *
- * YAML tagutil parser and converter.
+ * yaml tagutil parser and converter.
  */
 #include "t_config.h"
+
+#include <string.h>
+#include <stdlib.h>
 
 #include "t_yaml.h"
 #include "t_toolkit.h"
 #include "t_lexer.h"
-#include "tagutil.h" /* FIXME */
+
+
+/*
+ * escape " to \" and \ to \\
+ *
+ * returned value has to be freed.
+ */
+__t__nonnull(1)
+char * yaml_escape(const char *restrict s);
+
+
+char *
+yaml_escape(const char *restrict s)
+{
+    char *ret;
+    int toesc, x;
+    unsigned int i;
+    size_t slen;
+
+    assert_not_null(s);
+
+    toesc = 0;
+    slen = strlen(s);
+    for (i = 0; i < slen; i++) {
+        if (s[i] == '"' || s[i] == '\\') {
+            toesc++;
+            i++;
+        }
+    }
+
+    if (toesc == 0)
+        return (xstrdup(s));
+
+    ret = xcalloc(slen + toesc, sizeof(char));
+    x = 0;
+
+    /* take the trailing \0 */
+    for (i = 0; i < slen + 1; i++) {
+        if (s[i] == '"' || s[i] == '\\')
+            ret[x++] = '\\';
+        ret[x++] = s[i];
+    }
+
+    return (ret);
+}
 
 
 char *
 tags_to_yaml(const char *restrict path, const TagLib_Tag *restrict tags)
 {
-    char *ret, *template, *die;
+    char *ret, *die;
     size_t retlen;
+    /* handle 2008\0 at max, so it's ok for the next 7'991 years */
+    char buf[5];
 
     assert_not_null(path);
     assert_not_null(tags);
 
-    template =  "\n"
-                "---\n"
-                "title:   \"%t\"\n"
-                "album:   \"%a\"\n"
-                "artist:  \"%A\"\n"
-                "year:    \"%y\"\n"
-                "track:   \"%T\"\n"
-                "comment: \"%c\"\n"
-                "genre:   \"%g\"\n";
-
     retlen = 1;
     ret = xcalloc(retlen, sizeof(char));
 
-
     concat(&ret, &retlen, "# ");
     concat(&ret, &retlen, path);
-    concat(&ret, &retlen, die = eval_tag(template, tags));
+    concat(&ret, &retlen, "\n---\ntitle:   \"");
+    concat(&ret, &retlen, die = yaml_escape(taglib_tag_title(tags)));
     free(die);
+    concat(&ret, &retlen, "\"\nalbum:   \"");
+    concat(&ret, &retlen, die = yaml_escape(taglib_tag_album(tags)));
+    free(die);
+    concat(&ret, &retlen, "\"\nartist:  \"");
+    concat(&ret, &retlen, die = yaml_escape(taglib_tag_artist(tags)));
+    free(die);
+    concat(&ret, &retlen, "\"\nyear:    \"");
+    (void)snprintf(buf, len(buf), "%02u", taglib_tag_year(tags));
+    concat(&ret, &retlen, buf);
+    concat(&ret, &retlen, "\"\ntrack:   \"");
+    (void)snprintf(buf, len(buf), "%02u", taglib_tag_track(tags));
+    concat(&ret, &retlen, buf);
+    concat(&ret, &retlen, "\"\ncomment: \"");
+    concat(&ret, &retlen, die = yaml_escape(taglib_tag_comment(tags)));
+    free(die);
+    concat(&ret, &retlen, "\"\ngenre:   \"");
+    concat(&ret, &retlen, die = yaml_escape(taglib_tag_genre(tags)));
+    free(die);
+    concat(&ret, &retlen, "\"\n");
+
 
     return (ret);
 }
@@ -46,7 +105,7 @@ tags_to_yaml(const char *restrict path, const TagLib_Tag *restrict tags)
 /*
  * XXX: could use getc_unlocked(3) w/ flockfile(3)?
  *
- * dummy yaml parser. Only handle our YAML output.
+ * dummy yaml parser. Only handle our yaml output.
  */
 bool
 yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
@@ -83,7 +142,7 @@ yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
     /* eat header: ^---$ */
     if (getc(stream) != '-' || getc(stream) != '-' ||
             getc(stream) != '-' || getc(stream) != '\n') {
-        warnx("yaml_to_tags at line %d: bad YAML header", line);
+        warnx("yaml_to_tags at line %d: bad yaml header", line);
         goto free_ret_false;
     }
 
@@ -207,7 +266,9 @@ yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
 
     free(value);
     return (set_somethin);
+
 free_ret_false:
     free(value);
     return (false);
 }
+
