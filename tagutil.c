@@ -225,13 +225,13 @@ usage(void)
     (void)fprintf(stderr, "                             and genre(%s). example: \"%s - %s - (%s) - %s\"\n",
                                                              kGENRE,               kARTIST, kALBUM, kTRACK, kTITLE);
     (void)fprintf(stderr, "    -x [FILTER]  [files]   : print files in matching FILTER\n");
-    (void)fprintf(stderr, "    -t [TITLE]   [files]   : update title tag to TITLE for all given files\n");
-    (void)fprintf(stderr, "    -a [ALBUM]   [files]   : update album tag to ALBUM for all given files\n");
     (void)fprintf(stderr, "    -A [ARTIST]  [files]   : update artist tag to ARTIST for all given files\n");
-    (void)fprintf(stderr, "    -y [YEAR]    [files]   : update year tag to YEAR for all given files\n");
-    (void)fprintf(stderr, "    -T [TRACK]   [files]   : update track tag to TRACK for all given files\n");
+    (void)fprintf(stderr, "    -a [ALBUM]   [files]   : update album tag to ALBUM for all given files\n");
     (void)fprintf(stderr, "    -c [COMMENT] [files]   : update comment tag to COMMENT for all given files\n");
+    (void)fprintf(stderr, "    -T [TRACK]   [files]   : update track tag to TRACK for all given files\n");
+    (void)fprintf(stderr, "    -t [TITLE]   [files]   : update title tag to TITLE for all given files\n");
     (void)fprintf(stderr, "    -g [GENRE]   [files]   : update genre tag to GENRE for all given files\n");
+    (void)fprintf(stderr, "    -y [YEAR]    [files]   : update year tag to YEAR for all given files\n");
     (void)fprintf(stderr, "\n");
 
     exit(EXIT_SUCCESS);
