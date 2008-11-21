@@ -103,8 +103,6 @@ tags_to_yaml(const char *restrict path, const TagLib_Tag *restrict tags)
 
 
 /*
- * XXX: could use getc_unlocked(3) w/ flockfile(3)?
- *
  * dummy yaml parser. Only handle our yaml output.
  */
 bool
@@ -123,16 +121,19 @@ yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
     assert_not_null(tags);
     assert_not_null(stream);
 
+    if (ftrylockfile(stream) != 0)
+        errx(-1, "yaml_to_tags: can't lock file descriptor.");
+
     set_somethin = false;
     line = 1;
     valuelen = BUFSIZ;
     value = xcalloc(valuelen, sizeof(char));
 
     /* eat first line: ^# <filename>$ */;
-    while (!feof(stream) && getc(stream) != '\n')
+    while (!feof_unlocked(stream) && getc_unlocked(stream) != '\n')
         ;
 
-    if (feof(stream)) {
+    if (feof_unlocked(stream)) {
         warnx("yaml_to_tags at line %d: EOF reached before header.", line);
         goto free_ret_false;
     }
@@ -140,19 +141,19 @@ yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
     line += 1;
 
     /* eat header: ^---$ */
-    if (getc(stream) != '-' || getc(stream) != '-' ||
-            getc(stream) != '-' || getc(stream) != '\n') {
+    if (getc_unlocked(stream) != '-' || getc_unlocked(stream) != '-' ||
+            getc_unlocked(stream) != '-' || getc_unlocked(stream) != '\n') {
         warnx("yaml_to_tags at line %d: bad yaml header", line);
         goto free_ret_false;
     }
 
-    c = getc(stream);
+    c = getc_unlocked(stream);
 
     for (;;) {
         /* ^keyword:  "value"$ */
         line += 1;
 
-        if (feof(stream)) {
+        if (feof_unlocked(stream)) {
             if (!set_somethin)
                 warnx("yaml_to_tags at line %d: didn't set any tags.", line);
             break;
@@ -167,7 +168,7 @@ yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
         keyword[0] = '\0';
         for (i = 0; i < len(keyword) - 2 && is_letter(c); i++) {
             keyword[i] = c;
-            c = getc(stream);
+            c = getc_unlocked(stream);
         }
         keyword[i] = '\0';
 
@@ -203,9 +204,9 @@ yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
             goto free_ret_false;
         }
 
-        c = getc(stream);
+        c = getc_unlocked(stream);
         while (is_blank(c))
-            c = getc(stream);
+            c = getc_unlocked(stream);
 
         if (c != '"') {
             warnx("yaml_to_tags at line %d: expected '\"' but got '%c'", line, c);
@@ -221,24 +222,24 @@ yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
                 xrealloc(&value, valuelen);
             }
 
-            c = getc(stream);
+            c = getc_unlocked(stream);
 
-            if (feof(stream)) {
+            if (feof_unlocked(stream)) {
                 warnx("yaml_to_tags at line %d: EOF while reading String", line);
                 goto free_ret_false;
             }
 
             /* handle escape char */
             if (c == '\\') {
-                c = getc(stream);
-                if (feof(stream)) {
+                c = getc_unlocked(stream);
+                if (feof_unlocked(stream)) {
                     warnx("yaml_to_tags at line %d: EOF while reading String", line);
                     goto free_ret_false;
                 }
                 value[valueidx++] = c;
             }
             else if (c == '"') {
-                if ((c = getc(stream)) != '\n') {
+                if ((c = getc_unlocked(stream)) != '\n') {
                     warnx("yaml_to_tags at line %d: expected EOL after String, got '%c'",
                             line, c);
                     goto free_ret_false;
@@ -260,15 +261,17 @@ yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
         else
             (*(void (*)(TagLib_Tag *, const char *))setter)(tags, value);
 
-        c = getc(stream);
+        c = getc_unlocked(stream);
         set_somethin = true;
     }
 
+cleanup:
+    funlockfile(stream);
     free(value);
     return (set_somethin);
 
 free_ret_false:
-    free(value);
-    return (false);
+    set_somethin = false;
+    goto cleanup;
 }
 
