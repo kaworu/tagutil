@@ -17,7 +17,7 @@ DEFINE {
 	MAN1DIR = "\\${MANDIR}/man1"
     CFLAGS  = "-std=c99"
     CFLAGSMOD = "+="
-    VERSION = "2.0_rc2"
+    VERSION = "2.1_pre0"
     AUTHORS = "kAworu"
 }
 
@@ -166,7 +166,6 @@ CHECK_HEADER(c_function_mkstemp) {
     NAME = "stdlib.h"
     FUNCTION = ("mkstemp")
 }
-
 
 # glibc __nonnull(x) macro declaration is not compatible with the FreeBSD's.
 # tagutil's __t__nonnull(x) macro act as the FreeBSD's __nonnull(x) macros.
