@@ -7,19 +7,8 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+
 #include <tag_c.h>
-
-
-/*
- * you should not modifiy them, eval_tag() implementation might be depend.
- */
-#define kTITLE      "%t"
-#define kALBUM      "%a"
-#define kARTIST     "%A"
-#define kYEAR       "%y"
-#define kTRACK      "%T"
-#define kCOMMENT    "%c"
-#define kGENRE      "%g"
 
 
 /*
@@ -45,12 +34,6 @@ void usage(void);
 /* FILE FUNCTIONS */
 
 /*
- * rename path to new_path. err(3) if new_path already exist.
- */
-__t__nonnull(1) __t__nonnull(2)
-void safe_rename(const char *restrict oldpath, const char *restrict newpath);
-
-/*
  * create a temporary file in $TMPDIR. if $TMPDIR is not set, /tmp is
  * used. return the full path to the temp file created.
  *
@@ -62,32 +45,10 @@ char * create_tmpfile(void);
 /* TAG FUNCTIONS */
 
 /*
- * return a char* that contains all tag infos.
- *
- * returned value has to be freed.
- */
-__t__nonnull(1)
-char * printable_tag(const TagLib_Tag *restrict tag);
-
-/*
  * call "$EDITOR path" (the environment variable $EDITOR must be set).
  */
 __t__nonnull(1)
 bool user_edit(const char *restrict path);
-
-/*
- * read stream and tag. the format of the text should bethe same as
- * tagutil_print.
- * return false if a line can't be parsed, true if all went smoothly.
- */
-__t__nonnull(1) __t__nonnull(2)
-bool update_tag(TagLib_Tag *restrict tag, FILE *restrict stream);
-
-/*
- * replace each tagutil keywords by their value. see k* keywords.
- */
-__t__nonnull(1) __t__nonnull(2)
-char * eval_tag(const char *restrict pattern, const TagLib_Tag *restrict tag);
 
 
 /* TAGUTIL FUNCTIONS */
