@@ -166,7 +166,7 @@ lex(struct lexer *restrict L)
         current->kind = TINT;
         current->value.integer = 0;
         current->start = *Lindex;
-        while (is_number(source[*Lindex])) {
+        while (is_digit(source[*Lindex])) {
             /* mean that 00000012 == 12 */
             current->value.integer *= 10;
             current->value.integer += source[*Lindex] - '0';

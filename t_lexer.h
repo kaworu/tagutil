@@ -13,7 +13,7 @@
 
 
 #define is_letter(c) ((c) >= 'a' && (c) <= 'z')
-#define is_number(i) ((i) >= '0' && (i) <= '9')
+#define is_digit(i)  ((i) >= '0' && (i) <= '9')
 #define is_blank(c)  ((c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r')
 
 

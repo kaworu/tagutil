@@ -35,7 +35,7 @@ yaml_escape(const char *restrict s)
     toesc = 0;
     slen = strlen(s);
     for (i = 0; i < slen; i++) {
-        if (s[i] == '"' || s[i] == '\\') {
+        if (s[i] == '"' || s[i] == '\\' || s[i] == '\n') {
             toesc++;
             i++;
         }
@@ -49,9 +49,15 @@ yaml_escape(const char *restrict s)
 
     /* take the trailing \0 */
     for (i = 0; i < slen + 1; i++) {
-        if (s[i] == '"' || s[i] == '\\')
+        if (s[i] == '\n') {
             ret[x++] = '\\';
-        ret[x++] = s[i];
+            ret[x++] = 'n';
+        }
+        else {
+            if (s[i] == '"' || s[i] == '\\')
+                ret[x++] = '\\';
+            ret[x++] = s[i];
+        }
     }
 
     return (ret);
@@ -83,13 +89,13 @@ tags_to_yaml(const char *restrict path, const TagLib_Tag *restrict tags)
     concat(&ret, &retlen, "\"\nartist:  \"");
     concat(&ret, &retlen, die = yaml_escape(taglib_tag_artist(tags)));
     free(die);
-    concat(&ret, &retlen, "\"\nyear:    \"");
-    (void)snprintf(buf, len(buf), "%02u", taglib_tag_year(tags));
+    concat(&ret, &retlen, "\"\nyear:    ");
+    (void)snprintf(buf, len(buf), "%u", taglib_tag_year(tags));
     concat(&ret, &retlen, buf);
-    concat(&ret, &retlen, "\"\ntrack:   \"");
-    (void)snprintf(buf, len(buf), "%02u", taglib_tag_track(tags));
+    concat(&ret, &retlen, "\ntrack:   ");
+    (void)snprintf(buf, len(buf), "%u", taglib_tag_track(tags));
     concat(&ret, &retlen, buf);
-    concat(&ret, &retlen, "\"\ncomment: \"");
+    concat(&ret, &retlen, "\ncomment: \"");
     concat(&ret, &retlen, die = yaml_escape(taglib_tag_comment(tags)));
     free(die);
     concat(&ret, &retlen, "\"\ngenre:   \"");
@@ -116,6 +122,7 @@ yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
     char keyword[9]; /* longest is: comment */
 
     char *value;
+    unsigned int ivalue;
     size_t valuelen, i, valueidx;
 
     assert_not_null(tags);
@@ -208,58 +215,79 @@ yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
         while (is_blank(c))
             c = getc_unlocked(stream);
 
-        if (c != '"') {
-            warnx("yaml_to_tags at line %d: expected '\"' but got '%c'", line, c);
-            goto free_ret_false;
-        }
-
-        /* read the value */
-        valueidx = 0;
-        for (;;) {
-            /* realloc buffer if needed */
-            if (valueidx > valuelen - 2) {
-                valuelen += BUFSIZ;
-                xrealloc(&value, valuelen);
+        if (is_intval) {
+        /* parse Int */
+            ivalue = 0;
+            while (is_digit(c)) {
+                ivalue = 10 * ivalue + (c - '0');
+                c = getc_unlocked(stream);
             }
 
-            c = getc_unlocked(stream);
-
-            if (feof_unlocked(stream)) {
-                warnx("yaml_to_tags at line %d: EOF while reading String", line);
+            if (c != '\n') {
+                warnx("yaml_to_tags at line %d: expected EOL after Int, got '%c'",
+                        line, c);
+                goto free_ret_false;
+            }
+            line += 1;
+            (*(void (*)(TagLib_Tag *, unsigned int))setter)(tags, ivalue);
+        }
+        else {
+        /* parse String */
+            if (c != '"') {
+                warnx("yaml_to_tags at line %d: expected '\"' but got '%c'", line, c);
                 goto free_ret_false;
             }
 
-            /* handle escape char */
-            if (c == '\\') {
+            /* read the value */
+            valueidx = 0;
+            for (;;) {
+                /* realloc buffer if needed */
+                if (valueidx > valuelen - 2) {
+                    valuelen += BUFSIZ;
+                    xrealloc(&value, valuelen);
+                }
+
                 c = getc_unlocked(stream);
+
                 if (feof_unlocked(stream)) {
                     warnx("yaml_to_tags at line %d: EOF while reading String", line);
                     goto free_ret_false;
                 }
-                value[valueidx++] = c;
-            }
-            else if (c == '"') {
-                if ((c = getc_unlocked(stream)) != '\n') {
-                    warnx("yaml_to_tags at line %d: expected EOL after String, got '%c'",
-                            line, c);
-                    goto free_ret_false;
-                }
-                line += 1;
-                break;
-            }
-            else {
-                value[valueidx++] = c;
-                if (c == '\n')
-                    line += 1;
-            }
-        }
-        value[valueidx] = '\0';
 
-        /* set the value */
-        if (is_intval)
-            (*(void (*)(TagLib_Tag *, unsigned int))setter)(tags, atoi(value));
-        else
+                /* handle escape char */
+                if (c == '\\') {
+                    c = getc_unlocked(stream);
+                    if (feof_unlocked(stream)) {
+                        warnx("yaml_to_tags at line %d: EOF while reading String", line);
+                        goto free_ret_false;
+                    }
+                    /* handle \n */
+                    if (c == 'n')
+                        value[valueidx++] = '\n';
+                    else
+                        value[valueidx++] = c;
+                }
+                else if (c == '"') {
+                    if ((c = getc_unlocked(stream)) != '\n') {
+                        warnx("yaml_to_tags at line %d: expected EOL after String, got '%c'",
+                                line, c);
+                        goto free_ret_false;
+                    }
+                    line += 1;
+                    break;
+                }
+                else {
+                    value[valueidx++] = c;
+                    if (c == '\n')
+                        line += 1;
+                }
+            }
+            value[valueidx] = '\0';
+
+            /* set the value */
             (*(void (*)(TagLib_Tag *, const char *))setter)(tags, value);
+        }
+
 
         c = getc_unlocked(stream);
         set_somethin = true;
