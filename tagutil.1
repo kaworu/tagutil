@@ -64,35 +64,29 @@
 .Op Ar
 .Sh DESCRIPTION
 .Nm
-display and change tags of musics files. It support ogg, mp3, flac and more
-(see taglib documentation). If an option is given, the corresponding action will
-be applied for each
-.Ar file .
-If no option is given, the default action is
-.Fl p
-.Sq print .
+displays and changes tags in musics files. It supports ogg, mp3, flac and more
+(see taglib documentation). The default action is to display all the tags. 
+.Sh OPTIONS
 .Pp
-The options are as follows:
 .Bl -tag -width indent
 .It Fl p
-display all tags. This is the default action if no option is given. The output is in yaml format.
+display all tags. (default)
 .It Fl e
 edit mode. for each
 .Ar file
-display its tag and ask if edit is needed. If response is
+display its tags and ask to edit them. If response is
 .Sq y
 or
 .Sq yes
 ,
 .Nm
-launch your favourite editor. It use the environment variable
-.Ev EDITOR
+launch your favourite editor ($EDITOR). 
 .It Fl r Ar pattern
 rename files with given
 .Ar pattern .
 The
 .Ar pattern
-can contains special keywords expanded with file's tag.
+can contain special keywords expanded with file's tag.
 confirmation is always asked before rename. You can avoid it by using the
 .Sq yes
 command:
@@ -120,18 +114,17 @@ NOTE: if your pattern (or a tag expanded in your pattern) contains a
 .Sq /
 character,
 .Nm
-will check if the destination directory exist. If the destination directory
-exist,
+will check if the destination directory exists. In that case,
 .Nm
-will rename without displaying any warning and the file's directoy will change. Otherwise
+will rename without any warning and the file's directoy will change. Otherwise
 .Nm
 will display an error message and exit with
 .Er ENOENT
 return value.
 .It Fl x Ar filter
-filter given music files, Files matching the given
-.Ar filter
-are printed to stdout. The filter format is a C-like boolean expression, where
+print to stdout files matching the given
+.Ar filter .
+.Pp The filter format is a C-like boolean expression, which
 keywords are
 .Sq album ,
 .Sq artist ,
@@ -145,18 +138,18 @@ and
 .Sq track
 and
 .Sq year
-keywords are integer value keywords, while others are string value keyword.
+keywords are integers, while others are strings.
 .Pp
 A static integer is a number like 42, 0 or 1024. Since integer keywords (i.e
 .Sq year
 and
 .Sq track )
-are unsigned, negatif integer are not allowed.
+are unsigned, negative integer are not allowed.
 .Pp
 A static string begins and ends with the " character (like in the C programming
 language) and you can escape " and \\ by writting \\" and \\\\.
 .Pp
-A regular expression begins and ends with the / character (like in the Perl or
+A regular expression begins and ends with the / character (like in Perl or
 Ruby programming languages) and you can escape / and \\ by writting \\/ and \\\\.
 .Nm
 support two modifiers on regular expressions:
@@ -178,7 +171,7 @@ As in the C programming language, && and || are left associatif and && has a hig
 .Pp
 You can see the full formal filter's grammar in the
 .Pa t_parser.h
-source file of tagutil. Here follow an informal description:
+source file of tagutil. Here follows an informal description:
 .Bl -tag -width indent
 .It expr0 || expr1
 true if
