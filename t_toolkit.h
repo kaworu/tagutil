@@ -264,6 +264,9 @@ concat(char **dest, size_t *dest_size, const char *src)
     src_size    = strlen(src);
     final_size  = *dest_size + src_size;
 
+    if (src_size == 0)
+        return;
+
     *dest = xrealloc(*dest, final_size);
 
     memcpy(*dest + start, src, src_size + 1);
