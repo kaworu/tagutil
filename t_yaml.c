@@ -229,7 +229,7 @@ yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
                 goto free_ret_false;
             }
             line += 1;
-            (*(void (*)(TagLib_Tag *, unsigned int))setter)(tags, ivalue);
+            ((void (*)(TagLib_Tag *, unsigned int))setter)(tags, ivalue);
         }
         else {
         /* parse String */
@@ -285,7 +285,7 @@ yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
             value[valueidx] = '\0';
 
             /* set the value */
-            (*(void (*)(TagLib_Tag *, const char *))setter)(tags, value);
+            ((void (*)(TagLib_Tag *, const char *))setter)(tags, value);
         }
 
 

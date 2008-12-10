@@ -37,7 +37,7 @@ IF(os_linux) {
 
 IF(devel) {
     DEFINE {
-        CFLAGS = "$CFLAGS -g -Wextra -Wformat-security -Wnonnull -Wswitch-default -Waggregate-return -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow -Wstrict-prototypes -Winline -Wall"
+        CFLAGS = "$CFLAGS -g -Wall -Wextra -Wformat-security -Wnonnull -Wswitch-default -Waggregate-return -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow -Wstrict-prototypes -Winline -Wall"
         CFLAGSMOD = "="
         VERSION = "$VERSION (debug version)"
     }

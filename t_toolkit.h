@@ -50,9 +50,6 @@ static inline FILE * xfopen(const char *restrict path, const char *restrict mode
 __t__unused __t__nonnull(1)
 static inline void xfclose(FILE *restrict stream);
 
-__t__unused __t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
-bool xgetline(char **line, size_t *size, FILE *restrict stream);
-
 /*
  * try to have a sane dirname,
  * FreeBSD and OpenBSD define:
@@ -91,42 +88,14 @@ static inline void concat(char **dest, size_t *destlen, const char *src);
  * returned value has to be freed.
  */
 __t__unused __t__nonnull(1) __t__nonnull(2)
-regmatch_t * first_match(const char *restrict str, const char *restrict pattern, const int flags);
+static inline regmatch_t * first_match(const char *restrict str, const char *restrict pattern, const int flags);
 
 /*
  * return true if the regex pattern match the given str, false otherwhise.
  * flags are REG_ICASE | REG_EXTENDED | REG_NEWLINE | REG_NOSUB (see regex(3)).
  */
 __t__unused __t__nonnull(2)
-bool has_match(const char *restrict str, const char *restrict pattern);
-
-/*
- * match pattern to str. then copy the match part and return the fresh
- * new char * created.
- * flags are REG_ICASE | REG_EXTENDED | REG_NEWLINE (see regex(3)).
- * get_match() can return NULL if no match was found.
- *
- * returned value has to be freed.
- */
-__t__unused __t__nonnull(1) __t__nonnull(2)
-char * get_match(const char *restrict str, const char *restrict pattern);
-
-/*
- * replace the part defined by match in str by replace. for example
- * sub_match("foo bar", {.rm_so=3, .rm_eo=6}, "oni") will return
- * "foo oni". sub_match doesn't modify it's arguments, it return a new string.
- *
- * returned value has to be freed.
- */
-__t__unused __t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
-char * sub_match(const char *str, const regmatch_t *restrict match, const char *replace);
-
-/*
- * same as sub_match but change the string reference given by str. *str will
- * be freed so it has to be malloc'd previously.
- */
-__t__unused __t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
-void inplacesub_match(char **str, regmatch_t *restrict match, const char *replace);
+static inline bool has_match(const char *restrict str, const char *restrict pattern);
 
 
 /* OTHER */
@@ -137,15 +106,7 @@ void inplacesub_match(char **str, regmatch_t *restrict match, const char *replac
  * true if the response match y|yes, false if it match n|no.
  */
 __t__unused
-bool yesno(const char *restrict question);
-
-/*
- * return the program's name.
- */
-#if defined(T_LACK_OF_GETPROGNAME)
-__t__unused
-static inline const char * getprogname(void);
-#endif
+static inline bool yesno(const char *restrict question);
 
 /**********************************************************************/
 
@@ -273,4 +234,91 @@ concat(char **dest, size_t *dest_size, const char *src)
     *dest_size = final_size;
 }
 
+
+static inline regmatch_t *
+first_match(const char *restrict str, const char *restrict pattern, const int flags)
+{
+    regex_t regex;
+    regmatch_t *regmatch;
+    int error;
+    char *errbuf;
+
+    assert_not_null(str);
+    assert_not_null(pattern);
+
+    regmatch = xmalloc(sizeof(regmatch_t));
+    error = regcomp(&regex, pattern, flags);
+
+    if (error != 0)
+        goto error_label;
+
+    error = regexec(&regex, str, 1, regmatch, 0);
+    regfree(&regex);
+
+    switch (error) {
+    case 0:
+        return (regmatch);
+    case REG_NOMATCH:
+        free(regmatch);
+        return (NULL);
+    default:
+error_label:
+        errbuf = xcalloc(BUFSIZ, sizeof(char));
+        (void)regerror(error, &regex, errbuf, BUFSIZ);
+        errx(-1, "%s", errbuf);
+        /* NOTREACHED */
+    }
+}
+
+
+static inline bool
+has_match(const char *restrict str, const char *restrict pattern)
+{
+    regmatch_t *match;
+
+    assert_not_null(pattern);
+
+    if (str == NULL)
+        return (false);
+
+    match = first_match(str, pattern, REG_ICASE | REG_EXTENDED | REG_NEWLINE | REG_NOSUB);
+
+    if (match == NULL)
+        return (false);
+    else {
+        free(match);
+        return (true);
+    }
+}
+
+
+static inline bool
+yesno(const char *restrict question)
+{
+    char buffer[5]; /* strlen("yes\n\0") == 5 */
+
+    for (;;) {
+        if (feof(stdin))
+            return (false);
+
+        (void)memset(buffer, '\0', len(buffer));
+
+        if (question != NULL)
+            (void)printf("%s", question);
+        (void)printf("? [y/n] ");
+
+        (void)fgets(buffer, len(buffer), stdin);
+
+        /* if any, eat stdin characters that didn't fit into buffer */
+        if (buffer[strlen(buffer) - 1] != '\n') {
+            while (getc(stdin) != '\n' && !feof(stdin))
+                ;
+        }
+
+        if (has_match(buffer, "^(n|no)$"))
+            return (false);
+        else if (has_match(buffer, "^(y|yes)$"))
+            return (true);
+    }
+}
 #endif /* not T_TOOLKIT_H */
