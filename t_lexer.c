@@ -34,9 +34,9 @@ new_lexer(const char *restrict str)
 void
 lex(struct lexer *restrict L)
 {
-    const char *source;
+    const char *Lsource;
     int *Lindex;
-    struct token *current;
+    struct token *Lcurrent;
     /* String & Regexp */
     size_t skip;
     char c;
@@ -49,111 +49,110 @@ lex(struct lexer *restrict L)
 
     assert_not_null(L);
 
-    source   = L->source;
+    Lsource   = L->source;
     Lindex   = &L->index;
-    current  = &L->current;
+    Lcurrent  = &L->current;
 
     /* eat blank chars */
-    while (source[*Lindex] != '\0' && is_blank(source[*Lindex]))
+    while (Lsource[*Lindex] != '\0' && is_blank(Lsource[*Lindex]))
         *Lindex += 1;
 
-    switch(source[*Lindex]) {
+    switch(Lsource[*Lindex]) {
     case '\0':
-        current->kind = TEOS;
-        current->start = current->end = *Lindex;
+        Lcurrent->kind = TEOS;
+        Lcurrent->start = Lcurrent->end = *Lindex;
         break;
     case '!':
-        if (source[*Lindex + 1] == '=') {
-            current->kind  = TDIFF;
-            current->start = *Lindex;
-            current->end   = *Lindex + 1;
+        if (Lsource[*Lindex + 1] == '=') {
+            Lcurrent->kind  = TDIFF;
+            Lcurrent->start = *Lindex;
+            Lcurrent->end   = *Lindex + 1;
             *Lindex += 2;
         }
         else {
-            current->kind = TNOT;
-            current->start = current->end = *Lindex;
+            Lcurrent->kind = TNOT;
+            Lcurrent->start = Lcurrent->end = *Lindex;
             *Lindex += 1;
         }
         break;
     case '=':
-        switch (source[*Lindex + 1]) {
+        switch (Lsource[*Lindex + 1]) {
         case '=':
-            current->kind = TEQ;
-            current->start = *Lindex;
-            current->end = *Lindex + 1;
+            Lcurrent->kind = TEQ;
+            Lcurrent->start = *Lindex;
+            Lcurrent->end = *Lindex + 1;
             *Lindex += 2;
             break;
         case '~':
-            current->kind = TMATCH;
-            current->start = *Lindex;
-            current->end = *Lindex + 1;
+            Lcurrent->kind = TMATCH;
+            Lcurrent->start = *Lindex;
+            Lcurrent->end = *Lindex + 1;
             *Lindex += 2;
             break;
         default:
             errx(-1, "lexer error at %d: got '%c', expected '=' for EQ or '~' for MATCH",
-                    *Lindex, source[*Lindex + 1]);
+                    *Lindex, Lsource[*Lindex + 1]);
             /* NOT REACHED */
         }
         break;
     case '|':
-        if (source[*Lindex + 1] == '|') {
-            current->kind = TOR;
-            current->start = *Lindex;
-            current->end = *Lindex + 1;
+        if (Lsource[*Lindex + 1] == '|') {
+            Lcurrent->kind = TOR;
+            Lcurrent->start = *Lindex;
+            Lcurrent->end = *Lindex + 1;
             *Lindex += 2;
         }
         else
             errx(-1, "lexer error at %d: got '%c', expected '|' for OR",
-                    *Lindex, source[*Lindex + 1]);
+                    *Lindex, Lsource[*Lindex + 1]);
         break;
     case '&':
-        if (source[*Lindex + 1] == '&') {
-            current->kind = TAND;
-            current->start = *Lindex;
-            current->end = *Lindex + 1;
+        if (Lsource[*Lindex + 1] == '&') {
+            Lcurrent->kind = TAND;
+            Lcurrent->start = *Lindex;
+            Lcurrent->end = *Lindex + 1;
             *Lindex += 2;
         }
         else
             errx(-1, "lexer error at %d: got '%c', expected '&' for AND",
-                    *Lindex, source[*Lindex + 1]);
+                    *Lindex, Lsource[*Lindex + 1]);
         break;
     case '<':
-        if (source[*Lindex + 1] == '=') {
-            current->kind = TLE;
-            current->start = *Lindex;
-            current->end = *Lindex + 1;
+        if (Lsource[*Lindex + 1] == '=') {
+            Lcurrent->kind = TLE;
+            Lcurrent->start = *Lindex;
+            Lcurrent->end = *Lindex + 1;
             *Lindex += 2;
         }
         else {
-            current->kind = TLT;
-            current->start = current->end = *Lindex;
+            Lcurrent->kind = TLT;
+            Lcurrent->start = Lcurrent->end = *Lindex;
             *Lindex += 1;
         }
         break;
     case '>':
-        if (source[*Lindex + 1] == '=') {
-            current->kind = TGE;
-            current->start = *Lindex;
-            current->end = *Lindex + 1;
+        if (Lsource[*Lindex + 1] == '=') {
+            Lcurrent->kind = TGE;
+            Lcurrent->start = *Lindex;
+            Lcurrent->end = *Lindex + 1;
             *Lindex += 2;
         }
         else {
-            current->kind = TGT;
-            current->start = current->end = *Lindex;
+            Lcurrent->kind = TGT;
+            Lcurrent->start = Lcurrent->end = *Lindex;
             *Lindex += 1;
         }
         break;
     case '(':
-        current->kind = TOPAREN;
-        current->start = current->end = *Lindex;
+        Lcurrent->kind = TOPAREN;
+        Lcurrent->start = Lcurrent->end = *Lindex;
         *Lindex += 1;
         break;
     case ')':
-        current->kind = TCPAREN;
-        current->start = current->end = *Lindex;
+        Lcurrent->kind = TCPAREN;
+        Lcurrent->start = Lcurrent->end = *Lindex;
         *Lindex += 1;
         break;
-    case '0': /* FALLTHROUGH */
     case '1': /* FALLTHROUGH */
     case '2': /* FALLTHROUGH */
     case '3': /* FALLTHROUGH */
@@ -163,26 +162,25 @@ lex(struct lexer *restrict L)
     case '7': /* FALLTHROUGH */
     case '8': /* FALLTHROUGH */
     case '9':
-        current->kind = TINT;
-        current->value.integer = 0;
-        current->start = *Lindex;
-        while (is_digit(source[*Lindex])) {
-            /* mean that 00000012 == 12 */
-            current->value.integer *= 10;
-            current->value.integer += source[*Lindex] - '0';
+        Lcurrent->kind = TINT;
+        Lcurrent->value.integer = 0;
+        Lcurrent->start = *Lindex;
+        while (is_digit(Lsource[*Lindex])) {
+            Lcurrent->value.integer *= 10;
+            Lcurrent->value.integer += Lsource[*Lindex] - '0';
             *Lindex += 1;
         }
-        current->end = *Lindex - 1;
+        Lcurrent->end = *Lindex - 1;
         break;
     case '/': /* FALLTHROUGH */
     case '"':
-        c = source[*Lindex];
+        c = Lsource[*Lindex];
         skip = 0;
-        current->kind = (c == '"' ? TSTRING : TREGEX);
-        current->start = *Lindex;
+        Lcurrent->kind = (c == '"' ? TSTRING : TREGEX);
+        Lcurrent->start = *Lindex;
         *Lindex += 1;
-        while (source[*Lindex] != '\0' && source[*Lindex] != c) {
-            if (source[*Lindex] == '\\') {
+        while (Lsource[*Lindex] != '\0' && Lsource[*Lindex] != c) {
+            if (Lsource[*Lindex] == '\\') {
                 *Lindex += 2;
                 skip += 1;
             }
@@ -190,46 +188,45 @@ lex(struct lexer *restrict L)
                 *Lindex += 1;
         }
 
-        if (source[*Lindex] == c)
-            current->end = *Lindex;
+        if (Lsource[*Lindex] == c)
+            Lcurrent->end = *Lindex;
         else {
-            errx(-1, "lexer error at %d: got '%c', expected '%c' for %s, %s?",
-                    *Lindex, source[*Lindex], c,
-                    current->kind == TSTRING ? "STRING" : "REGEX",
-                    source[*Lindex] == '\0' ? "not ended" : "too long");
+            errx(-1, "lexer error at %d: got '%c', expected '%c' for %s, not ended?",
+                    *Lindex, Lsource[*Lindex], c,
+                    Lcurrent->kind == TSTRING ? "STRING" : "REGEX");
         }
 
         /* do the copy */
-        current->alloclen = current->end - current->start - skip;
-        current->value.string = xcalloc(current->alloclen, sizeof(char));
-        *Lindex = current->start + 1;
+        Lcurrent->alloclen = Lcurrent->end - Lcurrent->start - skip;
+        Lcurrent->value.string = xcalloc(Lcurrent->alloclen, sizeof(char));
+        *Lindex = Lcurrent->start + 1;
         skip = 0;
-        while (source[*Lindex] != c) {
-            if (source[*Lindex] == '\\') {
+        while (Lsource[*Lindex] != c) {
+            if (Lsource[*Lindex] == '\\') {
                 *Lindex += 1;
                 skip += 1;
             }
-            current->value.string[*Lindex - skip - current->start - 1] = source[*Lindex];
+            Lcurrent->value.string[*Lindex - skip - Lcurrent->start - 1] = Lsource[*Lindex];
             *Lindex += 1;
         }
 
-        current->value.string[current->alloclen - 1] = '\0';
+        Lcurrent->value.string[Lcurrent->alloclen - 1] = '\0';
         *Lindex += 1;
 
         /* handle regex options */
-        if (current->kind == TREGEX) {
+        if (Lcurrent->kind == TREGEX) {
             iflag = mflag = false;
 
-            while (source[*Lindex] != '\0' && strchr("im", source[*Lindex]) != NULL) {
-                switch (source[*Lindex]) {
+            while (Lsource[*Lindex] != '\0' && strchr("im", Lsource[*Lindex]) != NULL) {
+                switch (Lsource[*Lindex]) {
                 case 'i':
                     if (iflag)
-                        errx(-1, "lexer error at %d: option %c given twice", *Lindex, source[*Lindex]);
+                        errx(-1, "lexer error at %d: option %c given twice", *Lindex, Lsource[*Lindex]);
                     iflag = true;
                     break;
                 case 'm':
                     if (mflag)
-                        errx(-1, "lexer error at %d: option %c given twice", *Lindex, source[*Lindex]);
+                        errx(-1, "lexer error at %d: option %c given twice", *Lindex, Lsource[*Lindex]);
                     mflag = true;
                     break;
                 default:
@@ -238,16 +235,16 @@ lex(struct lexer *restrict L)
                 }
                 *Lindex += 1;
             }
-            current->end = *Lindex - 1;
-            s = current->value.string;
-            error = regcomp(&current->value.regex, s,
+            Lcurrent->end = *Lindex - 1;
+            s = Lcurrent->value.string;
+            error = regcomp(&Lcurrent->value.regex, s,
                     REG_NOSUB | REG_EXTENDED  |
                     (iflag ? REG_ICASE   : 0) |
                     (mflag ? REG_NEWLINE : 0) );
 
             if (error != 0) {
                 errbuf = xcalloc(BUFSIZ, sizeof(char));
-                (void)regerror(error, &current->value.regex, errbuf, BUFSIZ);
+                (void)regerror(error, &Lcurrent->value.regex, errbuf, BUFSIZ);
                 errx(-1, "lexer error, can't compile regex \"%s\": %s", s, errbuf);
             }
             free(s); /* free the regex string, no more needed */
@@ -255,19 +252,19 @@ lex(struct lexer *restrict L)
         break;
     default:
         /* keyword, not optimized at all, no gperf or so */
-        current->start = *Lindex;
+        Lcurrent->start = *Lindex;
         found = false;
         for (i = 0; !found && i < len(keywords); i++) {
-            if (strncasecmp(&source[*Lindex], keywords[i].lexem, keywords[i].lexemlen) == 0) {
-                current->kind = keywords[i].kind;
+            if (strncasecmp(&Lsource[*Lindex], keywords[i].lexem, keywords[i].lexemlen) == 0) {
+                Lcurrent->kind = keywords[i].kind;
                 *Lindex += keywords[i].lexemlen;
-                current->end = *Lindex - 1;
+                Lcurrent->end = *Lindex - 1;
                 found = true;
             }
         }
 
         if (!found)
-            errx(-1, "lexer error at %d: got '%c'..., expected a keyword", *Lindex, source[*Lindex]);
+            errx(-1, "lexer error at %d: got '%c'..., expected a keyword", *Lindex, Lsource[*Lindex]);
         break;
     }
 }

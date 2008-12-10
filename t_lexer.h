@@ -50,34 +50,36 @@ enum tokenkind {
 };
 
 
-#define token_to_s(x) ( \
-    (x) == TFILENAME ? "TFILENAME" : \
-    (x) == TTITLE ? "TTITLE" : \
-    (x) == TALBUM ? "TALBUM" : \
-    (x) == TARTIST ? "TARTIST" : \
-    (x) == TYEAR ? "TYEAR" : \
-    (x) == TTRACK ? "TTRACK" : \
-    (x) == TCOMMENT ? "TCOMMENT" : \
-    (x) == TGENRE ? "TGENRE" : \
-    (x) == TNOT ? "TNOT" : \
-    (x) == TEQ ? "TEQ" : \
-    (x) == TDIFF ? "TDIFF" : \
-    (x) == TMATCH ? "TMATCH" : \
-    (x) == TAND ? "TAND" : \
-    (x) == TOR ? "TOR" : \
-    (x) == TLT ? "TLT" : \
-    (x) == TLE ? "TLE" : \
-    (x) == TGT ? "TGT" : \
-    (x) == TGE ? "TGE" : \
-    (x) == TOPAREN ? "TOPAREN" : \
-    (x) == TCPAREN ? "TCPAREN" : \
-    (x) == TINT ? "TINT" : \
-    (x) == TSTRING ? "TSTRING" : \
-    (x) == TREGEX ? "TREGEX" : \
-    (x) == TEOS ? "TEOS" : \
-    (x) == TSTART ? "TSTART" : \
-    "UNKNOWN" \
-)
+__t__unused
+static const char *__tokens[] = {
+    [TFILENAME] = "TFILENAME",
+    [TTITLE]    = "TTITLE",
+    [TALBUM]    = "TALBUM",
+    [TARTIST]   = "TARTIST",
+    [TYEAR]     = "TYEAR",
+    [TTRACK]    = "TTRACK",
+    [TCOMMENT]  = "TCOMMENT",
+    [TGENRE]    = "TGENRE",
+    [TNOT]      = "TNOT",
+    [TEQ]       = "TEQ",
+    [TDIFF]     = "TDIFF",
+    [TMATCH]    = "TMATCH",
+    [TAND]      = "TAND",
+    [TOR]       = "TOR",
+    [TLT]       = "TLT",
+    [TLE]       = "TLE",
+    [TGT]       = "TGT",
+    [TGE]       = "TGE",
+    [TOPAREN]   = "TOPAREN",
+    [TCPAREN]   = "TCPAREN",
+    [TINT]      = "TINT",
+    [TSTRING]   = "TSTRING",
+    [TREGEX]    = "TREGEX",
+    [TEOS]      = "TEOS",
+    [TSTART]    = "TSTART",
+};
+
+#define token_to_s(x) __tokens[(x)]
 
 struct token {
     enum tokenkind kind;
