@@ -12,7 +12,7 @@ We try to ~follow the KNF guideline (see style(9)) in general.
 All the glue code belongs to:
 - pmkfile for detection
 - t_config.h.in for configuration
-- compat.c for extra code.
+- t_compat.c for extra code.
 
 4.
 testers, patches and reports are welcome :)
