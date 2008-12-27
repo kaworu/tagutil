@@ -153,6 +153,7 @@ lex(struct lexer *restrict L)
         Lcurrent->start = Lcurrent->end = *Lindex;
         *Lindex += 1;
         break;
+    case '0': /* FALLTHROUGH */
     case '1': /* FALLTHROUGH */
     case '2': /* FALLTHROUGH */
     case '3': /* FALLTHROUGH */
