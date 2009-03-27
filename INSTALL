@@ -1,14 +1,8 @@
 Installation
 ------------
 You need taglib 1.5 (http://developer.kde.org/~wheeler/taglib.html) and
-pmk 0.10.4 (http://pmk.sourceforge.net/) to build tagutil.
+pkg-config.
 
 to build and install tagutil, type:
-pmk
 make
 make install
-
-you can select the PREFIX installation. for example, GNU/Linux distro would
-type:
-
-make PREFIX=/usr install
