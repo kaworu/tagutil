@@ -43,11 +43,7 @@
 #include <sys/stat.h>
 
 #include <errno.h>
-#if defined(HAVE_GETOPT_H)
-#  include <getopt.h>
-#else
-#  include <unistd.h> /* getopt(3) */
-#endif /* HAVE_GETOPT_H */
+#include <unistd.h> /* getopt(3) */
 
 #include <tag_c.h>
 
