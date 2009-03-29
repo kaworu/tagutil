@@ -1,13 +1,9 @@
 #ifndef T_CONFIG_H
 #define T_CONFIG_H
 
-#if !defined(__TAGUTIL_VERSION__)
-#  define __TAGUTIL_VERSION__ "(unknow version)"
-#endif /* not __TAGUTIL_VERSION__ */
-
-#if !defined(__TAGUTIL_AUTHORS__)
-#  define __TAGUTIL_AUTHORS__ "(anonymous coward)"
-#endif /* not __TAGUTIL_AUTHORS__ */
+#if !defined(VERSION)
+#  define VERSION "(unknow version)"
+#endif /* not VERSION */
 
 /*
  * avoid lint to complain for non C89 keywords and macros

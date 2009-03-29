@@ -4,7 +4,6 @@ PROG=tagutil
 SRCS=tagutil.c t_lexer.c t_parser.c t_interpreter.c t_yaml.c t_renamer.c
 
 VERSION=2.1
-AUTHORS=kAworu
 
 # install options
 DESTDIR?=/usr/local
@@ -22,8 +21,7 @@ CSTD=c99
 CFLAGS=-g -O0 -Wall -Wextra -Wformat-security -Wnonnull -Wswitch-default -Waggregate-return -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow -Wstrict-prototypes -Winline -Wall
 VERSION+=(debug)
 .endif
-CFLAGS+=-D'__TAGUTIL_VERSION__="${VERSION}"' \
-		-D'__TAGUTIL_AUTHORS__="${AUTHORS}"' \
+CFLAGS+=-D'VERSION="${VERSION}"' \
 		-DHAVE_SANE_DIRNAME \
 		${TAGLIB_I}
 
