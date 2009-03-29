@@ -24,8 +24,9 @@
 /*
  * rename path to new_path. err(3) if new_path already exist.
  */
-__t__nonnull(1) __t__nonnull(2)
-void safe_rename(const char *restrict oldpath, const char *restrict newpath);
+__t__nonnull(2) __t__nonnull(3)
+void safe_rename(bool dflag, const char *restrict oldpath,
+        const char *restrict newpath);
 
 
 /*
