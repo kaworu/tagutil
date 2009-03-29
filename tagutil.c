@@ -64,8 +64,8 @@
 int
 main(int argc, char *argv[])
 {
-    int i, ch;
-    char *current_filename;
+    int i, ch, intval;
+    char *current_filename, *endptr;
     TagLib_File *f;
     tagutil_f apply;
     void *apply_arg;
@@ -136,18 +136,20 @@ main(int argc, char *argv[])
         case 'y':
             if (apply != NULL)
                 errx(-1, "too much options given.");
-            if (atoi(optarg) <= 0)
+            intval = (int)strtoul(optarg, &endptr, 10);
+            if (endptr == optarg || *endptr != '\0' || intval < 0)
                 errx(-1, "Invalid year argument: %s", optarg);
             apply = tagutil_year;
-            apply_arg = optarg;
+            apply_arg = &intval;
             break;
         case 'T':
             if (apply != NULL)
                 errx(-1, "too much options given.");
-            if (atoi(optarg) <= 0)
-                errx(-1, "Invalid track argument: %s", optarg);
+            intval = (int)strtoul(optarg, &endptr, 10);
+            if (endptr == optarg || *endptr != '\0' || intval < 0)
+                errx(-1, "Invalid year argument: %s", optarg);
             apply = tagutil_track;
-            apply_arg = optarg;
+            apply_arg = &intval;
             break;
         case 'h': /* FALLTHROUGH */
         case '?': /* FALLTHROUGH */
@@ -494,14 +496,14 @@ bool
 tagutil_year(const char *restrict path, TagLib_File *restrict f,
         const void *restrict arg)
 {
-    const char *str;
+    int intval;
 
     assert_not_null(path);
     assert_not_null(f);
     assert_not_null(arg);
 
-    str = (const char *)arg;
-    taglib_tag_set_year(taglib_file_tag(f), atoi(str));
+    intval = *(int *)arg;
+    taglib_tag_set_year(taglib_file_tag(f), intval);
     if (!taglib_file_save(f))
         err(errno, "can't save file %s", path);
 
@@ -513,14 +515,14 @@ bool
 tagutil_track(const char *restrict path, TagLib_File *restrict f,
         const void *restrict arg)
 {
-    const char *str;
+    int intval;
 
     assert_not_null(path);
     assert_not_null(f);
     assert_not_null(arg);
 
-    str = (const char *)arg;
-    taglib_tag_set_track(taglib_file_tag(f), atoi(str));
+    intval = *(int *)arg;
+    taglib_tag_set_track(taglib_file_tag(f), intval);
     if (!taglib_file_save(f))
         err(errno, "can't save file %s", path);
 
