@@ -185,7 +185,8 @@ main(int argc, char *argv[])
             continue;
         }
 
-        if ((f = taglib_file_new(current_filename)) == NULL) {
+        f = taglib_file_new(current_filename);
+        if (f == NULL) {
             warnx("%s is not a music file", current_filename);
             continue;
         }

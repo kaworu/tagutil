@@ -112,7 +112,7 @@ eval_tag(const char *restrict pattern, const TagLib_Tag *restrict tags)
                 concat(&ret, &retlen, buf);
                 break;
             default:
-                warnx("%c%c: unknown keyword at %lu, skipping.", pattern[i], pattern[i + 1], i);
+                warnx("%c%c: unknown keyword at %zd, skipping.", pattern[i], pattern[i + 1], i);
             }
             i += 1; /* skip keyword */
         }
