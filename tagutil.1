@@ -120,7 +120,21 @@ will rename without any warning and the file's directoy will change. Otherwise
 .Nm
 will display an error message and exit with
 .Er ENOENT
-return value.
+return value unless
+.Fl d
+is given. If
+.Fl d
+is given with
+.Fl r
+then
+.Nm
+will create any needed directory.
+.It Fl d
+created directories when rename action is called. Useful when you want to have one directory per artist and/or per album.
+.Fl d
+is only valid with the
+.Fl r
+(rename) option.
 .It Fl x Ar filter
 print to stdout files matching the given
 .Ar filter .

@@ -231,6 +231,7 @@ usage(void)
                                                          kTITLE,    kALBUM,    kARTIST,    kYEAR,    kTRACK,    kCOMMENT);
     (void)fprintf(stderr, "                             and genre(%s). example: \"%s - %s - (%s) - %s\"\n",
                                                              kGENRE,               kARTIST, kALBUM, kTRACK, kTITLE);
+    (void)fprintf(stderr, "    -d                     : create directory if needed when rename action is called.\n");
     (void)fprintf(stderr, "    -x [FILTER]  [files]   : print files in matching FILTER\n");
     (void)fprintf(stderr, "    -A [ARTIST]  [files]   : update artist tag to ARTIST for all given files\n");
     (void)fprintf(stderr, "    -a [ALBUM]   [files]   : update album tag to ALBUM for all given files\n");
