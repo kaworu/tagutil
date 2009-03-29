@@ -141,6 +141,14 @@ eval_tag(const char *restrict pattern, const TagLib_Tag *restrict tags)
 }
 
 
+/*-
+ * Copyright (c) 1983, 1992, 1993
+ *	The Regents of the University of California.  All rights reserved.
+ */
+#if 0
+__FBSDID("$FreeBSD: src/bin/mkdir/mkdir.c,v 1.33 2006/10/10 20:18:20 ru Exp $");
+#endif
+
 /*
  * Returns 1 if a directory has been created,
  * 2 if it already existed, and 0 on failure.
