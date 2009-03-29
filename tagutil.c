@@ -83,71 +83,71 @@ main(int argc, char *argv[])
         switch ((char)ch) {
         case 'e':
             if (apply != NULL)
-                errx(-1, "too much options given.");
+                errx(EINVAL, "too much options given.");
             apply = tagutil_edit;
             break;
         case 'p':
             if (apply != NULL)
-                errx(-1, "too much options given.");
+                errx(EINVAL, "too much options given.");
             apply = tagutil_print;
             break;
         case 't':
             if (apply != NULL)
-                errx(-1, "too much options given.");
+                errx(EINVAL, "too much options given.");
             apply = tagutil_title;
             apply_arg = optarg;
             break;
         case 'r':
             if (apply != NULL)
-                errx(-1, "too much options given.");
+                errx(EINVAL, "too much options given.");
             apply = tagutil_rename;
             apply_arg = optarg;
             break;
         case 'x':
             if (apply != NULL)
-                errx(-1, "too much options given.");
+                errx(EINVAL, "too much options given.");
             apply = tagutil_filter;
             apply_arg = parse_filter(new_lexer(optarg));
             break;
         case 'a':
             if (apply != NULL)
-                errx(-1, "too much options given.");
+                errx(EINVAL, "too much options given.");
             apply = tagutil_album;
             apply_arg = optarg;
             break;
         case 'A':
             if (apply != NULL)
-                errx(-1, "too much options given.");
+                errx(EINVAL, "too much options given.");
             apply = tagutil_artist;
             apply_arg = optarg;
             break;
         case 'c':
             if (apply != NULL)
-                errx(-1, "too much options given.");
+                errx(EINVAL, "too much options given.");
             apply = tagutil_comment;
             apply_arg = optarg;
             break;
         case 'g':
             if (apply != NULL)
-                errx(-1, "too much options given.");
+                errx(EINVAL, "too much options given.");
             apply = tagutil_genre;
             apply_arg = optarg;
             break;
         case 'y':
             if (apply != NULL)
-                errx(-1, "too much options given.");
+                errx(EINVAL, "too much options given.");
             intval = (int)strtoul(optarg, &endptr, 10);
             if (endptr == optarg || *endptr != '\0' || intval < 0)
-                errx(-1, "Invalid year argument: %s", optarg);
+                errx(EINVAL, "Invalid year argument: %s", optarg);
             apply = tagutil_year;
             apply_arg = &intval;
             break;
         case 'T':
             if (apply != NULL)
-                errx(-1, "too much options given.");
+                errx(EINVAL, "too much options given.");
             intval = (int)strtoul(optarg, &endptr, 10);
             if (endptr == optarg || *endptr != '\0' || intval < 0)
-                errx(-1, "Invalid year argument: %s", optarg);
+                errx(EINVAL, "Invalid year argument: %s", optarg);
             apply = tagutil_track;
             apply_arg = &intval;
             break;
@@ -162,7 +162,7 @@ main(int argc, char *argv[])
     argv += optind;
 
     if (argc == 0)
-        errx(-1, "No file argument given, run `%s -h' to see help.", getprogname());
+        errx(EINVAL, "No file argument given, run `%s -h' to see help.", getprogname());
 
     if (apply == NULL) /* no action given, fallback to default */
         apply = tagutil_print;
@@ -381,7 +381,7 @@ tagutil_rename(const char *restrict path, TagLib_File *restrict f, const void *r
     strarg = (const char *)arg;
 
     if (strarg[0] == '\0')
-        errx(-1, "wrong rename pattern: %s", strarg);
+        errx(EINVAL, "wrong rename pattern: %s", strarg);
 
     tag = taglib_file_tag(f);
     new_fname = eval_tag(strarg, tag);
