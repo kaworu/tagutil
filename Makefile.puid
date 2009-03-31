@@ -1,0 +1,25 @@
+
+# BSD Makefile
+
+PROG=puid
+SRCS=t_puid.c t_wav.c
+
+# libofa
+OFA_I!=pkg-config --cflags libofa
+OFA_L!=pkg-config --libs   libofa
+
+
+# C opts
+CSTD=c99
+.if defined(DEBUG)
+CFLAGS=-g -O0 -Wall -Wextra -Wformat-security -Wnonnull -Wswitch-default -Waggregate-return -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow -Wstrict-prototypes -Winline -Wall
+.endif
+CFLAGS+=${OFA_I}
+
+LDFLAGS+=${OFA_L}
+
+
+.include <bsd.prog.mk>
+
+ofa-example-run:
+	/usr/ports/audio/libofa/work/libofa-0.9.3/examples/example ${ARG}

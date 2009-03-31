@@ -17,7 +17,8 @@
 
 /* write size bytes to buf readed from fd */
 __t__nonnull(2)
-static inline int readBytes(int fd, unsigned char *buf, unsigned int size);
+static inline int readBytes(int fd, unsigned char *restrict buf,
+        unsigned int size);
 
 
 int
@@ -25,7 +26,7 @@ wav_load(const char *path, struct audio_data *ad)
 {
     int fd;
     unsigned char hdr[36], b[8], *samples;
-    long extra_bytes, ms, bytesInNSecs, bytes;
+    long extra_bytes, bytesInNSecs, bytes;
     int compression, channels, srate, bits;
 
     assert_not_null(path);
@@ -40,17 +41,17 @@ wav_load(const char *path, struct audio_data *ad)
     }
 
     if (readBytes(fd, hdr, 36) != 36) {
-	    close(fd);
+        close(fd);
         return (-1);
     }
 
-    if (strncmp(hdr, "RIFF", 4) != 0 ||
+    if (strncmp((const char *)hdr, "RIFF", 4) != 0 ||
             /* Note: bytes 4 thru 7 contain the file size - 8 bytes */
-            strncmp(&hdr[8], "WAVE", 4) != 0 ||
-            strncmp(&hdr[12], "fmt ", 4) != 0) {
+            strncmp((const char *)&hdr[8], "WAVE", 4) != 0 ||
+            strncmp((const char *)&hdr[12], "fmt ", 4) != 0) {
         warnx("bad wave file: %s", path);
         errno = EINVAL;
-	    close(fd);
+        close(fd);
         return (-1);
     }
 
@@ -89,28 +90,24 @@ wav_load(const char *path, struct audio_data *ad)
 
     /* Skip past extra bytes, if any */
     if (lseek(fd, 36 + extra_bytes, SEEK_SET) == -1) {
-	    close(fd);
+        close(fd);
         return (-1);
     }
 
     /* Start reading the next frame.  Only supported frame is the data block */
     if (readBytes(fd, b, 8) != 8) {
-	    close(fd);
+        close(fd);
         return (-1);
     }
 
     /* Now look for the data block */
-    if (strncmp(b, "data", 4) != 0) {
+    if (strncmp((const char*)b, "data", 4) != 0) {
         warnx("can't find data in wave file: %s", path);
         errno = EINVAL;
-	    close(fd);
+        close(fd);
         return (-1);
     }
     bytes = b[4] + (b[5] << 8) + (b[6] << 16) + (b[7] << 24);
-
-    ms = (bytes / 2) / (srate / 1000);
-    if (channels == 2)
-        ms /= 2;
 
     /* No need to read the whole file, just the first 135 seconds */
     bytesInNSecs = 135 * srate * 2 * channels;
@@ -118,9 +115,9 @@ wav_load(const char *path, struct audio_data *ad)
         bytes = bytesInNSecs;
 
     samples = xmalloc(bytes);
-    if (!readBytes(fd, samples, bytes)) {
+    if (readBytes(fd, samples, bytes) != bytes) {
         free(samples);
-	    close(fd);
+        close(fd);
         return (-1);
     }
     close(fd);
@@ -128,8 +125,7 @@ wav_load(const char *path, struct audio_data *ad)
     ad->samples = samples;
     ad->size = bytes / 2;
     ad->srate = srate;
-    ad->stereo = channels == 2 ? true : false;
-    ad->ms = ms;
+    ad->stereo = (channels == 2);
 
     return (0);
 }
@@ -137,50 +133,25 @@ wav_load(const char *path, struct audio_data *ad)
 
 /* ~ copy/paste from libofa's example/wavefile.cpp */
 static inline int
-readBytes(int fd, unsigned char *buf, unsigned int size)
+readBytes(int fd, unsigned char *restrict buf, unsigned int size)
 {
-    int ct, n, i, x;
-	unsigned char tmp[BUFSIZ];
+    unsigned int ct, x;
+    int n;
+    unsigned char tmp[BUFSIZ];
 
     ct = 0;
     while (ct < size) {
-	    x = size - ct;
-	    if (x > BUFSIZ)
-	        x = BUFSIZ;
+        x = size - ct;
+        if (x > BUFSIZ)
+            x = BUFSIZ;
 
-	    n = read(fd, tmp, x);
-	    if (n <= 0)
-	        return (ct);
+        n = read(fd, tmp, x);
+        if (n <= 0)
+            return (ct);
 
         memcpy(&buf[ct], tmp, n);
-	    ct += n;
+        ct += n;
     }
 
     return (ct);
 }
-
-
-# if 1
-#include <err.h>
-int
-main(int argc, char *argv[])
-{
-    int ret;
-    struct audio_data ad;
-
-    if (argc < 2) {
-        (void)fprintf(stderr, "usage: %s wavefile\n", argv[0]);
-        return (1);
-    }
-    ret = wav_load(argv[1], &ad);
-    if (ret != 0)
-        err(errno, "%s", argv[1]);
-
-    (void)printf("size: %li\n", ad.size);
-    (void)printf("srate: %i\n", ad.srate);
-    (void)printf("stereo: %i\n", ad.stereo);
-    (void)printf("ms: %i\n", ad.ms);
-
-    free(ad.samples);
-}
-#endif

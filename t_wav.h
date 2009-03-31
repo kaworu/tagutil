@@ -9,10 +9,10 @@
 #include <stdbool.h>
 
 struct audio_data {
-	unsigned char *samples;
-	long size;
-	int srate, ms;
-	bool stereo;
+    unsigned char *samples;
+    long size;
+    int srate;
+    bool stereo;
 };
 
 __t__nonnull(1) __t__nonnull(2)
