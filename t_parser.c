@@ -318,11 +318,9 @@ parse_strcmp(struct lexer *restrict L)
 {
     struct ast *lhs, *ret;
     enum tokenkind tkind;
-    bool regex;
 
     assert_not_null(L);
 
-    regex = false;
     ret = NULL;
     lhs = new_leaf(L->current.kind, NULL);
 
