@@ -69,8 +69,6 @@ displays and changes tags in musics files. It supports ogg, mp3, flac and more
 .Sh OPTIONS
 .Pp
 .Bl -tag -width indent
-.It Fl p
-display all tags. (default)
 .It Fl e
 edit mode. for each
 .Ar file
@@ -81,6 +79,10 @@ or
 ,
 .Nm
 launch your favourite editor ($EDITOR). 
+.It Fl Y
+answer yes to all questions (useful for rename or edit actions).
+.It Fl N
+answer no to all questions (useful for rename or edit actions).
 .It Fl r Ar pattern
 rename files with given
 .Ar pattern .

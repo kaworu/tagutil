@@ -83,17 +83,12 @@ main(int argc, char *argv[])
 
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
-    while ((ch = getopt(argc, argv, "edphNYt:r:x:a:A:c:g:y:T:")) != -1) {
+    while ((ch = getopt(argc, argv, "edhNYt:r:x:a:A:c:g:y:T:")) != -1) {
         switch ((char)ch) {
         case 'e':
             if (apply != NULL)
                 errx(EINVAL, "too many options given.");
             apply = tagutil_edit;
-            break;
-        case 'p':
-            if (apply != NULL)
-                errx(EINVAL, "too many options given.");
-            apply = tagutil_print;
             break;
         case 't':
             if (apply != NULL)
@@ -234,29 +229,28 @@ void
 usage(void)
 {
 
-    (void)fprintf(stderr,  "tagutil v"VERSION "\n\n");
-    (void)fprintf(stderr,  "usage: %s [opt [optarg]] [files]...\n", getprogname());
+    (void)fprintf(stderr, "tagutil v"VERSION "\n\n");
+    (void)fprintf(stderr, "usage: %s [OPTION]... [FILE]...\n", getprogname());
     (void)fprintf(stderr, "Modify or display music file's tag.\n");
     (void)fprintf(stderr, "\n");
     (void)fprintf(stderr, "Options:\n");
-    (void)fprintf(stderr, "    -h                     : show this help\n");
-    (void)fprintf(stderr, "    -p [files]             : only show files tag. -p is not needed but useful if the first file\n");
-    (void)fprintf(stderr, "                             argument may be a file that could match an option.\n");
-    (void)fprintf(stderr, "    -e [files]             : show tag and prompt for editing (need $EDITOR environment variable)\n");
-    (void)fprintf(stderr, "    -r [PATTERN] [files]   : rename files with the given PATTERN. you can use keywords in PATTERN:\n");
-    (void)fprintf(stderr, "                             title(%s), album(%s), artist(%s), year(%s), track(%s), comment(%s),\n",
-                                                         kTITLE,    kALBUM,    kARTIST,    kYEAR,    kTRACK,    kCOMMENT);
-    (void)fprintf(stderr, "                             and genre(%s). example: \"%s - %s - (%s) - %s\"\n",
-                                                             kGENRE,               kARTIST, kALBUM, kTRACK, kTITLE);
-    (void)fprintf(stderr, "    -d                     : create directory if needed when rename action is called.\n");
-    (void)fprintf(stderr, "    -x [FILTER]  [files]   : print files in matching FILTER\n");
-    (void)fprintf(stderr, "    -A [ARTIST]  [files]   : update artist tag to ARTIST for all given files\n");
-    (void)fprintf(stderr, "    -a [ALBUM]   [files]   : update album tag to ALBUM for all given files\n");
-    (void)fprintf(stderr, "    -c [COMMENT] [files]   : update comment tag to COMMENT for all given files\n");
-    (void)fprintf(stderr, "    -T [TRACK]   [files]   : update track tag to TRACK for all given files\n");
-    (void)fprintf(stderr, "    -t [TITLE]   [files]   : update title tag to TITLE for all given files\n");
-    (void)fprintf(stderr, "    -g [GENRE]   [files]   : update genre tag to GENRE for all given files\n");
-    (void)fprintf(stderr, "    -y [YEAR]    [files]   : update year tag to YEAR for all given files\n");
+    (void)fprintf(stderr, "  -h              show this help\n");
+    (void)fprintf(stderr, "  -e              show tag and prompt for editing (need $EDITOR environment variable)\n");
+    (void)fprintf(stderr, "  -Y              answer yes to all questions\n");
+    (void)fprintf(stderr, "  -N              answer no  to all questions\n");
+    (void)fprintf(stderr, "  -r [-d] PATTERN rename files with the given PATTERN. you can use keywords in PATTERN:\n");
+    (void)fprintf(stderr, "                  title(%s), album(%s), artist(%s), year(%s), track(%s), comment(%s),\n",
+                                             kTITLE,    kALBUM,    kARTIST,    kYEAR,    kTRACK,    kCOMMENT);
+    (void)fprintf(stderr, "                  and genre(%s). example: \"%s - %s - (%s) - %s\"\n",
+                                             kGENRE,              kARTIST, kALBUM, kTRACK, kTITLE);
+    (void)fprintf(stderr, "  -x FILTER       print files in matching FILTER\n");
+    (void)fprintf(stderr, "  -A ARTIST       update artist tag to ARTIST for all given files\n");
+    (void)fprintf(stderr, "  -a ALBUM        update album tag to ALBUM for all given files\n");
+    (void)fprintf(stderr, "  -c COMMENT      update comment tag to COMMENT for all given files\n");
+    (void)fprintf(stderr, "  -T TRACK        update track tag to TRACK for all given files\n");
+    (void)fprintf(stderr, "  -t TITLE        update title tag to TITLE for all given files\n");
+    (void)fprintf(stderr, "  -g GENRE        update genre tag to GENRE for all given files\n");
+    (void)fprintf(stderr, "  -y YEAR         update year tag to YEAR for all given files\n");
     (void)fprintf(stderr, "\n");
 
     exit(EXIT_SUCCESS);
