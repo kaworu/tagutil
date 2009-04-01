@@ -57,8 +57,9 @@
 #include "tagutil.h"
 
 
-/* create directory with tagutil_rename */
-bool dflag = false;
+bool dflag = false; /* create directory with tagutil_rename */
+bool Yflag = false; /* yes answer to all questions */
+bool Nflag = false; /* no  answer to all questions */
 
 /*
  * get action with getopt(3) and then apply it to all files given in argument.
@@ -82,7 +83,7 @@ main(int argc, char *argv[])
 
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
-    while ((ch = getopt(argc, argv, "edpht:r:x:a:A:c:g:y:T:")) != -1) {
+    while ((ch = getopt(argc, argv, "edphNYt:r:x:a:A:c:g:y:T:")) != -1) {
         switch ((char)ch) {
         case 'e':
             if (apply != NULL)
@@ -155,7 +156,23 @@ main(int argc, char *argv[])
             apply_arg = &intval;
             break;
         case 'd':
+            if (dflag)
+                errx(EINVAL, "option -d set twice");
             dflag = true;
+            break;
+        case 'N':
+            if (Nflag)
+                errx(EINVAL, "option -N set twice");
+            if (Yflag)
+                errx(EINVAL, "cannot set both -Y and -N");
+            Nflag = true;
+            break;
+        case 'Y':
+            if (Yflag)
+                errx(EINVAL, "option -Y set twice");
+            if (Nflag)
+                errx(EINVAL, "cannot set both -Y and -N");
+            Yflag = true;
             break;
         case 'h': /* FALLTHROUGH */
         case '?': /* FALLTHROUGH */
@@ -379,8 +396,8 @@ tagutil_rename(const char *restrict path, TagLib_File *restrict f, const void *r
     char *ftype;
     const char *strarg;
     TagLib_Tag *tag;
-    char *result, *dirn, *new_fname;
-    size_t result_size, new_fname_size;
+    char *result, *dirn, *new_fname, *question;
+    size_t result_size, new_fname_size, question_size;
 
     assert_not_null(path);
     assert_not_null(f);
@@ -408,17 +425,24 @@ tagutil_rename(const char *restrict path, TagLib_File *restrict f, const void *r
         concat(&result, &result_size, dirn);
         concat(&result, &result_size, "/");
     }
+    free(dirn);
     concat(&result, &result_size, new_fname);
+    free(new_fname);
 
     /* ask user for confirmation and rename if user want to */
     if (strcmp(path, result) != 0) {
-        (void)printf("rename \"%s\" to \"%s\" ", path, result);
-        if (yesno(NULL))
+        question_size = 1;
+        question = xcalloc(question_size, sizeof(char));
+        concat(&question, &question_size, "rename \"");
+        concat(&question, &question_size, path);
+        concat(&question, &question_size, "\" to \"");
+        concat(&question, &question_size, result);
+        concat(&question, &question_size, "\"");
+        if (yesno(question))
             safe_rename(dflag, path, result);
+        free(question);
     }
 
-    free(dirn);
-    free(new_fname);
     free(result);
     return (true);
 }

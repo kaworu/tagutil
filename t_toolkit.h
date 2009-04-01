@@ -104,6 +104,7 @@ static inline bool has_match(const char *restrict str, const char *restrict patt
  * print the given question, and read user's input. input should match
  * y|yes|n|no.  yesno() loops until a valid response is given and then return
  * true if the response match y|yes, false if it match n|no.
+ * Honor Yflag and Nflag.
  */
 __t__unused
 static inline bool yesno(const char *restrict question);
@@ -296,16 +297,25 @@ static inline bool
 yesno(const char *restrict question)
 {
     char buffer[5]; /* strlen("yes\n\0") == 5 */
+    extern bool Yflag, Nflag;
 
     for (;;) {
-        if (feof(stdin))
+        if (feof(stdin) && !Yflag && !Nflag)
             return (false);
 
         (void)memset(buffer, '\0', len(buffer));
 
         if (question != NULL)
-            (void)printf("%s", question);
-        (void)printf("? [y/n] ");
+            (void)printf("%s? [y/n] ", question);
+
+        if (Yflag) {
+            (void)printf("y\n");
+            return (true);
+        }
+        else if (Nflag) {
+            (void)printf("n\n");
+            return (false);
+        }
 
         (void)fgets(buffer, len(buffer), stdin);
 
