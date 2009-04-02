@@ -13,6 +13,7 @@
 #include <err.h>
 #include <libgen.h> /* dirname(3) */
 #include <regex.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,14 +68,8 @@ static inline char * xdirname(const char *restrict path);
 __t__unused __t__nonnull(1)
 static inline char * xstrdup(const char *restrict src);
 
-/*
- * copy src at the end of dest. dest_size is the allocated size
- * of dest and is modified (dest is realloc).
- *
- * returned value has to be freed.
- */
-__t__unused __t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
-static inline void concat(char **dest, size_t *destlen, const char *src);
+__t__unused __t__printflike(2, 3)
+static inline int xasprintf(char **ret, const char *fmt, ...);
 
 
 /* REGEX STRING OPERATIONS */
@@ -212,27 +207,20 @@ xstrdup(const char *restrict src)
 }
 
 
-static inline void
-concat(char **dest, size_t *dest_size, const char *src)
+static inline int
+xasprintf(char **ret, const char *fmt, ...)
 {
-    size_t start, src_size, final_size;
+    int i;
+    va_list ap;
 
-    assert_not_null(dest);
-    assert_not_null(*dest);
-    assert_not_null(dest_size);
-    assert_not_null(src);
+    va_start(ap, fmt);
+    i = vasprintf(ret, fmt, ap);
+    if (i < 0)
+        err(ENOMEM, NULL);
 
-    start       = *dest_size - 1;
-    src_size    = strlen(src);
-    final_size  = *dest_size + src_size;
+    va_end(ap);
 
-    if (src_size == 0)
-        return;
-
-    *dest = xrealloc(*dest, final_size);
-
-    memcpy(*dest + start, src, src_size + 1);
-    *dest_size = final_size;
+    return (i);
 }
 
 

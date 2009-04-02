@@ -67,43 +67,34 @@ yaml_escape(const char *restrict s)
 char *
 tags_to_yaml(const char *restrict path, const TagLib_Tag *restrict tags)
 {
-    char *ret, *die;
-    size_t retlen;
-    /* handle 2008\0 at max, so it's ok for the next 7'991 years */
-    char buf[5];
+    char *ret;
+    char *t, *a, *A, *c, *g;
+    unsigned int y, T;
 
     assert_not_null(path);
     assert_not_null(tags);
 
-    retlen = 1;
-    ret = xcalloc(retlen, sizeof(char));
+    t = yaml_escape(taglib_tag_title(tags));
+    a = yaml_escape(taglib_tag_album(tags));
+    A = yaml_escape(taglib_tag_artist(tags));
+    y = taglib_tag_year(tags);
+    T = taglib_tag_track(tags);
+    c = yaml_escape(taglib_tag_comment(tags));
+    g = yaml_escape(taglib_tag_genre(tags));
 
-    concat(&ret, &retlen, "# ");
-    concat(&ret, &retlen, path);
-    concat(&ret, &retlen, "\n---\ntitle:   \"");
-    concat(&ret, &retlen, die = yaml_escape(taglib_tag_title(tags)));
-    free(die);
-    concat(&ret, &retlen, "\"\nalbum:   \"");
-    concat(&ret, &retlen, die = yaml_escape(taglib_tag_album(tags)));
-    free(die);
-    concat(&ret, &retlen, "\"\nartist:  \"");
-    concat(&ret, &retlen, die = yaml_escape(taglib_tag_artist(tags)));
-    free(die);
-    concat(&ret, &retlen, "\"\nyear:    ");
-    (void)snprintf(buf, len(buf), "%u", taglib_tag_year(tags));
-    concat(&ret, &retlen, buf);
-    concat(&ret, &retlen, "\ntrack:   ");
-    (void)snprintf(buf, len(buf), "%u", taglib_tag_track(tags));
-    concat(&ret, &retlen, buf);
-    concat(&ret, &retlen, "\ncomment: \"");
-    concat(&ret, &retlen, die = yaml_escape(taglib_tag_comment(tags)));
-    free(die);
-    concat(&ret, &retlen, "\"\ngenre:   \"");
-    concat(&ret, &retlen, die = yaml_escape(taglib_tag_genre(tags)));
-    free(die);
-    concat(&ret, &retlen, "\"\n");
+    xasprintf(&ret,
+        "# %s\n"
+        "---\n"
+        "title:   \"%s\"\n"
+        "album:   \"%s\"\n"
+        "artist:  \"%s\"\n"
+        "year:    %u\n"
+        "track:   %u\n"
+        "comment: \"%s\"\n"
+        "genre:   \"%s\"\n",
+            path, t, a, A, y, T, c, g);
 
-
+    free(t); free(a); free(A); free(c); free(g);
     return (ret);
 }
 

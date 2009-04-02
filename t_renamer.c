@@ -65,78 +65,74 @@ safe_rename(bool dflag, const char *restrict oldpath,
 
 char *
 eval_tag(const char *restrict pattern, const TagLib_Tag *restrict tags)
-#define CLEARBUF    do {                                \
-                        if (bufc > 0) {                 \
-                            buf[bufc++] = '\0';         \
-                            concat(&ret, &retlen, buf); \
-                            bufc = 0;                   \
-                        }                               \
-                    } while (/*CONSTCOND*/0)
 {
-    char *ret;
-    char buf[BUFSIZ];
-    size_t retlen, bufc, patternlen, i;
+    char *ret, buf[3];
+    const char *val;
+    size_t patternlen, alloc, vallen;
+    unsigned int i, j = 0;
 
     assert_not_null(pattern);
     assert_not_null(tags);
 
-    retlen = 1;
     patternlen = strlen(pattern);
-    bufc = 0;
-
-    ret = xcalloc(retlen, sizeof(char));
+    alloc = BUFSIZ;
+    ret = xcalloc(alloc, sizeof(char));
 
     for (i = 0; i < patternlen; i++) {
-        if (bufc == len(buf) - 2)
-            CLEARBUF;
+        if (j == alloc) {
+            alloc += BUFSIZ;
+            ret = xrealloc(ret, alloc * sizeof(char));
+        }
 
-        if (pattern[i] == '%') {
+        if (pattern[i] != '%')
+            ret[j++] = pattern[i];
+        else {
             switch (pattern[i + 1]) {
             case '%':
-                buf[bufc++] = '%';
+                ret[j++] = '%';
                 break;
             case 'A':
-                CLEARBUF;
-                concat(&ret, &retlen, taglib_tag_artist(tags));
+                val = taglib_tag_artist(tags);
                 break;
             case 'a':
-                CLEARBUF;
-                concat(&ret, &retlen, taglib_tag_album(tags));
+                val = taglib_tag_album(tags);
                 break;
             case 'c':
-                CLEARBUF;
-                concat(&ret, &retlen, taglib_tag_comment(tags));
+                val = taglib_tag_comment(tags);
                 break;
             case 'g':
-                CLEARBUF;
-                concat(&ret, &retlen, taglib_tag_genre(tags));
+                val = taglib_tag_comment(tags);
                 break;
             case 'T':
-                CLEARBUF;
-                (void)snprintf(buf, len(buf), "%02u", taglib_tag_track(tags));
-                concat(&ret, &retlen, buf);
+                snprintf(buf, sizeof(buf), "%02u", taglib_tag_track(tags));
+                val = buf;
                 break;
             case 't':
-                CLEARBUF;
-                concat(&ret, &retlen, taglib_tag_title(tags));
+                val = taglib_tag_title(tags);
                 break;
             case 'y':
-                CLEARBUF;
-                (void)snprintf(buf, len(buf), "%02u", taglib_tag_year(tags));
-                concat(&ret, &retlen, buf);
+                snprintf(buf, sizeof(buf), "%02u", taglib_tag_year(tags));
+                val = buf;
                 break;
             default:
-                warnx("%c%c: unknown keyword at %zd, skipping.", pattern[i], pattern[i + 1], i);
+                warnx("%c%c: unknown keyword at %u, skipping.",
+                        pattern[i], pattern[i + 1], i);
+                i += 1; /* skip keyword */
+                continue;
             }
+            vallen = strlen(val);
+            if (alloc < j + vallen + 1) {
+                alloc += vallen + BUFSIZ;
+                ret = xrealloc(ret, alloc * sizeof(char));
+            }
+            ret[j] = '\0';
+            j = strlcat(ret, val, alloc * sizeof(char));
+
             i += 1; /* skip keyword */
         }
-        else
-            buf[bufc++] = pattern[i];
     }
 
-    if (bufc > 0)
-        CLEARBUF;
-
+    ret[j] = '\0';
     return (ret);
 }
 

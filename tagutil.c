@@ -260,20 +260,13 @@ usage(void)
 char *
 create_tmpfile(void)
 {
-    size_t tmpf_size;
     char *tmpdir, *tmpf;
-
-    tmpf_size = 1;
-    tmpf = xcalloc(tmpf_size, sizeof(char));
 
     tmpdir = getenv("TMPDIR");
     if (tmpdir == NULL)
         tmpdir = "/tmp";
 
-    concat(&tmpf, &tmpf_size, tmpdir);
-    concat(&tmpf, &tmpf_size, "/");
-    concat(&tmpf, &tmpf_size, getprogname());
-    concat(&tmpf, &tmpf_size, "XXXXXX");
+    (void)xasprintf(&tmpf, "%s/%s-XXXXXX", tmpdir, getprogname());
 
     if (mkstemp(tmpf) == -1)
         err(errno, "can't create %s file", tmpf);
@@ -286,13 +279,10 @@ bool
 user_edit(const char *restrict path)
 {
     int error;
-    size_t editcmd_size;
     char *editor, *editcmd;
 
     assert_not_null(path);
 
-    editcmd_size = 1;
-    editcmd = xcalloc(editcmd_size, sizeof(char));
     editor = getenv("EDITOR");
     if (editor == NULL)
         errx(-1, "please, set the $EDITOR environment variable.");
@@ -305,12 +295,7 @@ user_edit(const char *restrict path)
          */
         (void)fprintf(stderr, "Starting %s. please wait...\n", editor);
 
-    concat(&editcmd, &editcmd_size, editor);
-    /* ok we really should not have a broken path (with space). but just in
-        case, we add the "'s */
-    concat(&editcmd, &editcmd_size, " \"");
-    concat(&editcmd, &editcmd_size, path);
-    concat(&editcmd, &editcmd_size, "\"");
+    (void)xasprintf(&editcmd, "%s '%s'", editor, path);
 
     /* test if the shell is avaiable */
     if (system(NULL) == 0)
@@ -387,11 +372,8 @@ tagutil_edit(const char *restrict path, TagLib_File *restrict f,
 bool
 tagutil_rename(const char *restrict path, TagLib_File *restrict f, const void *restrict arg)
 {
-    char *ftype;
     const char *strarg;
-    TagLib_Tag *tag;
-    char *result, *dirn, *new_fname, *question;
-    size_t result_size, new_fname_size, question_size;
+    char *ext, *result, *dirn, *fname, *question;
 
     assert_not_null(path);
     assert_not_null(f);
@@ -402,36 +384,25 @@ tagutil_rename(const char *restrict path, TagLib_File *restrict f, const void *r
     if (strlen(strarg) == 0)
         errx(EINVAL, "wrong rename pattern: %s", strarg);
 
-    tag = taglib_file_tag(f);
-    new_fname = eval_tag(strarg, tag);
-    /* add ftype to new_fname */
-    new_fname_size = strlen(new_fname) + 1;
-    if ((ftype = strrchr(path, '.')) == NULL)
+    ext = strrchr(path, '.');
+    if (ext == NULL)
         errx(-1, "can't find file extension: %s", path);
-    concat(&new_fname, &new_fname_size, ftype);
+    ext++; /* skip dot */
+    fname = eval_tag(strarg, taglib_file_tag(f));
 
-    /* new_fname is now OK. store into result the full new path.  */
-    result_size = 1;
+    /* fname is now OK. store into result the full new path.  */
     dirn = xdirname(path);
-    result = xcalloc(result_size, sizeof(char));
     /* add the directory to result if needed */
-    if (strcmp(dirn, ".") != 0) {
-        concat(&result, &result_size, dirn);
-        concat(&result, &result_size, "/");
-    }
+    if (strcmp(dirn, ".") != 0)
+        (void)xasprintf(&result, "%s/%s.%s", dirn, fname, ext);
+    else
+        (void)xasprintf(&result, "%s.%s", fname, ext);
+    free(fname);
     free(dirn);
-    concat(&result, &result_size, new_fname);
-    free(new_fname);
 
     /* ask user for confirmation and rename if user want to */
     if (strcmp(path, result) != 0) {
-        question_size = 1;
-        question = xcalloc(question_size, sizeof(char));
-        concat(&question, &question_size, "rename \"");
-        concat(&question, &question_size, path);
-        concat(&question, &question_size, "\" to \"");
-        concat(&question, &question_size, result);
-        concat(&question, &question_size, "\"");
+        (void)xasprintf(&question, "rename '%s' to '%s'", path, result);
         if (yesno(question))
             safe_rename(dflag, path, result);
         free(question);
