@@ -246,7 +246,7 @@ lex(struct lexer *restrict L)
             if (error != 0) {
                 errbuf = xcalloc(BUFSIZ, sizeof(char));
                 (void)regerror(error, &Lcurrent->value.regex, errbuf, BUFSIZ);
-                errx(-1, "lexer error, can't compile regex \"%s\": %s", s, errbuf);
+                errx(-1, "lexer error, can't compile regex '%s': %s", s, errbuf);
             }
             free(s); /* free the regex string, no more needed */
         }

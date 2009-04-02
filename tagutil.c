@@ -137,7 +137,7 @@ main(int argc, char *argv[])
                 errx(EINVAL, "too many options given.");
             intval = (int)strtoul(optarg, &endptr, 10);
             if (endptr == optarg || *endptr != '\0' || intval < 0)
-                errx(EINVAL, "Invalid year argument: %s", optarg);
+                errx(EINVAL, "Invalid year argument: '%s'", optarg);
             apply = tagutil_year;
             apply_arg = &intval;
             break;
@@ -146,7 +146,7 @@ main(int argc, char *argv[])
                 errx(EINVAL, "too many options given.");
             intval = (int)strtoul(optarg, &endptr, 10);
             if (endptr == optarg || *endptr != '\0' || intval < 0)
-                errx(EINVAL, "Invalid year argument: %s", optarg);
+                errx(EINVAL, "Invalid year argument: '%s'", optarg);
             apply = tagutil_track;
             apply_arg = &intval;
             break;
@@ -269,7 +269,7 @@ create_tmpfile(void)
     (void)xasprintf(&tmpf, "%s/%s-XXXXXX", tmpdir, getprogname());
 
     if (mkstemp(tmpf) == -1)
-        err(errno, "can't create %s file", tmpf);
+        err(errno, "can't create '%s' file", tmpf);
 
     return (tmpf);
 }
@@ -356,7 +356,7 @@ tagutil_edit(const char *restrict path, TagLib_File *restrict f,
             warnx("file '%s' not saved.", path);
         else {
             if (!taglib_file_save(f))
-                err(errno, "can't save file %s", path);
+                err(errno, "can't save file '%s'", path);
         }
 
         xfclose(stream);
@@ -382,11 +382,11 @@ tagutil_rename(const char *restrict path, TagLib_File *restrict f, const void *r
     strarg = (const char *)arg;
 
     if (strlen(strarg) == 0)
-        errx(EINVAL, "wrong rename pattern: %s", strarg);
+        errx(EINVAL, "wrong rename pattern: '%s'", strarg);
 
     ext = strrchr(path, '.');
     if (ext == NULL)
-        errx(-1, "can't find file extension: %s", path);
+        errx(-1, "can't find file extension: '%s'", path);
     ext++; /* skip dot */
     fname = eval_tag(strarg, taglib_file_tag(f));
 
@@ -445,7 +445,7 @@ tagutil_title(const char *restrict path, TagLib_File *restrict f,
     str = (const char *)arg;
     taglib_tag_set_title(taglib_file_tag(f), str);
     if (!taglib_file_save(f))
-        err(errno, "can't save file %s", path);
+        err(errno, "can't save file '%s'", path);
 
     return (true);
 }
@@ -464,7 +464,7 @@ tagutil_album(const char *restrict path, TagLib_File *restrict f,
     str = (const char *)arg;
     taglib_tag_set_album(taglib_file_tag(f), str);
     if (!taglib_file_save(f))
-        err(errno, "can't save file %s", path);
+        err(errno, "can't save file '%s'", path);
 
     return (true);
 }
@@ -483,7 +483,7 @@ tagutil_artist(const char *restrict path, TagLib_File *restrict f,
     str = (const char *)arg;
     taglib_tag_set_artist(taglib_file_tag(f), str);
     if (!taglib_file_save(f))
-        err(errno, "can't save file %s", path);
+        err(errno, "can't save file '%s'", path);
 
     return (true);
 }
@@ -502,7 +502,7 @@ tagutil_year(const char *restrict path, TagLib_File *restrict f,
     intval = *(int *)arg;
     taglib_tag_set_year(taglib_file_tag(f), intval);
     if (!taglib_file_save(f))
-        err(errno, "can't save file %s", path);
+        err(errno, "can't save file '%s'", path);
 
     return (true);
 }
@@ -521,7 +521,7 @@ tagutil_track(const char *restrict path, TagLib_File *restrict f,
     intval = *(int *)arg;
     taglib_tag_set_track(taglib_file_tag(f), intval);
     if (!taglib_file_save(f))
-        err(errno, "can't save file %s", path);
+        err(errno, "can't save file '%s'", path);
 
     return (true);
 }
@@ -540,7 +540,7 @@ tagutil_comment(const char *restrict path, TagLib_File *restrict f,
     str = (const char *)arg;
     taglib_tag_set_comment(taglib_file_tag(f), str);
     if (!taglib_file_save(f))
-        err(errno, "can't save file %s", path);
+        err(errno, "can't save file '%s'", path);
 
     return (true);
 }
@@ -559,7 +559,7 @@ tagutil_genre(const char *restrict path, TagLib_File *restrict f,
     str = (const char *)arg;
     taglib_tag_set_genre(taglib_file_tag(f), str);
     if (!taglib_file_save(f))
-        err(errno, "can't save file %s", path);
+        err(errno, "can't save file '%s'", path);
 
     return (true);
 }

@@ -43,8 +43,11 @@ safe_rename(bool dflag, const char *restrict oldpath,
             if (build(newdirn, S_IRWXU | S_IRWXG | S_IRWXO) == 0) /* failure */
                 failed = true;
         }
-        if (stat(newdirn, &st) != 0)
+        if (stat(newdirn, &st) != 0) {
+            if (errno == ENOENT)
+                warnx("forgot -d?");
             failed = true;
+        }
         else if (!S_ISDIR(st.st_mode)) {
             errno = ENOTDIR;
             failed = true;
@@ -59,7 +62,7 @@ safe_rename(bool dflag, const char *restrict oldpath,
         err(errno = EEXIST, "%s", newpath);
 
     if (rename(oldpath, newpath) == -1)
-        err(errno, NULL);
+        err(errno, "rename");
 }
 
 

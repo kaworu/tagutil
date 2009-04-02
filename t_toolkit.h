@@ -112,7 +112,7 @@ xmalloc(const size_t size)
     void *ptr;
 
     if ((ptr = malloc(size)) == NULL)
-        err(ENOMEM, NULL);
+        err(ENOMEM, "malloc");
 
     return (ptr);
 }
@@ -124,7 +124,7 @@ xcalloc(const size_t nmemb, const size_t size)
     void *ptr;
 
     if ((ptr = calloc(nmemb, size)) == NULL)
-        err(ENOMEM, NULL);
+        err(ENOMEM, "calloc");
 
     return (ptr);
 }
@@ -136,7 +136,7 @@ xrealloc(void *old_ptr, const size_t new_size)
     void *ptr;
 
     if ((ptr = realloc(old_ptr, new_size)) == NULL)
-        err(ENOMEM, NULL);
+        err(ENOMEM, "realloc");
 
     return (ptr);
 }
@@ -153,7 +153,7 @@ xfopen(const char *restrict path, const char *restrict mode)
     stream = fopen(path, mode);
 
     if (stream == NULL)
-        err(errno, "can't open file %s", path);
+        err(errno, "can't open file '%s'", path);
 
     return (stream);
 }
@@ -166,7 +166,7 @@ xfclose(FILE *restrict stream)
     assert_not_null(stream);
 
     if (fclose(stream) != 0)
-        err(errno, NULL);
+        err(errno, "fclose");
 }
 
 
@@ -185,7 +185,7 @@ xdirname(const char *restrict path)
 #else
     if ((dirn = dirname(path)) == NULL)
 #endif
-        err(errno, NULL);
+        err(errno, "dirname");
     dirn = xstrdup(dirn);
 
 #if !defined(HAVE_SANE_DIRNAME)
@@ -201,7 +201,7 @@ xstrdup(const char *restrict src)
     char *ptr;
 
     if ((ptr = strdup(src)) == NULL)
-        err(ENOMEM, NULL);
+        err(ENOMEM, "strdup");
 
     return (ptr);
 }
@@ -216,7 +216,7 @@ xasprintf(char **ret, const char *fmt, ...)
     va_start(ap, fmt);
     i = vasprintf(ret, fmt, ap);
     if (i < 0)
-        err(ENOMEM, NULL);
+        err(ENOMEM, "vasprintf");
 
     va_end(ap);
 

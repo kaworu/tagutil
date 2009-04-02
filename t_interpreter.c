@@ -97,12 +97,12 @@ eval(const char *restrict filename, const TagLib_Tag *restrict tag,
         default:
             s = xcalloc(BUFSIZ, sizeof(char));
             (void)regerror(error, &filter->rhs->value.regex, s, BUFSIZ);
-            errx(-1, "interpreter error, can't exec regex: %s", s);
+            errx(-1, "interpreter error, can't exec regex: '%s'", s);
             /* NOTREACHED */
         }
         break;
     default:
-        errx(-1, "interpreter error: unexpected token: %s", token_to_s(filter->tkind));
+        errx(-1, "interpreter error: unexpected token: '%s'", token_to_s(filter->tkind));
         /* NOTREACHED */
     }
 
