@@ -12,19 +12,6 @@
 
 
 /*
- * tagutil_f is the type of function that implement actions in tagutil.
- * 1rst arg: the current file's name
- * 2nd  arg: the TagLib_File of the current file
- * 3rd  arg: the arg supplied to the action (for example, if -y is given as
- * option then action is tagutil_year and arg is the new value for the
- * year tag.
- */
-typedef bool (*tagutil_f)(const char *restrict, TagLib_File *restrict, const void *restrict);
-
-/**********************************************************************/
-
-
-/*
  * show usage and exit.
  */
 __t__dead2
@@ -57,8 +44,7 @@ bool user_edit(const char *restrict path);
  * print the given file's tag to stdin.
  */
 __t__nonnull(1) __t__nonnull(2)
-bool tagutil_print(const char *restrict path, TagLib_File *restrict f,
-        __t__unused const void *restrict arg);
+bool tagutil_print(const char *restrict path, TagLib_File *restrict f);
 
 /*
  * print the given file's tag and prompt to ask if tag edit is needed. if
@@ -66,8 +52,7 @@ bool tagutil_print(const char *restrict path, TagLib_File *restrict f,
  * parse the tempfile and update the file's tag.
  */
 __t__nonnull(1) __t__nonnull(2)
-bool tagutil_edit(const char *restrict path, TagLib_File *restrict f,
-        __t__unused const void *restrict arg);
+bool tagutil_edit(const char *restrict path, TagLib_File *restrict f);
 
 /*
  * rename the file at path with the given pattern arg. the pattern can use
@@ -75,42 +60,35 @@ bool tagutil_edit(const char *restrict path, TagLib_File *restrict f,
  */
 __t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
 bool tagutil_rename(const char *restrict path, TagLib_File *restrict f,
-        const void *restrict arg);
+        const char *restrict pattern);
 
 /*
  * print given path if the file match the given ast (arg).
  */
 __t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
 bool tagutil_filter(const char *restrict path, TagLib_File *restrict f,
-        const void *restrict arg);
+        const struct ast *restrict ast);
 
-__t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
-bool tagutil_title(const char *restrict path, TagLib_File *restrict f,
-        const void *restrict arg);
+__t__nonnull(1) __t__nonnull(2)
+bool tagutil_title(TagLib_File *restrict f, const char *restrict title);
 
-__t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
-bool tagutil_album(const char *restrict path, TagLib_File *restrict f,
-        const void *restrict arg);
+__t__nonnull(1) __t__nonnull(2)
+bool tagutil_album(TagLib_File *restrict f, const char *restrict album);
 
-__t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
-bool tagutil_artist(const char *restrict path, TagLib_File *restrict f,
-        const void *restrict arg);
+__t__nonnull(1) __t__nonnull(2)
+bool tagutil_artist(TagLib_File *restrict f, const char *restrict artist);
 
-__t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
-bool tagutil_year(const char *restrict path, TagLib_File *restrict f,
-        const void *restrict arg);
+__t__nonnull(1)
+bool tagutil_year(TagLib_File *restrict f, int year);
 
-__t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
-bool tagutil_track(const char *restrict path, TagLib_File *restrict f,
-        const void *restrict arg);
+__t__nonnull(1)
+bool tagutil_track(TagLib_File *restrict f, int track);
 
-__t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
-bool tagutil_comment(const char *restrict path, TagLib_File *restrict f,
-        const void *restrict arg);
+__t__nonnull(1) __t__nonnull(2)
+bool tagutil_comment(TagLib_File *restrict f, const char *restrict comment);
 
-__t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
-bool tagutil_genre(const char *restrict path, TagLib_File *restrict f,
-        const void *restrict arg);
+__t__nonnull(1) __t__nonnull(2)
+bool tagutil_genre(TagLib_File *restrict f, const char *restrict genre);
 
 
 #endif /* not T_TAGUTIL_H */
