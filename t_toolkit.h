@@ -293,8 +293,10 @@ yesno(const char *restrict question)
 
         (void)memset(buffer, '\0', len(buffer));
 
-        if (question != NULL)
+        if (question != NULL) {
             (void)printf("%s? [y/n] ", question);
+            (void)fflush(stdout);
+        }
 
         if (Yflag) {
             (void)printf("y\n");
