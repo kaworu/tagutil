@@ -92,7 +92,7 @@ eval_tag(const char *restrict pattern, const TagLib_Tag *restrict tags)
         else {
             switch (pattern[i + 1]) {
             case '%':
-                ret[j++] = '%';
+                val = "%";
                 break;
             case 'A':
                 val = taglib_tag_artist(tags);
