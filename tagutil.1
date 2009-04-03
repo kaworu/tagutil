@@ -1,4 +1,6 @@
+.\"
 .\" Copyright (c) 2008, Perrin Alexandre <kaworu@kaworu.ch>
+.\"
 .\" All rights reserved.
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions are met:
@@ -22,6 +24,7 @@
 .\" ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 .\" SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+.\"
 .Dd June 26, 2008
 .Dt TAGUTIL 1
 .Os
@@ -30,42 +33,19 @@
 .Nd edit music files tags
 .Sh SYNOPSIS
 .Nm
-.Fl p
 .Op Ar
 .Nm
-.Fl e
-.Op Ar
-.Nm
-.Fl r Ar pattern
-.Op Ar
-.Nm
-.Fl x Ar filter
-.Op Ar
-.Nm
-.Fl A Ar artist
-.Op Ar
-.Nm
-.Fl a Ar album
-.Op Ar
-.Nm
-.Fl c Ar comment
-.Op Ar
-.Nm
-.Fl g Ar genre
-.Op Ar
-.Nm
-.Fl T Ar trackno
-.Op Ar
-.Nm
-.Fl t Ar title
-.Op Ar
-.Nm
-.Fl y Ar yearno
+[options]
 .Op Ar
 .Sh DESCRIPTION
 .Nm
 displays and changes tags in musics files. It supports ogg, mp3, flac and more
-(see taglib documentation). The default action is to display all the tags. 
+(see taglib documentation).
+.Nm
+modify tags if asked, then start the edit action if
+.Fl e
+and finally rename if
+.Fl r .
 .Sh OPTIONS
 .Pp
 .Bl -tag -width indent
@@ -78,26 +58,29 @@ or
 .Sq yes
 ,
 .Nm
-launch your favourite editor ($EDITOR). 
+launch your favourite editor ($EDITOR).
 .It Fl Y
-answer yes to all questions (useful for rename or edit actions).
+answer yes to all questions (useful for rename or edit actions). Ignored if no questions are asked.
 .It Fl N
-answer no to all questions (useful for rename or edit actions).
+answer no to all questions (useful for rename or edit actions). Ignored if no questions are asked.
 .It Fl r Ar pattern
 rename files with given
 .Ar pattern .
 The
 .Ar pattern
 can contain special keywords expanded with file's tag.
-confirmation is always asked before rename. You can avoid it by using the
-.Sq yes
-command:
-.Dl yes | tagutil Fl r Ar
+confirmation is asked before rename unless
+.Fl Y
+or
+.Fl N
+is given.
 .Pp
 The keywords are as follows:
 .Bl -tag -width indent
 .It \%%A
 artist
+.It \%%\%%
+litteral \%%
 .It \%%a
 album
 .It \%%c
@@ -364,8 +347,3 @@ option can't compare
 and
 .Sq track
 keywords.
-.Pp
-only one option can be give each call.
-.Nm
-can't handle:
-.Dl Nm Fl t Ar 'mytitle' Fl y Ar 2000 Ar
