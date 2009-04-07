@@ -16,6 +16,7 @@
 #  define __t__dead2
 #  define __t__printflike(fmtarg, firstvarg)
 #else
+#include <sys/cdefs.h>
 #  define __t__unused     __unused
 #  define __t__dead2      __dead2
 #  define __t__nonnull(x) __nonnull(x)
