@@ -12,27 +12,25 @@
 
 
 __t__nonnull(1) __t__nonnull(2)
-static inline unsigned int int_leaf(struct ast *restrict leaf,
-        const TagLib_Tag *restrict tag);
+static inline unsigned int int_leaf(struct tfile *restrict file,
+        struct ast *restrict leaf);
 
-__t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
-static inline const char * str_leaf(const char *restrict filename,
-        const struct ast *restrict leaf, const TagLib_Tag *restrict tag);
+__t__nonnull(1) __t__nonnull(2)
+static inline const char * str_leaf(struct tfile *restrict file,
+const struct ast *restrict leaf);
 
 
 bool
-eval(const char *restrict filename, const TagLib_Tag *restrict tag,
-        const struct ast *restrict filter)
-#define EVAL(e) (eval(filename, tag, (e)))
-#define ILEAF(k) (int_leaf((k), tag))
-#define SLEAF(k) (str_leaf(filename, (k), tag))
+eval(struct tfile *restrict file, const struct ast *restrict filter)
+#define EVAL(e) (eval(file, (e)))
+#define ILEAF(k) (int_leaf(file, (k)))
+#define SLEAF(k) (str_leaf(file, (k)))
 {
     bool ret;
-    char *s;
+    char s[BUFSIZ];
     int error;
 
-    assert_not_null(filename);
-    assert_not_null(tag);
+    assert_not_null(file);
     assert_not_null(filter);
 
     if (filter->kind == ALEAF)
@@ -95,8 +93,7 @@ eval(const char *restrict filename, const TagLib_Tag *restrict tag,
             ret = false;
             break;
         default:
-            s = xcalloc(BUFSIZ, sizeof(char));
-            (void)regerror(error, &filter->rhs->value.regex, s, BUFSIZ);
+            (void)regerror(error, &filter->rhs->value.regex, s, sizeof(s));
             errx(-1, "interpreter error, can't exec regex: '%s'", s);
             /* NOTREACHED */
         }
@@ -110,20 +107,20 @@ eval(const char *restrict filename, const TagLib_Tag *restrict tag,
 }
 
 static inline unsigned int
-int_leaf(struct ast *restrict leaf, const TagLib_Tag *restrict tag)
+int_leaf(struct tfile *restrict file, struct ast *restrict leaf)
 {
     unsigned int ret;
 
+    assert_not_null(file);
     assert_not_null(leaf);
     assert(leaf->kind == ALEAF);
-    assert_not_null(tag);
 
     switch (leaf->tkind) {
     case TTRACK:
-        ret = taglib_tag_track(tag);
+        ret = file->track(file);
         break;
     case TYEAR:
-        ret = taglib_tag_year(tag);
+        ret = file->year(file);
         break;
     case TINT:
         ret = leaf->value.integer;
@@ -138,34 +135,32 @@ int_leaf(struct ast *restrict leaf, const TagLib_Tag *restrict tag)
 }
 
 static inline const char *
-str_leaf(const char *restrict filename, const struct ast *restrict leaf,
-        const TagLib_Tag *restrict tag)
+str_leaf(struct tfile *restrict file, const struct ast *restrict leaf)
 {
     const char *ret;
 
-    assert_not_null(filename);
+    assert_not_null(file);
     assert_not_null(leaf);
     assert(leaf->kind == ALEAF);
-    assert_not_null(tag);
 
     switch (leaf->tkind) {
     case TTITLE:
-        ret = taglib_tag_title(tag);
+        ret = file->title(file);
         break;
     case TALBUM:
-        ret = taglib_tag_album(tag);
+        ret = file->album(file);
         break;
     case TARTIST:
-        ret = taglib_tag_artist(tag);
+        ret = file->artist(file);
         break;
     case TCOMMENT:
-        ret = taglib_tag_comment(tag);
+        ret = file->comment(file);
         break;
     case TGENRE:
-        ret = taglib_tag_genre(tag);
+        ret = file->genre(file);
         break;
     case TFILENAME:
-        ret = filename;
+        ret = file->path;
         break;
     case TSTRING:
         ret = leaf->value.string;

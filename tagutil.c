@@ -52,6 +52,8 @@
 #include "t_interpreter.h"
 #include "t_yaml.h"
 #include "t_renamer.h"
+#include "t_file.h"
+#include "t_ftgeneric.h"
 #include "t_toolkit.h"
 
 #include "tagutil.h"
@@ -90,7 +92,7 @@ main(int argc, char *argv[])
 {
     bool w = false;
     int i, ch;
-    char *file, *endptr;
+    char *path, *endptr;
     TagLib_File *f;
     struct stat s;
 
@@ -208,28 +210,31 @@ main(int argc, char *argv[])
     taglib_set_string_management_enabled(true);
 
     for (i = 0; i < argc; i++) {
-        file = argv[i];
+        path = argv[i];
 
-        if (stat(file, &s) != 0) {
-            warn("%s", file);
+        if (stat(path, &s) != 0) {
+            warn("%s", path);
             continue;
         }
         else if (!S_ISREG(s.st_mode)) {
-            warnx("%s is not a regular file", file);
+            warnx("%s is not a regular file", path);
             continue;
         }
 
-        f = taglib_file_new(file);
+        f = taglib_file_new(path);
         if (f == NULL || !taglib_file_is_valid(f)) {
-            warnx("%s is not a valid music file", file);
+            warnx("%s is not a valid music file", path);
             continue;
         }
 
         /* modifiy tag, edit, rename */
         if (pflag)
-            tagutil_print(file, f);
-        else if (xflag)
-            tagutil_filter(file, f, x_arg);
+            tagutil_print(path, f);
+        else if (xflag) { /* XXX */
+            struct tfile *file = ftgeneric_new(path);
+            tagutil_filter(file, x_arg);
+            file->destroy(file);
+        }
         else {
             if (tflag)
                 tagutil_title(f, t_arg);
@@ -246,13 +251,13 @@ main(int argc, char *argv[])
             if (gflag)
                 tagutil_genre(f, g_arg);
             if (eflag)
-                tagutil_edit(file, f);
+                tagutil_edit(path, f);
             if (w) {
                 if (!taglib_file_save(f))
-                    err(errno, "couldn't save file '%s'", file);
+                    err(errno, "couldn't save file '%s'", path);
             }
             if (rflag)
-                tagutil_rename(file, f, r_arg);
+                tagutil_rename(path, f, r_arg);
         }
 
         taglib_tag_free_strings();
@@ -451,19 +456,17 @@ tagutil_rename(const char *restrict path, TagLib_File *restrict f,
 
 
 bool
-tagutil_filter(const char *restrict path, TagLib_File *restrict f,
-        const struct ast *restrict ast)
+tagutil_filter(struct tfile *file, const struct ast *restrict ast)
 {
     bool ret;
 
-    assert_not_null(path);
-    assert_not_null(f);
+    assert_not_null(file);
     assert_not_null(ast);
 
-    ret = eval(path, taglib_file_tag(f), ast);
+    ret = eval(file, ast);
 
     if (ret)
-        (void)printf("%s\n", path);
+        (void)printf("%s\n", file->path);
 
     return (ret);
 }

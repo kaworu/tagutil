@@ -8,7 +8,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include <tag_c.h>
+#include <tag_c.h> /* XXX */
+#include "t_file.h"
 
 
 /*
@@ -65,9 +66,8 @@ bool tagutil_rename(const char *restrict path, TagLib_File *restrict f,
 /*
  * print given path if the file match the given ast (arg).
  */
-__t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
-bool tagutil_filter(const char *restrict path, TagLib_File *restrict f,
-        const struct ast *restrict ast);
+__t__nonnull(1) __t__nonnull(2)
+bool tagutil_filter(struct tfile *file, const struct ast *restrict ast);
 
 __t__nonnull(1) __t__nonnull(2)
 bool tagutil_title(TagLib_File *restrict f, const char *restrict title);
