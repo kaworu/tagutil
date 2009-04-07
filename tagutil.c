@@ -45,8 +45,6 @@
 #include <errno.h>
 #include <unistd.h> /* getopt(3) */
 
-#include <tag_c.h>
-
 #include "t_lexer.h"
 #include "t_parser.h"
 #include "t_interpreter.h"
@@ -74,15 +72,15 @@ bool        Tflag = false;  /* set track */
 bool        tflag = false;  /* set title */
 bool        yflag = false;  /* set year */
 
-char       *r_arg; /* rename pattern */
-struct ast *x_arg; /* filter code */
-char       *a_arg; /* album argument */
-char       *A_arg; /* artist argument */
-char       *c_arg; /* comment argument */
-char       *g_arg; /* genre argument */
-int         T_arg;    /* track argument */
-char       *t_arg; /* title argument */
-int         y_arg;    /* year argument */
+char         *r_arg; /* rename pattern */
+struct ast   *x_arg; /* filter code */
+char         *a_arg; /* album argument */
+char         *A_arg; /* artist argument */
+char         *c_arg; /* comment argument */
+char         *g_arg; /* genre argument */
+unsigned int  T_arg; /* track argument */
+char         *t_arg; /* title argument */
+unsigned int  y_arg; /* year argument */
 /*
  * get action with getopt(3) and then apply it to all files given in argument.
  * usage() is called if an error is detected.
@@ -93,8 +91,8 @@ main(int argc, char *argv[])
     bool w = false;
     int i, ch;
     char *path, *endptr;
-    TagLib_File *f;
     struct stat s;
+    struct tfile *file;
 
     if (argc < 2)
         usage();
@@ -104,7 +102,7 @@ main(int argc, char *argv[])
     while ((ch = getopt(argc, argv, "edhNYt:r:x:a:A:c:g:y:T:")) != -1) {
         switch ((char)ch) {
         case 'e':
-            w = eflag = true;
+            eflag = true;
             break;
         case 'r':
             if (rflag)
@@ -151,8 +149,8 @@ main(int argc, char *argv[])
                 errx(EINVAL, "-y option set twice");
             w = true;
             yflag = true;
-            y_arg  = (int)strtoul(optarg, &endptr, 10);
-            if (endptr == optarg || *endptr != '\0' || y_arg < 0)
+            y_arg  = strtoul(optarg, &endptr, 10);
+            if (endptr == optarg || *endptr != '\0')
                 errx(EINVAL, "Invalid year argument: '%s'", optarg);
             break;
         case 'T':
@@ -160,8 +158,8 @@ main(int argc, char *argv[])
                 errx(EINVAL, "-T option set twice");
             w = true;
             Tflag = true;
-            T_arg  = (int)strtoul(optarg, &endptr, 10);
-            if (endptr == optarg || *endptr != '\0' || T_arg < 0)
+            T_arg  = strtoul(optarg, &endptr, 10);
+            if (endptr == optarg || *endptr != '\0')
                 errx(EINVAL, "Invalid track argument: '%s'", optarg);
             break;
         case 't':
@@ -199,15 +197,11 @@ main(int argc, char *argv[])
                 getprogname());
     if (dflag && !rflag)
         errx(EINVAL, "-d is only valid with -r.");
-    if (xflag && (w || rflag))
+    if (xflag && (w || eflag || rflag))
         errx(EINVAL, "-x option must be used alone");
-    if (!xflag && !rflag && !w)
+    if (!xflag && !rflag && !w && !eflag)
     /* no action given, fallback to default */
         pflag = true;
-
-    /* taglib specific init */
-    taglib_set_strings_unicode(has_match(getenv("LC_ALL"), "utf-?8"));
-    taglib_set_string_management_enabled(true);
 
     for (i = 0; i < argc; i++) {
         path = argv[i];
@@ -221,47 +215,39 @@ main(int argc, char *argv[])
             continue;
         }
 
-        f = taglib_file_new(path);
-        if (f == NULL || !taglib_file_is_valid(f)) {
-            warnx("%s is not a valid music file", path);
-            continue;
-        }
+        file = ftgeneric_new(path);
 
         /* modifiy tag, edit, rename */
         if (pflag)
-            tagutil_print(path, f);
-        else if (xflag) { /* XXX */
-            struct tfile *file = ftgeneric_new(path);
+            tagutil_print(file);
+        else if (xflag)
             tagutil_filter(file, x_arg);
-            file->destroy(file);
-        }
         else {
             if (tflag)
-                tagutil_title(f, t_arg);
+                file->set_title(file, t_arg);
             if (aflag)
-                tagutil_album(f, a_arg);
+                file->set_album(file, a_arg);
             if (Aflag)
-                tagutil_artist(f, A_arg);
+                file->set_artist(file, A_arg);
             if (yflag)
-                tagutil_year(f, y_arg);
+                file->set_year(file, y_arg);
             if (Tflag)
-                tagutil_track(f, T_arg);
+                file->set_track(file, T_arg);
             if (cflag)
-                tagutil_comment(f, c_arg);
+                file->set_comment(file, c_arg);
             if (gflag)
-                tagutil_genre(f, g_arg);
+                file->set_genre(file, g_arg);
             if (eflag)
-                tagutil_edit(path, f);
-            if (w) {
-                if (!taglib_file_save(f))
+                tagutil_edit(file);
+            if (w && !eflag) {
+                if (file->save(file) != 0)
                     err(errno, "couldn't save file '%s'", path);
             }
             if (rflag)
-                tagutil_rename(path, f, r_arg);
+                tagutil_rename(file, r_arg);
         }
 
-        taglib_tag_free_strings();
-        taglib_file_free(f);
+        file->destroy(file);
     }
 
     if (xflag)
@@ -355,14 +341,13 @@ user_edit(const char *restrict path)
 
 
 bool
-tagutil_print(const char *restrict path, TagLib_File *restrict f)
+tagutil_print(const struct tfile *restrict file)
 {
     char *infos;
 
-    assert_not_null(path);
-    assert_not_null(f);
+    assert_not_null(file);
 
-    infos = tags_to_yaml(path, taglib_file_tag(f));
+    infos = tags_to_yaml(file);
     (void)printf("%s\n", infos);
 
     free(infos);
@@ -371,15 +356,14 @@ tagutil_print(const char *restrict path, TagLib_File *restrict f)
 
 
 bool
-tagutil_edit(const char *restrict path, TagLib_File *restrict f)
+tagutil_edit(struct tfile *restrict file)
 {
     char *tmp_file, *infos;
     FILE *stream;
 
-    assert_not_null(path);
-    assert_not_null(f);
+    assert_not_null(file);
 
-    infos = tags_to_yaml(path, taglib_file_tag(f));
+    infos = tags_to_yaml(file);
     (void)printf("%s\n", infos);
 
     if (yesno("edit this file")) {
@@ -396,11 +380,11 @@ tagutil_edit(const char *restrict path, TagLib_File *restrict f)
         }
 
         stream = xfopen(tmp_file, "r");
-        if (!yaml_to_tags(taglib_file_tag(f), stream))
-            warnx("file '%s' not saved.", path);
+        if (!yaml_to_tags(file, stream))
+            warnx("file '%s' not saved.", file->path);
         else {
-            if (!taglib_file_save(f))
-                err(errno, "can't save file '%s'", path);
+            if (file->save(file) != 0)
+                err(errno, "can't save file '%s'", file->path);
         }
 
         xfclose(stream);
@@ -414,26 +398,24 @@ tagutil_edit(const char *restrict path, TagLib_File *restrict f)
 }
 
 bool
-tagutil_rename(const char *restrict path, TagLib_File *restrict f,
-        const char *restrict pattern)
+tagutil_rename(struct tfile *restrict file, const char *restrict pattern)
 {
     char *ext, *result, *dirn, *fname, *question;
 
-    assert_not_null(path);
-    assert_not_null(f);
+    assert_not_null(file);
     assert_not_null(pattern);
 
     if (strlen(pattern) == 0)
-        errx(EINVAL, "wrong rename pattern: '%s'", pattern);
+        errx(EINVAL, "empty rename pattern: '%s'", pattern);
 
-    ext = strrchr(path, '.');
+    ext = strrchr(file->path, '.');
     if (ext == NULL)
-        errx(-1, "can't find file extension: '%s'", path);
+        errx(-1, "can't find file extension: '%s'", file->path);
     ext++; /* skip dot */
-    fname = eval_tag(pattern, taglib_file_tag(f));
+    fname = eval_tag(file, pattern);
 
     /* fname is now OK. store into result the full new path.  */
-    dirn = xdirname(path);
+    dirn = xdirname(file->path);
     /* add the directory to result if needed */
     if (strcmp(dirn, ".") != 0)
         (void)xasprintf(&result, "%s/%s.%s", dirn, fname, ext);
@@ -443,10 +425,12 @@ tagutil_rename(const char *restrict path, TagLib_File *restrict f,
     free(dirn);
 
     /* ask user for confirmation and rename if user want to */
-    if (strcmp(path, result) != 0) {
-        (void)xasprintf(&question, "rename '%s' to '%s'", path, result);
-        if (yesno(question))
-            safe_rename(dflag, path, result);
+    if (strcmp(file->path, result) != 0) {
+        (void)xasprintf(&question, "rename '%s' to '%s'", file->path, result);
+        if (yesno(question)) {
+            safe_rename(dflag, file->path, result);
+            strlcpy(file->path, result, sizeof(file->path));
+        }
         free(question);
     }
 
@@ -456,7 +440,7 @@ tagutil_rename(const char *restrict path, TagLib_File *restrict f,
 
 
 bool
-tagutil_filter(struct tfile *file, const struct ast *restrict ast)
+tagutil_filter(const struct tfile *file, const struct ast *restrict ast)
 {
     bool ret;
 
@@ -471,85 +455,3 @@ tagutil_filter(struct tfile *file, const struct ast *restrict ast)
     return (ret);
 }
 
-
-bool
-tagutil_title(TagLib_File *restrict f, const char *restrict title)
-{
-
-    assert_not_null(f);
-    assert_not_null(title);
-
-    taglib_tag_set_title(taglib_file_tag(f), title);
-    return (true);
-}
-
-
-bool
-tagutil_album(TagLib_File *restrict f, const char *restrict album)
-{
-
-    assert_not_null(f);
-    assert_not_null(album);
-
-    taglib_tag_set_album(taglib_file_tag(f), album);
-    return (true);
-}
-
-
-bool
-tagutil_artist(TagLib_File *restrict f, const char *restrict artist)
-{
-    assert_not_null(f);
-    assert_not_null(artist);
-
-    taglib_tag_set_artist(taglib_file_tag(f), artist);
-    return (true);
-}
-
-
-bool
-tagutil_year(TagLib_File *restrict f, int year)
-{
-
-    assert_not_null(f);
-    assert(year > 0);
-
-    taglib_tag_set_year(taglib_file_tag(f), year);
-    return (true);
-}
-
-
-bool
-tagutil_track(TagLib_File *restrict f, int track)
-{
-
-    assert_not_null(f);
-    assert(track > 0);
-
-    taglib_tag_set_track(taglib_file_tag(f), track);
-    return (true);
-}
-
-
-bool
-tagutil_comment(TagLib_File *restrict f, const char *restrict comment)
-{
-
-    assert_not_null(f);
-    assert_not_null(comment);
-
-    taglib_tag_set_comment(taglib_file_tag(f), comment);
-    return (true);
-}
-
-
-bool
-tagutil_genre(TagLib_File *restrict f, const char *restrict genre)
-{
-
-    assert_not_null(f);
-    assert_not_null(genre);
-
-    taglib_tag_set_genre(taglib_file_tag(f), genre);
-    return (true);
-}

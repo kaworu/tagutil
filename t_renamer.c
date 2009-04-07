@@ -67,7 +67,7 @@ safe_rename(bool dflag, const char *restrict oldpath,
 
 
 char *
-eval_tag(const char *restrict pattern, const TagLib_Tag *restrict tags)
+eval_tag(struct tfile *restrict file, const char *restrict pattern)
 {
     char *ret, buf[3];
     const char *val;
@@ -75,7 +75,7 @@ eval_tag(const char *restrict pattern, const TagLib_Tag *restrict tags)
     unsigned int i, j = 0;
 
     assert_not_null(pattern);
-    assert_not_null(tags);
+    assert_not_null(file);
 
     patternlen = strlen(pattern);
     alloc = BUFSIZ;
@@ -95,26 +95,26 @@ eval_tag(const char *restrict pattern, const TagLib_Tag *restrict tags)
                 val = "%";
                 break;
             case 'A':
-                val = taglib_tag_artist(tags);
+                val = file->artist(file);
                 break;
             case 'a':
-                val = taglib_tag_album(tags);
+                val = file->album(file);
                 break;
             case 'c':
-                val = taglib_tag_comment(tags);
+                val = file->comment(file);
                 break;
             case 'g':
-                val = taglib_tag_comment(tags);
+                val = file->comment(file);
                 break;
             case 'T':
-                snprintf(buf, sizeof(buf), "%02u", taglib_tag_track(tags));
+                snprintf(buf, sizeof(buf), "%02u", file->track(file));
                 val = buf;
                 break;
             case 't':
-                val = taglib_tag_title(tags);
+                val = file->title(file);
                 break;
             case 'y':
-                snprintf(buf, sizeof(buf), "%02u", taglib_tag_year(tags));
+                snprintf(buf, sizeof(buf), "%02u", file->year(file));
                 val = buf;
                 break;
             default:

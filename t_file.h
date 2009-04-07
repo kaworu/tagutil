@@ -8,15 +8,17 @@
 #include "t_config.h"
 
 #include <sys/cdefs.h> /* __CONCAT macro */
+#include <sys/param.h> /* MAXPATHLEN */
 
 struct tfile;
-typedef const char * (*sgetter_f)(struct tfile *self);
+typedef const char * (*sgetter_f)(const struct tfile *self);
 typedef int (*ssetter_f)(struct tfile *self, const char *newval);
-typedef unsigned int (*igetter_f)(struct tfile *self);
+typedef unsigned int (*igetter_f)(const struct tfile *self);
 typedef int (*isetter_f)(struct tfile *self, unsigned int newval);
 
 struct tfile {
-    const char *path;
+    char path[MAXPATHLEN];
+    void *_data;
 
     struct tfile * (*create)(const char *path);
     int (*save)(struct tfile *self);
@@ -26,12 +28,6 @@ struct tfile {
     ssetter_f set_artist, set_album, set_comment, set_genre, set_title;
     igetter_f track, year;
     isetter_f set_track, set_year;
-
-    struct {
-    void *data;
-    char *artist, *album, *comment, *genre, *title;
-    unsigned int track, year;
-    } _private;
 };
 
 

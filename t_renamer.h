@@ -7,7 +7,7 @@
  */
 #include "t_config.h"
 
-#include <tag_c.h>
+#include "t_file.h"
 
 /*
  * you should not modifiy them, eval_tag() implementation might be depend.
@@ -33,7 +33,7 @@ void safe_rename(bool dflag, const char *restrict oldpath,
  * replace each tagutil keywords by their value. see k* keywords.
  */
 __t__nonnull(1) __t__nonnull(2)
-char * eval_tag(const char *restrict pattern, const TagLib_Tag *restrict tag);
+char * eval_tag(struct tfile *restrict file, const char *restrict pattern);
 
 
 #endif /* not T_RENAMER_H */

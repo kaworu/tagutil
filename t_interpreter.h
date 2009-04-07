@@ -17,7 +17,7 @@
 
 
 __t__nonnull(1) __t__nonnull(2)
-bool eval(struct tfile *restrict file,
+bool eval(const struct tfile *restrict file,
         const struct ast *restrict filter);
 
 #endif /* not T_INTERPRETER_H */

@@ -10,7 +10,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include <tag_c.h>
+#include "t_file.h"
 
 /*
  * return a yaml formated string.
@@ -27,9 +27,8 @@
  *
  * '"' and '\' in tags are escaped to \" and \\
  */
-__t__nonnull(1) __t__nonnull(2)
-char * tags_to_yaml(const char *restrict path,
-        const TagLib_Tag *restrict tags);
+__t__nonnull(1)
+char * tags_to_yaml(const struct tfile *restrict file);
 
 
 /*
@@ -37,6 +36,6 @@ char * tags_to_yaml(const char *restrict path,
  * The string format must be the same as tags_to_yaml returned string.
  */
 __t__nonnull(1) __t__nonnull(2)
-bool yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream);
+bool yaml_to_tags(struct tfile *restrict file, FILE *restrict stream);
 
 #endif /* not T_YAML_H */

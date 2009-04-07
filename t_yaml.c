@@ -65,22 +65,21 @@ yaml_escape(const char *restrict s)
 
 
 char *
-tags_to_yaml(const char *restrict path, const TagLib_Tag *restrict tags)
+tags_to_yaml(const struct tfile *restrict file)
 {
     char *ret;
     char *t, *a, *A, *c, *g;
     unsigned int y, T;
 
-    assert_not_null(path);
-    assert_not_null(tags);
+    assert_not_null(file);
 
-    t = yaml_escape(taglib_tag_title(tags));
-    a = yaml_escape(taglib_tag_album(tags));
-    A = yaml_escape(taglib_tag_artist(tags));
-    y = taglib_tag_year(tags);
-    T = taglib_tag_track(tags);
-    c = yaml_escape(taglib_tag_comment(tags));
-    g = yaml_escape(taglib_tag_genre(tags));
+    t = yaml_escape(file->title(file));
+    a = yaml_escape(file->album(file));
+    A = yaml_escape(file->artist(file));
+    c = yaml_escape(file->comment(file));
+    g = yaml_escape(file->genre(file));
+    T = file->track(file);
+    y = file->year(file);
 
     xasprintf(&ret,
         "# %s\n"
@@ -92,7 +91,7 @@ tags_to_yaml(const char *restrict path, const TagLib_Tag *restrict tags)
         "track:   %u\n"
         "comment: \"%s\"\n"
         "genre:   \"%s\"\n",
-            path, t, a, A, y, T, c, g);
+            file->path, t, a, A, y, T, c, g);
 
     free(t); free(a); free(A); free(c); free(g);
     return (ret);
@@ -103,11 +102,12 @@ tags_to_yaml(const char *restrict path, const TagLib_Tag *restrict tags)
  * dummy yaml parser. Only handle our yaml output.
  */
 bool
-yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
+yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
 {
     bool set_somethin; /* true if we have set at least 1 field */
     bool is_intval;
-    void *setter;
+    int (*isetter)(struct tfile *, unsigned int);
+    int (*ssetter)(struct tfile *, const char *);
     char c;
     int line;
     char keyword[9]; /* longest is: comment */
@@ -116,7 +116,7 @@ yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
     unsigned int ivalue;
     size_t valuelen, i, valueidx;
 
-    assert_not_null(tags);
+    assert_not_null(file);
     assert_not_null(stream);
 
     if (ftrylockfile(stream) != 0)
@@ -173,22 +173,22 @@ yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
         /* get the keyword's setter method */
         is_intval = false;
         if (strcmp("genre", keyword) == 0)
-            setter = taglib_tag_set_genre;
+            ssetter = file->set_genre;
         else if (strcmp("comment", keyword) == 0)
-            setter = taglib_tag_set_comment;
+            ssetter = file->set_comment;
         else if (strcmp("artist", keyword) == 0)
-            setter = taglib_tag_set_artist;
+            ssetter = file->set_artist;
         else if (strcmp("album", keyword) == 0)
-            setter = taglib_tag_set_album;
+            ssetter = file->set_album;
         else if (strcmp("title", keyword) == 0)
-            setter = taglib_tag_set_title;
+            ssetter = file->set_title;
         else if (strcmp("track", keyword) == 0) {
             is_intval = true;
-            setter = taglib_tag_set_track;
+            isetter = file->set_track;
         }
         else if (strcmp("year", keyword) == 0) {
             is_intval = true;
-            setter = taglib_tag_set_year;
+            isetter = file->set_year;
         }
         else {
             warnx("yaml_to_tags at line %d: unknown keyword \"%s\"", line, keyword);
@@ -220,7 +220,7 @@ yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
                 goto free_ret_false;
             }
             line += 1;
-            ((void (*)(TagLib_Tag *, unsigned int))setter)(tags, ivalue);
+            (*isetter)(file, ivalue);
         }
         else {
         /* parse String */
@@ -276,7 +276,7 @@ yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
             value[valueidx] = '\0';
 
             /* set the value */
-            ((void (*)(TagLib_Tag *, const char *))setter)(tags, value);
+            (*ssetter)(file, value);
         }
 
 

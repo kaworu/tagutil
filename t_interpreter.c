@@ -12,16 +12,16 @@
 
 
 __t__nonnull(1) __t__nonnull(2)
-static inline unsigned int int_leaf(struct tfile *restrict file,
+static inline unsigned int int_leaf(const struct tfile *restrict file,
         struct ast *restrict leaf);
 
 __t__nonnull(1) __t__nonnull(2)
-static inline const char * str_leaf(struct tfile *restrict file,
+static inline const char * str_leaf(const struct tfile *restrict file,
 const struct ast *restrict leaf);
 
 
 bool
-eval(struct tfile *restrict file, const struct ast *restrict filter)
+eval(const struct tfile *restrict file, const struct ast *restrict filter)
 #define EVAL(e) (eval(file, (e)))
 #define ILEAF(k) (int_leaf(file, (k)))
 #define SLEAF(k) (str_leaf(file, (k)))
@@ -107,7 +107,7 @@ eval(struct tfile *restrict file, const struct ast *restrict filter)
 }
 
 static inline unsigned int
-int_leaf(struct tfile *restrict file, struct ast *restrict leaf)
+int_leaf(const struct tfile *restrict file, struct ast *restrict leaf)
 {
     unsigned int ret;
 
@@ -135,7 +135,7 @@ int_leaf(struct tfile *restrict file, struct ast *restrict leaf)
 }
 
 static inline const char *
-str_leaf(struct tfile *restrict file, const struct ast *restrict leaf)
+str_leaf(const struct tfile *restrict file, const struct ast *restrict leaf)
 {
     const char *ret;
 
