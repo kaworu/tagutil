@@ -8,9 +8,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "t_yaml.h"
 #include "t_toolkit.h"
 #include "t_lexer.h"
+#include "t_file.h"
+#include "t_yaml.h"
 
 
 /*
@@ -48,7 +49,8 @@ yaml_escape(const char *restrict s)
     x = 0;
 
     /* take the trailing \0 */
-    for (i = 0; i < slen + 1; i++) {
+    slen += 1;
+    for (i = 0; i < slen; i++) {
         if (s[i] == '\n') {
             ret[x++] = '\\';
             ret[x++] = 'n';
@@ -68,18 +70,17 @@ char *
 tags_to_yaml(const struct tfile *restrict file)
 {
     char *ret;
-    char *t, *a, *A, *c, *g;
-    unsigned int y, T;
+    char *t, *a, *A, *c, *g, *y, *T;
 
     assert_not_null(file);
 
-    t = yaml_escape(file->title(file));
-    a = yaml_escape(file->album(file));
-    A = yaml_escape(file->artist(file));
-    c = yaml_escape(file->comment(file));
-    g = yaml_escape(file->genre(file));
-    T = file->track(file);
-    y = file->year(file);
+    t = yaml_escape(file->get(file, "title"));
+    a = yaml_escape(file->get(file, "album"));
+    A = yaml_escape(file->get(file, "artist"));
+    c = yaml_escape(file->get(file, "comment"));
+    g = yaml_escape(file->get(file, "genre"));
+    T = yaml_escape(file->get(file, "track"));
+    y = yaml_escape(file->get(file, "year"));
 
     xasprintf(&ret,
         "# %s\n"
@@ -87,8 +88,8 @@ tags_to_yaml(const struct tfile *restrict file)
         "title:   \"%s\"\n"
         "album:   \"%s\"\n"
         "artist:  \"%s\"\n"
-        "year:    %u\n"
-        "track:   %u\n"
+        "year:    %s\n"
+        "track:   %s\n"
         "comment: \"%s\"\n"
         "genre:   \"%s\"\n",
             file->path, t, a, A, y, T, c, g);
@@ -105,9 +106,6 @@ bool
 yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
 {
     bool set_somethin; /* true if we have set at least 1 field */
-    bool is_intval;
-    int (*isetter)(struct tfile *, unsigned int);
-    int (*ssetter)(struct tfile *, const char *);
     char c;
     int line;
     char keyword[9]; /* longest is: comment */
@@ -119,13 +117,14 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
     assert_not_null(file);
     assert_not_null(stream);
 
+    valuelen = BUFSIZ;
+    value = xcalloc(valuelen, sizeof(char));
+
     if (ftrylockfile(stream) != 0)
         errx(-1, "yaml_to_tags: can't lock file descriptor.");
 
     set_somethin = false;
     line = 1;
-    valuelen = BUFSIZ;
-    value = xcalloc(valuelen, sizeof(char));
 
     /* eat first line: ^# <filename>$ */;
     while (!feof_unlocked(stream) && getc_unlocked(stream) != '\n')
@@ -170,31 +169,6 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
         }
         keyword[i] = '\0';
 
-        /* get the keyword's setter method */
-        is_intval = false;
-        if (strcmp("genre", keyword) == 0)
-            ssetter = file->set_genre;
-        else if (strcmp("comment", keyword) == 0)
-            ssetter = file->set_comment;
-        else if (strcmp("artist", keyword) == 0)
-            ssetter = file->set_artist;
-        else if (strcmp("album", keyword) == 0)
-            ssetter = file->set_album;
-        else if (strcmp("title", keyword) == 0)
-            ssetter = file->set_title;
-        else if (strcmp("track", keyword) == 0) {
-            is_intval = true;
-            isetter = file->set_track;
-        }
-        else if (strcmp("year", keyword) == 0) {
-            is_intval = true;
-            isetter = file->set_year;
-        }
-        else {
-            warnx("yaml_to_tags at line %d: unknown keyword \"%s\"", line, keyword);
-            goto free_ret_false;
-        }
-
         /* walk */
         if (c != ':') {
             warnx("yaml_to_tags at line %d: expected ':' after \"%s\" but got '%c'",
@@ -206,30 +180,31 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
         while (is_blank(c))
             c = getc_unlocked(stream);
 
-        if (is_intval) {
+        if (c != '"') {
         /* parse Int */
+            if (!is_digit(c)) {
+                warnx("yaml_to_tags at line %d: expected String or Integer, got '%c'",
+                        line, c);
+                goto free_ret_false;
+            }
             ivalue = 0;
             while (is_digit(c)) {
-                ivalue = 10 * ivalue + (c - '0');
+                ivalue = 10 * ivalue + (c - '0'); /* TODO: check overflow? */
                 c = getc_unlocked(stream);
             }
-
             if (c != '\n') {
                 warnx("yaml_to_tags at line %d: expected EOL after Int, got '%c'",
                         line, c);
                 goto free_ret_false;
             }
             line += 1;
-            (*isetter)(file, ivalue);
+            while ((unsigned int)snprintf(value, valuelen, "%u", ivalue) > valuelen - 1) {
+                valuelen += BUFSIZ;
+                xrealloc(&value, valuelen);
+            }
         }
         else {
         /* parse String */
-            if (c != '"') {
-                warnx("yaml_to_tags at line %d: expected '\"' but got '%c'", line, c);
-                goto free_ret_false;
-            }
-
-            /* read the value */
             valueidx = 0;
             for (;;) {
                 /* realloc buffer if needed */
@@ -265,7 +240,7 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
                         goto free_ret_false;
                     }
                     line += 1;
-                    break;
+                    break; /* get out of for (;;) */
                 }
                 else {
                     value[valueidx++] = c;
@@ -274,12 +249,9 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
                 }
             }
             value[valueidx] = '\0';
-
-            /* set the value */
-            (*ssetter)(file, value);
         }
 
-
+        file->set(file, keyword, value);
         c = getc_unlocked(stream);
         set_somethin = true;
     }

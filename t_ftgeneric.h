@@ -9,9 +9,8 @@
 
 #include "t_file.h"
 
-struct tfile;
 
 __t__nonnull(1)
-struct tfile * ftgeneric_new(const char *path);
+struct tfile * ftgeneric_new(const char *restrict path);
 
 #endif /* not T_FTGENERIC_H */

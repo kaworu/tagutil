@@ -11,6 +11,7 @@
 #include <err.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -18,13 +19,15 @@
 #include "t_renamer.h"
 
 
+extern bool dflag;
+
 /* taken from mkdir(3) */
 __t__nonnull(1)
 static int build(char *path, mode_t omode);
 
 
 void
-safe_rename(bool dflag, const char *restrict oldpath,
+safe_rename(const char *restrict oldpath,
         const char *restrict newpath)
 {
     bool failed = false;
@@ -69,7 +72,7 @@ safe_rename(bool dflag, const char *restrict oldpath,
 char *
 eval_tag(struct tfile *restrict file, const char *restrict pattern)
 {
-    char *ret, buf[3];
+    char *ret, buf[5];
     const char *val;
     size_t patternlen, alloc, vallen;
     unsigned int i, j = 0;
@@ -95,26 +98,28 @@ eval_tag(struct tfile *restrict file, const char *restrict pattern)
                 val = "%";
                 break;
             case 'A':
-                val = file->artist(file);
+                val = file->get(file, "artist");
                 break;
             case 'a':
-                val = file->album(file);
+                val = file->get(file, "album");
                 break;
             case 'c':
-                val = file->comment(file);
+                val = file->get(file, "comment");
                 break;
             case 'g':
-                val = file->comment(file);
+                val = file->get(file, "genre");
                 break;
             case 'T':
-                snprintf(buf, sizeof(buf), "%02u", file->track(file));
+                snprintf(buf, sizeof(buf), "%02u",
+                        atoi(file->get(file, "track"))); /* FIXME: atoi(3) sucks */
                 val = buf;
                 break;
             case 't':
-                val = file->title(file);
+                val = file->get(file, "title");
                 break;
             case 'y':
-                snprintf(buf, sizeof(buf), "%02u", file->year(file));
+                snprintf(buf, sizeof(buf), "%04u",
+                        atoi(file->get(file, "year"))); /* FIXME: atoi(3) sucks */
                 val = buf;
                 break;
             default:

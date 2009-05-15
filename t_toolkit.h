@@ -42,6 +42,10 @@ static inline void * xcalloc(const size_t nmemb, const size_t size);
 __t__unused
 static inline void * xrealloc(void *ptr, const size_t size);
 
+#define xfree(p) do { __xfree(p); (p) = NULL; } while (0)
+__t__unused __t__nonnull(1)
+static inline void   __xfree(void *ptr);
+
 
 /* FILE FUNCTIONS */
 
@@ -83,14 +87,16 @@ static inline int xasprintf(char **ret, const char *fmt, ...);
  * returned value has to be freed.
  */
 __t__unused __t__nonnull(1) __t__nonnull(2)
-static inline regmatch_t * first_match(const char *restrict str, const char *restrict pattern, const int flags);
+static inline regmatch_t * first_match(const char *restrict str,
+        const char *restrict pattern, const int flags);
 
 /*
  * return true if the regex pattern match the given str, false otherwhise.
  * flags are REG_ICASE | REG_EXTENDED | REG_NEWLINE | REG_NOSUB (see regex(3)).
  */
 __t__unused __t__nonnull(2)
-static inline bool has_match(const char *restrict str, const char *restrict pattern);
+static inline bool has_match(const char *restrict str,
+        const char *restrict pattern);
 
 
 /* OTHER */
@@ -139,6 +145,16 @@ xrealloc(void *old_ptr, const size_t new_size)
         err(ENOMEM, "realloc");
 
     return (ptr);
+}
+
+
+static inline void
+__xfree(void *ptr)
+{
+
+	assert_not_null(ptr);
+
+	free(ptr);
 }
 
 
@@ -219,7 +235,6 @@ xasprintf(char **ret, const char *fmt, ...)
         err(ENOMEM, "vasprintf");
 
     va_end(ap);
-
     return (i);
 }
 

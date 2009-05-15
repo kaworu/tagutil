@@ -78,9 +78,11 @@ char         *a_arg; /* album argument */
 char         *A_arg; /* artist argument */
 char         *c_arg; /* comment argument */
 char         *g_arg; /* genre argument */
-unsigned int  T_arg; /* track argument */
+char         *T_arg; /* track argument */
 char         *t_arg; /* title argument */
-unsigned int  y_arg; /* year argument */
+char         *y_arg; /* year argument */
+
+
 /*
  * get action with getopt(3) and then apply it to all files given in argument.
  * usage() is called if an error is detected.
@@ -90,7 +92,7 @@ main(int argc, char *argv[])
 {
     bool w = false;
     int i, ch;
-    char *path, *endptr;
+    char *path;
     struct stat s;
     struct tfile *file;
 
@@ -108,66 +110,62 @@ main(int argc, char *argv[])
             if (rflag)
                 errx(EINVAL, "-r option set twice");
             rflag = true;
-            r_arg  = optarg;
+            r_arg = optarg;
             break;
         case 'x':
             if (xflag)
                 errx(EINVAL, "-x option set twice");
             xflag = true;
-            x_arg  = parse_filter(new_lexer(optarg));
+            x_arg = parse_filter(new_lexer(optarg));
             break;
         case 'a':
             if (aflag)
                 errx(EINVAL, "-a option set twice");
             w = true;
             aflag = true;
-            a_arg  = optarg;
+            a_arg = optarg;
             break;
         case 'A':
             if (Aflag)
                 errx(EINVAL, "-A option set twice");
             w = true;
             Aflag = true;
-            A_arg  = optarg;
+            A_arg = optarg;
             break;
         case 'c':
             if (cflag)
                 errx(EINVAL, "-c option set twice");
             w = true;
             cflag = true;
-            c_arg  = optarg;
+            c_arg = optarg;
             break;
         case 'g':
             if (gflag)
                 errx(EINVAL, "-g option set twice");
             w = true;
             gflag = true;
-            g_arg  = optarg;
+            g_arg = optarg;
             break;
         case 'y':
             if (yflag)
                 errx(EINVAL, "-y option set twice");
             w = true;
             yflag = true;
-            y_arg  = strtoul(optarg, &endptr, 10);
-            if (endptr == optarg || *endptr != '\0')
-                errx(EINVAL, "Invalid year argument: '%s'", optarg);
+            y_arg = optarg;
             break;
         case 'T':
             if (Tflag)
                 errx(EINVAL, "-T option set twice");
             w = true;
             Tflag = true;
-            T_arg  = strtoul(optarg, &endptr, 10);
-            if (endptr == optarg || *endptr != '\0')
-                errx(EINVAL, "Invalid track argument: '%s'", optarg);
+            T_arg = optarg;
             break;
         case 't':
             if (tflag)
                 errx(EINVAL, "-t option set twice");
             w = true;
             tflag = true;
-            t_arg  = optarg;
+            t_arg = optarg;
             break;
         case 'd':
             dflag = true;
@@ -216,6 +214,8 @@ main(int argc, char *argv[])
         }
 
         file = ftgeneric_new(path);
+        if (file == NULL)
+            continue;
 
         /* modifiy tag, edit, rename */
         if (pflag)
@@ -224,19 +224,19 @@ main(int argc, char *argv[])
             tagutil_filter(file, x_arg);
         else {
             if (tflag)
-                file->set_title(file, t_arg);
+                file->set(file, "title", t_arg);
             if (aflag)
-                file->set_album(file, a_arg);
+                file->set(file, "album", a_arg);
             if (Aflag)
-                file->set_artist(file, A_arg);
+                file->set(file, "artist", A_arg);
             if (yflag)
-                file->set_year(file, y_arg);
+                file->set(file, "year", y_arg);
             if (Tflag)
-                file->set_track(file, T_arg);
+                file->set(file, "track", T_arg);
             if (cflag)
-                file->set_comment(file, c_arg);
+                file->set(file, "comment", c_arg);
             if (gflag)
-                file->set_genre(file, g_arg);
+                file->set(file, "genre", g_arg);
             if (eflag)
                 tagutil_edit(file);
             if (w && !eflag) {
@@ -427,10 +427,8 @@ tagutil_rename(struct tfile *restrict file, const char *restrict pattern)
     /* ask user for confirmation and rename if user want to */
     if (strcmp(file->path, result) != 0) {
         (void)xasprintf(&question, "rename '%s' to '%s'", file->path, result);
-        if (yesno(question)) {
-            safe_rename(dflag, file->path, result);
-            strlcpy(file->path, result, sizeof(file->path));
-        }
+        if (yesno(question))
+            safe_rename(file->path, result);
         free(question);
     }
 

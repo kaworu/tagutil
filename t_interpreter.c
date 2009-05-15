@@ -117,10 +117,10 @@ int_leaf(const struct tfile *restrict file, struct ast *restrict leaf)
 
     switch (leaf->tkind) {
     case TTRACK:
-        ret = file->track(file);
+        ret = atoi(file->get(file, "track")); /* FIXME: atoi(3) sucks */
         break;
     case TYEAR:
-        ret = file->year(file);
+        ret = atoi(file->get(file, "year")); /* FIXME: atoi(3) sucks */
         break;
     case TINT:
         ret = leaf->value.integer;
@@ -145,19 +145,19 @@ str_leaf(const struct tfile *restrict file, const struct ast *restrict leaf)
 
     switch (leaf->tkind) {
     case TTITLE:
-        ret = file->title(file);
+        ret = file->get(file, "title");
         break;
     case TALBUM:
-        ret = file->album(file);
+        ret = file->get(file, "album");
         break;
     case TARTIST:
-        ret = file->artist(file);
+        ret = file->get(file, "artist");
         break;
     case TCOMMENT:
-        ret = file->comment(file);
+        ret = file->get(file, "comment");
         break;
     case TGENRE:
-        ret = file->genre(file);
+        ret = file->get(file, "genre");
         break;
     case TFILENAME:
         ret = file->path;
