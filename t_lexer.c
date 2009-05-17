@@ -248,7 +248,7 @@ lex(struct lexer *restrict L)
                 (void)regerror(error, &Lcurrent->value.regex, errbuf, BUFSIZ);
                 errx(-1, "lexer error, can't compile regex '%s': %s", s, errbuf);
             }
-            free(s); /* free the regex string, no more needed */
+            xfree(s); /* free the regex string, no more needed */
         }
         break;
     default:

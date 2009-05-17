@@ -205,7 +205,7 @@ xdirname(const char *restrict path)
     dirn = xstrdup(dirn);
 
 #if !defined(HAVE_SANE_DIRNAME)
-    free(garbage);  /* no more needed */
+    xfree(garbage);  /* no more needed */
 #endif
     return (dirn);
 }
@@ -263,7 +263,7 @@ first_match(const char *restrict str, const char *restrict pattern, const int fl
     case 0:
         return (regmatch);
     case REG_NOMATCH:
-        free(regmatch);
+        xfree(regmatch);
         return (NULL);
     default:
 error_label:
@@ -290,7 +290,7 @@ has_match(const char *restrict str, const char *restrict pattern)
     if (match == NULL)
         return (false);
     else {
-        free(match);
+        xfree(match);
         return (true);
     }
 }

@@ -126,17 +126,18 @@ new_leaf(enum tokenkind tkind, void *value)
 void
 destroy_ast(struct ast *restrict victim)
 {
+
     if (victim != NULL) {
         switch (victim->kind) {
         case ANODE:
             destroy_ast(victim->lhs);
             destroy_ast(victim->rhs);
-            free(victim);
+            xfree(victim);
             break;
         case ALEAF:
             switch(victim->tkind) {
             case TSTRING:
-                free(victim->value.string);
+                xfree(victim->value.string);
                 break;
             case TREGEX:
                 regfree(&victim->value.regex);
@@ -144,7 +145,7 @@ destroy_ast(struct ast *restrict victim)
             default:
                 /* do nada */;
             }
-            free(victim);
+            xfree(victim);
             break;
         default:
             errx(-1, "error in destroy_ast: AST without kind.");
@@ -185,7 +186,7 @@ parse_filter(struct lexer *restrict L)
         /* NOTREACHED */
     }
 
-    free(L);
+    xfree(L);
     return (ret);
 }
 

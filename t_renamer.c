@@ -58,8 +58,8 @@ safe_rename(const char *restrict oldpath,
     }
     if (failed)
         err(errno, "%s", newdirn);
-    free(olddirn);
-    free(newdirn);
+    xfree(olddirn);
+    xfree(newdirn);
 
     if (stat(newpath, &st) == 0)
         err(errno = EEXIST, "%s", newpath);

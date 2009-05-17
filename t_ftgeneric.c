@@ -39,14 +39,12 @@ ftgeneric_destroy(struct tfile *restrict self)
     assert_not_null(self->data);
 
     d = self->data;
-    if (d->track)
-        free(d->track);
-    if (d->year)
-        free(d->year);
+    free(d->track);
+    free(d->year);
     taglib_tag_free_strings();
     taglib_file_free(d->file);
 
-    free(self);
+    xfree(self);
     return (true);
 }
 
@@ -139,10 +137,8 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
             ret = 1;
         }
         else {
-            if (d->track) {
-                free(d->track);
-                d->track = NULL;
-            }
+            free(d->track);
+            d->track = NULL;
             taglib_tag_set_track(d->tag, uintval);
         }
     }
@@ -153,10 +149,8 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
             ret = 1;
         }
         else {
-            if (d->year) {
-                free(d->year);
-                d->year = NULL;
-            }
+            free(d->year);
+            d->year = NULL;
             taglib_tag_set_year(d->tag, uintval);
         }
     }

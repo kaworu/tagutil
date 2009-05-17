@@ -335,7 +335,7 @@ user_edit(const char *restrict path)
 
     error = system(editcmd);
 
-    free(editcmd);
+    xfree(editcmd);
     return (error == 0);
 }
 
@@ -350,7 +350,7 @@ tagutil_print(const struct tfile *restrict file)
     infos = tags_to_yaml(file);
     (void)printf("%s\n", infos);
 
-    free(infos);
+    xfree(infos);
     return (true);
 }
 
@@ -374,7 +374,7 @@ tagutil_edit(struct tfile *restrict file)
         xfclose(stream);
 
         if (!user_edit(tmp_file)) {
-            free(infos);
+            xfree(infos);
             remove(tmp_file);
             return (false);
         }
@@ -390,10 +390,10 @@ tagutil_edit(struct tfile *restrict file)
         xfclose(stream);
         /* FIXME: get remove int status */
         remove(tmp_file);
-        free(tmp_file);
+        xfree(tmp_file);
     }
 
-    free(infos);
+    xfree(infos);
     return (true);
 }
 
@@ -421,18 +421,18 @@ tagutil_rename(struct tfile *restrict file, const char *restrict pattern)
         (void)xasprintf(&result, "%s/%s.%s", dirn, fname, ext);
     else
         (void)xasprintf(&result, "%s.%s", fname, ext);
-    free(fname);
-    free(dirn);
+    xfree(fname);
+    xfree(dirn);
 
     /* ask user for confirmation and rename if user want to */
     if (strcmp(file->path, result) != 0) {
         (void)xasprintf(&question, "rename '%s' to '%s'", file->path, result);
         if (yesno(question))
             safe_rename(file->path, result);
-        free(question);
+        xfree(question);
     }
 
-    free(result);
+    xfree(result);
     return (true);
 }
 

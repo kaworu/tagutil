@@ -94,7 +94,7 @@ tags_to_yaml(const struct tfile *restrict file)
         "genre:   \"%s\"\n",
             file->path, t, a, A, y, T, c, g);
 
-    free(t); free(a); free(A); free(c); free(g);
+    xfree(t); xfree(a); xfree(A); xfree(c); xfree(g);
     return (ret);
 }
 
@@ -258,7 +258,7 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
 
 cleanup:
     funlockfile(stream);
-    free(value);
+    xfree(value);
     return (set_somethin);
 
 free_ret_false:

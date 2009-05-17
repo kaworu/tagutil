@@ -75,7 +75,7 @@ ftflac_destroy(struct tfile *self)
     chain = self->_data;
     FLAC__metadata_chain_delete(chain);
 
-    free(self);
+    xfree(self);
     return (0);
 }
 

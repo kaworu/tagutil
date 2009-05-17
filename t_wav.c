@@ -116,7 +116,7 @@ wav_load(const char *path, struct audio_data *ad)
 
     samples = xmalloc(bytes);
     if (readBytes(fd, samples, bytes) != bytes) {
-        free(samples);
+        xfree(samples);
         close(fd);
         return (-1);
     }
