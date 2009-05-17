@@ -19,6 +19,8 @@ struct tfile {
     const char * (*get)(const struct tfile *restrict self, const char *restrict key);
     int (*set)(struct tfile *restrict self, const char *restrict key,
             const char *restrict newval);
+
+    const char ** (*tagkeys)(const struct tfile *restrict self);
 };
 
 #endif /* not T_FILE_H */

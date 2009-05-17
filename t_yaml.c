@@ -69,32 +69,30 @@ yaml_escape(const char *restrict s)
 char *
 tags_to_yaml(const struct tfile *restrict file)
 {
-    char *ret;
-    char *t, *a, *A, *c, *g, *y, *T;
+    const char **tagkeys;
+    const char *key;
+    char *val, *ret, *old, *endptr;
+    int i;
 
     assert_not_null(file);
 
-    t = yaml_escape(file->get(file, "title"));
-    a = yaml_escape(file->get(file, "album"));
-    A = yaml_escape(file->get(file, "artist"));
-    c = yaml_escape(file->get(file, "comment"));
-    g = yaml_escape(file->get(file, "genre"));
-    T = yaml_escape(file->get(file, "track"));
-    y = yaml_escape(file->get(file, "year"));
+    tagkeys = file->tagkeys(file);
+    xasprintf(&ret, "# %s\n---\n", file->path);
 
-    xasprintf(&ret,
-        "# %s\n"
-        "---\n"
-        "title:   \"%s\"\n"
-        "album:   \"%s\"\n"
-        "artist:  \"%s\"\n"
-        "year:    %s\n"
-        "track:   %s\n"
-        "comment: \"%s\"\n"
-        "genre:   \"%s\"\n",
-            file->path, t, a, A, y, T, c, g);
+    for (i = 0, key = tagkeys[0]; key != NULL; key = tagkeys[++i]) {
+        old = ret;
+        val = yaml_escape(file->get(file, key));
+        (void)strtoul(val, &endptr, 10);
+        if (endptr == val || *endptr != '\0')
+        /* looks like string */
+            (void)xasprintf(&ret, "%s%s: \"%s\"\n", old, key, val);
+        else
+        /* looks like int */
+            (void)xasprintf(&ret, "%s%s: %s\n", old, key, val);
+        xfree(old);
+        xfree(val);
+    }
 
-    xfree(t); xfree(a); xfree(A); xfree(c); xfree(g);
     return (ret);
 }
 

@@ -22,12 +22,16 @@ __t__nonnull(1)
 int ftgeneric_destroy(struct tfile *restrict self);
 __t__nonnull(1)
 int ftgeneric_save(struct tfile *restrict self);
+
 __t__nonnull(1) __t__nonnull(2)
 const char * ftgeneric_get(const struct tfile *restrict self,
         const char *restrict key);
 __t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
 int ftgeneric_set(struct tfile *restrict self, const char *restrict key,
         const char *restrict newval);
+
+__t__nonnull(1)
+const char ** ftgeneric_tagkeys(const struct tfile *restrict self);
 
 
 int
@@ -163,6 +167,19 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
 }
 
 
+const char **
+ftgeneric_tagkeys(const struct tfile *restrict self)
+{
+    static const char *tagkeys[] = {
+        "title", "artist", "album", "track", "year", "genre", "comment",
+        NULL
+    };
+
+    assert_not_null(self);
+    return (tagkeys);
+}
+
+
 struct tfile *
 ftgeneric_new(const char *restrict path)
 {
@@ -203,6 +220,7 @@ ftgeneric_new(const char *restrict path)
     ret->destroy = ftgeneric_destroy;
     ret->get     = ftgeneric_get;
     ret->set     = ftgeneric_set;
+    ret->tagkeys = ftgeneric_tagkeys;
 
     return (ret);
 }
