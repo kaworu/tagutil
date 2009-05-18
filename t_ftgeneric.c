@@ -105,7 +105,7 @@ ftgeneric_get(const struct tfile *restrict self, const char *restrict key)
         ret = d->year;
     }
     else {
-        warnx("taglib: can't handle '%s' tag", key);
+        warnx("ft_generic backend (TagLib) can't handle `%s' tag", key);
         ret = NULL;
     }
 
@@ -142,7 +142,7 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
     else if (strcmp(key, "track") == 0) {
         uintval = strtoul(newval, &endptr, 10);
         if (endptr == newval || *endptr != '\0') {
-            warnx("set: Invalid track argument: '%s'", newval);
+            warnx("ftgeneric_set: need Int track argument, got: `%s'", newval);
             ret = 1;
         }
         else {
@@ -154,7 +154,7 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
     else if (strcmp(key, "year") == 0) {
         uintval = strtoul(newval, &endptr, 10);
         if (endptr == newval || *endptr != '\0') {
-            warnx("set: Invalid year argument: '%s'", newval);
+            warnx("ftgeneric_set: need Int year argument, got: `%s'", newval);
             ret = 1;
         }
         else {
@@ -164,7 +164,7 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
         }
     }
     else {
-        warnx("taglib: can't handle '%s' tag", key);
+        warnx("ft_generic backend (TagLib) can't handle `%s' tag", key);
         ret = 2;
     }
 

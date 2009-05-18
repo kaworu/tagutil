@@ -45,11 +45,12 @@
 #include <errno.h>
 #include <unistd.h> /* getopt(3) */
 
+#include "t_setter.h"
+#include "t_renamer.h"
 #include "t_lexer.h"
 #include "t_parser.h"
 #include "t_interpreter.h"
 #include "t_yaml.h"
-#include "t_renamer.h"
 #include "t_file.h"
 #include "t_ftgeneric.h"
 #include "t_ftflac.h"
@@ -58,30 +59,18 @@
 #include "tagutil.h"
 
 
-bool        pflag = false; /* display tags action */
-bool        Yflag = false; /* yes answer to all questions */
-bool        Nflag = false; /* no  answer to all questions */
-bool        eflag = false; /* edit */
-bool        dflag = false; /* create directory with rename */
-bool        rflag = false;  /* rename */
-bool        xflag = false;  /* filter */
-bool        aflag = false;  /* set album */
-bool        Aflag = false;  /* set artist */
-bool        cflag = false;  /* set comment */
-bool        gflag = false;  /* set genre */
-bool        Tflag = false;  /* set track */
-bool        tflag = false;  /* set title */
-bool        yflag = false;  /* set year */
+bool pflag = false; /* display tags action */
+bool Yflag = false; /* yes answer to all questions */
+bool Nflag = false; /* no  answer to all questions */
+bool eflag = false; /* edit */
+bool dflag = false; /* create directory with rename */
+bool rflag = false;  /* rename */
+bool xflag = false;  /* filter */
+bool sflag = false;  /* set tags */
 
-char         *r_arg; /* rename pattern */
-struct ast   *x_arg; /* filter code */
-char         *a_arg; /* album argument */
-char         *A_arg; /* artist argument */
-char         *c_arg; /* comment argument */
-char         *g_arg; /* genre argument */
-char         *T_arg; /* track argument */
-char         *t_arg; /* title argument */
-char         *y_arg; /* year argument */
+char *r_arg = NULL; /* rename pattern */
+struct ast *x_arg = NULL; /* filter code */
+struct setter_q *s_arg = NULL; /* key:val tags */
 
 
 /*
@@ -91,18 +80,18 @@ char         *y_arg; /* year argument */
 int
 main(int argc, char *argv[])
 {
-    bool w = false;
     int i, ch;
     char *path;
     struct stat s;
     struct tfile *file;
+    struct setter_item *it;
 
     if (argc < 2)
         usage();
 
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
-    while ((ch = getopt(argc, argv, "edhNYt:r:x:a:A:c:g:y:T:")) != -1) {
+    while ((ch = getopt(argc, argv, "edhNYr:x:s:")) != -1) {
         switch ((char)ch) {
         case 'e':
             eflag = true;
@@ -119,54 +108,12 @@ main(int argc, char *argv[])
             xflag = true;
             x_arg = parse_filter(new_lexer(optarg));
             break;
-        case 'a':
-            if (aflag)
-                errx(EINVAL, "-a option set twice");
-            w = true;
-            aflag = true;
-            a_arg = optarg;
-            break;
-        case 'A':
-            if (Aflag)
-                errx(EINVAL, "-A option set twice");
-            w = true;
-            Aflag = true;
-            A_arg = optarg;
-            break;
-        case 'c':
-            if (cflag)
-                errx(EINVAL, "-c option set twice");
-            w = true;
-            cflag = true;
-            c_arg = optarg;
-            break;
-        case 'g':
-            if (gflag)
-                errx(EINVAL, "-g option set twice");
-            w = true;
-            gflag = true;
-            g_arg = optarg;
-            break;
-        case 'y':
-            if (yflag)
-                errx(EINVAL, "-y option set twice");
-            w = true;
-            yflag = true;
-            y_arg = optarg;
-            break;
-        case 'T':
-            if (Tflag)
-                errx(EINVAL, "-T option set twice");
-            w = true;
-            Tflag = true;
-            T_arg = optarg;
-            break;
-        case 't':
-            if (tflag)
-                errx(EINVAL, "-t option set twice");
-            w = true;
-            tflag = true;
-            t_arg = optarg;
+        case 's':
+            sflag = true;
+            if (s_arg == NULL)
+                s_arg = setter_init();
+            if (!setter_add(s_arg, optarg))
+                errx(EINVAL, "invalid -s argument: `%s'", optarg);
             break;
         case 'd':
             dflag = true;
@@ -195,10 +142,10 @@ main(int argc, char *argv[])
         errx(EINVAL, "No file argument given, run `%s -h' to see help.",
                 getprogname());
     if (dflag && !rflag)
-        errx(EINVAL, "-d is only valid with -r.");
-    if (xflag && (w || eflag || rflag))
+        errx(EINVAL, "-d is only valid with -r");
+    if (xflag && (sflag || eflag || rflag))
         errx(EINVAL, "-x option must be used alone");
-    if (!xflag && !rflag && !w && !eflag)
+    if (!xflag && !rflag && !sflag && !eflag)
     /* no action given, fallback to default */
         pflag = true;
 
@@ -210,7 +157,7 @@ main(int argc, char *argv[])
             continue;
         }
         else if (!S_ISREG(s.st_mode)) {
-            warnx("%s is not a regular file", path);
+            warnx("`%s' is not a regular file", path);
             continue;
         }
 
@@ -218,43 +165,33 @@ main(int argc, char *argv[])
         if (file == NULL)
             file = ftgeneric_new(path);
         if (file == NULL)
+            /* FIXME: should warn */
             continue;
 
         /* modifiy tag, edit, rename */
         if (pflag)
             tagutil_print(file);
-        else if (xflag)
+        if (xflag)
             tagutil_filter(file, x_arg);
-        else {
-            if (tflag)
-                file->set(file, "title", t_arg);
-            if (aflag)
-                file->set(file, "album", a_arg);
-            if (Aflag)
-                file->set(file, "artist", A_arg);
-            if (yflag)
-                file->set(file, "year", y_arg);
-            if (Tflag)
-                file->set(file, "track", T_arg);
-            if (cflag)
-                file->set(file, "comment", c_arg);
-            if (gflag)
-                file->set(file, "genre", g_arg);
-            if (eflag)
-                tagutil_edit(file);
-            if (w && !eflag) {
-                if (file->save(file) != 0)
-                    err(errno, "couldn't save file '%s'", path);
+        if (sflag) {
+            STAILQ_FOREACH(it, s_arg, next) {
+                /* TODO: check return value! */ file->set(file, it->key, it->value);
             }
-            if (rflag)
-                tagutil_rename(file, r_arg);
+            if (file->save(file) != 0)
+                err(errno, "couldn't save file `%s'", path);
         }
+        if (eflag)
+            tagutil_edit(file);
+        if (rflag)
+            tagutil_rename(file, r_arg);
 
         file->destroy(file);
     }
 
     if (xflag)
         destroy_ast(x_arg);
+    if (sflag)
+        destroy_setter(s_arg);
 
     return (EXIT_SUCCESS);
 }
@@ -270,22 +207,16 @@ usage(void)
     (void)fprintf(stderr, "\n");
     (void)fprintf(stderr, "Options:\n");
     (void)fprintf(stderr, "  -h              show this help\n");
-    (void)fprintf(stderr, "  -e              show tag and prompt for editing (need $EDITOR environment variable)\n");
     (void)fprintf(stderr, "  -Y              answer yes to all questions\n");
     (void)fprintf(stderr, "  -N              answer no  to all questions\n");
+    (void)fprintf(stderr, "  -e              show tag and prompt for editing (need $EDITOR environment variable)\n");
+    (void)fprintf(stderr, "  -x FILTER       print files in matching FILTER\n");
+    (void)fprintf(stderr, "  -s TAG:VALUE    update tag TAG to VALUE for all given files\n");
     (void)fprintf(stderr, "  -r [-d] PATTERN rename files with the given PATTERN. you can use keywords in PATTERN:\n");
     (void)fprintf(stderr, "                  title(%s), album(%s), artist(%s), year(%s), track(%s), comment(%s),\n",
                                              kTITLE,    kALBUM,    kARTIST,    kYEAR,    kTRACK,    kCOMMENT);
     (void)fprintf(stderr, "                  and genre(%s). example: \"%s - %s - (%s) - %s\"\n",
                                              kGENRE,              kARTIST, kALBUM, kTRACK, kTITLE);
-    (void)fprintf(stderr, "  -x FILTER       print files in matching FILTER\n");
-    (void)fprintf(stderr, "  -A ARTIST       update artist tag to ARTIST for all given files\n");
-    (void)fprintf(stderr, "  -a ALBUM        update album tag to ALBUM for all given files\n");
-    (void)fprintf(stderr, "  -c COMMENT      update comment tag to COMMENT for all given files\n");
-    (void)fprintf(stderr, "  -T TRACK        update track tag to TRACK for all given files\n");
-    (void)fprintf(stderr, "  -t TITLE        update title tag to TITLE for all given files\n");
-    (void)fprintf(stderr, "  -g GENRE        update genre tag to GENRE for all given files\n");
-    (void)fprintf(stderr, "  -y YEAR         update year tag to YEAR for all given files\n");
     (void)fprintf(stderr, "\n");
 
     exit(EXIT_SUCCESS);
