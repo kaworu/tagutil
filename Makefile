@@ -1,7 +1,7 @@
 # BSD Makefile
 
 PROG=tagutil
-SRCS=tagutil.c t_ftgeneric.c t_lexer.c t_parser.c t_interpreter.c t_yaml.c t_renamer.c
+SRCS=tagutil.c t_ftgeneric.c t_ftflac.c t_lexer.c t_parser.c t_interpreter.c t_yaml.c t_renamer.c
 
 VERSION=2.1
 
@@ -14,6 +14,10 @@ MANDIR?=/man/man
 TAGLIB_I!=pkg-config --cflags taglib_c
 TAGLIB_L!=pkg-config --libs   taglib_c
 
+# libFLAC
+FLAC_I!=pkg-config --cflags flac
+FLAC_L!=pkg-config --libs   flac
+
 
 # C opts
 CSTD=c99
@@ -23,9 +27,11 @@ VERSION+=(debug)
 .endif
 CFLAGS+=-D'VERSION="${VERSION}"' \
 		-DHAVE_SANE_DIRNAME \
-		${TAGLIB_I}
+		${TAGLIB_I} \
+		#${FLAC_I}
 
 LDFLAGS+=${TAGLIB_L}
+LDFLAGS+=${FLAC_L}
 
 
 .include <bsd.prog.mk>

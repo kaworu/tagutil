@@ -70,25 +70,25 @@ char *
 tags_to_yaml(const struct tfile *restrict file)
 {
     const char **tagkeys;
-    const char *key;
     char *val, *ret, *old, *endptr;
-    int i;
+    int i, count;
 
     assert_not_null(file);
 
     tagkeys = file->tagkeys(file);
     xasprintf(&ret, "# %s\n---\n", file->path);
 
-    for (i = 0, key = tagkeys[0]; key != NULL; key = tagkeys[++i]) {
+    count = file->tagcount(file);
+    for (i = 0; i < count; i++) {
         old = ret;
-        val = yaml_escape(file->get(file, key));
+        val = yaml_escape(file->get(file, tagkeys[i]));
         (void)strtoul(val, &endptr, 10);
         if (endptr == val || *endptr != '\0')
         /* looks like string */
-            (void)xasprintf(&ret, "%s%s: \"%s\"\n", old, key, val);
+            (void)xasprintf(&ret, "%s%s: \"%s\"\n", old, tagkeys[i], val);
         else
         /* looks like int */
-            (void)xasprintf(&ret, "%s%s: %s\n", old, key, val);
+            (void)xasprintf(&ret, "%s%s: %s\n", old, tagkeys[i], val);
         xfree(old);
         xfree(val);
     }

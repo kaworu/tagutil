@@ -12,7 +12,7 @@
 #include "t_toolkit.h"
 
 
-struct ft_generic_data {
+struct ftgeneric_data {
     TagLib_File *file;
     TagLib_Tag  *tag;
     char *year, *track;
@@ -31,13 +31,15 @@ int ftgeneric_set(struct tfile *restrict self, const char *restrict key,
         const char *restrict newval);
 
 __t__nonnull(1)
+int ftgeneric_tagcount(const struct tfile *restrict self);
+__t__nonnull(1)
 const char ** ftgeneric_tagkeys(const struct tfile *restrict self);
 
 
 int
 ftgeneric_destroy(struct tfile *restrict self)
 {
-    struct ft_generic_data *d;
+    struct ftgeneric_data *d;
 
     assert_not_null(self);
     assert_not_null(self->data);
@@ -45,7 +47,7 @@ ftgeneric_destroy(struct tfile *restrict self)
     d = self->data;
     free(d->track);
     free(d->year);
-    taglib_tag_free_strings();
+    taglib_tag_free_strings(); /* XXX: thread-safe? */
     taglib_file_free(d->file);
 
     xfree(self);
@@ -56,21 +58,24 @@ ftgeneric_destroy(struct tfile *restrict self)
 int
 ftgeneric_save(struct tfile *restrict self)
 {
-    struct ft_generic_data *d;
+    struct ftgeneric_data *d;
 
     assert_not_null(self);
     assert_not_null(self->data);
 
     d = self->data;
 
-    return (taglib_file_save(d->file));
+    if (taglib_file_save(d->file))
+		return (0);
+	else
+		return (1);
 }
 
 
 const char *
 ftgeneric_get(const struct tfile *restrict self, const char *restrict key)
 {
-    struct ft_generic_data *d;
+    struct ftgeneric_data *d;
     const char *ret;
 
     assert_not_null(self);
@@ -112,7 +117,7 @@ int
 ftgeneric_set(struct tfile *restrict self, const char *restrict key,
         const char *restrict newval)
 {
-    struct ft_generic_data *d;
+    struct ftgeneric_data *d;
     int ret = 0;
     unsigned int uintval;
     char *endptr;
@@ -167,12 +172,22 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
 }
 
 
+int
+ftgeneric_tagcount(const struct tfile *restrict self)
+{
+
+    assert_not_null(self);
+    assert_not_null(self->data);
+
+    return (7);
+}
+
+
 const char **
 ftgeneric_tagkeys(const struct tfile *restrict self)
 {
     static const char *tagkeys[] = {
         "title", "artist", "album", "track", "year", "genre", "comment",
-        NULL
     };
 
     assert_not_null(self);
@@ -187,7 +202,7 @@ ftgeneric_new(const char *restrict path)
     struct tfile *ret;
     size_t size;
     char *s;
-    struct ft_generic_data *d;
+    struct ftgeneric_data *d;
 
     assert_not_null(path);
 
@@ -196,15 +211,13 @@ ftgeneric_new(const char *restrict path)
     taglib_set_string_management_enabled(true);
 
     f = taglib_file_new(path);
-    if (f == NULL || !taglib_file_is_valid(f)) {
-        warnx("taglib: '%s' is not a valid music file", path);
+    if (f == NULL || !taglib_file_is_valid(f))
         return (NULL);
-    }
 
     size = (strlen(path) + 1) * sizeof(char);
-    ret = xmalloc(sizeof(struct tfile) + sizeof(struct ft_generic_data) + size);
+    ret = xmalloc(sizeof(struct tfile) + sizeof(struct ftgeneric_data) + size);
 
-    d = (struct ft_generic_data *)(ret + 1);
+    d = (struct ftgeneric_data *)(ret + 1);
     d->file  = f;
     d->tag   = taglib_file_tag(f);
     d->year  = NULL;
@@ -215,12 +228,13 @@ ftgeneric_new(const char *restrict path)
     strlcpy(s, path, size);
     ret->path = s;
 
-    ret->create  = ftgeneric_new;
-    ret->save    = ftgeneric_save;
-    ret->destroy = ftgeneric_destroy;
-    ret->get     = ftgeneric_get;
-    ret->set     = ftgeneric_set;
-    ret->tagkeys = ftgeneric_tagkeys;
+    ret->create   = ftgeneric_new;
+    ret->save     = ftgeneric_save;
+    ret->destroy  = ftgeneric_destroy;
+    ret->get      = ftgeneric_get;
+    ret->set      = ftgeneric_set;
+    ret->tagcount = ftgeneric_tagcount;
+    ret->tagkeys  = ftgeneric_tagkeys;
 
     return (ret);
 }

@@ -20,6 +20,7 @@ struct tfile {
     int (*set)(struct tfile *restrict self, const char *restrict key,
             const char *restrict newval);
 
+    int (*tagcount)(const struct tfile *restrict self);
     const char ** (*tagkeys)(const struct tfile *restrict self);
 };
 

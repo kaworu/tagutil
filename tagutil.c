@@ -52,6 +52,7 @@
 #include "t_renamer.h"
 #include "t_file.h"
 #include "t_ftgeneric.h"
+#include "t_ftflac.h"
 #include "t_toolkit.h"
 
 #include "tagutil.h"
@@ -213,7 +214,9 @@ main(int argc, char *argv[])
             continue;
         }
 
-        file = ftgeneric_new(path);
+        file = ftflac_new(path);
+        if (file == NULL)
+            file = ftgeneric_new(path);
         if (file == NULL)
             continue;
 

@@ -42,9 +42,9 @@ static inline void * xcalloc(const size_t nmemb, const size_t size);
 __t__unused
 static inline void * xrealloc(void *ptr, const size_t size);
 
-#define xfree(p) do { __xfree(p); (p) = NULL; } while (0)
 __t__unused __t__nonnull(1)
 static inline void   __xfree(void *ptr);
+#define xfree(p) do { __xfree(p); (p) = NULL; } while (0)
 
 
 /* FILE FUNCTIONS */

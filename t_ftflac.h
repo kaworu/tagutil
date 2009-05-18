@@ -11,6 +11,6 @@
 
 
 __t__nonnull(1)
-struct tfile * ftflac_new(const char *path);
+struct tfile * ftflac_new(const char *restrict path);
 
-#endif /* not T_FTFLAC_H
+#endif /* not T_FTFLAC_H */
