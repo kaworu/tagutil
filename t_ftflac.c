@@ -25,6 +25,9 @@ struct ftflac_data {
     char **buffer, **keys;
 };
 
+__t__nonnull(1)
+static inline void ftflac_reset_data(struct ftflac_data *restrict d);
+
 
 __t__nonnull(1)
 int ftflac_destroy(struct tfile *restrict self);
@@ -42,6 +45,26 @@ __t__nonnull(1)
 int ftflac_tagcount(const struct tfile *restrict self);
 __t__nonnull(1)
 const char ** ftflac_tagkeys(const struct tfile *restrict self);
+
+
+static inline void
+ftflac_reset_data(struct ftflac_data *restrict d)
+{
+    uint32_t i;
+
+    assert_not_null(d);
+
+    if (d->keys) {
+        for (i = 0; i < d->count; i++)
+            xfree(d->keys[i]);
+        xfree(d->keys);
+    }
+    for (i = 0; i < d->count; i++)
+        free(d->buffer[i]);
+    xfree(d->buffer);
+    d->count = d->vocomments->data.vorbis_comment.num_comments;
+    d->buffer = xcalloc(d->count, sizeof(char *));
+}
 
 
 int
@@ -90,6 +113,7 @@ ftflac_save(struct tfile *restrict self)
 const char *
 ftflac_get(const struct tfile *restrict self, const char *restrict key)
 {
+    bool b;
     struct ftflac_data *d;
     FLAC__StreamMetadata_VorbisComment_Entry e;
     int i;
@@ -106,8 +130,13 @@ ftflac_get(const struct tfile *restrict self, const char *restrict key)
 
     if (d->buffer[i] == NULL) {
         e = d->vocomments->data.vorbis_comment.comments[i];
-        if (!FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair(e, &field_name, &field_value))
-            errx(-1, "FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair"); /* FIXME */
+        b = FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair(e, &field_name, &field_value);
+        if (!b) {
+            if (errno == ENOMEM)
+                err(ENOMEM, "FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair");
+            else
+                abort();
+        }
         assert(strcasecmp(field_name, key) == 0);
         xfree(field_name);
 
@@ -122,7 +151,64 @@ int
 ftflac_set(struct tfile *restrict self, const char *restrict key,
         const char *restrict newval)
 {
-    return (0);
+    bool b;
+    struct ftflac_data *d;
+    FLAC__StreamMetadata_VorbisComment_Entry e;
+    int i, ret = 0;
+
+    assert_not_null(self);
+    assert_not_null(self->data);
+    assert_not_null(key);
+    assert_not_null(newval);
+
+    b = FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&e, key, newval);
+    if (!b) {
+        if (errno == ENOMEM)
+            err(ENOMEM, "FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair");
+        else {
+            warnx("invalid Vorbis tag pair: `%s' , `%s'\n", key, newval);
+            return (1);
+        }
+    }
+
+    d = self->data;
+    i = FLAC__metadata_object_vorbiscomment_find_entry_from(d->vocomments, 0, key);
+    if (i == -1) {
+    /* doesn't already exist, append it */
+        if (newval[0] == '\0')
+            warnx("try to create a tag with empty value");
+        else {
+            b = FLAC__metadata_object_vorbiscomment_append_comment(d->vocomments, e, DO_NOT_COPY);
+            if (!b) {
+                /* FIXME: free(e) */
+                ret = 3;
+            }
+            else
+                ftflac_reset_data(d);
+        }
+    }
+    else {
+        if (newval[0] == '\0') {
+        /* tag key exist, but set to empty, so delete it */
+            b = FLAC__metadata_object_vorbiscomment_delete_comment(d->vocomments, i);
+            if (!b)
+                err(ENOMEM, "FLAC__metadata_object_vorbiscomment_delete_comment");
+        }
+        else {
+            b = FLAC__metadata_object_vorbiscomment_replace_comment(d->vocomments, e, true, DO_NOT_COPY);
+            if (!b) {
+                if (errno == ENOMEM)
+                    err(ENOMEM, "FLAC__metadata_object_vorbiscomment_replace_comment");
+                else {
+                    warnx("invalid Vorbis tag pair: `%s' , `%s'\n", key, newval);
+                    return (1);
+                }
+            }
+        }
+        ftflac_reset_data(d);
+    }
+
+    return (ret);
 }
 
 
@@ -165,11 +251,16 @@ ftflac_tagkeys(const struct tfile *restrict self)
         e = d->vocomments->data.vorbis_comment.comments[i];
         if (!FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair(e, &field_name, &field_value))
             errx(-1, "FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair"); /* FIXME */
+
         len = strlen(field_name);
         for (j = 0; j < len; j++)
             field_name[j] = tolower(field_name[j]);
-        d->keys[i]   = field_name;
-        d->buffer[i] = field_value;
+        d->keys[i] = field_name;
+
+        if (d->buffer[i] == NULL)
+            d->buffer[i] = field_value;
+        else
+            xfree(field_value);
     }
 
     return (d->keys);

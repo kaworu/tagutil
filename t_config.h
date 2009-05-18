@@ -12,8 +12,8 @@
 #  define inline
 #  define restrict
 #  define __t__unused
-#  define __t__nonnull(x)
 #  define __t__dead2
+#  define __t__nonnull(x)
 #  define __t__printflike(fmtarg, firstvarg)
 #else
 #include <sys/cdefs.h>
