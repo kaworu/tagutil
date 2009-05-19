@@ -175,7 +175,7 @@ main(int argc, char *argv[])
             tagutil_filter(file, x_arg);
         if (sflag) {
             STAILQ_FOREACH(it, s_arg, next) {
-                /* TODO: check return value! */ file->set(file, it->key, it->value);
+                (void)file->set(file, it->key, it->value);
             }
             if (!file->save(file))
                 err(errno, "couldn't save file `%s'", path);

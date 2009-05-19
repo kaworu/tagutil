@@ -28,8 +28,8 @@ __t__nonnull(1) __t__nonnull(2)
 char * ftgeneric_get(const struct tfile *restrict self,
         const char *restrict key);
 __t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
-int ftgeneric_set(struct tfile *restrict self, const char *restrict key,
-        const char *restrict newval);
+enum tfile_set_status ftgeneric_set(struct tfile *restrict self,
+        const char *restrict key, const char *restrict newval);
 
 __t__nonnull(1)
 int ftgeneric_tagcount(const struct tfile *restrict self);
@@ -105,12 +105,11 @@ ftgeneric_get(const struct tfile *restrict self, const char *restrict key)
 }
 
 
-int
+enum tfile_set_status
 ftgeneric_set(struct tfile *restrict self, const char *restrict key,
         const char *restrict newval)
 {
     struct ftgeneric_data *d;
-    int ret = 0;
     unsigned int uintval;
     char *endptr;
 
@@ -135,7 +134,7 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
         uintval = strtoul(newval, &endptr, 10);
         if (endptr == newval || *endptr != '\0') {
             warnx("ftgeneric_set: need Int track argument, got: `%s'", newval);
-            ret = 1;
+            return (TFILE_SET_STATUS_BADARG);
         }
         else
             taglib_tag_set_track(d->tag, uintval);
@@ -144,17 +143,17 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
         uintval = strtoul(newval, &endptr, 10);
         if (endptr == newval || *endptr != '\0') {
             warnx("ftgeneric_set: need Int year argument, got: `%s'", newval);
-            ret = 1;
+            return (TFILE_SET_STATUS_BADARG);
         }
         else
             taglib_tag_set_year(d->tag, uintval);
     }
     else {
         warnx("%s backend can't handle `%s' tag", self->lib, key);
-        ret = 2;
+        return (TFILE_SET_STATUS_LIBERROR);
     }
 
-    return (ret);
+    return (TFILE_SET_STATUS_OK);
 }
 
 

@@ -33,8 +33,8 @@ __t__nonnull(1) __t__nonnull(2)
 char * ftflac_get(const struct tfile *restrict self,
         const char *restrict key);
 __t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
-int ftflac_set(struct tfile *restrict self, const char *restrict key,
-        const char *restrict newval);
+enum tfile_set_status ftflac_set(struct tfile *restrict self,
+        const char *restrict key, const char *restrict newval);
 
 __t__nonnull(1)
 int ftflac_tagcount(const struct tfile *restrict self);
@@ -107,14 +107,14 @@ ftflac_get(const struct tfile *restrict self, const char *restrict key)
 }
 
 
-int
+enum tfile_set_status
 ftflac_set(struct tfile *restrict self, const char *restrict key,
         const char *restrict newval)
 {
     bool b;
     struct ftflac_data *d;
     FLAC__StreamMetadata_VorbisComment_Entry e;
-    int i, ret = 0;
+    int i;
 
     assert_not_null(self);
     assert_not_null(self->data);
@@ -127,7 +127,7 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
             err(ENOMEM, "FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair");
         else {
             warnx("invalid Vorbis tag pair: `%s' , `%s'\n", key, newval);
-            return (1);
+            return (TFILE_SET_STATUS_BADARG);
         }
     }
 
@@ -141,7 +141,8 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
             b = FLAC__metadata_object_vorbiscomment_append_comment(d->vocomments, e, DO_NOT_COPY);
             if (!b) {
                 /* FIXME: free(e) */
-                ret = 3;
+                warnx("%s backend error", self->lib);
+                return (TFILE_SET_STATUS_LIBERROR);
             }
         }
     }
@@ -158,14 +159,14 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
                 if (errno == ENOMEM)
                     err(ENOMEM, "FLAC__metadata_object_vorbiscomment_replace_comment");
                 else {
-                    warnx("invalid Vorbis tag pair: `%s' , `%s'\n", key, newval);
-                    return (1);
+                    warnx("%s backend error", self->lib);
+                    return (TFILE_SET_STATUS_LIBERROR);
                 }
             }
         }
     }
 
-    return (ret);
+    return (TFILE_SET_STATUS_OK);
 }
 
 

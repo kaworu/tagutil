@@ -9,6 +9,11 @@
 
 #include <stdbool.h>
 
+enum tfile_set_status {
+    TFILE_SET_STATUS_OK,
+    TFILE_SET_STATUS_BADARG,
+    TFILE_SET_STATUS_LIBERROR
+};
 
 struct tfile {
     const char *path;
@@ -39,11 +44,10 @@ struct tfile {
     char * (*get)(const struct tfile *restrict self, const char *restrict key);
 
     /*
-     * set the tag key to value newval. return 0 if no errors.
-     * XXX: do a enum.
+     * set the tag key to value newval.
      */
-    int (*set)(struct tfile *restrict self, const char *restrict key,
-            const char *restrict newval);
+    enum tfile_set_status (*set)(struct tfile *restrict self,
+            const char *restrict key, const char *restrict newval);
 
     /*
      * return the number of tags set.
