@@ -8,8 +8,8 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <string.h>
-#include "/usr/local/include/FLAC/metadata.h" /* FIXME: pwerk */
-#include "/usr/local/include/FLAC/format.h" /* FIXME: pwerk */
+#include "metadata.h"
+#include "format.h"
 
 #include "t_file.h"
 #include "t_ftflac.h"

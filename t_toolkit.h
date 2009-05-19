@@ -8,7 +8,7 @@
  */
 #include "t_config.h"
 
-#include <assert.h>
+#include </usr/include/assert.h>
 #include <errno.h>
 #include <err.h>
 #include <libgen.h> /* dirname(3) */
