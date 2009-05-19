@@ -114,16 +114,24 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
         const char *restrict newval)
 {
     bool b;
+    size_t len, j;
     struct ftflac_data *d;
     FLAC__StreamMetadata_VorbisComment_Entry e;
     int i;
+    char *mykey;
 
     assert_not_null(self);
     assert_not_null(self->data);
     assert_not_null(key);
     assert_not_null(newval);
 
-    b = FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&e, key, newval);
+    len = strlen(key);
+    mykey = xcalloc(len + 1, sizeof(char));
+    for (j = 0; j < len; j++)
+        mykey[j] = toupper(key[j]);
+
+    b = FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&e, mykey, newval);
+    xfree(mykey);
     if (!b) {
         if (errno == ENOMEM)
             err(ENOMEM, "FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair");
@@ -195,6 +203,7 @@ ftflac_tagkeys(const struct tfile *restrict self)
     char **ret;
     int i, count;
     bool b;
+    size_t len, j;
     struct ftflac_data *d;
     FLAC__StreamMetadata_VorbisComment_Entry e;
     char *field_name, *field_value;
@@ -214,9 +223,11 @@ ftflac_tagkeys(const struct tfile *restrict self)
             warnx("`%s' seems corrupted", self->path);
             return (NULL);
         }
-
         xfree(field_value);
+        len = strlen(field_name);
         ret[i] = field_name;
+        for (j = 0; j < len; j++)
+            field_name[j] = tolower(field_name[j]);
     }
 
     return (ret);

@@ -111,7 +111,7 @@ main(int argc, char *argv[])
         case 's':
             sflag = true;
             if (s_arg == NULL)
-                s_arg = setter_init();
+                s_arg = new_setter();
             if (!setter_add(s_arg, optarg))
                 errx(EINVAL, "invalid -s argument: `%s'", optarg);
             break;

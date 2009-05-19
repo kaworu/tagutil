@@ -76,6 +76,9 @@ tags_to_yaml(const struct tfile *restrict file)
     assert_not_null(file);
 
     tagkeys = file->tagkeys(file);
+    if (tagkeys == NULL)
+        errx(-1, "NULL tagkeys (%s backend)", file->lib);
+
     xasprintf(&ret, "# %s\n---\n", file->path);
 
     count = file->tagcount(file);

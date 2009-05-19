@@ -24,9 +24,26 @@ struct setter_item {
 
 STAILQ_HEAD(setter_q, setter_item);
 
+/*
+ * create a new setter queue.
+ */
+static inline struct setter_q * new_setter(void);
+
+/*
+ * add a key/value pair to to the queue. the keyval arg should be like
+ * "key:val" where val can be empty.
+ * return true if keyval is ok and appened to the queue, false otherwise.
+ */
+static inline bool setter_add(struct setter_q *restrict Q, const char *keyval);
+
+/*
+ * free the queue and all its elements.
+ */
+static inline void destroy_setter(struct setter_q *restrict Q);
+
 
 static inline struct setter_q *
-setter_init(void)
+new_setter(void)
 {
     struct setter_q *Q;
 
@@ -41,20 +58,20 @@ static inline bool
 setter_add(struct setter_q *restrict Q, const char *keyval)
 {
     struct setter_item *it;
-    size_t siz;
+    size_t size;
     char *sep, *s;
 
     assert_not_null(Q);
     assert_not_null(keyval);
 
-    siz = (strlen(keyval) + 1) * sizeof(char);
-    it = xmalloc(sizeof(struct setter_item) + siz);
+    size = (strlen(keyval) + 1) * sizeof(char);
+    it = xmalloc(sizeof(struct setter_item) + size);
     s = (char *)(it + 1);
-    strlcpy(s, keyval, siz);
+    strlcpy(s, keyval, size);
 
     sep = strchr(s, SETTER_SEP);
     if (sep == NULL) {
-        free(it);
+        xfree(it);
         return (false);
     }
     *sep = '\0';
@@ -65,6 +82,7 @@ setter_add(struct setter_q *restrict Q, const char *keyval)
 
     return (true);
 }
+
 
 static inline void
 destroy_setter(struct setter_q *restrict Q)
