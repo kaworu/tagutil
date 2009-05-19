@@ -52,7 +52,7 @@ struct tfile {
     /*
      * return the number of tags set.
      */
-    int (*tagcount)(const struct tfile *restrict self);
+    long (*tagcount)(const struct tfile *restrict self);
 
     /*
      * return an array of the tag key that are set.

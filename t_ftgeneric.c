@@ -32,7 +32,7 @@ enum tfile_set_status ftgeneric_set(struct tfile *restrict self,
         const char *restrict key, const char *restrict newval);
 
 __t__nonnull(1)
-int ftgeneric_tagcount(const struct tfile *restrict self);
+long ftgeneric_tagcount(const struct tfile *restrict self);
 __t__nonnull(1)
 char ** ftgeneric_tagkeys(const struct tfile *restrict self);
 
@@ -157,7 +157,7 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
 }
 
 
-int
+long
 ftgeneric_tagcount(const struct tfile *restrict self)
 {
 

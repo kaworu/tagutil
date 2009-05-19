@@ -161,12 +161,14 @@ main(int argc, char *argv[])
             continue;
         }
 
+        file = NULL;
         file = ftflac_new(path);
         if (file == NULL)
             file = ftgeneric_new(path);
-        if (file == NULL)
-            /* FIXME: should warn */
+        if (file == NULL) {
+            warnx("`%s' doesn't seems to be a music file");
             continue;
+        }
 
         /* modifiy tag, edit, rename */
         if (pflag)
@@ -322,8 +324,8 @@ tagutil_edit(struct tfile *restrict file)
         }
 
         xfclose(stream);
-        /* FIXME: get remove int status */
-        remove(tmp_file);
+        if (unlink(tmp_file) != 0)
+            err(errno, "can't remove temp file");
         xfree(tmp_file);
     }
 

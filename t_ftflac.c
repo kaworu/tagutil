@@ -37,7 +37,7 @@ enum tfile_set_status ftflac_set(struct tfile *restrict self,
         const char *restrict key, const char *restrict newval);
 
 __t__nonnull(1)
-int ftflac_tagcount(const struct tfile *restrict self);
+long ftflac_tagcount(const struct tfile *restrict self);
 __t__nonnull(1)
 char ** ftflac_tagkeys(const struct tfile *restrict self);
 
@@ -140,7 +140,7 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
         else {
             b = FLAC__metadata_object_vorbiscomment_append_comment(d->vocomments, e, DO_NOT_COPY);
             if (!b) {
-                /* FIXME: free(e) */
+                free(e.entry);
                 warnx("%s backend error", self->lib);
                 return (TFILE_SET_STATUS_LIBERROR);
             }
@@ -159,6 +159,7 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
                 if (errno == ENOMEM)
                     err(ENOMEM, "FLAC__metadata_object_vorbiscomment_replace_comment");
                 else {
+                    free(e.entry);
                     warnx("%s backend error", self->lib);
                     return (TFILE_SET_STATUS_LIBERROR);
                 }
@@ -170,17 +171,17 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
 }
 
 
-int
+long
 ftflac_tagcount(const struct tfile *restrict self)
 {
-    int count;
+    long count;
     struct ftflac_data *d;
 
     assert_not_null(self);
     assert_not_null(self->data);
 
     d = self->data;
-    count = (int)(d->vocomments->data.vorbis_comment.num_comments); /* XXX: cast really ok? */
+    count = (long)(d->vocomments->data.vorbis_comment.num_comments);
     return (count);
 }
 
