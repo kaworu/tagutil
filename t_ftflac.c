@@ -21,21 +21,16 @@
 struct ftflac_data {
     FLAC__Metadata_Chain *chain;
     FLAC__StreamMetadata *vocomments; /* Vorbis Comments */
-    uint32_t count;
-    char **buffer, **keys;
 };
 
-__t__nonnull(1)
-static inline void ftflac_reset_data(struct ftflac_data *restrict d);
-
 
 __t__nonnull(1)
-int ftflac_destroy(struct tfile *restrict self);
+void ftflac_destroy(struct tfile *restrict self);
 __t__nonnull(1)
-int ftflac_save(struct tfile *restrict self);
+bool ftflac_save(struct tfile *restrict self);
 
 __t__nonnull(1) __t__nonnull(2)
-const char * ftflac_get(const struct tfile *restrict self,
+char * ftflac_get(const struct tfile *restrict self,
         const char *restrict key);
 __t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
 int ftflac_set(struct tfile *restrict self, const char *restrict key,
@@ -44,33 +39,12 @@ int ftflac_set(struct tfile *restrict self, const char *restrict key,
 __t__nonnull(1)
 int ftflac_tagcount(const struct tfile *restrict self);
 __t__nonnull(1)
-const char ** ftflac_tagkeys(const struct tfile *restrict self);
+char ** ftflac_tagkeys(const struct tfile *restrict self);
 
 
-static inline void
-ftflac_reset_data(struct ftflac_data *restrict d)
-{
-    uint32_t i;
-
-    assert_not_null(d);
-
-    if (d->keys) {
-        for (i = 0; i < d->count; i++)
-            xfree(d->keys[i]);
-        xfree(d->keys);
-    }
-    for (i = 0; i < d->count; i++)
-        free(d->buffer[i]);
-    xfree(d->buffer);
-    d->count = d->vocomments->data.vorbis_comment.num_comments;
-    d->buffer = xcalloc(d->count, sizeof(char *));
-}
-
-
-int
+void
 ftflac_destroy(struct tfile *restrict self)
 {
-    uint32_t i;
     struct ftflac_data *d;
 
     assert_not_null(self);
@@ -78,22 +52,12 @@ ftflac_destroy(struct tfile *restrict self)
 
     d = self->data;
 
-    if (d->keys) {
-        for (i = 0; i < d->count; i++)
-        free(d->keys[i]);
-    }
-    free(d->keys);
-    for (i = 0; i < d->count; i++)
-        free(d->buffer[i]);
-    xfree(d->buffer);
     FLAC__metadata_chain_delete(d->chain);
     xfree(self);
-
-    return (0);
 }
 
 
-int
+bool
 ftflac_save(struct tfile *restrict self)
 {
     struct ftflac_data *d;
@@ -104,13 +68,13 @@ ftflac_save(struct tfile *restrict self)
     d = self->data;
     FLAC__metadata_chain_sort_padding(d->chain);
     if (FLAC__metadata_chain_write(d->chain, true, false))
-        return (0);
+        return (true);
     else
-        return (1);
+        return (false);
 }
 
 
-const char *
+char *
 ftflac_get(const struct tfile *restrict self, const char *restrict key)
 {
     bool b;
@@ -128,22 +92,18 @@ ftflac_get(const struct tfile *restrict self, const char *restrict key)
     if (i == -1)
         return (NULL);
 
-    if (d->buffer[i] == NULL) {
-        e = d->vocomments->data.vorbis_comment.comments[i];
-        b = FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair(e, &field_name, &field_value);
-        if (!b) {
-            if (errno == ENOMEM)
-                err(ENOMEM, "FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair");
-            else
-                abort();
-        }
-        assert(strcasecmp(field_name, key) == 0);
-        xfree(field_name);
-
-        d->buffer[i] = field_value;
+    e = d->vocomments->data.vorbis_comment.comments[i];
+    b = FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair(e, &field_name, &field_value);
+    if (!b) {
+        if (errno == ENOMEM)
+            err(ENOMEM, "FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair");
+        else
+            abort();
     }
+    assert(strcasecmp(field_name, key) == 0);
+    xfree(field_name);
 
-    return (d->buffer[i]);
+    return (field_value);
 }
 
 
@@ -183,8 +143,6 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
                 /* FIXME: free(e) */
                 ret = 3;
             }
-            else
-                ftflac_reset_data(d);
         }
     }
     else {
@@ -205,7 +163,6 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
                 }
             }
         }
-        ftflac_reset_data(d);
     }
 
     return (ret);
@@ -215,21 +172,23 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
 int
 ftflac_tagcount(const struct tfile *restrict self)
 {
+    int count;
     struct ftflac_data *d;
 
     assert_not_null(self);
     assert_not_null(self->data);
 
     d = self->data;
-    return ((int)d->count); /* XXX: really ok? */
+    count = (int)(d->vocomments->data.vorbis_comment.num_comments); /* XXX: cast really ok? */
+    return (count);
 }
 
 
-const char **
+char **
 ftflac_tagkeys(const struct tfile *restrict self)
 {
-    uint32_t i, j;
-    size_t len;
+    char **ret;
+    int i, count;
     struct ftflac_data *d;
     FLAC__StreamMetadata_VorbisComment_Entry e;
     char *field_name, *field_value;
@@ -239,31 +198,19 @@ ftflac_tagkeys(const struct tfile *restrict self)
 
     d = self->data;
 
-    if (d->keys) {
-        for (i = 0; i < d->count; i++)
-            xfree(d->keys[i]);
-        xfree(d->keys);
-    }
+    count = self->tagcount(self);
+    ret = xcalloc(count, sizeof(char *));
 
-    d->keys = xcalloc(d->count, sizeof(char *));
-
-    for (i = 0; i < d->count; i++) {
+    for (i = 0; i < count; i++) {
         e = d->vocomments->data.vorbis_comment.comments[i];
         if (!FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair(e, &field_name, &field_value))
             errx(-1, "FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair"); /* FIXME */
 
-        len = strlen(field_name);
-        for (j = 0; j < len; j++)
-            field_name[j] = tolower(field_name[j]);
-        d->keys[i] = field_name;
-
-        if (d->buffer[i] == NULL)
-            d->buffer[i] = field_value;
-        else
-            xfree(field_value);
+        xfree(field_value);
+        ret[i] = field_name;
     }
 
-    return (d->keys);
+    return (ret);
 }
 
 
@@ -306,9 +253,6 @@ ftflac_new(const char *restrict path)
     d = (struct ftflac_data *)(ret + 1);
     d->chain      = chain;
     d->vocomments = vocomments;
-    d->count      = vocomments->data.vorbis_comment.num_comments;
-    d->buffer     = xcalloc(d->count, sizeof(char *));
-    d->keys       = NULL;
     ret->data = d;
 
     s = (char *)(d + 1);
@@ -323,6 +267,7 @@ ftflac_new(const char *restrict path)
     ret->tagcount = ftflac_tagcount;
     ret->tagkeys  = ftflac_tagkeys;
 
+    ret->lib = "libFLAC";
     return (ret);
 }
 

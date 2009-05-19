@@ -177,7 +177,7 @@ main(int argc, char *argv[])
             STAILQ_FOREACH(it, s_arg, next) {
                 /* TODO: check return value! */ file->set(file, it->key, it->value);
             }
-            if (file->save(file) != 0)
+            if (!file->save(file))
                 err(errno, "couldn't save file `%s'", path);
         }
         if (eflag)
@@ -317,7 +317,7 @@ tagutil_edit(struct tfile *restrict file)
         if (!yaml_to_tags(file, stream))
             warnx("file '%s' not saved.", file->path);
         else {
-            if (file->save(file) != 0)
+            if (!file->save(file))
                 err(errno, "can't save file '%s'", file->path);
         }
 

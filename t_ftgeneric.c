@@ -7,6 +7,8 @@
 
 #include <tag_c.h>
 
+#include <stdbool.h>
+
 #include "t_file.h"
 #include "t_ftgeneric.h"
 #include "t_toolkit.h"
@@ -15,16 +17,15 @@
 struct ftgeneric_data {
     TagLib_File *file;
     TagLib_Tag  *tag;
-    char *year, *track;
 };
 
 __t__nonnull(1)
-int ftgeneric_destroy(struct tfile *restrict self);
+void ftgeneric_destroy(struct tfile *restrict self);
 __t__nonnull(1)
-int ftgeneric_save(struct tfile *restrict self);
+bool ftgeneric_save(struct tfile *restrict self);
 
 __t__nonnull(1) __t__nonnull(2)
-const char * ftgeneric_get(const struct tfile *restrict self,
+char * ftgeneric_get(const struct tfile *restrict self,
         const char *restrict key);
 __t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
 int ftgeneric_set(struct tfile *restrict self, const char *restrict key,
@@ -33,10 +34,10 @@ int ftgeneric_set(struct tfile *restrict self, const char *restrict key,
 __t__nonnull(1)
 int ftgeneric_tagcount(const struct tfile *restrict self);
 __t__nonnull(1)
-const char ** ftgeneric_tagkeys(const struct tfile *restrict self);
+char ** ftgeneric_tagkeys(const struct tfile *restrict self);
 
 
-int
+void
 ftgeneric_destroy(struct tfile *restrict self)
 {
     struct ftgeneric_data *d;
@@ -45,17 +46,14 @@ ftgeneric_destroy(struct tfile *restrict self)
     assert_not_null(self->data);
 
     d = self->data;
-    free(d->track);
-    free(d->year);
     taglib_tag_free_strings(); /* XXX: thread-safe? */
     taglib_file_free(d->file);
 
     xfree(self);
-    return (true);
 }
 
 
-int
+bool
 ftgeneric_save(struct tfile *restrict self)
 {
     struct ftgeneric_data *d;
@@ -66,17 +64,17 @@ ftgeneric_save(struct tfile *restrict self)
     d = self->data;
 
     if (taglib_file_save(d->file))
-		return (0);
+		return (true);
 	else
-		return (1);
+		return (false);
 }
 
 
-const char *
+char *
 ftgeneric_get(const struct tfile *restrict self, const char *restrict key)
 {
     struct ftgeneric_data *d;
-    const char *ret;
+    char *ret;
 
     assert_not_null(self);
     assert_not_null(self->data);
@@ -85,27 +83,21 @@ ftgeneric_get(const struct tfile *restrict self, const char *restrict key)
     d = self->data;
 
     if (strcmp(key, "artist") == 0)
-        ret = taglib_tag_artist(d->tag);
+        ret = xstrdup(taglib_tag_artist(d->tag));
     else if (strcmp(key, "album") == 0)
-        ret = taglib_tag_album(d->tag);
+        ret = xstrdup(taglib_tag_album(d->tag));
     else if (strcmp(key, "comment") == 0)
-        ret = taglib_tag_comment(d->tag);
+        ret = xstrdup(taglib_tag_comment(d->tag));
     else if (strcmp(key, "genre") == 0)
-        ret = taglib_tag_genre(d->tag);
+        ret = xstrdup(taglib_tag_genre(d->tag));
     else if (strcmp(key, "title") == 0)
-        ret = taglib_tag_title(d->tag);
-    else if (strcmp(key, "track") == 0) {
-        if (d->track == NULL)
-            (void)xasprintf(&d->track, "%u", taglib_tag_track(d->tag));
-        ret = d->track;
-    }
-    else if (strcmp(key, "year") == 0) {
-        if (d->year == NULL)
-            (void)xasprintf(&d->year, "%u", taglib_tag_year(d->tag));
-        ret = d->year;
-    }
+        ret = xstrdup(taglib_tag_title(d->tag));
+    else if (strcmp(key, "track") == 0)
+        (void)xasprintf(&ret, "%u", taglib_tag_track(d->tag));
+    else if (strcmp(key, "year") == 0)
+        (void)xasprintf(&ret, "%u", taglib_tag_year(d->tag));
     else {
-        warnx("ft_generic backend (TagLib) can't handle `%s' tag", key);
+        warnx("%s backend can't handle `%s' tag", self->lib, key);
         ret = NULL;
     }
 
@@ -145,11 +137,8 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
             warnx("ftgeneric_set: need Int track argument, got: `%s'", newval);
             ret = 1;
         }
-        else {
-            free(d->track);
-            d->track = NULL;
+        else
             taglib_tag_set_track(d->tag, uintval);
-        }
     }
     else if (strcmp(key, "year") == 0) {
         uintval = strtoul(newval, &endptr, 10);
@@ -157,14 +146,11 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
             warnx("ftgeneric_set: need Int year argument, got: `%s'", newval);
             ret = 1;
         }
-        else {
-            free(d->year);
-            d->year = NULL;
+        else
             taglib_tag_set_year(d->tag, uintval);
-        }
     }
     else {
-        warnx("ft_generic backend (TagLib) can't handle `%s' tag", key);
+        warnx("%s backend can't handle `%s' tag", self->lib, key);
         ret = 2;
     }
 
@@ -183,15 +169,23 @@ ftgeneric_tagcount(const struct tfile *restrict self)
 }
 
 
-const char **
+char **
 ftgeneric_tagkeys(const struct tfile *restrict self)
 {
-    static const char *tagkeys[] = {
-        "title", "artist", "album", "track", "year", "genre", "comment",
-    };
+    char **ary;
 
     assert_not_null(self);
-    return (tagkeys);
+
+    ary = xmalloc(7 * sizeof(char *));
+    ary[0] = xstrdup("album");
+    ary[1] = xstrdup("artist");
+    ary[2] = xstrdup("comment");
+    ary[3] = xstrdup("genre");
+    ary[4] = xstrdup("title");
+    ary[5] = xstrdup("track");
+    ary[6] = xstrdup("year");
+
+    return (ary);
 }
 
 
@@ -220,8 +214,6 @@ ftgeneric_new(const char *restrict path)
     d = (struct ftgeneric_data *)(ret + 1);
     d->file  = f;
     d->tag   = taglib_file_tag(f);
-    d->year  = NULL;
-    d->track = NULL;
     ret->data = d;
 
     s = (char *)(d + 1);
@@ -236,6 +228,7 @@ ftgeneric_new(const char *restrict path)
     ret->tagcount = ftgeneric_tagcount;
     ret->tagkeys  = ftgeneric_tagkeys;
 
+    ret->lib = "TagLib";
     return (ret);
 }
 

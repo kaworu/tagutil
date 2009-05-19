@@ -69,8 +69,8 @@ yaml_escape(const char *restrict s)
 char *
 tags_to_yaml(const struct tfile *restrict file)
 {
-    const char **tagkeys;
-    char *val, *ret, *old, *endptr;
+    char **tagkeys;
+    char *val, *yaml, *ret, *oldret, *endptr;
     int i, count;
 
     assert_not_null(file);
@@ -80,18 +80,25 @@ tags_to_yaml(const struct tfile *restrict file)
 
     count = file->tagcount(file);
     for (i = 0; i < count; i++) {
-        old = ret;
-        val = yaml_escape(file->get(file, tagkeys[i]));
-        (void)strtoul(val, &endptr, 10);
-        if (endptr == val || *endptr != '\0')
+        oldret = ret;
+        val = file->get(file, tagkeys[i]);
+        if (val == NULL)
+            errx(-1, "bad tagkeys/get (%s backend)", file->lib);
+        yaml = yaml_escape(val);
+        (void)strtoul(yaml, &endptr, 10);
+        if (endptr == yaml || *endptr != '\0')
         /* looks like string */
-            (void)xasprintf(&ret, "%s%s: \"%s\"\n", old, tagkeys[i], val);
+            (void)xasprintf(&ret, "%s%s: \"%s\"\n", oldret, tagkeys[i], yaml);
         else
         /* looks like int */
-            (void)xasprintf(&ret, "%s%s: %s\n", old, tagkeys[i], val);
-        xfree(old);
+            (void)xasprintf(&ret, "%s%s: %s\n", oldret, tagkeys[i], yaml);
+
+        xfree(tagkeys[i]);
         xfree(val);
+        xfree(oldret);
+        xfree(yaml);
     }
+    xfree(tagkeys);
 
     return (ret);
 }
