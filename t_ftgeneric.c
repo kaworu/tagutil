@@ -46,7 +46,6 @@ ftgeneric_destroy(struct tfile *restrict self)
     assert_not_null(self->data);
 
     d = self->data;
-    taglib_tag_free_strings(); /* XXX: thread-safe? */
     taglib_file_free(d->file);
 
     xfree(self);
@@ -83,15 +82,15 @@ ftgeneric_get(const struct tfile *restrict self, const char *restrict key)
     d = self->data;
 
     if (strcmp(key, "artist") == 0)
-        ret = xstrdup(taglib_tag_artist(d->tag));
+        ret = taglib_tag_artist(d->tag);
     else if (strcmp(key, "album") == 0)
-        ret = xstrdup(taglib_tag_album(d->tag));
+        ret = taglib_tag_album(d->tag);
     else if (strcmp(key, "comment") == 0)
-        ret = xstrdup(taglib_tag_comment(d->tag));
+        ret = taglib_tag_comment(d->tag);
     else if (strcmp(key, "genre") == 0)
-        ret = xstrdup(taglib_tag_genre(d->tag));
+        ret = taglib_tag_genre(d->tag);
     else if (strcmp(key, "title") == 0)
-        ret = xstrdup(taglib_tag_title(d->tag));
+        ret = taglib_tag_title(d->tag);
     else if (strcmp(key, "track") == 0)
         (void)xasprintf(&ret, "%u", taglib_tag_track(d->tag));
     else if (strcmp(key, "year") == 0)
@@ -188,6 +187,16 @@ ftgeneric_tagkeys(const struct tfile *restrict self)
 }
 
 
+void
+ftgeneric_init(void)
+{
+
+    /* TagLib specific init */
+    taglib_set_strings_unicode(has_match(getenv("LC_ALL"), "utf-?8"));
+    taglib_set_string_management_enabled(false);
+}
+
+
 struct tfile *
 ftgeneric_new(const char *restrict path)
 {
@@ -198,10 +207,6 @@ ftgeneric_new(const char *restrict path)
     struct ftgeneric_data *d;
 
     assert_not_null(path);
-
-    /* taglib specific init */
-    taglib_set_strings_unicode(has_match(getenv("LC_ALL"), "utf-?8"));
-    taglib_set_string_management_enabled(true);
 
     f = taglib_file_new(path);
     if (f == NULL || !taglib_file_is_valid(f))

@@ -10,7 +10,17 @@
 #include "t_file.h"
 
 
+#if defined(WITH_TAGLIB)
+
+void ftgeneric_init(void);
+
 __t__nonnull(1)
 struct tfile * ftgeneric_new(const char *restrict path);
 
+#else /* not WITH_TAGLIB */
+
+# define ftgeneric_init()
+# define ftgeneric_new(path) NULL
+
+#endif /* WITH_TAGLIB */
 #endif /* not T_FTGENERIC_H */

@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 
+/* set() return values */
 enum tfile_set_status {
     TFILE_SET_STATUS_OK,
     TFILE_SET_STATUS_BADARG,
@@ -55,7 +56,7 @@ struct tfile {
     long (*tagcount)(const struct tfile *restrict self);
 
     /*
-     * return an array of the tag key that are set.
+     * return an array of the tag key that are set. return NULL if error.
      *
      * returned value has to be freed.
      */

@@ -52,12 +52,12 @@
 #include "t_interpreter.h"
 #include "t_yaml.h"
 #include "t_file.h"
-#include "t_ftgeneric.h"
-#include "t_ftflac.h"
 #include "t_toolkit.h"
 
 #include "tagutil.h"
 
+#include "t_ftflac.h"
+#include "t_ftgeneric.h"
 
 bool pflag = false; /* display tags action */
 bool Yflag = false; /* yes answer to all questions */
@@ -149,6 +149,10 @@ main(int argc, char *argv[])
     /* no action given, fallback to default */
         pflag = true;
 
+    /* init backends */
+    ftflac_init();
+    ftgeneric_init();
+
     for (i = 0; i < argc; i++) {
         path = argv[i];
 
@@ -166,7 +170,7 @@ main(int argc, char *argv[])
         if (file == NULL)
             file = ftgeneric_new(path);
         if (file == NULL) {
-            warnx("`%s' doesn't seems to be a music file");
+            warnx("`%s' unsuported file format", path);
             continue;
         }
 

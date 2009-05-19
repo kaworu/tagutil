@@ -8,6 +8,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <string.h>
+
 #include "metadata.h"
 #include "format.h"
 
@@ -15,8 +16,6 @@
 #include "t_ftflac.h"
 #include "t_toolkit.h"
 
-#define COPY        true
-#define DO_NOT_COPY false
 
 struct ftflac_data {
     FLAC__Metadata_Chain *chain;
@@ -67,7 +66,8 @@ ftflac_save(struct tfile *restrict self)
 
     d = self->data;
     FLAC__metadata_chain_sort_padding(d->chain);
-    if (FLAC__metadata_chain_write(d->chain, true, false))
+    if (FLAC__metadata_chain_write(d->chain, /* padding = */true,
+                /* preserve_file_stats = */false))
         return (true);
     else
         return (false);
@@ -97,8 +97,10 @@ ftflac_get(const struct tfile *restrict self, const char *restrict key)
     if (!b) {
         if (errno == ENOMEM)
             err(ENOMEM, "FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair");
-        else
-            abort();
+        else {
+            warnx("`%s' seems corrupted", self->path);
+            return (NULL);
+        }
     }
     assert(strcasecmp(field_name, key) == 0);
     xfree(field_name);
@@ -136,9 +138,9 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
     if (i == -1) {
     /* doesn't already exist, append it */
         if (newval[0] == '\0')
-            warnx("try to create a tag with empty value");
+            warnx("try to create a tag with empty value: `%s'", key);
         else {
-            b = FLAC__metadata_object_vorbiscomment_append_comment(d->vocomments, e, DO_NOT_COPY);
+            b = FLAC__metadata_object_vorbiscomment_append_comment(d->vocomments, e, /* copy = */false);
             if (!b) {
                 free(e.entry);
                 warnx("%s backend error", self->lib);
@@ -154,7 +156,8 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
                 err(ENOMEM, "FLAC__metadata_object_vorbiscomment_delete_comment");
         }
         else {
-            b = FLAC__metadata_object_vorbiscomment_replace_comment(d->vocomments, e, true, DO_NOT_COPY);
+        /* tag key exist, replace it */
+            b = FLAC__metadata_object_vorbiscomment_replace_comment(d->vocomments, e, true, /* copy = */false);
             if (!b) {
                 if (errno == ENOMEM)
                     err(ENOMEM, "FLAC__metadata_object_vorbiscomment_replace_comment");
@@ -191,6 +194,7 @@ ftflac_tagkeys(const struct tfile *restrict self)
 {
     char **ret;
     int i, count;
+    bool b;
     struct ftflac_data *d;
     FLAC__StreamMetadata_VorbisComment_Entry e;
     char *field_name, *field_value;
@@ -205,8 +209,11 @@ ftflac_tagkeys(const struct tfile *restrict self)
 
     for (i = 0; i < count; i++) {
         e = d->vocomments->data.vorbis_comment.comments[i];
-        if (!FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair(e, &field_name, &field_value))
-            errx(-1, "FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair"); /* FIXME */
+        b = FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair(e, &field_name, &field_value);
+        if (!b) {
+            warnx("`%s' seems corrupted", self->path);
+            return (NULL);
+        }
 
         xfree(field_value);
         ret[i] = field_name;
@@ -216,12 +223,20 @@ ftflac_tagkeys(const struct tfile *restrict self)
 }
 
 
+void
+ftflac_init(void)
+{
+    return;
+}
+
+
 struct tfile *
 ftflac_new(const char *restrict path)
 {
     FLAC__Metadata_Chain *chain;
     FLAC__Metadata_Iterator *it;
     FLAC__StreamMetadata *vocomments;
+    bool b;
     struct tfile *ret;
     char *s;
     size_t size;
@@ -245,8 +260,15 @@ ftflac_new(const char *restrict path)
         if (FLAC__metadata_iterator_get_block_type(it) == FLAC__METADATA_TYPE_VORBIS_COMMENT)
             vocomments = FLAC__metadata_iterator_get_block(it);
     } while (vocomments == NULL && FLAC__metadata_iterator_next(it));
-    if (vocomments == NULL)
-        errx(-1, "couldn't find StreamMetadata VORBIS_COMMENT"); /* FIXME: create a new block VORBIS_COMMENT */
+    if (vocomments == NULL) {
+    /* create a new block FLAC__METADATA_TYPE_VORBIS_COMMENT */
+        vocomments = FLAC__metadata_object_new(FLAC__METADATA_TYPE_VORBIS_COMMENT);
+        if (vocomments == NULL)
+            err(ENOMEM, "FLAC__metadata_object_new");
+        b = FLAC__metadata_iterator_insert_block_after(it, vocomments);
+        if (!b)
+            err(errno, "FLAC__metadata_iterator_insert_block_after");
+    }
     FLAC__metadata_iterator_delete(it);
 
     size = (strlen(path) + 1) * sizeof(char);
