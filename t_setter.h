@@ -14,7 +14,7 @@
 #include "t_toolkit.h"
 
 
-#define SETTER_SEP ':'
+#define SETTER_SEP '='
 
 
 struct setter_item {

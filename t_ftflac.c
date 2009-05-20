@@ -136,7 +136,7 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
         if (errno == ENOMEM)
             err(ENOMEM, "FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair");
         else {
-            warnx("invalid Vorbis tag pair: `%s' , `%s'\n", key, newval);
+            warnx("invalid Vorbis tag pair: `%s' , `%s'", key, newval);
             return (TFILE_SET_STATUS_BADARG);
         }
     }
@@ -262,8 +262,11 @@ ftflac_new(const char *restrict path)
     if (it == NULL)
         err(ENOMEM, "FLAC__metadata_iterator_new");
 
-    if(!FLAC__metadata_chain_read(chain, path))
+    if(!FLAC__metadata_chain_read(chain, path)) {
+        FLAC__metadata_iterator_delete(it);
+        FLAC__metadata_chain_delete(chain);
         return (NULL);
+    }
     FLAC__metadata_iterator_init(it, chain);
 
     vocomments = NULL;
