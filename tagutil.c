@@ -219,10 +219,7 @@ usage(void)
     (void)fprintf(stderr, "  -x FILTER       print files in matching FILTER\n");
     (void)fprintf(stderr, "  -s TAG:VALUE    update tag TAG to VALUE for all given files\n");
     (void)fprintf(stderr, "  -r [-d] PATTERN rename files with the given PATTERN. you can use keywords in PATTERN:\n");
-    (void)fprintf(stderr, "                  title(%s), album(%s), artist(%s), year(%s), track(%s), comment(%s),\n",
-                                             kTITLE,    kALBUM,    kARTIST,    kYEAR,    kTRACK,    kCOMMENT);
-    (void)fprintf(stderr, "                  and genre(%s). example: \"%s - %s - (%s) - %s\"\n",
-                                             kGENRE,              kARTIST, kALBUM, kTRACK, kTITLE);
+    (void)fprintf(stderr, "                  $tag if tag contains only `-', `_' or alphanum characters. ${tag} otherwise.\n");
     (void)fprintf(stderr, "\n");
 
     exit(EXIT_SUCCESS);
@@ -337,6 +334,7 @@ tagutil_edit(struct tfile *restrict file)
     return (true);
 }
 
+
 bool
 tagutil_rename(struct tfile *restrict file, const char *restrict pattern)
 {
@@ -352,7 +350,7 @@ tagutil_rename(struct tfile *restrict file, const char *restrict pattern)
     if (ext == NULL)
         errx(-1, "can't find file extension: '%s'", file->path);
     ext++; /* skip dot */
-    fname = eval_tag(file, pattern);
+    fname = rename_eval(file, pattern);
 
     /* fname is now OK. store into result the full new path.  */
     dirn = xdirname(file->path);
@@ -368,7 +366,7 @@ tagutil_rename(struct tfile *restrict file, const char *restrict pattern)
     if (strcmp(file->path, result) != 0) {
         (void)xasprintf(&question, "rename '%s' to '%s'", file->path, result);
         if (yesno(question))
-            safe_rename(file->path, result);
+            rename_safe(file->path, result);
         xfree(question);
     }
 

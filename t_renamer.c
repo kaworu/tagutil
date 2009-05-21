@@ -5,9 +5,11 @@
  */
 #include "t_config.h"
 
+#include <sys/param.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <ctype.h>
 #include <err.h>
 #include <errno.h>
 #include <stdio.h>
@@ -22,12 +24,12 @@
 extern bool dflag;
 
 /* taken from mkdir(3) */
-__t__nonnull(1)
-static int build(char *path, mode_t omode);
+_t__nonnull(1)
+static inline int build(char *path, mode_t omode);
 
 
 void
-safe_rename(const char *restrict oldpath,
+rename_safe(const char *restrict oldpath,
         const char *restrict newpath)
 {
     bool failed = false;
@@ -70,77 +72,132 @@ safe_rename(const char *restrict oldpath,
 
 
 char *
-eval_tag(struct tfile *restrict file, const char *restrict pattern)
+rename_eval(struct tfile *restrict file, const char *restrict pattern)
 {
-    char *ret, buf[5];
-    const char *val;
-    size_t patternlen, alloc, vallen;
-    unsigned int i, j = 0;
+    const size_t len = MAXPATHLEN;
+    char *ret;
+    char *p, *k, *palloc;
+    char *start, *end;
+    char *key, *val;
+    size_t keylen;
+    bool running = true;
+    enum {
+        SEARCH_TAG, GET_KEY, GET_KEY_BRACE, SET_TAG, TEARDOWN,
+        TOO_LONG, MISSING_BRACE
+    } fsm;
 
-    assert_not_null(pattern);
-    assert_not_null(file);
+    ret = xcalloc(len, sizeof(char));
+    palloc = p = xstrdup(pattern);
+    fsm = SEARCH_TAG;
 
-    patternlen = strlen(pattern);
-    alloc = BUFSIZ;
-    ret = xcalloc(alloc, sizeof(char));
-
-    for (i = 0; i < patternlen; i++) {
-        if (j == alloc) {
-            alloc += BUFSIZ;
-            ret = xrealloc(ret, alloc * sizeof(char));
-        }
-
-        if (pattern[i] != '%')
-            ret[j++] = pattern[i];
-        else {
-            switch (pattern[i + 1]) {
-            case '%':
-                val = "%";
-                break;
-            case 'A':
-                val = file->get(file, "artist");
-                break;
-            case 'a':
-                val = file->get(file, "album");
-                break;
-            case 'c':
-                val = file->get(file, "comment");
-                break;
-            case 'g':
-                val = file->get(file, "genre");
-                break;
-            case 'T':
-                snprintf(buf, sizeof(buf), "%02u",
-                        atoi(file->get(file, "track"))); /* FIXME: atoi(3) sucks */
-                val = buf;
-                break;
-            case 't':
-                val = file->get(file, "title");
-                break;
-            case 'y':
-                snprintf(buf, sizeof(buf), "%04u",
-                        atoi(file->get(file, "year"))); /* FIXME: atoi(3) sucks */
-                val = buf;
-                break;
-            default:
-                warnx("%c%c: unknown keyword at %u, skipping.",
-                        pattern[i], pattern[i + 1], i);
-                i += 1; /* skip keyword */
+    while (running) {
+        switch (fsm) {
+        case SEARCH_TAG:
+            start = strchr(p, '$');
+            if (start == NULL)
+            /* no more $ */
+                fsm = TEARDOWN;
+            else if (start != p && start[-1] == '\\') {
+            /* \$ escape */
+                start[-1] = '$';
+                start[ 0] = '\0';
+                if (strlcat(ret, p, len) >= len)
+                    fsm = TOO_LONG;
+                else
+                    p = start + 1;
+            }
+            else {
+            /* $tag or ${tag} */
+                start[0] = '\0';
+                if (strlcat(ret, p, len) >= len)
+                    fsm = TOO_LONG;
+                else {
+                    if (start[1] == '{') {
+                        p = start + 2;
+                        fsm = GET_KEY_BRACE;
+                    }
+                    else {
+                        p = start + 1;
+                        fsm = GET_KEY;
+                    }
+                }
+            }
+            break;
+        case GET_KEY:
+            for (end = p; isalnum(*end) || *end == '_' || *end == '-'; end++)
                 continue;
+            if (end == p)
+                warnx("rename: $ without tag name (%d)", (int)(p - palloc));
+            keylen = (size_t)(end - p) + 1;
+            key = xcalloc(keylen, sizeof(char));
+            (void)strlcpy(key, p, keylen);
+            p = end;
+            fsm = SET_TAG;
+            break;
+        case GET_KEY_BRACE:
+            keylen = strlen(p) + 1;
+            key = xcalloc(keylen, sizeof(char));
+            k = key;
+            for (end = p; *end != '\0' && *end != '}'; end++) {
+                if (*end == '\\' && end[1] == '}') {
+                    *k = '}';
+                    k++;
+                    end++;
+                }
+                else {
+                    *k = *end;
+                    k++;
+                }
             }
-            vallen = strlen(val);
-            if (alloc < j + vallen + 1) {
-                alloc += vallen + BUFSIZ;
-                ret = xrealloc(ret, alloc * sizeof(char));
+            if (*end == '\0') {
+                xfree(key);
+                fsm = MISSING_BRACE;
             }
-            ret[j] = '\0';
-            j = strlcat(ret, val, alloc * sizeof(char));
-
-            i += 1; /* skip keyword */
+            else {
+                fsm = SET_TAG;
+                p = end + 1;
+            }
+            break;
+        case SET_TAG:
+            val = file->get(file, key);
+            if (val == NULL) {
+                warnx("rename: no tag `%s' for `%s', using tag key instead.",
+                        key, file->path);
+                val = key;
+            }
+            else {
+                if (dflag && strchr(val, '/'))
+                    warnx("rename: `%s'=`%s' has / in value, -d option can"
+                            " have a suprising effect!", key, val);
+                xfree(key);
+            }
+            if (strlcat(ret, val, len) >= len)
+                fsm = TOO_LONG;
+            else
+                fsm = SEARCH_TAG;
+            xfree(val);
+            break;
+        case TEARDOWN:
+            if (strlcat(ret, p, len) >= len)
+                fsm = TOO_LONG;
+            else
+                running = false;
+            break;
+        case TOO_LONG:
+            warnx("rename: pattern too long (>MAXPATHLEN) for `%s'",
+                    file->path);
+            running = false;
+            xfree(ret);
+            break;
+        case MISSING_BRACE:
+            warnx("rename: missing }");
+            running = false;
+            xfree(ret);
+            break;
         }
     }
+    xfree(palloc);
 
-    ret[j] = '\0';
     return (ret);
 }
 
@@ -157,7 +214,7 @@ __FBSDID("$FreeBSD: src/bin/mkdir/mkdir.c,v 1.33 2006/10/10 20:18:20 ru Exp $");
  * Returns 1 if a directory has been created,
  * 2 if it already existed, and 0 on failure.
  */
-int
+static inline int
 build(char *path, mode_t omode)
 {
 	struct stat sb;
@@ -226,3 +283,4 @@ build(char *path, mode_t omode)
 		(void)umask(oumask);
 	return (retval);
 }
+

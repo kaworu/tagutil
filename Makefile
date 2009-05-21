@@ -15,7 +15,7 @@ MANDIR?=/man/man
 # C opts
 CSTD=c99
 .if defined(DEBUG)
-CFLAGS=-g -O0 -Wall -Wextra -Wformat-security -Wnonnull -Wswitch-default -Waggregate-return -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow -Wstrict-prototypes -Winline -Wall
+CFLAGS=-g -O0 -Wall -Wextra -Wformat-security -Wnonnull -Waggregate-return -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow -Wstrict-prototypes -Winline -Wall
 VERSION+=(debug)
 .endif
 CFLAGS+=-D'VERSION="${VERSION}"' \

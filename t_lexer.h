@@ -50,8 +50,8 @@ enum tokenkind {
 };
 
 
-__t__unused
-static const char *__tokens[] = {
+_t__unused
+static const char *_tokens[] = {
     [TFILENAME] = "TFILENAME",
     [TTITLE]    = "TTITLE",
     [TALBUM]    = "TALBUM",
@@ -79,7 +79,7 @@ static const char *__tokens[] = {
     [TSTART]    = "TSTART",
 };
 
-#define token_to_s(x) __tokens[(x)]
+#define token_to_s(x) _tokens[(x)]
 
 struct token {
     enum tokenkind kind;
@@ -117,10 +117,10 @@ struct lexer {
 };
 
 
-__t__nonnull(1)
+_t__nonnull(1)
 struct lexer * new_lexer(const char *restrict str);
 
-__t__nonnull(1)
+_t__nonnull(1)
 void lex(struct lexer *restrict L);
 
 #endif /* not T_LEXER_H */

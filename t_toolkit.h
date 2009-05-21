@@ -33,26 +33,26 @@
 
 /* MEMORY FUNCTIONS */
 
-__t__unused
+_t__unused
 static inline void * xmalloc(const size_t size);
 
-__t__unused
+_t__unused
 static inline void * xcalloc(const size_t nmemb, const size_t size);
 
-__t__unused
+_t__unused
 static inline void * xrealloc(void *ptr, const size_t size);
 
-__t__unused __t__nonnull(1)
-static inline void   __xfree(void *ptr);
-#define xfree(p) do { __xfree(p); (p) = NULL; } while (0)
+_t__unused _t__nonnull(1)
+static inline void   _xfree(void *ptr);
+#define xfree(p) do { _xfree(p); (p) = NULL; } while (0)
 
 
 /* FILE FUNCTIONS */
 
-__t__unused __t__nonnull(1) __t__nonnull(2)
+_t__unused _t__nonnull(1) _t__nonnull(2)
 static inline FILE * xfopen(const char *restrict path, const char *restrict mode);
 
-__t__unused __t__nonnull(1)
+_t__unused _t__nonnull(1)
 static inline void xfclose(FILE *restrict stream);
 
 /*
@@ -63,16 +63,16 @@ static inline void xfclose(FILE *restrict stream);
  *
  * returned value has to be freed.
  */
-__t__unused __t__nonnull(1)
+_t__unused _t__nonnull(1)
 static inline char * xdirname(const char *restrict path);
 
 
 /* BASIC STRING OPERATIONS */
 
-__t__unused __t__nonnull(1)
+_t__unused _t__nonnull(1)
 static inline char * xstrdup(const char *restrict src);
 
-__t__unused __t__printflike(2, 3)
+_t__unused _t__printflike(2, 3)
 static inline int xasprintf(char **ret, const char *fmt, ...);
 
 
@@ -86,7 +86,7 @@ static inline int xasprintf(char **ret, const char *fmt, ...);
  *
  * returned value has to be freed.
  */
-__t__unused __t__nonnull(1) __t__nonnull(2)
+_t__unused _t__nonnull(1) _t__nonnull(2)
 static inline regmatch_t * first_match(const char *restrict str,
         const char *restrict pattern, const int flags);
 
@@ -94,7 +94,7 @@ static inline regmatch_t * first_match(const char *restrict str,
  * return true if the regex pattern match the given str, false otherwhise.
  * flags are REG_ICASE | REG_EXTENDED | REG_NEWLINE | REG_NOSUB (see regex(3)).
  */
-__t__unused __t__nonnull(2)
+_t__unused _t__nonnull(2)
 static inline bool has_match(const char *restrict str,
         const char *restrict pattern);
 
@@ -107,7 +107,7 @@ static inline bool has_match(const char *restrict str,
  * true if the response match y|yes, false if it match n|no.
  * Honor Yflag and Nflag.
  */
-__t__unused
+_t__unused
 static inline bool yesno(const char *restrict question);
 
 /**********************************************************************/
@@ -149,7 +149,7 @@ xrealloc(void *old_ptr, const size_t new_size)
 
 
 static inline void
-__xfree(void *ptr)
+_xfree(void *ptr)
 {
 
 	assert_not_null(ptr);

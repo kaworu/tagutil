@@ -14,7 +14,7 @@
 /*
  * show usage and exit.
  */
-__t__dead2
+_t__dead2
 void usage(void);
 
 
@@ -34,7 +34,7 @@ char * create_tmpfile(void);
 /*
  * call "$EDITOR path" (the environment variable $EDITOR must be set).
  */
-__t__nonnull(1)
+_t__nonnull(1)
 bool user_edit(const char *restrict path);
 
 
@@ -43,7 +43,7 @@ bool user_edit(const char *restrict path);
 /*
  * print the given file's tag to stdin.
  */
-__t__nonnull(1)
+_t__nonnull(1)
 bool tagutil_print(const struct tfile *restrict file);
 
 /*
@@ -51,20 +51,20 @@ bool tagutil_print(const struct tfile *restrict file);
  * answer is yes create a tempfile, fill is with infos, run $EDITOR, then
  * parse the tempfile and update the file's tag.
  */
-__t__nonnull(1)
+_t__nonnull(1)
 bool tagutil_edit(struct tfile *restrict file);
 
 /*
  * rename the file at path with the given pattern arg. the pattern can use
  * some keywords for tags (see usage()).
  */
-__t__nonnull(1) __t__nonnull(2)
+_t__nonnull(1) _t__nonnull(2)
 bool tagutil_rename(struct tfile *restrict file, const char *restrict pattern);
 
 /*
  * print given path if the file match the given ast (arg).
  */
-__t__nonnull(1) __t__nonnull(2)
+_t__nonnull(1) _t__nonnull(2)
 bool tagutil_filter(const struct tfile *file, const struct ast *restrict ast);
 
 #endif /* not T_TAGUTIL_H */

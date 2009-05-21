@@ -11,11 +11,11 @@
 #include "t_interpreter.h"
 
 
-__t__nonnull(1) __t__nonnull(2)
+_t__nonnull(1) _t__nonnull(2)
 static inline unsigned int int_leaf(const struct tfile *restrict file,
         struct ast *restrict leaf);
 
-__t__nonnull(1) __t__nonnull(2)
+_t__nonnull(1) _t__nonnull(2)
 static inline const char * str_leaf(const struct tfile *restrict file,
 const struct ast *restrict leaf);
 

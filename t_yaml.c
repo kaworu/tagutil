@@ -19,7 +19,7 @@
  *
  * returned value has to be freed.
  */
-__t__nonnull(1)
+_t__nonnull(1)
 char * yaml_escape(const char *restrict s);
 
 

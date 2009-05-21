@@ -23,21 +23,21 @@ struct ftflac_data {
 };
 
 
-__t__nonnull(1)
+_t__nonnull(1)
 void ftflac_destroy(struct tfile *restrict self);
-__t__nonnull(1)
+_t__nonnull(1)
 bool ftflac_save(struct tfile *restrict self);
 
-__t__nonnull(1) __t__nonnull(2)
+_t__nonnull(1) _t__nonnull(2)
 char * ftflac_get(const struct tfile *restrict self,
         const char *restrict key);
-__t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
+_t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
 enum tfile_set_status ftflac_set(struct tfile *restrict self,
         const char *restrict key, const char *restrict newval);
 
-__t__nonnull(1)
+_t__nonnull(1)
 long ftflac_tagcount(const struct tfile *restrict self);
-__t__nonnull(1)
+_t__nonnull(1)
 char ** ftflac_tagkeys(const struct tfile *restrict self);
 
 
@@ -136,7 +136,7 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
         if (errno == ENOMEM)
             err(ENOMEM, "FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair");
         else {
-            warnx("invalid Vorbis tag pair: `%s' , `%s'", key, newval);
+            warnx("invalid Vorbis tag pair: `%s', `%s'", key, newval);
             return (TFILE_SET_STATUS_BADARG);
         }
     }
@@ -258,15 +258,14 @@ ftflac_new(const char *restrict path)
     chain = FLAC__metadata_chain_new();
     if (chain == NULL)
         err(ENOMEM, "FLAC__metadata_chain_new");
-    it = FLAC__metadata_iterator_new();
-    if (it == NULL)
-        err(ENOMEM, "FLAC__metadata_iterator_new");
-
     if(!FLAC__metadata_chain_read(chain, path)) {
-        FLAC__metadata_iterator_delete(it);
         FLAC__metadata_chain_delete(chain);
         return (NULL);
     }
+
+    it = FLAC__metadata_iterator_new();
+    if (it == NULL)
+        err(ENOMEM, "FLAC__metadata_iterator_new");
     FLAC__metadata_iterator_init(it, chain);
 
     vocomments = NULL;

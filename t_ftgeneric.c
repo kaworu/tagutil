@@ -19,21 +19,21 @@ struct ftgeneric_data {
     TagLib_Tag  *tag;
 };
 
-__t__nonnull(1)
+_t__nonnull(1)
 void ftgeneric_destroy(struct tfile *restrict self);
-__t__nonnull(1)
+_t__nonnull(1)
 bool ftgeneric_save(struct tfile *restrict self);
 
-__t__nonnull(1) __t__nonnull(2)
+_t__nonnull(1) _t__nonnull(2)
 char * ftgeneric_get(const struct tfile *restrict self,
         const char *restrict key);
-__t__nonnull(1) __t__nonnull(2) __t__nonnull(3)
+_t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
 enum tfile_set_status ftgeneric_set(struct tfile *restrict self,
         const char *restrict key, const char *restrict newval);
 
-__t__nonnull(1)
+_t__nonnull(1)
 long ftgeneric_tagcount(const struct tfile *restrict self);
-__t__nonnull(1)
+_t__nonnull(1)
 char ** ftgeneric_tagkeys(const struct tfile *restrict self);
 
 
@@ -92,9 +92,9 @@ ftgeneric_get(const struct tfile *restrict self, const char *restrict key)
     else if (strcmp(key, "title") == 0)
         ret = taglib_tag_title(d->tag);
     else if (strcmp(key, "track") == 0)
-        (void)xasprintf(&ret, "%u", taglib_tag_track(d->tag));
+        (void)xasprintf(&ret, "%02u", taglib_tag_track(d->tag));
     else if (strcmp(key, "year") == 0)
-        (void)xasprintf(&ret, "%u", taglib_tag_year(d->tag));
+        (void)xasprintf(&ret, "%04u", taglib_tag_year(d->tag));
     else {
         warnx("%s backend can't handle `%s' tag", self->lib, key);
         ret = NULL;

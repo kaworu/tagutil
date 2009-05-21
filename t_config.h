@@ -11,16 +11,16 @@
 #if defined(lint)
 #  define inline
 #  define restrict
-#  define __t__unused
-#  define __t__dead2
-#  define __t__nonnull(x)
-#  define __t__printflike(fmtarg, firstvarg)
+#  define _t__unused
+#  define _t__dead2
+#  define _t__nonnull(x)
+#  define _t__printflike(fmtarg, firstvarg)
 #else
 #include <sys/cdefs.h>
-#  define __t__unused     __unused
-#  define __t__dead2      __dead2
-#  define __t__nonnull(x) __nonnull(x)
-#  define __t__printflike(fmtarg, firstvarg) __printflike(fmtarg, firstvarg)
+#  define _t__unused     __unused
+#  define _t__dead2      __dead2
+#  define _t__nonnull(x) __nonnull(x)
+#  define _t__printflike(fmtarg, firstvarg) __printflike(fmtarg, firstvarg)
 #endif /* lint */
 
 

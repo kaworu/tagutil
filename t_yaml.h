@@ -27,7 +27,7 @@
  *
  * '"' and '\' in tags are escaped to \" and \\
  */
-__t__nonnull(1)
+_t__nonnull(1)
 char * tags_to_yaml(const struct tfile *restrict file);
 
 
@@ -35,7 +35,7 @@ char * tags_to_yaml(const struct tfile *restrict file);
  * load a yaml formated string.
  * The string format must be the same as tags_to_yaml returned string.
  */
-__t__nonnull(1) __t__nonnull(2)
+_t__nonnull(1) _t__nonnull(2)
 bool yaml_to_tags(struct tfile *restrict file, FILE *restrict stream);
 
 #endif /* not T_YAML_H */
