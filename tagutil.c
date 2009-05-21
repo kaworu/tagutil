@@ -356,6 +356,8 @@ tagutil_rename(struct tfile *restrict file, const char *restrict pattern)
         errx(-1, "can't find file extension: '%s'", file->path);
     ext++; /* skip dot */
     fname = rename_eval(file, pattern);
+    if (fname == NULL)
+        return (false);
 
     /* fname is now OK. store into result the full new path.  */
     dirn = xdirname(file->path);

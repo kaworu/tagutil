@@ -190,10 +190,8 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
             xfree(ret);
             break;
         case MISSING_BRACE:
-            warnx("rename: missing }");
-            running = false;
-            xfree(ret);
-            break;
+            errx(EINVAL, "rename: missing }");
+            /* NOTREACHED */
         }
     }
     xfree(palloc);
