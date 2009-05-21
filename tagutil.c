@@ -64,6 +64,7 @@ bool Yflag = false; /* yes answer to all questions */
 bool Nflag = false; /* no  answer to all questions */
 bool eflag = false; /* edit */
 bool dflag = false; /* create directory with rename */
+bool Dflag = false; /* create directory with rename (force) */
 bool rflag = false;  /* rename */
 bool xflag = false;  /* filter */
 bool sflag = false;  /* set tags */
@@ -91,7 +92,7 @@ main(int argc, char *argv[])
 
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
-    while ((ch = getopt(argc, argv, "edhNYr:x:s:")) != -1) {
+    while ((ch = getopt(argc, argv, "edDhNYr:x:s:")) != -1) {
         switch ((char)ch) {
         case 'e':
             eflag = true;
@@ -116,6 +117,10 @@ main(int argc, char *argv[])
                 errx(EINVAL, "invalid -s argument: `%s'", optarg);
             break;
         case 'd':
+            dflag = true;
+            break;
+        case 'D':
+            Dflag = true;
             dflag = true;
             break;
         case 'N':
@@ -212,14 +217,14 @@ usage(void)
     (void)fprintf(stderr, "Modify or display music file's tag.\n");
     (void)fprintf(stderr, "\n");
     (void)fprintf(stderr, "Options:\n");
-    (void)fprintf(stderr, "  -h              show this help\n");
-    (void)fprintf(stderr, "  -Y              answer yes to all questions\n");
-    (void)fprintf(stderr, "  -N              answer no  to all questions\n");
-    (void)fprintf(stderr, "  -e              show tag and prompt for editing (need $EDITOR environment variable)\n");
-    (void)fprintf(stderr, "  -x FILTER       print files in matching FILTER\n");
-    (void)fprintf(stderr, "  -s TAG:VALUE    update tag TAG to VALUE for all given files\n");
-    (void)fprintf(stderr, "  -r [-d] PATTERN rename files with the given PATTERN. you can use keywords in PATTERN:\n");
-    (void)fprintf(stderr, "                  $tag if tag contains only `-', `_' or alphanum characters. ${tag} otherwise.\n");
+    (void)fprintf(stderr, "  -h               show this help\n");
+    (void)fprintf(stderr, "  -Y               answer yes to all questions\n");
+    (void)fprintf(stderr, "  -N               answer no  to all questions\n");
+    (void)fprintf(stderr, "  -e               show tag and prompt for editing (need $EDITOR environment variable)\n");
+    (void)fprintf(stderr, "  -x FILTER        print files in matching FILTER\n");
+    (void)fprintf(stderr, "  -s TAG:VALUE     update tag TAG to VALUE for all given files\n");
+    (void)fprintf(stderr, "  -r [-dD] PATTERN rename files with the given PATTERN. you can use keywords in PATTERN:\n");
+    (void)fprintf(stderr, "                   $tag if tag contains only `-', `_' or alphanum characters. ${tag} otherwise.\n");
     (void)fprintf(stderr, "\n");
 
     exit(EXIT_SUCCESS);

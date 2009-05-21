@@ -21,7 +21,7 @@
 #include "t_renamer.h"
 
 
-extern bool dflag;
+extern bool dflag, Dflag;
 
 /* taken from mkdir(3) */
 _t__nonnull(1)
@@ -166,9 +166,9 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
                 val = key;
             }
             else {
-                if (dflag && strchr(val, '/'))
-                    warnx("rename: `%s'=`%s' has / in value, -d option can"
-                            " have a suprising effect!", key, val);
+                if (dflag && !Dflag && strchr(val, '/'))
+                    errx(-1, "rename: `%s': tag `%s' has / in value, fix it or"
+                            " use -D", file->path, key);
                 xfree(key);
             }
             if (strlcat(ret, val, len) >= len)
