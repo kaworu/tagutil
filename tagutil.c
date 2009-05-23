@@ -300,7 +300,7 @@ tagutil_print(const struct tfile *restrict file)
 bool
 tagutil_edit(struct tfile *restrict file)
 {
-    char *tmp_file, *yaml;
+    char *tmp_file, *yaml, *editor;
     FILE *stream;
 
     assert_not_null(file);
@@ -317,6 +317,9 @@ tagutil_edit(struct tfile *restrict file)
         stream = xfopen(tmp_file, "w");
         (void)fprintf(stream, "%s", yaml);
         xfree(yaml);
+        editor = getenv("EDITOR");
+        if (editor && strcmp(editor, "vim") == 0)
+            (void)fprintf(stream, "\n# vim:filetype=yaml");
         xfclose(stream);
 
         if (!user_edit(tmp_file)) {
