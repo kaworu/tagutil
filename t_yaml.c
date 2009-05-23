@@ -39,7 +39,7 @@ tags_to_yaml(const struct tfile *restrict file)
 
     data = xmalloc(sizeof(struct whdl_data));
     (void)xasprintf(&data->str, "# %s\n", file->path);
-    data->len = strlen(file->path);
+    data->len = strlen(data->str);
     data->alloclen = data->len + 1;
 
     /* Create the Emitter object. */
@@ -168,9 +168,9 @@ yaml_write_handler(void *dataptr, unsigned char *buffer, size_t size)
             data->alloclen += size + BUFSIZ;
             data->str = xrealloc(data->str, data->alloclen);
         }
-        data->len = strlcat(data->str, (const char *)buffer, data->alloclen);
-        if (data->len >= data->alloclen)
-            errx(EDOOFUS, "t_yaml: yaml_write_handler");
+        memcpy(data->str + data->len, buffer, size);
+        data->len += size;
+        data->str[data->len] = '\0';
     }
 
     if (error)
