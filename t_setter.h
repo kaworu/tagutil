@@ -14,9 +14,6 @@
 #include "t_toolkit.h"
 
 
-#define SETTER_SEP '='
-
-
 struct setter_item {
     const char *key, *value;
     STAILQ_ENTRY(setter_item) next;
@@ -32,10 +29,17 @@ static inline struct setter_q * new_setter(void);
 
 /*
  * add a key/value pair to to the queue. the keyval arg should be like
- * "key=val" where val can be empty.
+ * "key=value" where value can be empty.
  * return true if keyval is ok and appened to the queue, false otherwise.
  */
 static inline bool setter_add(struct setter_q *restrict Q, const char *keyval);
+
+/*
+ * add a key/value pair to to the queue.
+ * return true if key/value was appened to the queue, false otherwise.
+ */
+static inline bool setter_add2(struct setter_q *restrict Q, const char *key,
+        const char *value);
 
 /*
  * free the queue and all its elements.
@@ -68,9 +72,9 @@ setter_add(struct setter_q *restrict Q, const char *keyval)
     size = (strlen(keyval) + 1) * sizeof(char);
     it = xmalloc(sizeof(struct setter_item) + size);
     s = (char *)(it + 1);
-    strlcpy(s, keyval, size);
+    (void)strlcpy(s, keyval, size);
 
-    sep = strchr(s, SETTER_SEP);
+    sep = strchr(s, '=');
     if (sep == NULL) {
         xfree(it);
         return (false);
@@ -78,6 +82,34 @@ setter_add(struct setter_q *restrict Q, const char *keyval)
     *sep = '\0';
     it->key = s;
     it->value = sep + 1;
+
+    STAILQ_INSERT_TAIL(Q, it, next);
+
+    return (true);
+}
+
+
+static inline bool
+setter_add2(struct setter_q *restrict Q, const char *key, const char *value)
+{
+    struct setter_item *it;
+    size_t size, keylen, vallen;
+    char *s;
+
+    assert_not_null(Q);
+    assert_not_null(key);
+    assert_not_null(value);
+
+    keylen = strlen(key);
+    vallen = strlen(value);
+    size = (keylen + 1 + vallen + 1) * sizeof(char);
+    it = xmalloc(sizeof(struct setter_item) + size);
+    s = (char *)(it + 1);
+    (void)strlcpy(s, key, size);
+    it->key = s;
+    s += keylen + 1;
+    (void)strlcpy(s, value, size - (keylen + 1));
+    it->value = s;
 
     STAILQ_INSERT_TAIL(Q, it, next);
 

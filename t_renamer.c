@@ -78,7 +78,7 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
     char *ret;
     char *p, *k, *palloc;
     char *start, *end;
-    char *key, *val;
+    char *key, *value;
     size_t keylen;
     bool running = true;
     enum {
@@ -159,23 +159,23 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
             }
             break;
         case SET_TAG:
-            val = file->get(file, key);
-            if (val == NULL) {
+            value = file->get(file, key);
+            if (value == NULL) {
                 warnx("rename_eval: no tag `%s' for `%s', using tag key instead.",
                         key, file->path);
-                val = key;
+                value = key;
             }
             else {
-                if (dflag && !Dflag && strchr(val, '/'))
+                if (dflag && !Dflag && strchr(value, '/'))
                     errx(-1, "rename_eval: `%s': tag `%s' has / in value, fix it or"
                             " use -D", file->path, key);
                 xfree(key);
             }
-            if (strlcat(ret, val, len) >= len)
+            if (strlcat(ret, value, len) >= len)
                 fsm = TOO_LONG;
             else
                 fsm = SEARCH_TAG;
-            xfree(val);
+            xfree(value);
             break;
         case TEARDOWN:
             if (strlcat(ret, p, len) >= len)

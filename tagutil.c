@@ -85,7 +85,7 @@ main(int argc, char *argv[])
     char *path;
     struct stat s;
     struct tfile *file;
-    struct setter_item *it;
+    struct setter_item *item;
 
     if (argc < 2)
         usage();
@@ -185,8 +185,8 @@ main(int argc, char *argv[])
         if (xflag)
             tagutil_filter(file, x_arg);
         if (sflag) {
-            STAILQ_FOREACH(it, s_arg, next) {
-                (void)file->set(file, it->key, it->value);
+            STAILQ_FOREACH(item, s_arg, next) {
+                (void)file->set(file, item->key, item->value);
             }
             if (!file->save(file))
                 err(errno, "couldn't save file `%s'", path);
