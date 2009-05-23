@@ -97,7 +97,7 @@ ftgeneric_get(const struct tfile *restrict self, const char *restrict key)
     else if (strcmp(key, "year") == 0)
         (void)xasprintf(&ret, "%04u", taglib_tag_year(d->tag));
     else {
-        warnx("%s backend can't handle `%s' tag", self->lib, key);
+        warnx("ftgeneric_get: %s backend can't handle `%s' tag", self->lib, key);
         ret = NULL;
     }
 
@@ -149,7 +149,7 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
             taglib_tag_set_year(d->tag, uintval);
     }
     else {
-        warnx("%s backend can't handle `%s' tag", self->lib, key);
+        warnx("ft_generic_set: %s backend can't handle `%s' tag", self->lib, key);
         return (TFILE_SET_STATUS_LIBERROR);
     }
 
@@ -222,7 +222,7 @@ ftgeneric_new(const char *restrict path)
     ret->data = d;
 
     s = (char *)(d + 1);
-    strlcpy(s, path, size);
+    (void)strlcpy(s, path, size);
     ret->path = s;
 
     ret->create   = ftgeneric_new;

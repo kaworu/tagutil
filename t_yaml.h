@@ -13,19 +13,9 @@
 #include "t_file.h"
 
 /*
- * return a yaml formated string.
+ * return a yaml formated string with all the given file's tags.
  *
- * # filename
- * ---
- * title:   "%t"
- * album:   "%a"
- * artist:  "%A"
- * year:    "%y"
- * track:   "%T"
- * comment: "%c"
- * genre:   "%g"
- *
- * '"' and '\' in tags are escaped to \" and \\
+ * returned value must be free()d.
  */
 _t__nonnull(1)
 char * tags_to_yaml(const struct tfile *restrict file);

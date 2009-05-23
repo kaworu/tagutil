@@ -58,7 +58,7 @@ void destroy_ast(struct ast *restrict victim);
  * parse the filter with the given lexer.
  * free the given lexer after parsing.
  *
- * returned value has to be freed (use destroy_ast)
+ * returned value has to be free()d (use destroy_ast).
  */
 _t__nonnull(1)
 struct ast * parse_filter(struct lexer *restrict L);

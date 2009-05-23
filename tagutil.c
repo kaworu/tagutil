@@ -316,10 +316,10 @@ tagutil_edit(struct tfile *restrict file)
 
         stream = xfopen(tmp_file, "w");
         (void)fprintf(stream, "%s", yaml);
+        xfree(yaml);
         xfclose(stream);
 
         if (!user_edit(tmp_file)) {
-            xfree(yaml);
             remove(tmp_file);
             return (false);
         }
@@ -338,7 +338,7 @@ tagutil_edit(struct tfile *restrict file)
         xfree(tmp_file);
     }
 
-    xfree(yaml);
+    free(yaml);
     return (true);
 }
 

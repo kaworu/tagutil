@@ -16,6 +16,7 @@ enum tfile_set_status {
     TFILE_SET_STATUS_LIBERROR
 };
 
+
 struct tfile {
     const char *path;
     const char *lib;
@@ -23,6 +24,8 @@ struct tfile {
 
     /*
      * constructor, return NULL if it couldn't create the struct.
+     *
+     * returned value has to be free()d (use file->destroy(file)).
      */
     struct tfile * (*create)(const char *restrict path);
 
@@ -40,7 +43,7 @@ struct tfile {
      * return a the value of the tag "key". If there isn't any, or it's not
      * supported it return NULL.
      *
-     * returned value has to be freed.
+     * returned value has to be free()d.
      */
     char * (*get)(const struct tfile *restrict self, const char *restrict key);
 
@@ -58,7 +61,7 @@ struct tfile {
     /*
      * return an array of the tag key that are set. return NULL if error.
      *
-     * returned value has to be freed.
+     * returned values has to be free()d.
      */
     char ** (*tagkeys)(const struct tfile *restrict self);
 };

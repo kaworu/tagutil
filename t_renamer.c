@@ -50,7 +50,7 @@ rename_safe(const char *restrict oldpath,
         }
         if (stat(newdirn, &st) != 0) {
             if (errno == ENOENT)
-                warnx("forgot -d?");
+                warnx("rename_safe: forgot -d?");
             failed = true;
         }
         else if (!S_ISDIR(st.st_mode)) {
@@ -127,7 +127,7 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
             for (end = p; isalnum(*end) || *end == '_' || *end == '-'; end++)
                 continue;
             if (end == p)
-                warnx("rename: $ without tag name (%d)", (int)(p - palloc));
+                warnx("rename_eval: $ without tag name (%d)", (int)(p - palloc));
             keylen = (size_t)(end - p) + 1;
             key = xcalloc(keylen, sizeof(char));
             (void)strlcpy(key, p, keylen);
@@ -161,13 +161,13 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
         case SET_TAG:
             val = file->get(file, key);
             if (val == NULL) {
-                warnx("rename: no tag `%s' for `%s', using tag key instead.",
+                warnx("rename_eval: no tag `%s' for `%s', using tag key instead.",
                         key, file->path);
                 val = key;
             }
             else {
                 if (dflag && !Dflag && strchr(val, '/'))
-                    errx(-1, "rename: `%s': tag `%s' has / in value, fix it or"
+                    errx(-1, "rename_eval: `%s': tag `%s' has / in value, fix it or"
                             " use -D", file->path, key);
                 xfree(key);
             }
@@ -184,13 +184,13 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
                 running = false;
             break;
         case TOO_LONG:
-            warnx("rename: pattern too long (>MAXPATHLEN) for `%s'",
+            warnx("rename_eval: pattern too long (>MAXPATHLEN) for `%s'",
                     file->path);
             running = false;
             xfree(ret);
             break;
         case MISSING_BRACE:
-            errx(EINVAL, "rename: missing }");
+            errx(EINVAL, "rename_eval: missing }");
             /* NOTREACHED */
         }
     }
@@ -256,7 +256,7 @@ build(char *path, mode_t omode)
 		if (mkdir(path, last ? omode : S_IRWXU | S_IRWXG | S_IRWXO) < 0) {
 			if (errno == EEXIST || errno == EISDIR) {
 				if (stat(path, &sb) < 0) {
-					warn("%s", path);
+					warn("rename_build: %s", path);
 					retval = 0;
 					break;
 				} else if (!S_ISDIR(sb.st_mode)) {

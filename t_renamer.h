@@ -18,7 +18,12 @@ void rename_safe(const char *restrict oldpath, const char *restrict newpath);
 
 
 /*
- * replace each tagutil keywords by their value. see k* keywords.
+ * replace each tag key by their value. The tag keys in pattern must look like
+ * shell variables (i.e. $artist or/and ${album}). If the tag key is not
+ * defined for a file, the tag key is replaced by its name (i.e. "${undefined}"
+ * or "$undefined" becomes "undefined").
+ *
+ * returned value has to be free()d.
  */
 _t__nonnull(1) _t__nonnull(2)
 char * rename_eval(struct tfile *restrict file, const char *restrict pattern);

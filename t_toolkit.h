@@ -61,7 +61,7 @@ static inline void xfclose(FILE *restrict stream);
  *
  *      char * dirname(const char *)
  *
- * returned value has to be freed.
+ * returned value has to be free()d.
  */
 _t__unused _t__nonnull(1)
 static inline char * xdirname(const char *restrict path);
@@ -84,7 +84,7 @@ static inline int xasprintf(char **ret, const char *fmt, ...);
  * and err(3). return NULL if there was no match, and a pointer to the regmatch_t
  * otherwise.
  *
- * returned value has to be freed.
+ * returned value has to be free()d.
  */
 _t__unused _t__nonnull(1) _t__nonnull(2)
 static inline regmatch_t * first_match(const char *restrict str,
@@ -269,7 +269,7 @@ first_match(const char *restrict str, const char *restrict pattern, const int fl
 error_label:
         errbuf = xcalloc(BUFSIZ, sizeof(char));
         (void)regerror(error, &regex, errbuf, BUFSIZ);
-        errx(-1, "%s", errbuf);
+        errx(-1, "first_match: %s", errbuf);
         /* NOTREACHED */
     }
 }

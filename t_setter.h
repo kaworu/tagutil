@@ -26,12 +26,13 @@ STAILQ_HEAD(setter_q, setter_item);
 
 /*
  * create a new setter queue.
+ * returned value has to be free()d (use destroy_setter).
  */
 static inline struct setter_q * new_setter(void);
 
 /*
  * add a key/value pair to to the queue. the keyval arg should be like
- * "key:val" where val can be empty.
+ * "key=val" where val can be empty.
  * return true if keyval is ok and appened to the queue, false otherwise.
  */
 static inline bool setter_add(struct setter_q *restrict Q, const char *keyval);
