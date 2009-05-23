@@ -1,276 +1,181 @@
 /*
  * t_yaml.c
  *
- * yaml tagutil parser and converter.
+ * yaml tagutil interface, using libyaml.
  */
 #include "t_config.h"
 
+#include <sys/param.h>
+
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
+
+/* libyaml headers */
+#include <yaml.h>
 
 #include "t_toolkit.h"
-#include "t_lexer.h"
 #include "t_file.h"
 #include "t_yaml.h"
 
 
-/*
- * escape " to \" and \ to \\
- *
- * returned value has to be freed.
- */
-_t__nonnull(1)
-char * yaml_escape(const char *restrict s);
+struct whdl_data {
+    char *str;
+    size_t alloclen, len;
+};
 
-
-char *
-yaml_escape(const char *restrict s)
-{
-    char *ret;
-    int toesc, x;
-    unsigned int i;
-    size_t slen;
-
-    assert_not_null(s);
-
-    toesc = 0;
-    slen = strlen(s);
-    for (i = 0; i < slen; i++) {
-        if (s[i] == '"' || s[i] == '\\' || s[i] == '\n') {
-            toesc++;
-            i++;
-        }
-    }
-
-    if (toesc == 0)
-        return (xstrdup(s));
-
-    ret = xcalloc(slen + toesc, sizeof(char));
-    x = 0;
-
-    /* take the trailing \0 */
-    slen += 1;
-    for (i = 0; i < slen; i++) {
-        if (s[i] == '\n') {
-            ret[x++] = '\\';
-            ret[x++] = 'n';
-        }
-        else {
-            if (s[i] == '"' || s[i] == '\\')
-                ret[x++] = '\\';
-            ret[x++] = s[i];
-        }
-    }
-
-    return (ret);
-}
+int yaml_write_handler(void *dataptr, unsigned char *buffer, size_t size);
 
 
 char *
 tags_to_yaml(const struct tfile *restrict file)
 {
-    char **tagkeys;
-    char *val, *yaml, *ret, *oldret, *endptr;
-    int i, count;
+    yaml_emitter_t emitter;
+    yaml_event_t event;
+    struct whdl_data *data;
+    char *ret;
+    char **tagkeys = NULL, *val;
+    int count = 0, i;
 
-    assert_not_null(file);
+    data = xmalloc(sizeof(struct whdl_data));
+    (void)xasprintf(&data->str, "# %s\n", file->path);
+    data->len = strlen(file->path);
+    data->alloclen = data->len + 1;
 
-    tagkeys = file->tagkeys(file);
-    if (tagkeys == NULL)
-        errx(-1, "NULL tagkeys (%s backend)", file->lib);
+    /* Create the Emitter object. */
+    if (!yaml_emitter_initialize(&emitter))
+        goto emitter_error;
 
-    xasprintf(&ret, "# %s\n---\n", file->path);
+    yaml_emitter_set_output(&emitter, yaml_write_handler, data);
+    yaml_emitter_set_unicode(&emitter, 1);
+
+    /* Create and emit the STREAM-START event. */
+    if (!yaml_stream_start_event_initialize(&event, YAML_UTF8_ENCODING))
+        goto event_error;
+    if (!yaml_emitter_emit(&emitter, &event))
+        goto emitter_error;
+
+    /* Create and emit the DOCUMENT-START event. */
+    if (!yaml_document_start_event_initialize(&event, NULL, NULL, NULL,
+                /* implicit */0))
+        goto event_error;
+    if (!yaml_emitter_emit(&emitter, &event))
+        goto emitter_error;
+
+    /* Create and emit the MAPPING-START event. */
+    if (!yaml_mapping_start_event_initialize(&event, NULL,
+                (yaml_char_t *)YAML_MAP_TAG, 1, YAML_BLOCK_MAPPING_STYLE))
+        goto event_error;
+    if (!yaml_emitter_emit(&emitter, &event))
+        goto emitter_error;
 
     count = file->tagcount(file);
+    tagkeys = file->tagkeys(file);
+    if (tagkeys == NULL)
+        errx(-1, "tags_to_yaml: NULL tagkeys (%s backend)", file->lib);
     for (i = 0; i < count; i++) {
-        oldret = ret;
+        /* emit the key */
+        if (!yaml_scalar_event_initialize(&event, NULL,
+                    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)tagkeys[i], -1,
+                    1, 1, YAML_PLAIN_SCALAR_STYLE))
+            goto event_error;
+        if (!yaml_emitter_emit(&emitter, &event))
+            goto emitter_error;
+        /* emit the value */
         val = file->get(file, tagkeys[i]);
         if (val == NULL)
-            errx(-1, "bad tagkeys/get (%s backend)", file->lib);
-        yaml = yaml_escape(val);
-        (void)strtoul(yaml, &endptr, 10);
-        if (endptr == yaml || *endptr != '\0')
-        /* looks like string */
-            (void)xasprintf(&ret, "%s%s: \"%s\"\n", oldret, tagkeys[i], yaml);
-        else
-        /* looks like int */
-            (void)xasprintf(&ret, "%s%s: %s\n", oldret, tagkeys[i], yaml);
-
+            errx(-1, "tags_to_yaml: bad tagkeys/get (%s backend)", file->lib);
+        if (!yaml_scalar_event_initialize(&event, NULL,
+                    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)val, -1, 1, 1,
+                    YAML_PLAIN_SCALAR_STYLE)) {
+            xfree(val);
+            goto event_error;
+        }
+        if (!yaml_emitter_emit(&emitter, &event)) {
+            xfree(val);
+            goto emitter_error;
+        }
         xfree(tagkeys[i]);
         xfree(val);
-        xfree(oldret);
-        xfree(yaml);
     }
     xfree(tagkeys);
 
+    /* Create and emit the MAPPING-END event. */
+    if (!yaml_mapping_end_event_initialize(&event))
+        goto event_error;
+    if (!yaml_emitter_emit(&emitter, &event))
+        goto emitter_error;
+
+    /* Create and emit the DOCUMENT-END event. */
+    if (!yaml_document_end_event_initialize(&event, /* implicit */1))
+        goto event_error;
+    if (!yaml_emitter_emit(&emitter, &event))
+        goto emitter_error;
+
+    /* Create and emit the STREAM-END event. */
+    if (!yaml_stream_end_event_initialize(&event))
+        goto event_error;
+    if (!yaml_emitter_emit(&emitter, &event))
+        goto emitter_error;
+
+    /* Destroy the Emitter object. */
+    yaml_emitter_delete(&emitter);
+    yaml_event_delete(&event);
+    ret = data->str;
+    xfree(data);
     return (ret);
+
+    /* On error. */
+
+event_error:
+    errx(ENOMEM, "tags_to_yaml: can't init event");
+    /* NOTREACHED */
+
+emitter_error:
+    warnx("tags_to_yaml: emit error");
+    /* Destroy the Emitter object. */
+    yaml_emitter_delete(&emitter);
+    yaml_event_delete(&event);
+    if (tagkeys != NULL) {
+        for (i = 0; i < count; i++)
+            free(tagkeys[i]);
+        xfree(tagkeys);
+    }
+    xfree(data->str);
+    xfree(data);
+    return (NULL);
 }
 
 
-/*
- * dummy yaml parser. Only handle our yaml output.
- */
 bool
 yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
 {
-    bool set_somethin; /* true if we have set at least 1 field */
-    char c;
-    int line;
-    char keyword[9]; /* longest is: comment */
+    return (true);
+}
 
-    char *value;
-    unsigned int ivalue;
-    size_t valuelen, i, valueidx;
 
-    assert_not_null(file);
-    assert_not_null(stream);
+int
+yaml_write_handler(void *dataptr, unsigned char *buffer, size_t size)
+{
+    bool error = false;
+    struct whdl_data *data;
 
-    valuelen = BUFSIZ;
-    value = xcalloc(valuelen, sizeof(char));
-
-    if (ftrylockfile(stream) != 0)
-        errx(-1, "yaml_to_tags: can't lock file descriptor.");
-
-    set_somethin = false;
-    line = 1;
-
-    /* eat first line: ^# <filename>$ */;
-    while (!feof_unlocked(stream) && getc_unlocked(stream) != '\n')
-        ;
-
-    if (feof_unlocked(stream)) {
-        warnx("yaml_to_tags at line %d: EOF reached before header.", line);
-        goto free_ret_false;
+    if (dataptr == NULL || buffer == NULL)
+        error = true;
+    else {
+        data = dataptr;
+        if (data->len + size + 1 > data->alloclen) {
+            data->alloclen += size + BUFSIZ;
+            data->str = xrealloc(data->str, data->alloclen);
+        }
+        data->len = strlcat(data->str, (const char *)buffer, data->alloclen);
+        if (data->len >= data->alloclen)
+            errx(EDOOFUS, "t_yaml: yaml_write_handler");
     }
 
-    line += 1;
-
-    /* eat header: ^---$ */
-    if (getc_unlocked(stream) != '-' || getc_unlocked(stream) != '-' ||
-            getc_unlocked(stream) != '-' || getc_unlocked(stream) != '\n') {
-        warnx("yaml_to_tags at line %d: bad yaml header", line);
-        goto free_ret_false;
-    }
-
-    c = getc_unlocked(stream);
-
-    for (;;) {
-        /* ^keyword:  "value"$ */
-        line += 1;
-
-        if (feof_unlocked(stream)) {
-            if (!set_somethin)
-                warnx("yaml_to_tags at line %d: didn't set any tags.", line);
-            break;
-        }
-
-        if (!is_letter(c)) {
-            warnx("yaml_to_tags at line %d: need a letter to begin, got '%c'", line, c);
-            goto free_ret_false;
-        }
-
-        /* get the keyword part */
-        keyword[0] = '\0';
-        for (i = 0; i < len(keyword) - 2 && is_letter(c); i++) {
-            keyword[i] = c;
-            c = getc_unlocked(stream);
-        }
-        keyword[i] = '\0';
-
-        /* walk */
-        if (c != ':') {
-            warnx("yaml_to_tags at line %d: expected ':' after \"%s\" but got '%c'",
-                    line, keyword, c);
-            goto free_ret_false;
-        }
-
-        c = getc_unlocked(stream);
-        while (is_blank(c))
-            c = getc_unlocked(stream);
-
-        if (c != '"') {
-        /* parse Int */
-            if (!is_digit(c)) {
-                warnx("yaml_to_tags at line %d: expected String or Integer, got '%c'",
-                        line, c);
-                goto free_ret_false;
-            }
-            ivalue = 0;
-            while (is_digit(c)) {
-                ivalue = 10 * ivalue + (c - '0'); /* TODO: check overflow? */
-                c = getc_unlocked(stream);
-            }
-            if (c != '\n') {
-                warnx("yaml_to_tags at line %d: expected EOL after Int, got '%c'",
-                        line, c);
-                goto free_ret_false;
-            }
-            line += 1;
-            while ((unsigned int)snprintf(value, valuelen, "%u", ivalue) > valuelen - 1) {
-                valuelen += BUFSIZ;
-                xrealloc(&value, valuelen);
-            }
-        }
-        else {
-        /* parse String */
-            valueidx = 0;
-            for (;;) {
-                /* realloc buffer if needed */
-                if (valueidx > valuelen - 2) {
-                    valuelen += BUFSIZ;
-                    xrealloc(&value, valuelen);
-                }
-
-                c = getc_unlocked(stream);
-
-                if (feof_unlocked(stream)) {
-                    warnx("yaml_to_tags at line %d: EOF while reading String", line);
-                    goto free_ret_false;
-                }
-
-                /* handle escape char */
-                if (c == '\\') {
-                    c = getc_unlocked(stream);
-                    if (feof_unlocked(stream)) {
-                        warnx("yaml_to_tags at line %d: EOF while reading String", line);
-                        goto free_ret_false;
-                    }
-                    /* handle \n */
-                    if (c == 'n')
-                        value[valueidx++] = '\n';
-                    else
-                        value[valueidx++] = c;
-                }
-                else if (c == '"') {
-                    if ((c = getc_unlocked(stream)) != '\n') {
-                        warnx("yaml_to_tags at line %d: expected EOL after String, got '%c'",
-                                line, c);
-                        goto free_ret_false;
-                    }
-                    line += 1;
-                    break; /* get out of for (;;) */
-                }
-                else {
-                    value[valueidx++] = c;
-                    if (c == '\n')
-                        line += 1;
-                }
-            }
-            value[valueidx] = '\0';
-        }
-
-        file->set(file, keyword, value);
-        c = getc_unlocked(stream);
-        set_somethin = true;
-    }
-
-cleanup:
-    funlockfile(stream);
-    xfree(value);
-    return (set_somethin);
-
-free_ret_false:
-    set_somethin = false;
-    goto cleanup;
+    if (error)
+        return (0);
+    else
+        return (1);
 }
 

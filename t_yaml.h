@@ -32,8 +32,8 @@ char * tags_to_yaml(const struct tfile *restrict file);
 
 
 /*
- * load a yaml formated string.
- * The string format must be the same as tags_to_yaml returned string.
+ * read a yaml file and set the tag of given file accordingly.
+ * return false if a problem occured, true otherwise.
  */
 _t__nonnull(1) _t__nonnull(2)
 bool yaml_to_tags(struct tfile *restrict file, FILE *restrict stream);

@@ -9,8 +9,9 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "metadata.h"
-#include "format.h"
+/* libFLAC headers */
+#include <metadata.h>
+#include <format.h>
 
 #include "t_file.h"
 #include "t_ftflac.h"

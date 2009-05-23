@@ -19,8 +19,11 @@ CFLAGS=-g -O0 -Wall -Wextra -Wformat-security -Wnonnull -Waggregate-return -Wmis
 VERSION+=(debug)
 .endif
 CFLAGS+=-D'VERSION="${VERSION}"' \
-		-DHAVE_SANE_DIRNAME
+		-DHAVE_SANE_DIRNAME \
 
+# libyaml
+CFLAGS+=-I/usr/local/include
+LDFLAGS+=-L/usr/local/lib -lyaml
 
 # Generic support with TagLib
 .if defined(WITH_TAGLIB)

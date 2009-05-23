@@ -285,14 +285,14 @@ user_edit(const char *restrict path)
 bool
 tagutil_print(const struct tfile *restrict file)
 {
-    char *infos;
+    char *yaml;
 
     assert_not_null(file);
 
-    infos = tags_to_yaml(file);
-    (void)printf("%s\n", infos);
+    yaml = tags_to_yaml(file);
+    (void)printf("%s\n", yaml);
 
-    xfree(infos);
+    xfree(yaml);
     return (true);
 }
 
@@ -300,23 +300,26 @@ tagutil_print(const struct tfile *restrict file)
 bool
 tagutil_edit(struct tfile *restrict file)
 {
-    char *tmp_file, *infos;
+    char *tmp_file, *yaml;
     FILE *stream;
 
     assert_not_null(file);
 
-    infos = tags_to_yaml(file);
-    (void)printf("%s\n", infos);
+    yaml = tags_to_yaml(file);
+    if (yaml == NULL)
+        return (false);
+
+    (void)printf("%s\n", yaml);
 
     if (yesno("edit this file")) {
         tmp_file = create_tmpfile();
 
         stream = xfopen(tmp_file, "w");
-        (void)fprintf(stream, "%s", infos);
+        (void)fprintf(stream, "%s", yaml);
         xfclose(stream);
 
         if (!user_edit(tmp_file)) {
-            xfree(infos);
+            xfree(yaml);
             remove(tmp_file);
             return (false);
         }
@@ -335,7 +338,7 @@ tagutil_edit(struct tfile *restrict file)
         xfree(tmp_file);
     }
 
-    xfree(infos);
+    xfree(yaml);
     return (true);
 }
 

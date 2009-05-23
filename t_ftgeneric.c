@@ -5,6 +5,7 @@
  */
 #include "t_config.h"
 
+/* TagLib headers */
 #include <tag_c.h>
 
 #include <stdbool.h>
