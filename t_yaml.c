@@ -142,6 +142,7 @@ emitter_error:
 bool
 yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
 {
+    int count, i;
     struct setter_q *Q;
     struct setter_item *item;
     yaml_parser_t parser;
@@ -150,6 +151,7 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
     bool inmap = false, donemap = false;
     bool ret = true;
     char *key = NULL, *value = NULL;
+    char **tagkeys;
 
     assert_not_null(file);
     assert_not_null(stream);
@@ -223,7 +225,7 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
                 value = xcalloc(event.data.scalar.length + 1, sizeof(char));
                 memcpy(value, event.data.scalar.value,
                         event.data.scalar.length);
-                (void)setter_add2(Q, key, value);
+                (void)setter_add(Q, key, value);
                 xfree(key);
                 xfree(value);
             }
@@ -234,6 +236,15 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
         }
     }
 
+    count   = file->tagcount(file);
+    tagkeys = file->tagkeys(file);
+    if (tagkeys == NULL)
+        errx(-1, "yaml_to_tags: NULL tagkeys (%s backend)", file->lib);
+    for (i = 0; i < count; i++) {
+        file->set(file, tagkeys[i], NULL);
+        xfree(tagkeys[i]);
+    }
+    xfree(tagkeys);
     /* destroy non-present tags! TODO */
     STAILQ_FOREACH(item, Q, next) {
         (void)file->set(file, item->key, item->value);

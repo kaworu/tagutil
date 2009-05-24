@@ -49,6 +49,8 @@ struct tfile {
 
     /*
      * set the tag key to value newval.
+     * if newval == NULL, the tag is deleted (provided that the backend support
+     * tag deletion).
      */
     enum tfile_set_status (*set)(struct tfile *restrict self,
             const char *restrict key, const char *restrict newval);

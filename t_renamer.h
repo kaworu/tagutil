@@ -19,9 +19,9 @@ void rename_safe(const char *restrict oldpath, const char *restrict newpath);
 
 /*
  * replace each tag key by their value. The tag keys in pattern must look like
- * shell variables (i.e. $artist or/and ${album}). If the tag key is not
- * defined for a file, the tag key is replaced by its name (i.e. "${undefined}"
- * or "$undefined" becomes "undefined").
+ * shell variables (i.e. %artist or/and %{album}). If the tag key is not
+ * defined for a file, the tag key is replaced by its name (i.e. "%{undefined}"
+ * or "%undefined" becomes "undefined"). If you want a litteral %, use \%
  *
  * returned value has to be free()d.
  */

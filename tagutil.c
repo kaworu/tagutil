@@ -82,7 +82,7 @@ int
 main(int argc, char *argv[])
 {
     int i, ch;
-    char *path;
+    char *path, *set_value, *set_key;
     struct stat s;
     struct tfile *file;
     struct setter_item *item;
@@ -113,8 +113,16 @@ main(int argc, char *argv[])
             sflag = true;
             if (s_arg == NULL)
                 s_arg = new_setter();
-            if (!setter_add(s_arg, optarg))
-                errx(EINVAL, "invalid -s argument: `%s'", optarg);
+            set_key = optarg;
+            set_value = strchr(set_key, '=');
+            if (set_value == NULL)
+                errx(EINVAL, "invalid -s argument, need key=val: `%s'", set_key);
+            *set_value = '\0';
+            set_value += 1;
+            if (set_value[0] == '\0')
+            /* don't allow to set a key to "" we destroy it instead */
+                set_value = NULL;
+            setter_add(s_arg, set_key, set_value);
             break;
         case 'd':
             dflag = true;
@@ -316,13 +324,13 @@ tagutil_edit(struct tfile *restrict file)
 
         stream = xfopen(tmp_file, "w");
         (void)fprintf(stream, "%s", yaml);
-        xfree(yaml);
         editor = getenv("EDITOR");
         if (editor && strcmp(editor, "vim") == 0)
             (void)fprintf(stream, "\n# vim:filetype=yaml");
         xfclose(stream);
 
         if (!user_edit(tmp_file)) {
+            xfree(yaml);
             remove(tmp_file);
             return (false);
         }
@@ -341,7 +349,7 @@ tagutil_edit(struct tfile *restrict file)
         xfree(tmp_file);
     }
 
-    free(yaml);
+    xfree(yaml);
     return (true);
 }
 

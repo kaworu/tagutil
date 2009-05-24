@@ -9,6 +9,7 @@
 #include "t_config.h"
 
 #include </usr/include/assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <err.h>
 #include <libgen.h> /* dirname(3) */
@@ -34,13 +35,13 @@
 /* MEMORY FUNCTIONS */
 
 _t__unused
-static inline void * xmalloc(const size_t size);
+static inline void * xmalloc(size_t size);
 
 _t__unused
-static inline void * xcalloc(const size_t nmemb, const size_t size);
+static inline void * xcalloc(size_t nmemb, size_t size);
 
 _t__unused
-static inline void * xrealloc(void *ptr, const size_t size);
+static inline void * xrealloc(void *ptr, size_t size);
 
 _t__unused _t__nonnull(1)
 static inline void   _xfree(void *ptr);
@@ -98,6 +99,18 @@ _t__unused _t__nonnull(2)
 static inline bool has_match(const char *restrict str,
         const char *restrict pattern);
 
+/*
+ * upperize a given string.
+ */
+_t__unused _t__nonnull(1)
+static inline void strtoupper(char *restrict str);
+
+/*
+ * lowerize a given string.
+ */
+_t__unused _t__nonnull(1)
+static inline void strtolower(char *restrict str);
+
 
 /* OTHER */
 
@@ -113,10 +126,12 @@ static inline bool yesno(const char *restrict question);
 /**********************************************************************/
 
 static inline void *
-xmalloc(const size_t size)
+xmalloc(size_t size)
 {
     void *ptr;
 
+    if (size == 0)
+        size = 1;
     if ((ptr = malloc(size)) == NULL)
         err(ENOMEM, "malloc");
 
@@ -125,10 +140,14 @@ xmalloc(const size_t size)
 
 
 static inline void *
-xcalloc(const size_t nmemb, const size_t size)
+xcalloc(size_t nmemb, size_t size)
 {
     void *ptr;
 
+    if (size == 0)
+        err(EDOOFUS, "calloc(nmemb, 0)");
+    if (nmemb == 0)
+        nmemb = 1;
     if ((ptr = calloc(nmemb, size)) == NULL)
         err(ENOMEM, "calloc");
 
@@ -137,7 +156,7 @@ xcalloc(const size_t nmemb, const size_t size)
 
 
 static inline void *
-xrealloc(void *old_ptr, const size_t new_size)
+xrealloc(void *old_ptr, size_t new_size)
 {
     void *ptr;
 
@@ -293,6 +312,32 @@ has_match(const char *restrict str, const char *restrict pattern)
         xfree(match);
         return (true);
     }
+}
+
+
+static inline void
+strtoupper(char *restrict str)
+{
+    size_t len, i;
+
+    assert_not_null (str);
+
+    len = strlen(str);
+    for (i = 0; i < len; i++)
+        str[i] = toupper(str[i]);
+}
+
+
+static inline void
+strtolower(char *restrict str)
+{
+    size_t len, i;
+
+    assert_not_null (str);
+
+    len = strlen(str);
+    for (i = 0; i < len; i++)
+        str[i] = tolower(str[i]);
 }
 
 

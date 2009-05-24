@@ -28,17 +28,10 @@ STAILQ_HEAD(setter_q, setter_item);
 static inline struct setter_q * new_setter(void);
 
 /*
- * add a key/value pair to to the queue. the keyval arg should be like
- * "key=value" where value can be empty.
- * return true if keyval is ok and appened to the queue, false otherwise.
- */
-static inline bool setter_add(struct setter_q *restrict Q, const char *keyval);
-
-/*
  * add a key/value pair to to the queue.
  * return true if key/value was appened to the queue, false otherwise.
  */
-static inline bool setter_add2(struct setter_q *restrict Q, const char *key,
+static inline void setter_add(struct setter_q *restrict Q, const char *key,
         const char *value);
 
 /*
@@ -59,75 +52,51 @@ new_setter(void)
 }
 
 
-static inline bool
-setter_add(struct setter_q *restrict Q, const char *keyval)
+static inline void
+setter_add(struct setter_q *restrict Q, const char *key, const char *value)
 {
-    struct setter_item *it;
-    size_t size;
-    char *sep, *s;
-
-    assert_not_null(Q);
-    assert_not_null(keyval);
-
-    size = (strlen(keyval) + 1) * sizeof(char);
-    it = xmalloc(sizeof(struct setter_item) + size);
-    s = (char *)(it + 1);
-    (void)strlcpy(s, keyval, size);
-
-    sep = strchr(s, '=');
-    if (sep == NULL) {
-        xfree(it);
-        return (false);
-    }
-    *sep = '\0';
-    it->key = s;
-    it->value = sep + 1;
-
-    STAILQ_INSERT_TAIL(Q, it, next);
-
-    return (true);
-}
-
-
-static inline bool
-setter_add2(struct setter_q *restrict Q, const char *key, const char *value)
-{
-    struct setter_item *it;
+    struct setter_item *item;
     size_t size, keylen, vallen;
     char *s;
 
     assert_not_null(Q);
     assert_not_null(key);
-    assert_not_null(value);
 
     keylen = strlen(key);
-    vallen = strlen(value);
-    size = (keylen + 1 + vallen + 1) * sizeof(char);
-    it = xmalloc(sizeof(struct setter_item) + size);
-    s = (char *)(it + 1);
+    size = keylen + 1;
+    if (value) {
+        vallen = strlen(value);
+        size += vallen + 1;
+    }
+
+    item = xmalloc(sizeof(struct setter_item) + size);
+    s = (char *)(item + 1);
     (void)strlcpy(s, key, size);
-    it->key = s;
-    s += keylen + 1;
-    (void)strlcpy(s, value, size - (keylen + 1));
-    it->value = s;
+    item->key = s;
 
-    STAILQ_INSERT_TAIL(Q, it, next);
+    if (value) {
+        s += keylen + 1;
+        (void)strlcpy(s, value, size - (keylen + 1));
+        item->value = s;
+    }
+    else
+        item->value = NULL;
 
-    return (true);
+    STAILQ_INSERT_TAIL(Q, item, next);
 }
 
 
 static inline void
 destroy_setter(struct setter_q *restrict Q)
 {
-    struct setter_item *it;
+    struct setter_item *item;
 
     assert_not_null(Q);
 
     while (!STAILQ_EMPTY(Q)) {
-        it = STAILQ_FIRST(Q);
+        item = STAILQ_FIRST(Q);
         STAILQ_REMOVE_HEAD(Q, next);
-        xfree(it);
+        xfree(item);
     }
     xfree(Q);
 }

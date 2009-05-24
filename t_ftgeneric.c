@@ -109,6 +109,7 @@ enum tfile_set_status
 ftgeneric_set(struct tfile *restrict self, const char *restrict key,
         const char *restrict newval)
 {
+    bool erase = false;
     struct ftgeneric_data *d;
     unsigned int uintval;
     char *endptr;
@@ -116,9 +117,13 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
     assert_not_null(self);
     assert_not_null(self->data);
     assert_not_null(key);
-    assert_not_null(newval);
 
     d = self->data;
+    /* this backend can't destroy tags */
+    if (newval == NULL) {
+        erase = true;
+        newval = "";
+    }
 
     if (strcmp(key, "artist") == 0)
         taglib_tag_set_artist(d->tag, newval);
@@ -132,7 +137,7 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
         taglib_tag_set_title(d->tag, newval);
     else if (strcmp(key, "track") == 0) {
         uintval = strtoul(newval, &endptr, 10);
-        if (endptr == newval || *endptr != '\0') {
+        if (!erase && (endptr == newval || *endptr != '\0')) {
             warnx("ftgeneric_set: need Int track argument, got: `%s'", newval);
             return (TFILE_SET_STATUS_BADARG);
         }
@@ -141,7 +146,7 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
     }
     else if (strcmp(key, "year") == 0) {
         uintval = strtoul(newval, &endptr, 10);
-        if (endptr == newval || *endptr != '\0') {
+        if (!erase && (endptr == newval || *endptr != '\0')) {
             warnx("ftgeneric_set: need Int year argument, got: `%s'", newval);
             return (TFILE_SET_STATUS_BADARG);
         }

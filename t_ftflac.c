@@ -5,7 +5,6 @@
  */
 #include "t_config.h"
 
-#include <ctype.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -115,7 +114,6 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
         const char *restrict newval)
 {
     bool b;
-    size_t len, j;
     struct ftflac_data *d;
     FLAC__StreamMetadata_VorbisComment_Entry e;
     int i;
@@ -124,54 +122,53 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
     assert_not_null(self);
     assert_not_null(self->data);
     assert_not_null(key);
-    assert_not_null(newval);
-
-    len = strlen(key);
-    mykey = xcalloc(len + 1, sizeof(char));
-    for (j = 0; j < len; j++)
-        mykey[j] = toupper(key[j]);
-
-    b = FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&e, mykey, newval);
-    xfree(mykey);
-    if (!b) {
-        if (errno == ENOMEM)
-            err(ENOMEM, "ftflac_set: FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair");
-        else {
-            warnx("ftflac_set: invalid Vorbis tag pair: `%s', `%s'", key, newval);
-            return (TFILE_SET_STATUS_BADARG);
-        }
-    }
 
     d = self->data;
     i = FLAC__metadata_object_vorbiscomment_find_entry_from(d->vocomments, 0, key);
-    if (i == -1) {
-    /* doesn't already exist, append it */
-        if (newval[0] == '\0')
-            warnx("ftflac_set: try to create a tag with empty value: `%s'", key);
+    if (newval == NULL) {
+    /* we are asked to delete it */
+        if (i == -1)
+            warnx("ftflac_set: try to delete a tag that is not set: `%s'", key);
         else {
-            b = FLAC__metadata_object_vorbiscomment_append_comment(d->vocomments, e, /* copy */false);
-            if (!b) {
-                free(e.entry);
-                warnx("ftflac_set: %s backend error", self->lib);
-                return (TFILE_SET_STATUS_LIBERROR);
-            }
-        }
-    }
-    else {
-        if (newval[0] == '\0') {
-        /* tag key exist, but set to empty, so delete it */
             b = FLAC__metadata_object_vorbiscomment_delete_comment(d->vocomments, i);
             if (!b)
                 err(ENOMEM, "ftflac_set: FLAC__metadata_object_vorbiscomment_delete_comment");
         }
+    }
+    else {
+        /* create the new entry */
+        mykey = xstrdup(key);
+        strtoupper(mykey);
+        b = FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&e, mykey, newval);
+        xfree(mykey);
+        if (!b) {
+            if (errno == ENOMEM)
+                err(ENOMEM, "ftflac_set: FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair");
+            else {
+                warnx("ftflac_set: invalid Vorbis tag pair: `%s', `%s'", key, newval);
+                return (TFILE_SET_STATUS_BADARG);
+            }
+        }
+
+        if (i == -1) {
+        /* doesn't already exist, append it */
+            if (newval[0] == '\0')
+                warnx("ftflac_set: create a tag with empty value: `%s'", key);
+            b = FLAC__metadata_object_vorbiscomment_append_comment(d->vocomments, e, /* copy */false);
+            if (!b) {
+                xfree(e.entry);
+                warnx("ftflac_set: %s backend error", self->lib);
+                return (TFILE_SET_STATUS_LIBERROR);
+            }
+        }
         else {
         /* tag key exist, replace it */
-            b = FLAC__metadata_object_vorbiscomment_replace_comment(d->vocomments, e, true, /* copy = */false);
+            b = FLAC__metadata_object_vorbiscomment_replace_comment(d->vocomments, e, true, /* copy */false);
             if (!b) {
                 if (errno == ENOMEM)
                     err(ENOMEM, "ftflac_set: FLAC__metadata_object_vorbiscomment_replace_comment");
                 else {
-                    free(e.entry);
+                    xfree(e.entry);
                     warnx("ftflac_set: %s backend error", self->lib);
                     return (TFILE_SET_STATUS_LIBERROR);
                 }
@@ -204,7 +201,6 @@ ftflac_tagkeys(const struct tfile *restrict self)
     char **ret;
     int i, count;
     bool b;
-    size_t len, j;
     struct ftflac_data *d;
     FLAC__StreamMetadata_VorbisComment_Entry e;
     char *field_name, *field_value;
@@ -225,10 +221,8 @@ ftflac_tagkeys(const struct tfile *restrict self)
             return (NULL);
         }
         xfree(field_value);
-        len = strlen(field_name);
         ret[i] = field_name;
-        for (j = 0; j < len; j++)
-            field_name[j] = tolower(field_name[j]);
+        strtolower(field_name);
     }
 
     return (ret);

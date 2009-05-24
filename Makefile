@@ -17,8 +17,7 @@ CSTD=c99
 .if defined(DEBUG)
 CFLAGS=-g -O0 -Wall -Wextra -Wformat-security -Wnonnull -Waggregate-return \
 	   -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow \
-	   -Wstrict-prototypes -Winline -Wall
-VERSION+=(debug)
+	   -Wstrict-prototypes -Winline -Wall -fno-inline
 .endif
 CFLAGS+=-D'VERSION="${VERSION}"' -DHAVE_SANE_DIRNAME
 
