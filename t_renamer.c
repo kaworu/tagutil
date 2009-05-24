@@ -93,13 +93,13 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
     while (running) {
         switch (fsm) {
         case SEARCH_TAG:
-            start = strchr(p, '$');
+            start = strchr(p, '%');
             if (start == NULL)
-            /* no more $ */
+            /* no more % */
                 fsm = TEARDOWN;
             else if (start != p && start[-1] == '\\') {
-            /* \$ escape */
-                start[-1] = '$';
+            /* \% escape */
+                start[-1] = '%';
                 start[ 0] = '\0';
                 if (strlcat(ret, p, len) >= len)
                     fsm = TOO_LONG;
@@ -107,7 +107,7 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
                     p = start + 1;
             }
             else {
-            /* $tag or ${tag} */
+            /* %tag or %{tag} */
                 start[0] = '\0';
                 if (strlcat(ret, p, len) >= len)
                     fsm = TOO_LONG;
@@ -127,7 +127,7 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
             for (end = p; isalnum(*end) || *end == '_' || *end == '-'; end++)
                 continue;
             if (end == p)
-                warnx("rename_eval: $ without tag name (%d)", (int)(p - palloc));
+                warnx("rename_eval: %% without tag name (%d)", (int)(p - palloc));
             keylen = (size_t)(end - p) + 1;
             key = xcalloc(keylen, sizeof(char));
             (void)strlcpy(key, p, keylen);
