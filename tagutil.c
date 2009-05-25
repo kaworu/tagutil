@@ -64,7 +64,6 @@ bool Yflag = false; /* yes answer to all questions */
 bool Nflag = false; /* no  answer to all questions */
 bool eflag = false; /* edit */
 bool dflag = false; /* create directory with rename */
-bool Dflag = false; /* create directory with rename (force) */
 bool rflag = false;  /* rename */
 bool xflag = false;  /* filter */
 bool sflag = false;  /* set tags */
@@ -92,7 +91,7 @@ main(int argc, char *argv[])
 
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
-    while ((ch = getopt(argc, argv, "edDhNYr:x:s:")) != -1) {
+    while ((ch = getopt(argc, argv, "edhNYr:x:s:")) != -1) {
         switch ((char)ch) {
         case 'e':
             eflag = true;
@@ -119,16 +118,12 @@ main(int argc, char *argv[])
                 errx(EINVAL, "invalid -s argument, need key=val: `%s'", set_key);
             *set_value = '\0';
             set_value += 1;
-            if (set_value[0] == '\0')
+            if (strempty(set_value))
             /* don't allow to set a key to "" we destroy it instead */
                 set_value = NULL;
             setter_add(s_arg, set_key, set_value);
             break;
         case 'd':
-            dflag = true;
-            break;
-        case 'D':
-            Dflag = true;
             dflag = true;
             break;
         case 'N':
@@ -232,7 +227,7 @@ usage(void)
     (void)fprintf(stderr, "  -x FILTER        print files in matching FILTER\n");
     (void)fprintf(stderr, "  -s TAG:VALUE     update tag TAG to VALUE for all given files\n");
     (void)fprintf(stderr, "  -r [-dD] PATTERN rename files with the given PATTERN. you can use keywords in PATTERN:\n");
-    (void)fprintf(stderr, "                   $tag if tag contains only `-', `_' or alphanum characters. ${tag} otherwise.\n");
+    (void)fprintf(stderr, "                   %%tag if tag contains only `_' or alphanum characters. %%{tag} otherwise.\n");
     (void)fprintf(stderr, "\n");
 
     exit(EXIT_SUCCESS);
@@ -308,6 +303,7 @@ tagutil_print(const struct tfile *restrict file)
 bool
 tagutil_edit(struct tfile *restrict file)
 {
+    bool ret = true;
     char *tmp_file, *yaml, *editor;
     FILE *stream;
 
@@ -329,28 +325,26 @@ tagutil_edit(struct tfile *restrict file)
             (void)fprintf(stream, "\n# vim:filetype=yaml");
         xfclose(stream);
 
-        if (!user_edit(tmp_file)) {
-            xfree(yaml);
-            remove(tmp_file);
-            return (false);
-        }
-
-        stream = xfopen(tmp_file, "r");
-        if (!yaml_to_tags(file, stream))
-            warnx("file '%s' not saved.", file->path);
+        if (!user_edit(tmp_file))
+            ret = false;
         else {
-            if (!file->save(file))
-                err(errno, "can't save file '%s'", file->path);
+            stream = xfopen(tmp_file, "r");
+            if (!yaml_to_tags(file, stream))
+                warnx("file '%s' not saved.", file->path);
+            else {
+                if (!file->save(file))
+                    err(errno, "can't save file '%s'", file->path);
+            }
+            xfclose(stream);
         }
 
-        xfclose(stream);
         if (unlink(tmp_file) != 0)
             err(errno, "can't remove temp file");
         xfree(tmp_file);
     }
 
     xfree(yaml);
-    return (true);
+    return (ret);
 }
 
 

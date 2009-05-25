@@ -28,9 +28,6 @@
 #define assert_not_null(x) assert((x) != NULL)
 #define assert_null(x) assert((x) == NULL)
 
-/* true if the given string is empty (has only whitespace char) */
-#define empty_line(l) has_match((l), "^\\s*$")
-
 
 /* MEMORY FUNCTIONS */
 
@@ -38,7 +35,7 @@ _t__unused
 static inline void * xmalloc(size_t size);
 
 _t__unused
-static inline void * xcalloc(size_t nmemb, size_t size);
+static inline void * xcalloc(size_t nmemb, const size_t size);
 
 _t__unused
 static inline void * xrealloc(void *ptr, size_t size);
@@ -71,10 +68,25 @@ static inline char * xdirname(const char *restrict path);
 /* BASIC STRING OPERATIONS */
 
 _t__unused _t__nonnull(1)
+static inline bool strempty(const char *restrict str);
+
+_t__unused _t__nonnull(1)
 static inline char * xstrdup(const char *restrict src);
 
 _t__unused _t__printflike(2, 3)
 static inline int xasprintf(char **ret, const char *fmt, ...);
+
+/*
+ * upperize a given string.
+ */
+_t__unused _t__nonnull(1)
+static inline void strtoupper(char *restrict str);
+
+/*
+ * lowerize a given string.
+ */
+_t__unused _t__nonnull(1)
+static inline void strtolower(char *restrict str);
 
 
 /* REGEX STRING OPERATIONS */
@@ -99,18 +111,6 @@ _t__unused _t__nonnull(2)
 static inline bool has_match(const char *restrict str,
         const char *restrict pattern);
 
-/*
- * upperize a given string.
- */
-_t__unused _t__nonnull(1)
-static inline void strtoupper(char *restrict str);
-
-/*
- * lowerize a given string.
- */
-_t__unused _t__nonnull(1)
-static inline void strtolower(char *restrict str);
-
 
 /* OTHER */
 
@@ -130,6 +130,10 @@ xmalloc(size_t size)
 {
     void *ptr;
 
+    /*
+     * we need to ensure that we request at least 1 byte, because malloc(0)
+     * could return NULL and we err() if NULL is returned.
+     */
     if (size == 0)
         size = 1;
     if ((ptr = malloc(size)) == NULL)
@@ -140,7 +144,7 @@ xmalloc(size_t size)
 
 
 static inline void *
-xcalloc(size_t nmemb, size_t size)
+xcalloc(size_t nmemb, const size_t size)
 {
     void *ptr;
 
@@ -227,6 +231,16 @@ xdirname(const char *restrict path)
     xfree(garbage);  /* no more needed */
 #endif
     return (dirn);
+}
+
+
+static inline bool
+strempty(const char *restrict str)
+{
+
+    assert_not_null(str);
+
+    return (*str == '\0');
 }
 
 
@@ -344,6 +358,7 @@ strtolower(char *restrict str)
 static inline bool
 yesno(const char *restrict question)
 {
+    char *endl;
     char buffer[5]; /* strlen("yes\n\0") == 5 */
     extern bool Yflag, Nflag;
 
@@ -369,16 +384,20 @@ yesno(const char *restrict question)
 
         (void)fgets(buffer, len(buffer), stdin);
 
-        /* if any, eat stdin characters that didn't fit into buffer */
-        if (buffer[strlen(buffer) - 1] != '\n') {
+        endl = strchr(buffer, '\n');
+        if (endl == NULL) {
+        /* buffer didn't receive EOL, must still be on stdin */
             while (getc(stdin) != '\n' && !feof(stdin))
-                ;
+                continue;
         }
-
-        if (has_match(buffer, "^(n|no)$"))
-            return (false);
-        else if (has_match(buffer, "^(y|yes)$"))
-            return (true);
+        else {
+            *endl = '\0';
+            strtolower(buffer);
+            if (strcmp(buffer, "n") == 0 || strcmp(buffer, "no") == 0)
+                return (false);
+            else if (strcmp(buffer, "y") == 0 || strcmp(buffer, "yes") == 0)
+                return (true);
+        }
     }
 }
 #endif /* not T_TOOLKIT_H */

@@ -152,7 +152,7 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
 
         if (i == -1) {
         /* doesn't already exist, append it */
-            if (newval[0] == '\0')
+            if (strempty(newval))
                 warnx("ftflac_set: create a tag with empty value: `%s'", key);
             b = FLAC__metadata_object_vorbiscomment_append_comment(d->vocomments, e, /* copy */false);
             if (!b) {

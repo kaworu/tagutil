@@ -128,12 +128,9 @@ tags_to_yaml(const struct tfile *restrict file)
     xfree(data);
     return (ret);
 
-    /* On error. */
-
 event_error:
     errx(ENOMEM, "tags_to_yaml: can't init event");
     /* NOTREACHED */
-
 emitter_error:
     errx(-1, "tags_to_yaml: emit error");
 }
@@ -245,7 +242,7 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
         xfree(tagkeys[i]);
     }
     xfree(tagkeys);
-    /* destroy non-present tags! TODO */
+
     STAILQ_FOREACH(item, Q, next) {
         (void)file->set(file, item->key, item->value);
     }

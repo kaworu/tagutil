@@ -21,7 +21,7 @@
 #include "t_renamer.h"
 
 
-extern bool dflag, Dflag;
+extern bool dflag;
 
 /* taken from mkdir(3) */
 _t__nonnull(1)
@@ -77,7 +77,7 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
     const size_t len = MAXPATHLEN;
     char *ret;
     char *p, *k, *palloc;
-    char *start, *end;
+    char *start, *end, *slash;
     char *key, *value;
     size_t keylen;
     bool running = true;
@@ -124,7 +124,7 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
             }
             break;
         case GET_KEY:
-            for (end = p; isalnum(*end) || *end == '_' || *end == '-'; end++)
+            for (end = p; isalnum(*end) || *end == '_'; end++)
                 continue;
             if (end == p)
                 warnx("rename_eval: %% without tag name (%d)", (int)(p - palloc));
@@ -138,7 +138,7 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
             keylen = strlen(p) + 1;
             key = xcalloc(keylen, sizeof(char));
             k = key;
-            for (end = p; *end != '\0' && *end != '}'; end++) {
+            for (end = p; !strempty(end) && *end != '}'; end++) {
                 if (*end == '\\' && end[1] == '}') {
                     *k = '}';
                     k++;
@@ -149,7 +149,7 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
                     k++;
                 }
             }
-            if (*end == '\0') {
+            if (strempty(end)) {
                 xfree(key);
                 fsm = MISSING_BRACE;
             }
@@ -166,9 +166,15 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
                 value = key;
             }
             else {
-                if (dflag && !Dflag && strchr(value, '/'))
-                    errx(-1, "rename_eval: `%s': tag `%s' has / in value, fix it or"
-                            " use -D", file->path, key);
+                slash = strchr(value, '/');
+                if (slash) {
+                    warnx("rename_eval: `%s': tag `%s' has / in value, "
+                            "replacing by `-'", file->path, key);
+                    do {
+                        *slash = '-';
+                         slash = strchr(slash, '/');
+                    } while (slash);
+                }
                 xfree(key);
             }
             if (strlcat(ret, value, len) >= len)
