@@ -102,7 +102,7 @@ ftflac_get(const struct tfile *restrict self, const char *restrict key)
             return (NULL);
         }
     }
-    assert(strcasecmp(field_name, key) == 0);
+    assert(strcasecmp(field_name, key) == 0 && "libFLAC returned a bad key");
     xfree(field_name);
 
     return (field_value);

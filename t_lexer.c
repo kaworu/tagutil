@@ -15,15 +15,15 @@
 
 
 struct lexer *
-new_lexer(const char *restrict str)
+new_lexer(const char *restrict source)
 {
     struct lexer *L;
 
-    assert_not_null(str);
+    assert_not_null(source);
 
     L = xmalloc(sizeof(struct lexer));
 
-    L->source = str;
+    L->source = source;
     L->index = 0;
     L->current.kind = TSTART;
 

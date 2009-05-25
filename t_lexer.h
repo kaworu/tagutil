@@ -118,7 +118,7 @@ struct lexer {
 
 
 _t__nonnull(1)
-struct lexer * new_lexer(const char *restrict str);
+struct lexer * new_lexer(const char *restrict source);
 
 _t__nonnull(1)
 void lex(struct lexer *restrict L);

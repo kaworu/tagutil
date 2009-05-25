@@ -124,7 +124,7 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
             }
             break;
         case GET_KEY:
-            for (end = p; isalnum(*end) || *end == '_'; end++)
+            for (end = p; isalnum(*end) || *end == '_' || *end == '-'; end++)
                 continue;
             if (end == p)
                 warnx("rename_eval: %% without tag name (%d)", (int)(p - palloc));
@@ -169,7 +169,7 @@ rename_eval(struct tfile *restrict file, const char *restrict pattern)
                 slash = strchr(value, '/');
                 if (slash) {
                     warnx("rename_eval: `%s': tag `%s' has / in value, "
-                            "replacing by `-'", file->path, key);
+                            "replacing by -", file->path, key);
                     do {
                         *slash = '-';
                          slash = strchr(slash, '/');
