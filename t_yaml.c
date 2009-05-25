@@ -264,57 +264,7 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
 parser_error:
     switch (parser.error) {
     case YAML_MEMORY_ERROR:
-        err(ENOMEM, "yaml_to_tags: Parser:");
-        /* NOTREACHED */
-    case YAML_READER_ERROR:
-        if (parser.problem_value != -1) {
-            fprintf(stderr, "Reader error: %s: #%X at %zu\n", parser.problem,
-                    parser.problem_value, parser.problem_offset);
-        }
-        else {
-            fprintf(stderr, "Reader error: %s at %zu\n", parser.problem,
-                    parser.problem_offset);
-        }
-        break;
-
-    case YAML_SCANNER_ERROR:
-        if (parser.context) {
-            fprintf(stderr, "Scanner error: %s at line %zu, column %zu\n"
-                    "%s at line %zu, column %zu\n", parser.context,
-                    parser.context_mark.line+1, parser.context_mark.column+1,
-                    parser.problem, parser.problem_mark.line+1,
-                    parser.problem_mark.column+1);
-        }
-        else {
-            fprintf(stderr, "Scanner error: %s at line %zu, column %zu\n",
-                    parser.problem, parser.problem_mark.line+1,
-                    parser.problem_mark.column+1);
-        }
-        break;
-
-    case YAML_PARSER_ERROR:
-        if (parser.context) {
-            fprintf(stderr, "Parser error: %s at line %zu, column %zu\n"
-                    "%s at line %zu, column %zu\n", parser.context,
-                    parser.context_mark.line+1, parser.context_mark.column+1,
-                    parser.problem, parser.problem_mark.line+1,
-                    parser.problem_mark.column+1);
-        }
-        else {
-            fprintf(stderr, "Parser error: %s at line %zu, column %zu\n",
-                    parser.problem, parser.problem_mark.line+1,
-                    parser.problem_mark.column+1);
-        }
-        break;
-
-    default:
-        /* Couldn't happen. */
-        fprintf(stderr, "Internal error\n");
-        break;
-}
-    switch (parser.error) {
-    case YAML_MEMORY_ERROR:
-        err(ENOMEM, "YAML Parser");
+        err(ENOMEM, "yaml_to_tags: YAML Parser");
         /* NOTREACHED */
     case YAML_READER_ERROR:
         if (parser.problem_value != -1) {
@@ -354,7 +304,8 @@ parser_error:
     case YAML_COMPOSER_ERROR: /* FALLTHROUGH */
     case YAML_WRITER_ERROR:   /* FALLTHROUGH */
     case YAML_EMITTER_ERROR:
-        errx(-1, "bad error type while parsing: %s",
+        errx(-1, "libyaml internal error\n"
+                "bad error type while parsing: %s",
                 parser.error == YAML_NO_ERROR ? "YAML_NO_ERROR" :
                 parser.error == YAML_COMPOSER_ERROR ? "YAML_COMPOSER_ERROR" :
                 parser.error == YAML_WRITER_ERROR ? "YAML_WRITER_ERROR" :
@@ -362,9 +313,7 @@ parser_error:
                 "impossible");
         /* NOTREACHED */
     }
-    yaml_event_delete(&event);
-    yaml_parser_delete(&parser);
-    return (false);
+    /* NOTREACHED */
 }
 
 
