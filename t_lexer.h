@@ -8,88 +8,81 @@
  */
 #include "t_config.h"
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <regex.h>
 
 
-#define is_letter(c) ((c) >= 'a' && (c) <= 'z')
-#define is_digit(i)  ((i) >= '0' && (i) <= '9')
-#define is_blank(c)  ((c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r')
-
-
 enum tokenkind {
-    TFILENAME,
-    TTITLE,
-    TALBUM,
-    TARTIST,
-    TYEAR,
-    TTRACK,
-    TCOMMENT,
-    TGENRE,
+    TEND,
+    TSTART,
 
+    /* unary op */
     TNOT,
 
+    /* binary op */
     TEQ,
     TDIFF,
     TMATCH,
-    TAND,
-    TOR,
     TLT,
     TLE,
     TGT,
     TGE,
+    TAND,
+    TOR,
 
     TOPAREN,
     TCPAREN,
 
+    /* types */
     TINT,
+    TDOUBLE,
     TSTRING,
     TREGEX,
-    TEOS,
-    TSTART,
+    TFILENAME,
+    TUNDEF,
+    TKEYWORD
 };
 
 
 _t__unused
 static const char *_tokens[] = {
-    [TFILENAME] = "TFILENAME",
-    [TTITLE]    = "TTITLE",
-    [TALBUM]    = "TALBUM",
-    [TARTIST]   = "TARTIST",
-    [TYEAR]     = "TYEAR",
-    [TTRACK]    = "TTRACK",
-    [TCOMMENT]  = "TCOMMENT",
-    [TGENRE]    = "TGENRE",
     [TNOT]      = "TNOT",
     [TEQ]       = "TEQ",
     [TDIFF]     = "TDIFF",
     [TMATCH]    = "TMATCH",
-    [TAND]      = "TAND",
-    [TOR]       = "TOR",
     [TLT]       = "TLT",
     [TLE]       = "TLE",
     [TGT]       = "TGT",
     [TGE]       = "TGE",
+    [TAND]      = "TAND",
+    [TOR]       = "TOR",
     [TOPAREN]   = "TOPAREN",
     [TCPAREN]   = "TCPAREN",
     [TINT]      = "TINT",
+    [TDOUBLE]   = "TDOUBLE",
     [TSTRING]   = "TSTRING",
     [TREGEX]    = "TREGEX",
-    [TEOS]      = "TEOS",
-    [TSTART]    = "TSTART",
+    [TFILENAME] = "TFILENAME",
+    [TUNDEF]	= "TUNDEF",
+    [TKEYWORD]  = "TKEYWORD",
+    [TEND]      = "TEND",
+    [TSTART]    = "TSTART"
 };
 
 #define token_to_s(x) _tokens[(x)]
 
+
 struct token {
     enum tokenkind kind;
-    int start, end;
+	int start, end;
     union {
-        char *string;   /* defined if kind == TSTRING */
-        int integer;    /* defined if kind == TINT    */
-        regex_t regex;  /* defined if tkind == TREGEX */
+        int integer;   /* TINT */
+        double dbl;    /* TDOUBLE */
+        char *str;     /* TSTRING ou TKEYWORD */
+        regex_t regex; /* TREGEX */
     } value;
-    size_t alloclen; /* defined if kind == TSTRING */
+    size_t alloclen; /* > 0 if TSTRING or TKEYWORD */
 };
 
 struct key {
@@ -100,27 +93,55 @@ struct key {
 
 /* keyword table */
 static const struct key keywords[] = {
-    { TFILENAME,    "filename", 8 },
-    { TTITLE,       "title",    5 },
-    { TALBUM,       "album",    5 },
-    { TARTIST,      "artist",   6 },
-    { TYEAR,        "year",     4 },
-    { TTRACK,       "track",    5 },
-    { TCOMMENT,     "comment",  7 },
-    { TGENRE,       "genre",    5 },
+    { TFILENAME, "FILENAME", 8 },
 };
 
 struct lexer {
+	size_t srclen;
     const char *source;
-    int index;
-    struct token current;
+    char c; /* current char */
+    int cindex;  /* index of c in source */
 };
 
 
+/*
+ * create a new lexer with given inpute source.
+ *
+ * returned value need to be free()d.
+ */
 _t__nonnull(1)
 struct lexer * new_lexer(const char *restrict source);
 
+/*
+ * return the next token of given lexer. The first token is always TSTART, and
+ * at the end TEND is always returned when there is no more token.
+ *
+ * returned value need to be free()d.
+ */
 _t__nonnull(1)
-void lex(struct lexer *restrict L);
+struct token * lex(struct lexer *restrict L);
 
+/*
+ * fill given token with TINT or TDOUBLE.
+ */
+_t__nonnull(1) _t__nonnull(2)
+void lex_number(struct lexer *restrict L, struct token *restrict t);
+
+/*
+ * realloc() given token and fill it with TSTRING or TREGEX.
+ */
+_t__nonnull(1) _t__nonnull(2)
+void lex_strlit_or_regex(struct lexer *restrict L, struct token **tptr);
+
+/*
+ * realloc() given token and fill it with TKEYWORD;
+ */
+_t__nonnull(1) _t__nonnull(2)
+void lex_tagkey(struct lexer *restrict L, struct token **tptr);
+
+/*
+ * TODO
+ */
+_t__nonnull(1) _t__dead2 _t__printflike(4, 5)
+void lex_error(struct lexer *restrict L, int start, int size, const char *fmt, ...);
 #endif /* not T_LEXER_H */
