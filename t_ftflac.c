@@ -253,7 +253,7 @@ ftflac_new(const char *restrict path)
     chain = FLAC__metadata_chain_new();
     if (chain == NULL)
         err(ENOMEM, "ftflac_new: FLAC__metadata_chain_new");
-    if(!FLAC__metadata_chain_read(chain, path)) {
+    if (!FLAC__metadata_chain_read(chain, path)) {
         FLAC__metadata_chain_delete(chain);
         return (NULL);
     }

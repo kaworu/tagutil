@@ -1,7 +1,7 @@
 #ifndef T_RENAMER_H
 #define T_RENAMER_H
 /*
- * t_renamer.c
+ * t_renamer.h
  *
  * renamer for tagutil.
  */

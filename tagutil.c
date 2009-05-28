@@ -6,6 +6,7 @@
  *  \__\__,_|\__, |\__,_|\__|_|_|
  *           |___/
  *
+ * FIXME: 
  * tagutil is a simple command line tool to edit music file's tag. It use
  * taglib (http://developer.kde.org/~wheeler/taglib.html) to get and set music
  * file's tags so be sure to install it before trying to compile tagutil.

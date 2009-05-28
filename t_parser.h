@@ -1,7 +1,7 @@
 #ifndef T_PARSER_H
 #define T_PARSER_H
 /*
- * t_parser.c
+ * t_parser.h
  *
  * a LL(1) recursive descend parser for tagutil.
  * used by the filter function.
@@ -9,20 +9,24 @@
  *
  * tagutil's filter grammar:
  *
- * Filter     ::= <Condition>
- * Condition  ::= <Condition> ( '||' | '&&' ) <Condition>
- * Condition  ::= <IntKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <INTEGER>
- * Condition  ::= <StrKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <STRING>
- * Condition  ::= <StrKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <StrKeyword>
- * Condition  ::= <StrKeyword> '=~' <REGEX>
- * Condition  ::= '!' '(' <Condition> ')'
- * Condition  ::=     '(' <Condition> ')'
- * IntKeyword ::= 'track' | 'year'
- * StrKeyword ::= 'title' | 'album' | 'artist' | 'comment' | 'genre'
- * INTEGER    ::= [0-9]+
- * STRING     ::= '"' ('\' . | [^"] )* '"'
- * REGEX      ::= '/' ('\' . | [^/] )* '/' <REGOPTS>?
- * REGOPTS    ::= 'i' | 'm' | 'im' | 'mi'
+ * Filter       ::= <Condition>
+ * Condition    ::= <Condition> ( '||' | '&&' ) <Condition>
+ * Condition    ::= <Value> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <Value>
+ * Condition    ::= <Value> '=~' <REGEX>
+ * Condition    ::= <REGEX> '=~' <Value>
+ * Condition    ::= <Value>
+ * Condition    ::= '!' '(' <Condition> ')'
+ * Condition    ::= '(' <Condition> ')'
+ * Value        ::= <TagKey> | <KEYWORD> | <INTEGER> | <DOUBLE> | <STRING>
+ * TagKey       ::= SIMPLETAGKEY | BRACETAGKEY
+ * SIMPLETAGKEY ::= '%' [A-Za-z\-_]+
+ * BRACETAGKEY  ::= '%{' ( '\' . | [^}] )* '}'
+ * KEYWORD      ::= 'FILENAME' | 'UNDEF'
+ * INTEGER      ::= '0' | [1-9][0-9]*
+ * DOUBLE       ::= <INTEGER>? '.' [0-9]+
+ * STRING       ::= '"' ('\' . | [^"] )* '"'
+ * REGEX        ::= '/' ('\' . | [^/] )* '/' <REGOPTS>?
+ * REGOPTS      ::= 'i' | 'm' | 'im' | 'mi'
  */
 #include "t_config.h"
 
@@ -31,26 +35,15 @@
 #include "t_lexer.h"
 
 
-enum astkind {
-    ANODE,
-    ALEAF,
-};
-
 struct ast {
-    enum astkind kind;
-    struct ast *lhs, *rhs; /* defined if kind == ANODE */
-
-    enum tokenkind tkind;
-    union {
-        char *string;   /* defined if tkind == TSTRING */
-        int integer;    /* defined if tkind == TINT    */
-        regex_t regex;  /* defined if tkind == TREGEX  */
-    } value;
+    int start, end;
+    struct ast *lhs, *rhs;
+    struct token *token;
 };
 
 
 /*
- * free given ast recursivly.
+ * free given ast recursivly (victim can be NULL).
  */
 void destroy_ast(struct ast *restrict victim);
 

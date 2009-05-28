@@ -1,7 +1,7 @@
 #ifndef T_INTERPRETER_H
 #define T_INTERPRETER_H
 /*
- * t_interpreter.c
+ * t_interpreter.h
  *
  * the tagutil's filter interpreter.
  */

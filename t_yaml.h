@@ -15,7 +15,7 @@
 /*
  * return a yaml formated string with all the given file's tags.
  *
- * returned value must be free()d.
+ * returned value has to be free()d.
  */
 _t__nonnull(1)
 char * tags_to_yaml(const struct tfile *restrict file);

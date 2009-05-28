@@ -14,14 +14,6 @@
 #include "t_toolkit.h"
 
 
-/*
- * put next char in L->c and increment L->cindex.
- */
-_t__nonnull(1)
-static inline char lexc(struct lexer *restrict L);
-
-
-
 struct lexer *
 new_lexer(const char *restrict source)
 {
@@ -45,7 +37,7 @@ new_lexer(const char *restrict source)
 }
 
 
-static inline char
+char
 lexc(struct lexer *restrict L)
 {
 
@@ -82,6 +74,7 @@ lex_number(struct lexer *restrict L, struct token *restrict t)
     if (L->c == '0' && lexc(L) != '.') {
     /* int 0 */
         t->kind = TINT;
+        t->str = "INT";
         t->value.integer = 0;
     }
     else {
@@ -101,15 +94,23 @@ lex_number(struct lexer *restrict L, struct token *restrict t)
         memcpy(num, start, end - start + 1);
         if (isfp) {
             t->kind = TDOUBLE;
+			t->str = "DOUBLE";
             t->value.dbl = strtod(num, &endptr);
-            if (!strempty(endptr))
-                errx(-1, "bad fp value"); /* FIXME beautifulize */
+            if (!strempty(endptr)) {
+                lex_error(L, start - L->source, end - L->source,
+                        "bad floating point value");
+                /* NOTREACHED */
+            }
         }
         else {
             t->kind = TINT;
+			t->str = "INT";
             t->value.integer = (int)strtol(num, &endptr, 10);
-            if (!strempty(endptr))
-                errx(-1, "bad int value"); /* FIXME beautifulize */
+            if (!strempty(endptr)) {
+                lex_error(L, start - L->source, end - L->source,
+                        "bad integer value");
+                /* NOTREACHED */
+            }
         }
         xfree(num);
     }
@@ -136,18 +137,22 @@ lex_strlit_or_regex(struct lexer *restrict L, struct token  **tptr)
     t = *tptr;
     skip = 0;
     limit = L->c;
-    t->kind = (limit == '"' ? TSTRING : TREGEX);
+	if (limit == '"') {
+		t->kind = TSTRING;
+		t->str  = "STRING";
+	}
+	else {
+		t->kind = TREGEX;
+		t->str  = "REGEX";
+	}
     while (L->c != '\0' && lexc(L) != limit) {
         if (L->c == '\\' && lexc(L) == limit)
             skip += 1;
     }
 
     t->end = L->cindex;
-    if (L->c != limit) {
-        lex_error(L, t->start, t->end, "lexer error: unbalanced %c for %s",
-                limit, limit == '"' ? "STRING" : "REGEX");
-        /* NOTREACHED */
-    }
+    if (L->c != limit)
+        lex_error(L, t->start, t->end, "unbalanced %c for %s", limit, t->str);
 
     /* do the copy */
     t->alloclen  = t->end - t->start - skip;
@@ -192,7 +197,7 @@ lex_strlit_or_regex(struct lexer *restrict L, struct token  **tptr)
                     assert(!("bug in regex option lexing"));
 regopt_error:
                     lex_error(L, t->start, L->cindex,
-                            "lexer error: option %c given twice for REGEX", L->c);
+                            "option %c given twice for REGEX", L->c);
                     /* NOTREACHED */
             }
             (void)lexc(L);
@@ -208,7 +213,7 @@ regopt_error:
             errbuf = xcalloc(BUFSIZ, sizeof(char));
             (void)regerror(error, &t->value.regex, errbuf, BUFSIZ);
             lex_error(L, t->start, t->end,
-                    "lexer error: can't compile REGEX /%s/: %s", s, errbuf);
+                    "can't compile REGEX /%s/: %s", s, errbuf);
             /* NOTREACHED */
         }
     }
@@ -227,7 +232,9 @@ lex_tagkey(struct lexer *restrict L, struct token **tptr)
     assert(L->c == '%');
 
     t = *tptr;
-    t->kind = TKEYWORD;
+    t->kind = TTAGKEY;
+    t->str = "TAGKEY";
+
     if (lexc(L) == '{') {
     /* %{tag} */
         skip = 0;
@@ -238,10 +245,8 @@ lex_tagkey(struct lexer *restrict L, struct token **tptr)
             }
         }
         t->end = L->cindex;
-        if (L->c != '}') {
-            lex_error(L, t->start, t->end, "lexer error: unbalanced { for TKEYWORD");
-            /* NOTREACHED */
-        }
+        if (L->c != '}')
+            lex_error(L, t->start, t->end, "unbalanced { for %s", t->str);
 
         /* do the copy */
         t->alloclen = t->end - t->start - 1 - skip;
@@ -271,7 +276,7 @@ lex_tagkey(struct lexer *restrict L, struct token **tptr)
         t->end = L->cindex - 1;
         if (t->end == t->start) {
             lex_error(L, t->start, t->end,
-                    "lexer error: %% without tag (use %%{} for the empty tag)");
+                    "%% without tag (use %%{} for the empty tag)");
             /* NOTREACHED */
         }
         t->alloclen = t->end - t->start + 1;
@@ -284,31 +289,8 @@ lex_tagkey(struct lexer *restrict L, struct token **tptr)
 }
 
 
-void
-lex_error(struct lexer *restrict L, int start, int end, const char *fmt, ...)
-{
-    va_list ap;
-
-    assert_not_null(L);
-
-    end = end - start + 1;
-
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-    (void)fprintf(stderr, "\n%s\n", L->source);
-    while (start--)
-        (void)fprintf(stderr, " ");
-    while (end--)
-        (void)fprintf(stderr, "^");
-    (void)fprintf(stderr, "\n");
-    exit(EINVAL);
-    /* NOTREACHED */
-}
-
-
 struct token *
-lex(struct lexer *restrict L)
+lex_next_token(struct lexer *restrict L)
 {
     struct token *t;
     /* used for keywords detection */
@@ -318,14 +300,13 @@ lex(struct lexer *restrict L)
 
     assert_not_null(L);
 
-    t = xmalloc(sizeof(struct token));
+    t = xcalloc(1, sizeof(struct token));
 
     /* check for TSTART */
     if (L->cindex == -1) {
         (void)lexc(L);
         t->kind  = TSTART;
-        t->start = -1;
-        t->end   = -1;
+		t->str   = "START";
 
         return (t);
     }
@@ -335,20 +316,22 @@ lex(struct lexer *restrict L)
         (void)lexc(L);
 
     t->start = L->cindex;
-    switch(L->c) {
+    switch (L->c) {
     case '\0':
         t->kind  = TEND;
-        t->start = -1;
-        t->end   = -1;
+		t->str = "END";
+        t->end = L->cindex;
         break;
     case '!':
         if (lexc(L) == '=') {
             t->kind = TDIFF;
+			t->str = "DIFF";
             t->end  = L->cindex;
             (void)lexc(L);
         }
         else {
             t->kind = TNOT;
+			t->str = "NOT";
             t->end  = L->cindex - 1;
         }
         break;
@@ -356,13 +339,15 @@ lex(struct lexer *restrict L)
         switch (lexc(L)) {
         case '=':
             t->kind = TEQ;
+			t->str = "EQ";
             break;
         case '~':
             t->kind = TMATCH;
+			t->str = "MATCH";
             break;
         default:
             lex_error(L, t->start, t->start,
-                    "lexer error expected `==' for EQ or `=~' for MATCH");
+                    "expected `==' for EQ or `=~' for MATCH");
             /* NOTREACHED */
         }
         t->end = L->cindex;
@@ -371,56 +356,64 @@ lex(struct lexer *restrict L)
     case '|':
         if (lexc(L) == '|') {
             t->kind = TOR;
+            t->str  = "OR";
             t->end  = L->cindex;
             (void)lexc(L);
         }
         else {
             lex_error(L, t->start, t->start,
-                    "lexer error expected `||' for OR");
+                    "expected `||' for OR");
             /* NOTREACHED */
         }
         break;
     case '&':
         if (lexc(L) == '&') {
             t->kind = TAND;
+            t->str  = "AND";
             t->end  = L->cindex;
             (void)lexc(L);
         }
         else {
             lex_error(L, t->start, t->start,
-                    "lexer error expected `&&' for AND");
+                    "expected `&&' for AND");
             /* NOTREACHED */
         }
         break;
     case '<':
         if (lexc(L) == '=') {
             t->kind = TLE;
+            t->str  = "LE";
             t->end  = L->cindex;
             (void)lexc(L);
         }
         else {
             t->kind = TLT;
+            t->str  = "LT";
             t->end  = L->cindex - 1;
         }
         break;
     case '>':
         if (lexc(L) == '=') {
             t->kind = TGE;
+            t->str  = "GE";
             t->end  = L->cindex;
             (void)lexc(L);
         }
         else {
             t->kind = TGT;
+            t->str  = "GT";
             t->end  = L->cindex - 1;
         }
         break;
     case '(':
         t->kind = TOPAREN;
+        t->str  = "OPAREN";
         t->end  = L->cindex;
         (void)lexc(L);
         break;
     case ')':
         t->kind = TCPAREN;
+        t->str  = "CPAREN";
         t->end  = L->cindex;
         (void)lexc(L);
         break;
@@ -449,12 +442,15 @@ lex(struct lexer *restrict L)
     default:
         /* keywords, not optimized at all, no gperf or so */
         found = false;
-        for (i = 0; !found && i < len(keywords); i++) {
-            if (strncmp(L->source + L->cindex, keywords[i].lexem, keywords[i].lexemlen) == 0) {
-                c = L->source[L->cindex + keywords[i].lexemlen];
+        for (i = 0; !found && i < len(lexkeywords); i++) {
+            if (strncmp(L->source + L->cindex,
+                        lexkeywords[i].lexem,
+                        lexkeywords[i].lexemlen) == 0) {
+                c = L->source[L->cindex + lexkeywords[i].lexemlen];
                 if (!isalnum(c) && c != '_') {
-                    t->kind = keywords[i].kind;
-                    L->cindex += keywords[i].lexemlen - 1;
+                    t->kind = lexkeywords[i].kind;
+                    t->str  = lexkeywords[i].lexem;
+                    L->cindex += lexkeywords[i].lexemlen - 1;
                     t->end = L->cindex;
                     lexc(L);
                     found = true;
@@ -463,15 +459,86 @@ lex(struct lexer *restrict L)
         }
         if (!found) {
             lex_error(L, t->start, t->start,
-                    "lexer error: not a keyword");
+                    "not a keyword");
         }
         break;
     }
 
-    return (t);
+    L->current = t;
+    return (L->current);
 }
 
-#if 1
+
+void
+lex_error0(const struct lexer *restrict L, int start, int end,
+        const char *fmt, va_list args)
+{
+    char c;
+
+    assert_not_null(L);
+
+    end = end - start + 1;
+    c = (end == 1 ? '^' : '~');
+    (void)vfprintf(stderr, fmt, args);
+    (void)fprintf(stderr, "\n%s\n", L->source);
+    while (start--)
+        (void)fprintf(stderr, " ");
+    while (end--)
+        (void)fprintf(stderr, "%c", c);
+    (void)fprintf(stderr, "\n");
+}
+
+void
+lex_error(const struct lexer *restrict L, int start, int end,
+        const char *fmt, ...)
+{
+    va_list args;
+
+    assert_not_null(L);
+
+    fprintf(stderr, "lexer error: ");
+    va_start(args, fmt);
+        lex_error0(L, start, end, fmt, args);
+    va_end(args);
+
+    exit(EINVAL);
+    /* NOTREACHED */
+}
+
+
+int
+token_debug(struct token *restrict t) {
+    int ret = 0;
+    if (t == NULL)
+        return 0;
+
+    (void)printf("%s", t->str);
+
+    switch (t->kind) {
+        case TINT:
+            (void)printf("(%d)", t->value.integer);
+            break;
+        case TDOUBLE:
+            (void)printf("(%lf)", t->value.dbl);
+            break;
+        case TSTRING: /* FALLTHROUGH */
+        case TTAGKEY:
+            (void)printf("(%s)", t->value.str);
+            break;
+        case TREGEX:
+            (void)printf("(%s)", (char *)(t + 1));
+            break;
+        case TEND:
+            (void)printf("\n");
+            ret = 1;
+            break;
+        default:
+            break;
+    }
+
+    return (ret);
+}
+#if 0
 int
 main(int argc, char *argv[])
 {
@@ -486,33 +553,12 @@ main(int argc, char *argv[])
     L = new_lexer(argv[1]);
 
     while (!the_end) {
-        t = lex(L);
-        (void)printf("%s", token_to_s(t->kind));
-
-        switch (t->kind) {
-            case TINT:
-                (void)printf("(%d) ", t->value.integer);
-                break;
-            case TDOUBLE:
-                (void)printf("(%lf) ", t->value.dbl);
-                break;
-            case TSTRING: /* FALLTHROUGH */
-            case TKEYWORD:
-                (void)printf("(%s)[%d] ", t->value.str, (int)t->alloclen);
-                break;
-            case TREGEX:
-                (void)printf("(%s)[%d] ", (char *)(t + 1), (int)t->alloclen);
-                break;
-            case TEND:
-                (void)printf("\n");
-                the_end = 1;
-                break;
-            default:
-                (void)printf(" ");
-                break;
-        }
-        free(t);
+        t = lex_next_token(L);
+        the_end = token_debug(t);
+        (void)printf(" ");
+        xfree(t);
     }
+    xfree(L);
 
     return (0);
 }
