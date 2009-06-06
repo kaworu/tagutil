@@ -6,7 +6,7 @@
  *  \__\__,_|\__, |\__,_|\__|_|_|
  *           |___/
  *
- * FIXME: 
+ * FIXME:
  * tagutil is a simple command line tool to edit music file's tag. It use
  * taglib (http://developer.kde.org/~wheeler/taglib.html) to get and set music
  * file's tags so be sure to install it before trying to compile tagutil.
@@ -68,7 +68,9 @@ bool dflag = false; /* create directory with rename */
 bool rflag = false;  /* rename */
 bool xflag = false;  /* filter */
 bool sflag = false;  /* set tags */
+bool fflag = false;  /* load file */
 
+char *f_arg = NULL; /* file */
 char *r_arg = NULL; /* rename pattern */
 struct ast *x_arg = NULL; /* filter code */
 struct setter_q *s_arg = NULL; /* key:val tags */
@@ -92,10 +94,14 @@ main(int argc, char *argv[])
 
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
-    while ((ch = getopt(argc, argv, "edhNYr:x:s:")) != -1) {
+    while ((ch = getopt(argc, argv, "edhNYf:r:x:s:")) != -1) {
         switch ((char)ch) {
         case 'e':
             eflag = true;
+            break;
+        case 'f':
+            fflag = true;
+            f_arg = optarg;
             break;
         case 'r':
             if (rflag)
@@ -152,9 +158,12 @@ main(int argc, char *argv[])
                 getprogname());
     if (dflag && !rflag)
         errx(EINVAL, "-d is only valid with -r");
-    if (xflag && (sflag || eflag || rflag))
-        errx(EINVAL, "-x option must be used alone");
-    if (!xflag && !rflag && !sflag && !eflag)
+    i  = ((sflag || eflag || rflag) ? 1 : 0);
+    i += (xflag ? 1 : 0);
+    i += (fflag ? 1 : 0);
+    if (i > 1)
+        errx(EINVAL, "-x and/or -f option must be used alone");
+    if (!xflag && !fflag && !rflag && !sflag && !eflag)
     /* no action given, fallback to default */
         pflag = true;
 
@@ -188,6 +197,8 @@ main(int argc, char *argv[])
             tagutil_print(file);
         if (xflag)
             tagutil_filter(file, x_arg);
+        if (fflag)
+            tagutil_load(file, f_arg);
         if (sflag) {
             STAILQ_FOREACH(item, s_arg, next) {
                 (void)file->set(file, item->key, item->value);
@@ -225,6 +236,7 @@ usage(void)
     (void)fprintf(stderr, "  -Y                answer yes to all questions\n");
     (void)fprintf(stderr, "  -N                answer no  to all questions\n");
     (void)fprintf(stderr, "  -e                show tag and prompt for editing (need $EDITOR environment variable)\n");
+    (void)fprintf(stderr, "  -f PATH           load PATH yaml file in given music files.\n");
     (void)fprintf(stderr, "  -x FILTER         print files in matching FILTER\n");
     (void)fprintf(stderr, "  -s [-a] TAG=VALUE update tag TAG to VALUE for all given files\n");
     (void)fprintf(stderr, "  -r [-d] PATTERN   rename files with the given PATTERN. you can use keywords in PATTERN:\n");
@@ -302,11 +314,35 @@ tagutil_print(const struct tfile *restrict file)
 
 
 bool
+tagutil_load(struct tfile *restrict file, const char *restrict path)
+{
+    FILE *stream;
+    bool ret = true;
+
+    assert_not_null(file);
+    assert_not_null(path);
+
+    stream = xfopen(path, "r");
+    if (!yaml_to_tags(file, stream)) {
+        ret = false;
+        warnx("file '%s' not saved.", file->path);
+    }
+    else {
+        if (!file->save(file))
+            err(errno, "can't save file '%s'", file->path);
+    }
+    xfclose(stream);
+
+    return (ret);
+}
+
+
+bool
 tagutil_edit(struct tfile *restrict file)
 {
+    FILE *stream;
     bool ret = true;
     char *tmp_file, *yaml, *editor;
-    FILE *stream;
 
     assert_not_null(file);
 
@@ -328,16 +364,8 @@ tagutil_edit(struct tfile *restrict file)
 
         if (!user_edit(tmp_file))
             ret = false;
-        else {
-            stream = xfopen(tmp_file, "r");
-            if (!yaml_to_tags(file, stream))
-                warnx("file '%s' not saved.", file->path);
-            else {
-                if (!file->save(file))
-                    err(errno, "can't save file '%s'", file->path);
-            }
-            xfclose(stream);
-        }
+        else
+            ret = tagutil_load(file, tmp_file);
 
         if (unlink(tmp_file) != 0)
             err(errno, "can't remove temp file");

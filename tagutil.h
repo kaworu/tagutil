@@ -47,6 +47,12 @@ _t__nonnull(1)
 bool tagutil_print(const struct tfile *restrict file);
 
 /*
+ * parse the given file (path) and update the file's tag.
+ */
+_t__nonnull(1) _t__nonnull(2)
+bool tagutil_load(struct tfile *restrict file, const char *restrict path);
+
+/*
  * print the given file's tag and prompt to ask if tag edit is needed. if
  * answer is yes create a tempfile, fill is with infos, run $EDITOR, then
  * parse the tempfile and update the file's tag.
