@@ -392,7 +392,8 @@ tagutil_rename(struct tfile *restrict file, const char *restrict pattern)
 
 
 bool
-tagutil_filter(const struct tfile *file, const struct ast *restrict ast)
+tagutil_filter(const struct tfile *restrict file,
+        const struct ast *restrict ast)
 {
     bool ret;
 

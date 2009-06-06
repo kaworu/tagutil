@@ -31,8 +31,8 @@ static inline struct setter_q * new_setter(void);
  * add a key/value pair to to the queue.
  * return true if key/value was appened to the queue, false otherwise.
  */
-static inline void setter_add(struct setter_q *restrict Q, const char *key,
-        const char *value);
+static inline void setter_add(struct setter_q *restrict Q,
+        const char *restrict key, const char *restrict value);
 
 /*
  * free the queue and all its elements.
@@ -53,7 +53,8 @@ new_setter(void)
 
 
 static inline void
-setter_add(struct setter_q *restrict Q, const char *key, const char *value)
+setter_add(struct setter_q *restrict Q,
+        const char *restrict key, const char *restrict value)
 {
     struct setter_item *item;
     size_t size, keylen, vallen;

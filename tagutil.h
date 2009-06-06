@@ -65,6 +65,7 @@ bool tagutil_rename(struct tfile *restrict file, const char *restrict pattern);
  * print given path if the file match the given ast (arg).
  */
 _t__nonnull(1) _t__nonnull(2)
-bool tagutil_filter(const struct tfile *file, const struct ast *restrict ast);
+bool tagutil_filter(const struct tfile *restrict file,
+        const struct ast *restrict ast);
 
 #endif /* not T_TAGUTIL_H */

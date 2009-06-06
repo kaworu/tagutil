@@ -127,7 +127,7 @@ void lex_tagkey(struct lexer *restrict L, struct token **tptr);
  */
 _t__nonnull(1) _t__dead2 _t__printflike(4, 5)
 void lex_error(const struct lexer *restrict L, int start, int size,
-        const char *fmt, ...);
+        const char *restrict fmt, ...);
 
 /*
  * output the fmt error message and the source string underlined from start to
@@ -135,5 +135,5 @@ void lex_error(const struct lexer *restrict L, int start, int size,
  */
 _t__nonnull(1)
 void lex_error0(const struct lexer *restrict L, int start, int end,
-        const char *fmt, va_list args);
+        const char *restrict fmt, va_list args);
 #endif /* not T_LEXER_H */

@@ -471,7 +471,7 @@ lex_next_token(struct lexer *restrict L)
 
 void
 lex_error0(const struct lexer *restrict L, int start, int end,
-        const char *fmt, va_list args)
+        const char *restrict fmt, va_list args)
 {
     char c;
 
@@ -490,7 +490,7 @@ lex_error0(const struct lexer *restrict L, int start, int end,
 
 void
 lex_error(const struct lexer *restrict L, int start, int end,
-        const char *fmt, ...)
+        const char *restrict fmt, ...)
 {
     va_list args;
 
