@@ -73,6 +73,7 @@ ftgeneric_save(struct tfile *restrict self)
 char *
 ftgeneric_get(const struct tfile *restrict self, const char *restrict key)
 {
+    unsigned int uintval;
     struct ftgeneric_data *d;
     char *ret;
 
@@ -93,10 +94,19 @@ ftgeneric_get(const struct tfile *restrict self, const char *restrict key)
         ret = taglib_tag_genre(d->tag);
     else if (strcmp(key, "title") == 0)
         ret = taglib_tag_title(d->tag);
-    else if (strcmp(key, "track") == 0)
-        (void)xasprintf(&ret, "%02u", taglib_tag_track(d->tag));
-    else if (strcmp(key, "year") == 0)
-        (void)xasprintf(&ret, "%04u", taglib_tag_year(d->tag));
+    else if (strcmp(key, "track") == 0) {
+        uintval = taglib_tag_track(d->tag);
+        if (uintval > 0)
+            (void)xasprintf(&ret, "%02u", uintval);
+    }
+    else if (strcmp(key, "year") == 0) {
+        uintval = taglib_tag_year(d->tag);
+        if (uintval > 0)
+            (void)xasprintf(&ret, "%04u", taglib_tag_year(d->tag));
+    }
+
+    if (ret && strempty(ret))
+        xfree(ret);
 
     return (ret);
 }
@@ -159,32 +169,47 @@ ftgeneric_set(struct tfile *restrict self, const char *restrict key,
 }
 
 
+static const char *_taglibkeys[] = {
+    "album", "artist", "comment", "genre", "title", "track", "year"
+};
 long
 ftgeneric_tagcount(const struct tfile *restrict self)
 {
+    char *s;
+    unsigned int i;
+    long count = 0;
 
     assert_not_null(self);
-    assert_not_null(self->data);
 
-    return (7);
+    for (i = 0; i < len(_taglibkeys); i++) {
+        s = self->get(self, _taglibkeys[i]);
+        if (s != NULL)
+            count++;
+        free(s);
+    }
+
+    return (count);
 }
 
 
 char **
 ftgeneric_tagkeys(const struct tfile *restrict self)
 {
+    char *s;
+    unsigned int i, x;
     char **ary;
 
     assert_not_null(self);
 
-    ary = xmalloc(7 * sizeof(char *));
-    ary[0] = xstrdup("album");
-    ary[1] = xstrdup("artist");
-    ary[2] = xstrdup("comment");
-    ary[3] = xstrdup("genre");
-    ary[4] = xstrdup("title");
-    ary[5] = xstrdup("track");
-    ary[6] = xstrdup("year");
+    ary = xcalloc(len(_taglibkeys), sizeof(char *));
+    x = 0;
+
+    for (i = 0; i < len(_taglibkeys); i++) {
+        s = self->get(self, _taglibkeys[i]);
+        if (s != NULL)
+            ary[x++] = xstrdup(_taglibkeys[i]);
+        free(s);
+    }
 
     return (ary);
 }
