@@ -232,15 +232,15 @@ usage(void)
     (void)fprintf(stderr, "Modify or display music file's tag.\n");
     (void)fprintf(stderr, "\n");
     (void)fprintf(stderr, "Options:\n");
-    (void)fprintf(stderr, "  -h                show this help\n");
-    (void)fprintf(stderr, "  -Y                answer yes to all questions\n");
-    (void)fprintf(stderr, "  -N                answer no  to all questions\n");
-    (void)fprintf(stderr, "  -e                show tag and prompt for editing (need $EDITOR environment variable)\n");
-    (void)fprintf(stderr, "  -f PATH           load PATH yaml file in given music files.\n");
-    (void)fprintf(stderr, "  -x FILTER         print files in matching FILTER\n");
-    (void)fprintf(stderr, "  -s [-a] TAG=VALUE update tag TAG to VALUE for all given files\n");
-    (void)fprintf(stderr, "  -r [-d] PATTERN   rename files with the given PATTERN. you can use keywords in PATTERN:\n");
-    (void)fprintf(stderr, "                     %%tag if tag contains only `_', `-' or alphanum characters. %%{tag} otherwise.\n");
+    (void)fprintf(stderr, "  -h              show this help\n");
+    (void)fprintf(stderr, "  -Y              answer yes to all questions\n");
+    (void)fprintf(stderr, "  -N              answer no  to all questions\n");
+    (void)fprintf(stderr, "  -e              show tag and prompt for editing (need $EDITOR environment variable)\n");
+    (void)fprintf(stderr, "  -f PATH         load PATH yaml file in given music files.\n");
+    (void)fprintf(stderr, "  -x FILTER       print files in matching FILTER\n");
+    (void)fprintf(stderr, "  -s TAG=VALUE    update tag TAG to VALUE for all given files\n");
+    (void)fprintf(stderr, "  -r [-d] PATTERN rename files with the given PATTERN. you can use keywords in PATTERN:\n");
+    (void)fprintf(stderr, "                  %%tag if tag contains only `_', `-' or alphanum characters. %%{tag} otherwise.\n");
     (void)fprintf(stderr, "\n");
 
     exit(EXIT_SUCCESS);
