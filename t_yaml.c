@@ -72,10 +72,9 @@ tags_to_yaml(const struct tfile *restrict file)
     if (!yaml_emitter_emit(&emitter, &event))
         goto emitter_error;
 
-    count = file->tagcount(file);
-    tagkeys = file->tagkeys(file);
-    if (tagkeys == NULL)
-        errx(-1, "tags_to_yaml: NULL tagkeys (%s backend)", file->lib);
+    count = file->tagkeys(file, &tagkeys);
+    if (count < 0)
+        errx(-1, "tags_to_yaml: tagkeys (%s backend)", file->lib);
     for (i = 0; i < count; i++) {
         /* emit the key */
         if (!yaml_scalar_event_initialize(&event, NULL,
@@ -241,10 +240,9 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
     }
 
     if (success) {
-        count   = file->tagcount(file);
-        tagkeys = file->tagkeys(file);
-        if (tagkeys == NULL)
-            errx(-1, "yaml_to_tags: NULL tagkeys (%s backend)", file->lib);
+        count = file->tagkeys(file, &tagkeys);
+        if (count < 0)
+            errx(-1, "yaml_to_tags: tagkeys (%s backend)", file->lib);
         for (i = 0; i < count; i++) {
             file->set(file, tagkeys[i], NULL);
             xfree(tagkeys[i]);

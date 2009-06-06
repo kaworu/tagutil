@@ -56,16 +56,12 @@ struct tfile {
             const char *restrict key, const char *restrict newval);
 
     /*
-     * return the number of tags set.
-     */
-    long (*tagcount)(const struct tfile *restrict self);
-
-    /*
-     * return an array of the tag key that are set. return NULL if error.
+     * store an array of the tag key that are set in kptr. return -1 if error,
+     * or the count of tag keys in kptr otherwise.
      *
-     * returned values has to be free()d.
+     * stored values (in kptr) have to be free()d.
      */
-    char ** (*tagkeys)(const struct tfile *restrict self);
+    long (*tagkeys)(const struct tfile *restrict self, char ***kptr);
 };
 
 #endif /* not T_FILE_H */

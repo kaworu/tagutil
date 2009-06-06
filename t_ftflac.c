@@ -35,10 +35,8 @@ _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
 enum tfile_set_status ftflac_set(struct tfile *restrict self,
         const char *restrict key, const char *restrict newval);
 
-_t__nonnull(1)
-long ftflac_tagcount(const struct tfile *restrict self);
-_t__nonnull(1)
-char ** ftflac_tagkeys(const struct tfile *restrict self);
+_t__nonnull(1) _t__nonnull(2)
+long ftflac_tagkeys(const struct tfile *restrict self, char ***kptr);
 
 
 void
@@ -181,22 +179,7 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
 
 
 long
-ftflac_tagcount(const struct tfile *restrict self)
-{
-    long count;
-    struct ftflac_data *d;
-
-    assert_not_null(self);
-    assert_not_null(self->data);
-
-    d = self->data;
-    count = (long)(d->vocomments->data.vorbis_comment.num_comments);
-    return (count);
-}
-
-
-char **
-ftflac_tagkeys(const struct tfile *restrict self)
+ftflac_tagkeys(const struct tfile *restrict self, char ***kptr)
 {
     char **ret;
     int i, count;
@@ -210,22 +193,25 @@ ftflac_tagkeys(const struct tfile *restrict self)
 
     d = self->data;
 
-    count = self->tagcount(self);
-    ret = xcalloc(count, sizeof(char *));
+    count = (long)(d->vocomments->data.vorbis_comment.num_comments);
+    if (kptr != NULL) {
+        *kptr = ret = xcalloc(count, sizeof(char *));
 
-    for (i = 0; i < count; i++) {
-        e = d->vocomments->data.vorbis_comment.comments[i];
-        b = FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair(e, &field_name, &field_value);
-        if (!b) {
-            warnx("ftflac_tagkeys: `%s' seems corrupted", self->path);
-            return (NULL);
+        for (i = 0; i < count; i++) {
+            e = d->vocomments->data.vorbis_comment.comments[i];
+            b = FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair(e, &field_name, &field_value);
+            if (!b) {
+                /* FIXME: LEAK */
+                warnx("ftflac_tagkeys: `%s' seems corrupted", self->path);
+                return (-1);
+            }
+            xfree(field_value);
+            ret[i] = field_name;
+            strtolower(field_name);
         }
-        xfree(field_value);
-        ret[i] = field_name;
-        strtolower(field_name);
     }
 
-    return (ret);
+    return (count);
 }
 
 
@@ -296,7 +282,6 @@ ftflac_new(const char *restrict path)
     ret->destroy  = ftflac_destroy;
     ret->get      = ftflac_get;
     ret->set      = ftflac_set;
-    ret->tagcount = ftflac_tagcount;
     ret->tagkeys  = ftflac_tagkeys;
 
     ret->lib = "libFLAC";

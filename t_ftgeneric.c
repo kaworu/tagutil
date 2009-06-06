@@ -32,10 +32,8 @@ _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
 enum tfile_set_status ftgeneric_set(struct tfile *restrict self,
         const char *restrict key, const char *restrict newval);
 
-_t__nonnull(1)
-long ftgeneric_tagcount(const struct tfile *restrict self);
-_t__nonnull(1)
-char ** ftgeneric_tagkeys(const struct tfile *restrict self);
+_t__nonnull(1) _t__nonnull(2)
+long ftgeneric_tagkeys(const struct tfile *restrict self, char ***kptr);
 
 
 void
@@ -173,45 +171,30 @@ static const char *_taglibkeys[] = {
     "album", "artist", "comment", "genre", "title", "track", "year"
 };
 long
-ftgeneric_tagcount(const struct tfile *restrict self)
+ftgeneric_tagkeys(const struct tfile *restrict self, char ***kptr)
 {
     char *s;
     unsigned int i;
-    long count = 0;
-
-    assert_not_null(self);
-
-    for (i = 0; i < len(_taglibkeys); i++) {
-        s = self->get(self, _taglibkeys[i]);
-        if (s != NULL)
-            count++;
-        free(s);
-    }
-
-    return (count);
-}
-
-
-char **
-ftgeneric_tagkeys(const struct tfile *restrict self)
-{
-    char *s;
-    unsigned int i, x;
+    long count;
     char **ary;
 
     assert_not_null(self);
 
-    ary = xcalloc(len(_taglibkeys), sizeof(char *));
-    x = 0;
+    count = 0;
+    if (kptr != NULL)
+        *kptr = ary = xcalloc(len(_taglibkeys), sizeof(char *));
 
     for (i = 0; i < len(_taglibkeys); i++) {
         s = self->get(self, _taglibkeys[i]);
-        if (s != NULL)
-            ary[x++] = xstrdup(_taglibkeys[i]);
+        if (s != NULL) {
+            if (kptr != NULL)
+                ary[count] = xstrdup(_taglibkeys[i]);
+            count++;
+        }
         free(s);
     }
 
-    return (ary);
+    return (count);
 }
 
 
@@ -257,7 +240,6 @@ ftgeneric_new(const char *restrict path)
     ret->destroy  = ftgeneric_destroy;
     ret->get      = ftgeneric_get;
     ret->set      = ftgeneric_set;
-    ret->tagcount = ftgeneric_tagcount;
     ret->tagkeys  = ftgeneric_tagkeys;
 
     ret->lib = "TagLib";
