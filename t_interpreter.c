@@ -11,81 +11,218 @@
 #include "t_interpreter.h"
 
 
-_t__nonnull(1) _t__nonnull(2)
-static inline unsigned int int_leaf(const struct tfile *restrict file,
-        struct ast *restrict leaf);
+_t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
+static double eval_cmp(const struct tfile *restrict file,
+        struct ast *restrict lhs, struct ast *restrict rhs, bool *undef);
 
-_t__nonnull(1) _t__nonnull(2)
-static inline const char * str_leaf(const struct tfile *restrict file,
-const struct ast *restrict leaf);
+_t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
+static bool eval_match(const struct tfile *restrict file,
+        struct ast *restrict lhs, struct ast *restrict rhs, bool *undef);
 
 
 bool
-eval(const struct tfile *restrict file, const struct ast *restrict filter)
-#define EVAL(e) (eval(file, (e)))
-#define ILEAF(k) (int_leaf(file, (k)))
-#define SLEAF(k) (str_leaf(file, (k)))
+ast_eval(const struct tfile *restrict file, const struct ast *restrict filter)
 {
-    bool ret;
-    char s[BUFSIZ];
-    int error;
+    bool ret, undef;
 
     assert_not_null(file);
     assert_not_null(filter);
 
-    if (filter->kind == ALEAF)
-        errx(-1, "can't eval a leaf AST");
-
-    switch (filter->tkind) {
-    case TOR:
-        ret = (EVAL(filter->lhs) || EVAL(filter->rhs));
+    undef = false;
+    switch (filter->token->kind) {
+    case TNOT:
+        ret = !(ast_eval(file, filter->rhs));
         break;
     case TAND:
-        ret = (EVAL(filter->lhs) && EVAL(filter->rhs));
+        ret = ast_eval(file, filter->lhs);
+        if (ret)
+            ret = ast_eval(file, filter->rhs);
         break;
-    case TNOT:
-        ret = (!EVAL(filter->rhs));
+    case TOR:
+        ret = ast_eval(file, filter->lhs);
+        if (!ret)
+            ret = ast_eval(file, filter->rhs);
         break;
     case TEQ:
-        if (is_int_tkeyword(filter->lhs->tkind))
-            ret = (ILEAF(filter->lhs) == ILEAF(filter->rhs));
-        else
-            ret = (strcmp(SLEAF(filter->lhs), SLEAF(filter->rhs)) == 0);
-        break;
-    case TLT:
-        if (is_int_tkeyword(filter->lhs->tkind))
-            ret = (ILEAF(filter->lhs) < ILEAF(filter->rhs));
-        else
-            ret = (strcmp(SLEAF(filter->lhs), SLEAF(filter->rhs)) < 0);
-        break;
-    case TLE:
-        if (is_int_tkeyword(filter->lhs->tkind))
-            ret = (ILEAF(filter->lhs) <= ILEAF(filter->rhs));
-        else
-            ret = (strcmp(SLEAF(filter->lhs), SLEAF(filter->rhs)) <= 0);
-        break;
-    case TGT:
-        if (is_int_tkeyword(filter->lhs->tkind))
-            ret = (ILEAF(filter->lhs) > ILEAF(filter->rhs));
-        else
-            ret = (strcmp(SLEAF(filter->lhs), SLEAF(filter->rhs)) > 0);
-        break;
-    case TGE:
-        if (is_int_tkeyword(filter->lhs->tkind))
-            ret = (ILEAF(filter->lhs) >= ILEAF(filter->rhs));
-        else
-            ret = (strcmp(SLEAF(filter->lhs), SLEAF(filter->rhs)) >= 0);
+        ret = (eval_cmp(file, filter->lhs, filter->rhs, &undef) == 0);
         break;
     case TDIFF:
-        if (is_int_tkeyword(filter->lhs->tkind))
-            ret = (ILEAF(filter->lhs) != ILEAF(filter->rhs));
-        else
-            ret = (strcmp(SLEAF(filter->lhs), SLEAF(filter->rhs)) != 0);
+        ret = (eval_cmp(file, filter->lhs, filter->rhs, &undef) != 0);
+        break;
+    case TLT:
+        ret = (eval_cmp(file, filter->lhs, filter->rhs, &undef) <  0);
+        break;
+    case TLE:
+        ret = (eval_cmp(file, filter->lhs, filter->rhs, &undef) <= 0);
+        break;
+    case TGT:
+        ret = (eval_cmp(file, filter->lhs, filter->rhs, &undef) >  0);
+        break;
+    case TGE:
+        ret = (eval_cmp(file, filter->lhs, filter->rhs, &undef) >= 0);
         break;
     case TMATCH:
-        error = regexec(&filter->rhs->value.regex, SLEAF(filter->lhs), 1, NULL, 0);
+        ret = eval_match(file, filter->lhs, filter->rhs, &undef);
+        break;
+    default:
+        fprintf(stderr, "internal interpreter error: unexpected AST: `%s'",
+                filter->token->str);
+        abort();
+        /* NOTREACHED */
+    }
 
-        switch (error) {
+    if (undef)
+        ret = false;
+
+    return (ret);
+}
+
+
+static double
+eval_cmp(const struct tfile *restrict file,
+        struct ast *restrict lhs, struct ast *restrict rhs, bool *_undef)
+{
+    const char *s, *l, *r;
+    char *_s, *_l, *_r; /* not const, can be free()d */
+    bool die, *undef;
+    double ret;
+
+    assert_not_null(file);
+    assert_not_null(rhs);
+    assert_not_null(lhs);
+
+    if (_undef == NULL)
+        undef = &die;
+    else
+        undef = _undef;
+    *undef = false;
+
+    _s = _l = _r = NULL;
+    switch (rhs->token->kind) {
+    case TINT:    /* FALLTHROUGH */
+    case TDOUBLE: /* FALLTHROUGH */
+    case TSTRING:
+        if (lhs->token->kind == TFILENAME)
+            s = file->path;
+        else {
+            assert(lhs->token->kind == TTAGKEY);
+            s = _s = file->get(file, lhs->token->value.str);
+            if (s == NULL) {
+                *undef = true;
+                return (0);
+            }
+        }
+        if (rhs->token->kind == TINT)
+            ret = (double)(strtol(s, NULL, 10) - rhs->token->value.integer);
+        else if (rhs->token->kind == TDOUBLE)
+            ret = strtod(s, NULL) - rhs->token->value.dbl;
+        else if (rhs->token->kind == TSTRING)
+            ret = (double)strcmp(s, rhs->token->value.str);
+        free(_s);
+        break;
+    case TUNDEF:
+        if (lhs->token->kind == TFILENAME)
+            ret = 1.0;
+        else {
+            assert(lhs->token->kind == TTAGKEY);
+            s = _s = file->get(file, lhs->token->value.str);
+            if (s == NULL)
+                ret = 0.0;
+            else
+                ret = 1.0;
+        }
+        free(_s);
+        break;
+    case TFILENAME: /* FALLTHROUGH */
+    case TTAGKEY:
+        if (lhs->token->kind == TFILENAME || lhs->token->kind == TTAGKEY) {
+            if (lhs->token->kind == TFILENAME)
+                l = file->path;
+            else
+                l = _l = file->get(file, lhs->token->value.str);
+            if (rhs->token->kind == TFILENAME)
+                r = file->path;
+            else
+                r = _r = file->get(file, rhs->token->value.str);
+            if (r == NULL || l == NULL) {
+                free(_l);
+                free(_r);
+                *undef = true;
+                return (0);
+            }
+            /* XXX: cast? */
+            ret = (double)strcmp(l, r);
+            free(_l);
+            free(_r);
+        }
+        else {
+            ret = eval_cmp(file, rhs, lhs, undef);
+            ret = -ret;
+        }
+        break;
+    default:
+        fprintf(stderr, "internal interpreter error: unexpected token kind:"
+                " lhs(%s) rhs(%s)", lhs->token->str, rhs->token->str);
+        abort();
+        /* NOTREACHED */
+    }
+
+    return (ret);
+}
+
+static bool
+eval_match(const struct tfile *restrict file,
+        struct ast *restrict lhs, struct ast *restrict rhs, bool *_undef)
+{
+    regex_t *r;
+    int error;
+    bool die, ret, *undef;
+    const char *s;
+    char *_s = NULL;
+    char errmsg[BUFSIZ];
+    struct ast *regast, *strast;
+
+    assert_not_null(file);
+    assert_not_null(rhs);
+    assert_not_null(lhs);
+
+    if (_undef == NULL)
+        undef = &die;
+    else
+        undef = _undef;
+    *undef = false;
+
+    if (rhs->token->kind == TREGEX) {
+        regast = rhs;
+        strast = lhs;
+    }
+    else {
+        regast = lhs;
+        strast = rhs;
+    }
+
+    assert(regast->token->kind == TREGEX);
+    r = &regast->token->value.regex;
+    switch (strast->token->kind) {
+    case TTAGKEY:
+        s = _s = file->get(file, strast->token->value.str);
+        if (s == NULL) {
+            *undef = true;
+            return (false);
+        }
+        break;
+    case TFILENAME:
+        s = file->path;
+        break;
+    default:
+        fprintf(stderr, "internal interpreter error: unexpected AST: `%s'",
+                strast->token->str);
+        abort();
+        /* NOTREACHED */
+    }
+
+    error = regexec(r, s, /* nmatch */1, /* captures */NULL, /* eflags */0);
+    switch (error) {
         case 0:
             ret = true;
             break;
@@ -93,84 +230,12 @@ eval(const struct tfile *restrict file, const struct ast *restrict filter)
             ret = false;
             break;
         default:
-            (void)regerror(error, &filter->rhs->value.regex, s, sizeof(s));
-            errx(-1, "interpreter error, can't exec regex: '%s'", s);
+            /* FIXME */
+            (void)regerror(error, r, errmsg, sizeof(errmsg));
+            errx(-1, "interpreter error, can't exec regex: '%s'", errmsg);
             /* NOTREACHED */
-        }
-        break;
-    default:
-        errx(-1, "interpreter error: unexpected token: '%s'", token_to_s(filter->tkind));
-        /* NOTREACHED */
     }
 
+    free(_s);
     return (ret);
 }
-
-static inline unsigned int
-int_leaf(const struct tfile *restrict file, struct ast *restrict leaf)
-{
-    unsigned int ret;
-
-    assert_not_null(file);
-    assert_not_null(leaf);
-    assert(leaf->kind == ALEAF);
-
-    switch (leaf->tkind) {
-    case TTRACK:
-        ret = atoi(file->get(file, "track")); /* FIXME: atoi(3) sucks */
-        break;
-    case TYEAR:
-        ret = atoi(file->get(file, "year")); /* FIXME: atoi(3) sucks */
-        break;
-    case TINT:
-        ret = leaf->value.integer;
-        break;
-    default:
-        errx(-1, "intepreter error: expected TTRACK or TYEAR or TINT, got %s",
-                token_to_s(leaf->tkind));
-        /* NOTREACHED */
-    }
-
-    return (ret);
-}
-
-static inline const char *
-str_leaf(const struct tfile *restrict file, const struct ast *restrict leaf)
-{
-    const char *ret;
-
-    assert_not_null(file);
-    assert_not_null(leaf);
-    assert(leaf->kind == ALEAF);
-
-    switch (leaf->tkind) {
-    case TTITLE:
-        ret = file->get(file, "title");
-        break;
-    case TALBUM:
-        ret = file->get(file, "album");
-        break;
-    case TARTIST:
-        ret = file->get(file, "artist");
-        break;
-    case TCOMMENT:
-        ret = file->get(file, "comment");
-        break;
-    case TGENRE:
-        ret = file->get(file, "genre");
-        break;
-    case TFILENAME:
-        ret = file->path;
-        break;
-    case TSTRING:
-        ret = leaf->value.string;
-        break;
-    default:
-        errx(-1, "intepreter error: str_tag: expected TTITLE or TALBUM or TARTIST"
-                 " or TCOMMENT or TGENRE or TFILENAME, got %s", token_to_s(leaf->tkind));
-        /* NOTREACHED */
-    }
-
-    return (ret);
-}
-

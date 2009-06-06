@@ -81,6 +81,7 @@ ftgeneric_get(const struct tfile *restrict self, const char *restrict key)
     assert_not_null(key);
 
     d = self->data;
+    ret = NULL;
 
     if (strcmp(key, "artist") == 0)
         ret = taglib_tag_artist(d->tag);
@@ -96,10 +97,6 @@ ftgeneric_get(const struct tfile *restrict self, const char *restrict key)
         (void)xasprintf(&ret, "%02u", taglib_tag_track(d->tag));
     else if (strcmp(key, "year") == 0)
         (void)xasprintf(&ret, "%04u", taglib_tag_year(d->tag));
-    else {
-        warnx("ftgeneric_get: %s backend can't handle `%s' tag", self->lib, key);
-        ret = NULL;
-    }
 
     return (ret);
 }

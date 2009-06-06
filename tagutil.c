@@ -399,7 +399,7 @@ tagutil_filter(const struct tfile *file, const struct ast *restrict ast)
     assert_not_null(file);
     assert_not_null(ast);
 
-    ret = eval(file, ast);
+    ret = ast_eval(file, ast);
 
     if (ret)
         (void)printf("%s\n", file->path);

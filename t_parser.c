@@ -49,7 +49,6 @@ static struct ast * parse_and(struct lexer *restrict L);
  * 3) Condition ::= <Value> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <Value>
  *    Condition ::= <Value> '=~' <REGEX>
  *    Condition ::= <REGEX> '=~' <Value>
- *    Condition ::= <Value>
  */
 _t__nonnull(1)
 static struct ast * parse_simple(struct lexer *restrict L);
@@ -70,7 +69,6 @@ static struct ast * parse_nestedcond(struct lexer *restrict L);
  * 3) Condition ::= <Value> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <Value>
  *    Condition ::= <Value> '=~' <REGEX>
  *    Condition ::= <REGEX> '=~' <Value>
- *    Condition ::= <Value>
  */
 _t__nonnull(1)
 static struct ast *
@@ -271,6 +269,7 @@ parse_nestedcond(struct lexer *restrict L)
                 cparen->str);
         /* NOTREACHED */
     }
+    (void)lex_next_token(L);
 
     ret->start = oparen->start;
     ret->end   = cparen->end;
@@ -319,13 +318,9 @@ parse_cmp_or_match_or_value(struct lexer *restrict L)
     case TGE:    /* FALLTHROUGH */
         break;
     default:
-        /* Condition ::= <Value> */
-        if (lhstok->kind == TREGEX) {
-            parse_error(L, lhstok, optok, "expected value... or REGEX MATCH,"
-                    " got %s %s", lhstok->str, optok->str);
-            /* NOTREACHED */
-        }
-        return (new_ast(NULL, lhstok, NULL));
+        parse_error(L, lhstok, optok, "expected <value operator value>, got %s %s",
+                lhstok->str, optok->str);
+        /* NOTREACHED */
     }
 
     rhstok = lex_next_token(L);
@@ -351,8 +346,8 @@ parse_cmp_or_match_or_value(struct lexer *restrict L)
      */
         if ((lhstok->kind == TREGEX && rhstok->kind == TREGEX) ||
                 (lhstok->kind != TREGEX && rhstok->kind != TREGEX)) {
-            parse_error(L, lhstok, rhstok, "expected REGEX MATCH value or"
-                    " value MATCH REGEX, got %s %s %s",
+            parse_error(L, lhstok, rhstok, "expected <REGEX MATCH value> or"
+                    " <value MATCH REGEX>, got %s %s %s",
                     lhstok->str, optok->str, rhstok->str);
             /* NOTREACHED */
         }
@@ -400,7 +395,7 @@ parse_error(const struct lexer *restrict L,
 }
 
 
-#if 1
+#if 0
 void
 ast_debug(struct ast *restrict AST)
 {

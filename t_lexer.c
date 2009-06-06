@@ -506,6 +506,7 @@ lex_error(const struct lexer *restrict L, int start, int end,
 }
 
 
+#if 0
 int
 token_debug(struct token *restrict t) {
     int ret = 0;
@@ -538,7 +539,6 @@ token_debug(struct token *restrict t) {
 
     return (ret);
 }
-#if 0
 int
 main(int argc, char *argv[])
 {

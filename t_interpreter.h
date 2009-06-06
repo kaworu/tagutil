@@ -13,11 +13,8 @@
 #include "t_parser.h"
 
 
-#define is_int_tkeyword(t) ((t) == TTRACK || (t) == TYEAR)
-
-
 _t__nonnull(1) _t__nonnull(2)
-bool eval(const struct tfile *restrict file,
+bool ast_eval(const struct tfile *restrict file,
         const struct ast *restrict filter);
 
 #endif /* not T_INTERPRETER_H */

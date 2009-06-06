@@ -314,6 +314,7 @@ parser_error:
         /* NOTREACHED */
     }
     /* NOTREACHED */
+    return (false); /* make gcc happy */
 }
 
 
