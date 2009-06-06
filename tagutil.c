@@ -83,7 +83,7 @@ struct setter_q *s_arg = NULL; /* key:val tags */
 int
 main(int argc, char *argv[])
 {
-    int i, ch;
+    int i, ch, ret;
     char *path, *set_value, *set_key;
     struct stat s;
     struct tfile *file;
@@ -171,15 +171,18 @@ main(int argc, char *argv[])
     ftflac_init();
     ftgeneric_init();
 
+    ret = EXIT_SUCCESS;
     for (i = 0; i < argc; i++) {
         path = argv[i];
 
         if (stat(path, &s) != 0) {
             warn("%s", path);
+            ret = EINVAL;
             continue;
         }
         else if (!S_ISREG(s.st_mode)) {
             warnx("`%s' is not a regular file", path);
+            ret = EINVAL;
             continue;
         }
 
@@ -189,6 +192,7 @@ main(int argc, char *argv[])
             file = ftgeneric_new(path);
         if (file == NULL) {
             warnx("`%s' unsuported file format", path);
+            ret = EINVAL;
             continue;
         }
 
@@ -219,7 +223,7 @@ main(int argc, char *argv[])
     if (sflag)
         destroy_setter(s_arg);
 
-    return (EXIT_SUCCESS);
+    return (ret);
 }
 
 
@@ -322,7 +326,10 @@ tagutil_load(struct tfile *restrict file, const char *restrict path)
     assert_not_null(file);
     assert_not_null(path);
 
-    stream = xfopen(path, "r");
+    if (strcmp(path, "-") == 0)
+        stream = stdin;
+    else
+        stream = xfopen(path, "r");
     if (!yaml_to_tags(file, stream)) {
         ret = false;
         warnx("file '%s' not saved.", file->path);
@@ -331,7 +338,8 @@ tagutil_load(struct tfile *restrict file, const char *restrict path)
         if (!file->save(file))
             err(errno, "can't save file '%s'", file->path);
     }
-    xfclose(stream);
+    if (stream != stdin)
+        xfclose(stream);
 
     return (ret);
 }

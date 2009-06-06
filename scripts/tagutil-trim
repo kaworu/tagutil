@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+
+require 'yaml'
+require 'open3'
+
+ARGV.each do |arg|
+  s = String.new
+  Open3.popen3('tagutil', arg) { |_, pstdout, _| s = pstdout.read }
+
+  if $?.success?
+    y = YAML.load(s)
+    stripped = Hash.new
+    y.each { |key,val| stripped[key] = val.to_s.strip }
+
+    Open3.popen3('tagutil', '-f', '-', arg) do |pstdin, pstdout, pstderr|
+      pstdin << stripped.to_yaml
+      pstdin.close
+      STDOUT.puts(pstdout.read)
+      STDOUT.flush
+      STDERR.puts(pstderr.read)
+    end
+  end
+end
