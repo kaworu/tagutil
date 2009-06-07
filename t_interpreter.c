@@ -107,6 +107,8 @@ eval_cmp(const struct tfile *restrict file,
     case TSTRING:
         if (lhs->token->kind == TFILENAME)
             s = file->path;
+        else if (lhs->token->kind == TBACKEND)
+            s = file->lib;
         else {
             assert(lhs->token->kind == TTAGKEY);
             s = _s = file->get(file, lhs->token->value.str);
@@ -124,7 +126,7 @@ eval_cmp(const struct tfile *restrict file,
         free(_s);
         break;
     case TUNDEF:
-        if (lhs->token->kind == TFILENAME)
+        if (lhs->token->kind == TFILENAME || lhs->token->kind == TBACKEND)
             ret = 1.0;
         else {
             assert(lhs->token->kind == TTAGKEY);
@@ -138,13 +140,18 @@ eval_cmp(const struct tfile *restrict file,
         break;
     case TFILENAME: /* FALLTHROUGH */
     case TTAGKEY:
-        if (lhs->token->kind == TFILENAME || lhs->token->kind == TTAGKEY) {
+        if (lhs->token->kind == TFILENAME || lhs->token->kind == TTAGKEY ||
+                lhs->token->kind == TBACKEND) {
             if (lhs->token->kind == TFILENAME)
                 l = file->path;
+            else if (lhs->token->kind == TBACKEND)
+                l = file->lib;
             else
                 l = _l = file->get(file, lhs->token->value.str);
             if (rhs->token->kind == TFILENAME)
                 r = file->path;
+            else if (lhs->token->kind == TBACKEND)
+                r = file->lib;
             else
                 r = _r = file->get(file, rhs->token->value.str);
             if (r == NULL || l == NULL) {
@@ -217,8 +224,11 @@ eval_match(const struct tfile *restrict file,
     case TFILENAME:
         s = file->path;
         break;
+    case TBACKEND:
+        s = file->lib;
+        break;
     default:
-        fprintf(stderr, "internal interpreter error: unexpected AST: `%s'",
+        fprintf(stderr, "internal interpreter error: unexpected AST: `%s'\n",
                 strast->token->str);
         abort();
         /* NOTREACHED */

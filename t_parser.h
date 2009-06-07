@@ -20,7 +20,7 @@
  * TagKey       ::= SIMPLETAGKEY | BRACETAGKEY
  * SIMPLETAGKEY ::= '%' [A-Za-z\-_]+
  * BRACETAGKEY  ::= '%{' ( '\' . | [^}] )* '}'
- * KEYWORD      ::= 'FILENAME' | 'UNDEF'
+ * KEYWORD      ::= 'filename' | 'undef' | 'backend'
  * INTEGER      ::= '0' | [1-9][0-9]*
  * DOUBLE       ::= <INTEGER>? '.' [0-9]+
  * STRING       ::= '"' ('\' . | [^"] )* '"'

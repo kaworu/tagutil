@@ -212,6 +212,7 @@ parse_simple(struct lexer *restrict L)
     case TREGEX:    /* FALLTHROUGH */
     case TFILENAME: /* FALLTHROUGH */
     case TUNDEF:    /* FALLTHROUGH */
+    case TBACKEND:  /* FALLTHROUGH */
     case TTAGKEY:
         ret = parse_cmp_or_match_or_value(L);
         break;
@@ -298,6 +299,7 @@ parse_cmp_or_match_or_value(struct lexer *restrict L)
     case TREGEX:    /* FALLTHROUGH */
     case TFILENAME: /* FALLTHROUGH */
     case TUNDEF:    /* FALLTHROUGH */
+    case TBACKEND: /* FALLTHROUGH */
     case TTAGKEY:
         break;
     default:
@@ -331,6 +333,7 @@ parse_cmp_or_match_or_value(struct lexer *restrict L)
     case TREGEX:    /* FALLTHROUGH */
     case TFILENAME: /* FALLTHROUGH */
     case TUNDEF:    /* FALLTHROUGH */
+    case TBACKEND:  /* FALLTHROUGH */
     case TTAGKEY:
         break;
     default:
@@ -363,7 +366,8 @@ parse_cmp_or_match_or_value(struct lexer *restrict L)
 
     /* avoid constant evaluation */
     if (lhstok->kind != TTAGKEY && lhstok->kind != TFILENAME &&
-            rhstok->kind != TTAGKEY && rhstok->kind != TFILENAME) {
+            lhstok->kind != TBACKEND && rhstok->kind != TTAGKEY &&
+            rhstok->kind != TFILENAME && rhstok->kind != TBACKEND) {
         parse_error(L, lhstok, rhstok, "constant comparison: %s %s %s",
                 lhstok->str, optok->str, rhstok->str);
         /* NOTREACHED */

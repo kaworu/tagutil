@@ -44,6 +44,7 @@ enum tokenkind {
     TSTRING,
     TREGEX,
     TFILENAME,
+    TBACKEND,
     TUNDEF,
     TTAGKEY
 };
@@ -57,6 +58,7 @@ static const struct {
 } lexkeywords[] = {
     { TFILENAME, "filename", 8 },
     { TUNDEF,    "undef",    5 },
+    { TBACKEND,  "backend",  7 },
 };
 
 
