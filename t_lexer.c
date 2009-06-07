@@ -50,7 +50,7 @@ lexc(struct lexer *restrict L)
         L->c = L->source[L->cindex];
     }
     else
-        assert(L->cindex > 0 && (size_t)L->cindex == L->srclen);
+        assert(L->cindex >= 0 && (size_t)L->cindex == L->srclen);
 
     return (L->c);
 }
@@ -272,7 +272,7 @@ lex_tagkey(struct lexer *restrict L, struct token **tptr)
     else {
     /* %tag */
         while (isalnum(L->c) || L->c == '-' || L->c == '_')
-            lexc(L);
+            (void)lexc(L);
         t->end = L->cindex - 1;
         if (t->end == t->start) {
             lex_error(L, t->start, t->end,
@@ -307,8 +307,8 @@ lex_next_token(struct lexer *restrict L)
         (void)lexc(L);
         t->kind  = TSTART;
 		t->str   = "START";
-
-        return (t);
+        L->current = t;
+        return (L->current);
     }
 
     /* eat blank chars */
@@ -318,27 +318,27 @@ lex_next_token(struct lexer *restrict L)
     t->start = L->cindex;
     switch (L->c) {
     case '\0':
-        t->kind  = TEND;
-		t->str = "END";
-        t->end = L->cindex;
+        t->kind = TEND;
+        t->str  = "END";
+        t->end  = L->cindex;
         break;
     case '!':
         switch (lexc(L)) {
         case '=':
             t->kind = TDIFF;
-			t->str = "DIFF";
+            t->str  = "DIFF";
             t->end  = L->cindex;
             (void)lexc(L);
             break;
         case '~':
             t->kind = TNMATCH;
-			t->str = "NMATCH";
+            t->str  = "NMATCH";
             t->end  = L->cindex;
             (void)lexc(L);
             break;
         default:
             t->kind = TNOT;
-			t->str = "NOT";
+            t->str  = "NOT";
             t->end  = L->cindex - 1;
         }
         break;
@@ -346,11 +346,11 @@ lex_next_token(struct lexer *restrict L)
         switch (lexc(L)) {
         case '=':
             t->kind = TEQ;
-			t->str = "EQ";
+            t->str  = "EQ";
             break;
         case '~':
             t->kind = TMATCH;
-			t->str = "MATCH";
+            t->str  = "MATCH";
             break;
         default:
             lex_error(L, t->start, t->start,
@@ -459,7 +459,7 @@ lex_next_token(struct lexer *restrict L)
                     t->str  = lexkeywords[i].lexem;
                     L->cindex += lexkeywords[i].lexemlen - 1;
                     t->end = L->cindex;
-                    lexc(L);
+                    (void)lexc(L);
                     found = true;
                 }
             }

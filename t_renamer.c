@@ -18,10 +18,17 @@
 #include <string.h>
 
 #include "t_toolkit.h"
+#include "t_lexer.h"
 #include "t_renamer.h"
 
 
 extern bool dflag;
+
+/*
+ * TODO
+ */
+_t__nonnull(1)
+struct token * rename_lex_next_token(struct lexer *restrict L);
 
 /* taken from mkdir(3) */
 _t__nonnull(1)
@@ -71,136 +78,123 @@ rename_safe(const char *restrict oldpath,
 }
 
 
+struct token *
+rename_lex_next_token(struct lexer *restrict L)
+{
+    int skip, i;
+    bool done;
+    struct token *t;
+    assert_not_null(L);
+    t = xcalloc(1, sizeof(struct token));
+
+    /* check for TSTART */
+    if (L->cindex == -1) {
+        (void)lexc(L);
+        t->kind  = TSTART;
+		t->str   = "START";
+        L->current = t;
+        return (L->current);
+    }
+
+    skip = 0;
+    t->start = L->cindex;
+    switch (L->c) {
+    case '\0':
+        t->kind = TEND;
+        t->str  = "END";
+        t->end  = L->cindex;
+        break;
+    case '%':
+        lex_tagkey(L, &t);
+        break;
+    default:
+		t->kind = TSTRING;
+		t->str  = "STRING";
+        done = false;
+        while (!done) {
+            switch (L->c) {
+            case '%': /* FALLTHROUGH */
+            case '\0':
+                done = true;
+                break;
+            case '\\':
+                if (lexc(L) == '%') {
+                    skip++;
+                    (void)lexc(L);
+                }
+                break;
+            default:
+                (void)lexc(L);
+            }
+        }
+        t->end = L->cindex - 1;
+        assert(t->end >= t->start);
+        t->alloclen = t->end - t->start + 2 - skip;
+        t = xrealloc(t, sizeof(struct token) + t->alloclen);
+        t->value.str = (char *)(t + 1);
+        L->cindex = t->start;
+        L->c = L->source[L->cindex];
+        i = 0;
+        while (L->cindex <= t->end) {
+            if (L->c == '\\') {
+                if (lexc(L) != '%') {
+                    /* rewind */
+                    L->cindex -= 2;
+                    L->c = '\\';
+                }
+            }
+            t->value.str[i++] = L->c;
+            (void)lexc(L);
+        }
+        t->value.str[i] = '\0';
+        assert(strlen(t->value.str) + 1 == t->alloclen);
+    }
+
+    L->current = t;
+    return (L->current);
+}
+
+
 char *
 rename_eval(struct tfile *restrict file, const char *restrict pattern)
 {
+    struct lexer *L;
     const size_t len = MAXPATHLEN;
-    char *ret;
-    char *p, *k, *palloc;
-    char *start, *end, *slash;
-    char *key, *value;
-    size_t keylen;
-    bool running = true;
-    enum {
-        SEARCH_TAG, GET_KEY, GET_KEY_BRACE, SET_TAG, TEARDOWN,
-        TOO_LONG, MISSING_BRACE
-    } fsm;
+    char *ret, *s;
+    bool done;
 
+    assert_not_null(file);
+    assert_not_null(pattern);
+
+    L = new_lexer(pattern);
     ret = xcalloc(len, sizeof(char));
-    palloc = p = xstrdup(pattern);
-    fsm = SEARCH_TAG;
 
-    while (running) {
-        switch (fsm) {
-        case SEARCH_TAG:
-            start = strchr(p, '%');
-            if (start == NULL)
-            /* no more % */
-                fsm = TEARDOWN;
-            else if (start != p && start[-1] == '\\') {
-            /* \% escape */
-                start[-1] = '%';
-                start[ 0] = '\0';
-                if (strlcat(ret, p, len) >= len)
-                    fsm = TOO_LONG;
-                else
-                    p = start + 1;
+    (void)rename_lex_next_token(L);
+    assert(L->current->kind == TSTART);
+    xfree(L->current);
+    done = false;
+    while (!done) {
+        if (rename_lex_next_token(L)->kind == TEND)
+            done = true;
+        else {
+            s = NULL;
+            if (L->current->kind == TTAGKEY)
+                s = file->get(file, L->current->value.str);
+
+            if (s == NULL)
+                s = L->current->value.str;
+            if (strlcat(ret, s, len) >= len) {
+                warnx("rename_eval: pattern too long (>MAXPATHLEN) for `%s'",
+                        file->path);
+                xfree(ret);
+                done = true;
             }
-            else {
-            /* %tag or %{tag} */
-                start[0] = '\0';
-                if (strlcat(ret, p, len) >= len)
-                    fsm = TOO_LONG;
-                else {
-                    if (start[1] == '{') {
-                        p = start + 2;
-                        fsm = GET_KEY_BRACE;
-                    }
-                    else {
-                        p = start + 1;
-                        fsm = GET_KEY;
-                    }
-                }
-            }
-            break;
-        case GET_KEY:
-            for (end = p; isalnum(*end) || *end == '_' || *end == '-'; end++)
-                continue;
-            if (end == p)
-                warnx("rename_eval: %% without tag name (%d)", (int)(p - palloc));
-            keylen = (size_t)(end - p) + 1;
-            key = xcalloc(keylen, sizeof(char));
-            (void)strlcpy(key, p, keylen);
-            p = end;
-            fsm = SET_TAG;
-            break;
-        case GET_KEY_BRACE:
-            keylen = strlen(p) + 1;
-            key = xcalloc(keylen, sizeof(char));
-            k = key;
-            for (end = p; !strempty(end) && *end != '}'; end++) {
-                if (*end == '\\' && end[1] == '}') {
-                    *k = '}';
-                    k++;
-                    end++;
-                }
-                else {
-                    *k = *end;
-                    k++;
-                }
-            }
-            if (strempty(end)) {
-                xfree(key);
-                fsm = MISSING_BRACE;
-            }
-            else {
-                fsm = SET_TAG;
-                p = end + 1;
-            }
-            break;
-        case SET_TAG:
-            value = file->get(file, key);
-            if (value == NULL) {
-                warnx("rename_eval: no tag `%s' for `%s', using tag key instead.",
-                        key, file->path);
-                value = key;
-            }
-            else {
-                slash = strchr(value, '/');
-                if (slash) {
-                    warnx("rename_eval: `%s': tag `%s' has / in value, "
-                            "replacing by -", file->path, key);
-                    do {
-                        *slash = '-';
-                         slash = strchr(slash, '/');
-                    } while (slash);
-                }
-                xfree(key);
-            }
-            if (strlcat(ret, value, len) >= len)
-                fsm = TOO_LONG;
-            else
-                fsm = SEARCH_TAG;
-            xfree(value);
-            break;
-        case TEARDOWN:
-            if (strlcat(ret, p, len) >= len)
-                fsm = TOO_LONG;
-            else
-                running = false;
-            break;
-        case TOO_LONG:
-            warnx("rename_eval: pattern too long (>MAXPATHLEN) for `%s'",
-                    file->path);
-            running = false;
-            xfree(ret);
-            break;
-        case MISSING_BRACE:
-            errx(EINVAL, "rename_eval: missing }");
-            /* NOTREACHED */
+            if (s != L->current->value.str)
+                xfree(s);
         }
+        xfree(L->current);
     }
-    xfree(palloc);
+    xfree(L);
 
     return (ret);
 }
