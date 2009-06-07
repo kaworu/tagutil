@@ -64,6 +64,9 @@ ast_eval(const struct tfile *restrict file, const struct ast *restrict filter)
     case TMATCH:
         ret = eval_match(file, filter->lhs, filter->rhs, &undef);
         break;
+    case TNMATCH:
+        ret = !eval_match(file, filter->lhs, filter->rhs, &undef);
+        break;
     default:
         fprintf(stderr, "internal interpreter error: unexpected AST: `%s'",
                 filter->token->str);

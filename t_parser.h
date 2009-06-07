@@ -12,8 +12,8 @@
  * Filter       ::= <Condition>
  * Condition    ::= <Condition> ( '||' | '&&' ) <Condition>
  * Condition    ::= <Value> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <Value>
- * Condition    ::= <Value> '=~' <REGEX>
- * Condition    ::= <REGEX> '=~' <Value>
+ * Condition    ::= <Value> ( '=~' | '!~' ) <REGEX>
+ * Condition    ::= <REGEX> ( '=~' | '!~' ) <Value>
  * Condition    ::= '!' '(' <Condition> ')'
  * Condition    ::= '(' <Condition> ')'
  * Value        ::= <TagKey> | <KEYWORD> | <INTEGER> | <DOUBLE> | <STRING>

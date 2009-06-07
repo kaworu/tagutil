@@ -323,13 +323,20 @@ lex_next_token(struct lexer *restrict L)
         t->end = L->cindex;
         break;
     case '!':
-        if (lexc(L) == '=') {
+        switch (lexc(L)) {
+        case '=':
             t->kind = TDIFF;
 			t->str = "DIFF";
             t->end  = L->cindex;
             (void)lexc(L);
-        }
-        else {
+            break;
+        case '~':
+            t->kind = TNMATCH;
+			t->str = "NMATCH";
+            t->end  = L->cindex;
+            (void)lexc(L);
+            break;
+        default:
             t->kind = TNOT;
 			t->str = "NOT";
             t->end  = L->cindex - 1;

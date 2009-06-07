@@ -47,8 +47,8 @@ static struct ast * parse_and(struct lexer *restrict L);
  * 1) Condition ::= '!' '(' <Condition> ')'
  * 2) Condition ::= '(' <Condition> ')'
  * 3) Condition ::= <Value> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <Value>
- *    Condition ::= <Value> '=~' <REGEX>
- *    Condition ::= <REGEX> '=~' <Value>
+ *    Condition ::= <Value> ( '=~' | '!~' ) <REGEX>
+ *    Condition ::= <REGEX> ( '=~' | '!~' ) <Value>
  */
 _t__nonnull(1)
 static struct ast * parse_simple(struct lexer *restrict L);
@@ -67,8 +67,8 @@ static struct ast * parse_nestedcond(struct lexer *restrict L);
 
 /*
  * 3) Condition ::= <Value> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <Value>
- *    Condition ::= <Value> '=~' <REGEX>
- *    Condition ::= <REGEX> '=~' <Value>
+ *    Condition ::= <Value> ( '=~' | '!~' ) <REGEX>
+ *    Condition ::= <REGEX> ( '=~' | '!~' ) <Value>
  */
 _t__nonnull(1)
 static struct ast *
@@ -281,9 +281,8 @@ parse_nestedcond(struct lexer *restrict L)
 
 /*
  * 3) Condition ::= <Value> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <Value>
- *    Condition ::= <Value> '=~' <REGEX>
- *    Condition ::= <REGEX> '=~' <Value>
- *    Condition ::= <Value>
+ *    Condition ::= <Value> ( '=~' | '!~' ) <REGEX>
+ *    Condition ::= <REGEX> ( '=~' | '!~' ) <Value>
  */
 static struct ast *
 parse_cmp_or_match_or_value(struct lexer *restrict L)
@@ -309,13 +308,14 @@ parse_cmp_or_match_or_value(struct lexer *restrict L)
 
     optok = lex_next_token(L);
     switch (optok->kind) {
-    case TEQ:    /* FALLTHROUGH */
-    case TDIFF:  /* FALLTHROUGH */
-    case TMATCH: /* FALLTHROUGH */
-    case TLT:    /* FALLTHROUGH */
-    case TLE:    /* FALLTHROUGH */
-    case TGT:    /* FALLTHROUGH */
-    case TGE:    /* FALLTHROUGH */
+    case TEQ:     /* FALLTHROUGH */
+    case TDIFF:   /* FALLTHROUGH */
+    case TMATCH:  /* FALLTHROUGH */
+    case TNMATCH: /* FALLTHROUGH */
+    case TLT:     /* FALLTHROUGH */
+    case TLE:     /* FALLTHROUGH */
+    case TGT:     /* FALLTHROUGH */
+    case TGE:     /* FALLTHROUGH */
         break;
     default:
         parse_error(L, lhstok, optok, "expected <value operator value>, got %s %s",
@@ -339,15 +339,15 @@ parse_cmp_or_match_or_value(struct lexer *restrict L)
         /* NOTREACHED */
     }
 
-    if (optok->kind == TMATCH) {
+    if (optok->kind == TMATCH || optok->kind == TNMATCH) {
     /*
-     * Condition ::= <Value> '=~' <REGEX>
-     * Condition ::= <REGEX> '=~' <Value>
+     * Condition ::= <Value> ( '=~' | '!~' ) <REGEX>
+     * Condition ::= <REGEX> ( '=~' | '!~' ) <Value>
      */
         if ((lhstok->kind == TREGEX && rhstok->kind == TREGEX) ||
                 (lhstok->kind != TREGEX && rhstok->kind != TREGEX)) {
-            parse_error(L, lhstok, rhstok, "expected <REGEX MATCH value> or"
-                    " <value MATCH REGEX>, got %s %s %s",
+            parse_error(L, lhstok, rhstok, "expected <REGEX (N)MATCH value> or"
+                    " <value (N)MATCH REGEX>, got %s %s %s",
                     lhstok->str, optok->str, rhstok->str);
             /* NOTREACHED */
         }

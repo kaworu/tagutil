@@ -27,6 +27,7 @@ enum tokenkind {
     TEQ,
     TDIFF,
     TMATCH,
+    TNMATCH,
     TLT,
     TLE,
     TGT,
