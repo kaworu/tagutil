@@ -182,7 +182,7 @@ long
 ftflac_tagkeys(const struct tfile *restrict self, char ***kptr)
 {
     char **ret;
-    int i, count;
+    long i, count;
     bool b;
     struct ftflac_data *d;
     FLAC__StreamMetadata_VorbisComment_Entry e;

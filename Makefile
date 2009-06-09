@@ -23,7 +23,7 @@ CFLAGS+=-D'VERSION="${VERSION}"' -DHAVE_SANE_DIRNAME
 
 # libyaml can't use pkg-config :(
 CFLAGS+=-I/usr/local/include
-LDFLAGS+=-L/usr/local/lib -lyaml
+LDADD+=-L/usr/local/lib -lyaml
 
 # Generic support with TagLib
 .if defined(WITH_TAGLIB)
@@ -31,7 +31,7 @@ SRCS+=t_ftgeneric.c
 TAGLIB_I!=pkg-config --cflags taglib_c
 CFLAGS+=-DWITH_TAGLIB ${TAGLIB_I}
 TAGLIB_L!=pkg-config --libs   taglib_c
-LDFLAGS+=${TAGLIB_L}
+LDADD+=${TAGLIB_L}
 .endif
 
 # FLAC support with libFLAC
@@ -40,7 +40,16 @@ SRCS+=t_ftflac.c
 FLAC_I!=pkg-config --cflags flac
 CFLAGS+=-DWITH_FLAC ${FLAC_I}
 FLAC_L!=pkg-config --libs   flac
-LDFLAGS+=${FLAC_L}
+LDADD+=${FLAC_L}
+.endif
+
+# Ogg/Vorbis support with libvorbis
+.if defined(WITH_OGGVORBIS)
+SRCS+=t_ftoggvorbis.c
+OGGVORBIS_I!=pkg-config --cflags vorbisfile
+CFLAGS+=-DWITH_OGGVORBIS ${OGGVORBIS_I}
+OGGVORBIS_L!=pkg-config --libs   vorbisfile
+LDADD+=${OGGVORBIS_L}
 .endif
 
 

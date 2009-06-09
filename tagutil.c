@@ -58,6 +58,7 @@
 #include "tagutil.h"
 
 #include "t_ftflac.h"
+#include "t_ftoggvorbis.h"
 #include "t_ftgeneric.h"
 
 bool pflag = false; /* display tags action */
@@ -169,6 +170,7 @@ main(int argc, char *argv[])
 
     /* init backends */
     ftflac_init();
+    ftoggvorbis_init();
     ftgeneric_init();
 
     ret = EXIT_SUCCESS;
@@ -188,6 +190,8 @@ main(int argc, char *argv[])
 
         file = NULL;
         file = ftflac_new(path);
+        if (file == NULL)
+            file = ftoggvorbis_new(path);
         if (file == NULL)
             file = ftgeneric_new(path);
         if (file == NULL) {
@@ -295,6 +299,7 @@ user_edit(const char *restrict path)
     if (system(NULL) == 0)
             err(errno, "can't access shell");
 
+    /* FIXME: fork(2) - wait(2) ? */
     error = system(editcmd);
 
     xfree(editcmd);
