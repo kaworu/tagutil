@@ -16,7 +16,7 @@
 
 #include "t_toolkit.h"
 #include "t_file.h"
-#include "t_setter.h"
+#include "t_tag.h"
 #include "t_yaml.h"
 
 
@@ -139,8 +139,9 @@ bool
 yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
 {
     int count, i;
-    struct setter_q *Q;
-    struct setter_item *item;
+    struct tag_list *T;
+    struct ttag *tag;
+    struct ttagv *v;
     yaml_parser_t parser;
     yaml_event_t event;
     bool stop = false;
@@ -157,7 +158,7 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
 
     yaml_parser_set_input_file(&parser, stream);
 
-    Q = new_setter();
+    T = new_tag_list();
     while (!stop) {
         if (!yaml_parser_parse(&parser, &event))
             goto parser_error;
@@ -228,7 +229,7 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
                 value = xcalloc(event.data.scalar.length + 1, sizeof(char));
                 memcpy(value, event.data.scalar.value,
                         event.data.scalar.length);
-                setter_add(Q, key, value);
+                assert(tag_list_insert(T, key, value, NULL));
                 xfree(key);
                 xfree(value);
             }
@@ -249,12 +250,13 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
         }
         xfree(tagkeys);
 
-        STAILQ_FOREACH(item, Q, next) {
-            (void)file->set(file, item->key, item->value);
+        TAILQ_FOREACH(tag, T->tags, next) {
+            TAILQ_FOREACH(v, tag->values, next)
+                (void)file->set(file, tag->key, v->val);
         }
     }
 
-    destroy_setter(Q);
+    destroy_tag_list(T);
     yaml_event_delete(&event);
     yaml_parser_delete(&parser);
     return (success);

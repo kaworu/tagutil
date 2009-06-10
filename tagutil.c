@@ -46,12 +46,12 @@
 #include <errno.h>
 #include <unistd.h> /* getopt(3) */
 
-#include "t_setter.h"
 #include "t_renamer.h"
 #include "t_lexer.h"
 #include "t_parser.h"
 #include "t_interpreter.h"
 #include "t_yaml.h"
+#include "t_tag.h"
 #include "t_file.h"
 #include "t_toolkit.h"
 
@@ -74,7 +74,7 @@ bool fflag = false;  /* load file */
 char *f_arg = NULL; /* file */
 char *r_arg = NULL; /* rename pattern */
 struct ast *x_arg = NULL; /* filter code */
-struct setter_q *s_arg = NULL; /* key:val tags */
+struct tag_list *s_arg = NULL; /* key=val tags */
 
 
 /*
@@ -85,10 +85,11 @@ int
 main(int argc, char *argv[])
 {
     int i, ch, ret;
-    char *path, *set_value, *set_key;
+    char *path, *set_value, *set_key, *emsg;
     struct stat s;
     struct tfile *file;
-    struct setter_item *item;
+    struct ttag  *tag;
+    struct ttagv *tagv;
 
     if (argc < 2)
         usage();
@@ -119,7 +120,7 @@ main(int argc, char *argv[])
         case 's':
             sflag = true;
             if (s_arg == NULL)
-                s_arg = new_setter();
+                s_arg = new_tag_list();
             set_key = optarg;
             set_value = strchr(set_key, '=');
             if (set_value == NULL)
@@ -129,7 +130,8 @@ main(int argc, char *argv[])
             if (strempty(set_value))
             /* don't allow to set a key to "" we destroy it instead */
                 set_value = NULL;
-            setter_add(s_arg, set_key, set_value);
+            if (!tag_list_insert(s_arg, set_key, set_value, &emsg))
+                errx(-1, "%s", emsg);
             break;
         case 'd':
             dflag = true;
@@ -208,8 +210,9 @@ main(int argc, char *argv[])
         if (fflag)
             tagutil_load(file, f_arg);
         if (sflag) {
-            STAILQ_FOREACH(item, s_arg, next) {
-                (void)file->set(file, item->key, item->value);
+            TAILQ_FOREACH(tag, s_arg->tags, next) {
+                TAILQ_FOREACH(tagv, tag->values, next)
+                    (void)file->set(file, tag->key, tagv->val);
             }
             if (!file->save(file))
                 err(errno, "couldn't save file `%s'", path);
@@ -225,7 +228,7 @@ main(int argc, char *argv[])
     if (xflag)
         destroy_ast(x_arg);
     if (sflag)
-        destroy_setter(s_arg);
+        destroy_tag_list(s_arg);
 
     return (ret);
 }
