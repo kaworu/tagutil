@@ -223,6 +223,8 @@ regopt_error:
 void
 lex_tagkey(struct lexer *restrict L, struct token **tptr)
 {
+    bool idx;
+    int copyend, eqindex;
     struct token *t;
     unsigned int skip, i;
 
@@ -234,28 +236,39 @@ lex_tagkey(struct lexer *restrict L, struct token **tptr)
     t = *tptr;
     t->kind = TTAGKEY;
     t->str = "TAGKEY";
+    t->tindex = 0;
 
     if (lexc(L) == '{') {
     /* %{tag} */
         skip = 0;
-        while (L->c != '\0' && lexc(L) != '}') {
+        while (lexc(L) != '\0' && L->c != '}' && L->c != '=') {
             if (L->c == '\\') {
                 if (lexc(L) == '}')
                     skip += 1;
             }
+        }
+        if (L->c == '=') {
+        /* %{tag=idx} */
+            idx = true;
+            eqindex = L->cindex;
+            while (isdigit(lexc(L)))
+                t->tindex = 10 * t->tindex + digittoint(L->c);
+            if (L->cindex == eqindex + 1 || (L->c && L->c != '}'))
+                lex_error(L, eqindex + 1, L->cindex, "bad index request");
         }
         t->end = L->cindex;
         if (L->c != '}')
             lex_error(L, t->start, t->end, "unbalanced { for %s", t->str);
 
         /* do the copy */
-        t->slen = t->end - t->start - 2 - skip;
+        copyend = idx ? eqindex : t->end;
+        t->slen = copyend - t->start - 2 - skip;
         t = xrealloc(t, sizeof(struct token) + t->slen + 1);
         *tptr = t;
         t->value.str = (char *)(t + 1);
         L->cindex    = t->start + 1;
         i = 0;
-        while (lexc(L) != '}') {
+        while (lexc(L) != (idx ? '=' : '}')) {
             if (L->c == '\\') {
                 if (lexc(L) != '}') {
                     /* rewind */
@@ -264,6 +277,11 @@ lex_tagkey(struct lexer *restrict L, struct token **tptr)
                 }
             }
             t->value.str[i++] = L->c;
+        }
+        if (idx) {
+        /* eat idx digits */
+            while (lexc(L) != '}')
+                continue;
         }
         t->value.str[i] = '\0';
         assert(strlen(t->value.str) == t->slen);
@@ -530,8 +548,9 @@ token_debug(struct token *restrict t) {
             (void)printf("(%lf)", t->value.dbl);
             break;
         case TSTRING: /* FALLTHROUGH */
-        case TTAGKEY:
             (void)printf("(%s)", t->value.str);
+        case TTAGKEY:
+            (void)printf("(%s@%zu)", t->value.str, t->tindex);
             break;
         case TREGEX:
             (void)printf("(%s)", (char *)(t + 1));
