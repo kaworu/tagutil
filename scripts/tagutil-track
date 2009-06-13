@@ -10,7 +10,6 @@ else {
     $trackkey = shift;
     foreach $f (@ARGV) {
         $v = sprintf("%02d", $i++);
-        @cmd = (tagutil, "-s", "$trackkey=$v", $f);
-        system(@cmd);
+        system(tagutil, "-s", "$trackkey=$v", $f);
     }
 }
