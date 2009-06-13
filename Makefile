@@ -1,7 +1,14 @@
 # BSD Makefile
 
 PROG=tagutil
-SRCS=tagutil.c t_tag.c t_yaml.c t_renamer.c t_lexer.c t_parser.c t_interpreter.c
+SRCS=tagutil.c \
+	 t_toolkit.c \
+	 t_tag.c \
+	 t_yaml.c \
+	 t_renamer.c \
+	 t_lexer.c \
+	 t_parser.c \
+	 t_interpreter.c
 
 VERSION=2.1
 
