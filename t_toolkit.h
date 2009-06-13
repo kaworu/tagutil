@@ -28,6 +28,12 @@
 #define assert_not_null(x) assert((x) != NULL)
 #define assert_null(x) assert((x) == NULL)
 
+/* error handling macros */
+#define last_error_msg(o) ((o)->errmsg)
+#define reset_error_msg(o) xfree(last_error_msg(o))
+#define set_error_msg(o, fmt, ...) \
+    (void)xasprintf(&last_error_msg(o), fmt, ##__VA_ARGS__);
+
 
 /* MEMORY FUNCTIONS */
 
@@ -40,9 +46,7 @@ static inline void * xcalloc(size_t nmemb, const size_t size);
 _t__unused
 static inline void * xrealloc(void *ptr, size_t size);
 
-_t__unused _t__nonnull(1)
-static inline void   _xfree(void *ptr);
-#define xfree(p) do { _xfree(p); (p) = NULL; } while (0)
+#define xfree(p) do { free(p); (p) = NULL; } while (/*CONSTCOND*/0)
 
 
 /* FILE FUNCTIONS */
@@ -112,6 +116,44 @@ static inline bool has_match(const char *restrict str,
         const char *restrict pattern);
 
 
+/* BUFFER STRING OPERATIONS */
+struct strbuf {
+    char **buffers;
+    int bcount, blast;
+    size_t *blen, len;
+};
+
+/*
+ * create and init a strbuf struct.
+ */
+_t__unused
+static inline struct strbuf * new_strbuf(void);
+
+/*
+ * add the given (NUL-terminated) s to sb.
+ * len should be strlen(s).
+ *
+ * the s pointer should be free()able and is owned by the strbuf after the
+ * call.
+ */
+_t__unused _t__nonnull(1) _t__nonnull(2)
+static inline void strbuf_add(struct strbuf *restrict sb, char *s, size_t len);
+
+/*
+ * return the result of the buffer.
+ *
+ * returned value has to be free()d.
+ */
+_t__unused _t__nonnull(1)
+static inline char * strbuf_get(const struct strbuf *restrict sb);
+
+/*
+ * free the given strbuf.
+ */
+_t__unused _t__nonnull(1)
+static inline void destroy_strbuf(struct strbuf *restrict sb);
+
+
 /* OTHER */
 
 /*
@@ -164,20 +206,12 @@ xrealloc(void *old_ptr, size_t new_size)
 {
     void *ptr;
 
+    if (new_size == 0)
+        new_size = 1;
     if ((ptr = realloc(old_ptr, new_size)) == NULL)
         err(ENOMEM, "realloc");
 
     return (ptr);
-}
-
-
-static inline void
-_xfree(void *ptr)
-{
-
-	assert_not_null(ptr);
-
-	free(ptr);
 }
 
 
@@ -192,7 +226,7 @@ xfopen(const char *restrict path, const char *restrict mode)
     stream = fopen(path, mode);
 
     if (stream == NULL)
-        err(errno, "can't open file '%s'", path);
+        err(errno, "can't open file `%s'", path);
 
     return (stream);
 }
@@ -247,12 +281,12 @@ strempty(const char *restrict str)
 static inline char *
 xstrdup(const char *restrict src)
 {
-    char *ptr;
+    char *ret;
 
-    if ((ptr = strdup(src)) == NULL)
+    if ((ret = strdup(src)) == NULL)
         err(ENOMEM, "strdup");
 
-    return (ptr);
+    return (ret);
 }
 
 
@@ -266,8 +300,8 @@ xasprintf(char **ret, const char *fmt, ...)
     i = vasprintf(ret, fmt, ap);
     if (i < 0)
         err(ENOMEM, "vasprintf");
-
     va_end(ap);
+
     return (i);
 }
 
@@ -334,7 +368,7 @@ strtoupper(char *restrict str)
 {
     size_t len, i;
 
-    assert_not_null (str);
+    assert_not_null(str);
 
     len = strlen(str);
     for (i = 0; i < len; i++)
@@ -347,7 +381,7 @@ strtolower(char *restrict str)
 {
     size_t len, i;
 
-    assert_not_null (str);
+    assert_not_null(str);
 
     len = strlen(str);
     for (i = 0; i < len; i++)
@@ -399,5 +433,75 @@ yesno(const char *restrict question)
                 return (true);
         }
     }
+}
+
+
+static inline struct strbuf *
+new_strbuf(void)
+{
+    struct strbuf *ret;
+
+    ret = xmalloc(sizeof(struct strbuf));
+
+    ret->len     =  0;
+    ret->bcount  =  8;
+    ret->blast   = -1;
+    ret->buffers = xcalloc(ret->bcount, sizeof(char *));
+    ret->blen    = xcalloc(ret->bcount, sizeof(size_t));
+
+    return (ret);
+}
+
+
+static inline void
+strbuf_add(struct strbuf *restrict sb, char *s, size_t len)
+{
+    assert_not_null(sb);
+    assert(sb->bcount >= sb->blast);
+    assert_not_null(s);
+
+    if (sb->blast == sb->bcount) {
+    /* grow */
+        sb->bcount  = sb->bcount * 2;
+        sb->buffers = xrealloc(sb->buffers, sb->bcount * sizeof(char *));
+        sb->blen    = xrealloc(sb->blen,  sb->bcount * sizeof(size_t));
+    }
+    sb->blast += 1;
+    sb->buffers[sb->blast] = s;
+    sb->blen[sb->blast] = len;
+    sb->len += len;
+}
+
+
+static inline char *
+strbuf_get(const struct strbuf *restrict sb)
+{
+    char *ret, *now;
+    int i;
+
+    assert_not_null(sb);
+    assert(sb->bcount >= sb->blast);
+
+    now = ret = xcalloc(sb->len + 1, sizeof(char));
+    for (i = 0; i <= sb->blast; i++) {
+        memcpy(now, sb->buffers[i], sb->blen[i]);
+        now += sb->blen[i];
+    }
+
+    return (ret);
+}
+
+
+static inline void
+destroy_strbuf(struct strbuf *restrict sb)
+{
+    int i;
+    assert_not_null(sb);
+
+    for (i = sb->blast; i >= 0; i--)
+        xfree(sb->buffers[i]);
+    xfree(sb->buffers);
+    xfree(sb->blen);
+    xfree(sb);
 }
 #endif /* not T_TOOLKIT_H */

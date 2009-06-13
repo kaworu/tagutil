@@ -16,18 +16,17 @@ new_tag_list(void)
 
     ret = xmalloc(sizeof(struct tag_list) + sizeof(struct ttag_q));
     ret->tags = (struct ttag_q *)(ret + 1);
-    ret->frozen = false;
     ret->tcount = 0;
+    last_error_msg(ret) = NULL;
     TAILQ_INIT(ret->tags);
 
     return (ret);
 }
 
 
-bool
+void
 tag_list_insert(struct tag_list *restrict T,
-        const char *restrict key, const char *restrict val,
-        char **emsg)
+        const char *restrict key, const char *restrict value)
 {
     size_t len;
     ssize_t vlen;
@@ -35,18 +34,17 @@ tag_list_insert(struct tag_list *restrict T,
     struct ttag  *t, *kinq;
     struct ttagv *v;
 
-    assert_not_null(T);
     assert_not_null(key);
-    assert(!T->frozen);
+    assert_not_null(T);
 
     /* create v if needed */
-    if (val) {
-        vlen = strlen(val);
+    if (value) {
+        vlen = strlen(value);
         v = xmalloc(sizeof(struct ttagv) + vlen + 1);
         v->vallen = vlen;
         s = (char *)(v + 1);
-        (void)strlcpy(s, val, vlen + 1);
-        v->val = s;
+        (void)strlcpy(s, value, vlen + 1);
+        v->value = s;
     }
     else
         v = NULL;
@@ -61,24 +59,6 @@ tag_list_insert(struct tag_list *restrict T,
         }
     }
 
-    if (kinq) {
-    /* exist, check if we don't try to delete/set or set/delete */
-        if (v && ttag_delete(kinq)) {
-            if (emsg) {
-                (void)xasprintf(emsg, "%s will be deleted, can't add `%s'",
-                        kinq->key, v->val);
-            }
-            xfree(v);
-            return (false);
-        }
-        if (v == NULL && !ttag_delete(kinq)) {
-            if (emsg) {
-                (void)xasprintf(emsg, "%s set %zd values, can't delete",
-                        kinq->key, kinq->vcount);
-            }
-            return (false);
-        }
-    }
     if (kinq == NULL) {
     /* doesn't exist, create a new ttag (delete) */
         kinq = xmalloc(sizeof(struct ttag) + sizeof(struct ttagv_q) + len + 1);
@@ -100,19 +80,16 @@ tag_list_insert(struct tag_list *restrict T,
         TAILQ_INSERT_TAIL(kinq->values, v, next);
         kinq->vcount++;
     }
-
-    return (true);
 }
 
 
 struct ttag *
-tag_list_search(struct tag_list *restrict T, const char *restrict key)
+tag_list_search(const struct tag_list *restrict T, const char *restrict key)
 {
     size_t len;
     struct ttag  *t, *target;
 
     assert_not_null(T);
-    assert(T->frozen);
     assert_not_null(key);
 
     len = strlen(key);
@@ -129,10 +106,13 @@ tag_list_search(struct tag_list *restrict T, const char *restrict key)
 
 
 void
-destroy_tag_list(struct tag_list *restrict T)
+destroy_tag_list(const struct tag_list *Tconst)
 {
     struct ttag  *t;
     struct ttagv *v;
+    struct tag_list *T;
+
+    T = (struct tag_list *)Tconst; /* break const */
 
     assert_not_null(T);
 
@@ -146,6 +126,7 @@ destroy_tag_list(struct tag_list *restrict T)
         }
         xfree(t);
     }
+    reset_error_msg(T);
     xfree(T);
 }
 

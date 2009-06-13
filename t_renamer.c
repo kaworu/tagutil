@@ -32,7 +32,7 @@ struct token * rename_lex_next_token(struct lexer *restrict L);
 
 /* taken from mkdir(3) */
 _t__nonnull(1)
-static inline int build(char *path, mode_t omode);
+static int build(char *path, mode_t omode);
 
 
 void
@@ -212,7 +212,7 @@ __FBSDID("$FreeBSD: src/bin/mkdir/mkdir.c,v 1.33 2006/10/10 20:18:20 ru Exp $");
  * Returns 1 if a directory has been created,
  * 2 if it already existed, and 0 on failure.
  */
-static inline int
+static int
 build(char *path, mode_t omode)
 {
 	struct stat sb;

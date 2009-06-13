@@ -16,40 +16,35 @@
 
 #include "t_toolkit.h"
 #include "t_file.h"
-#include "t_tag.h"
 #include "t_yaml.h"
 
 
-struct whdl_data {
-    char *str;
-    size_t alloclen, len;
-};
-
-int yaml_write_handler(void *dataptr, unsigned char *buffer, size_t size);
+int yaml_write_handler(void *data, unsigned char *buffer, size_t size);
 
 
 char *
-tags_to_yaml(const struct tfile *restrict file)
+tags_to_yaml(struct tfile *restrict file)
 {
     yaml_emitter_t emitter;
     yaml_event_t event;
-    struct whdl_data *data;
-    char *ret;
-    char **tagkeys = NULL, *value;
-    int count = 0, i;
+    struct strbuf *sb;
+    char *head, *ret;
+    size_t headlen;
+    struct tag_list *T;
+    struct ttag  *t;
+    struct ttagv *v;
 
     assert_not_null(file);
 
-    data = xmalloc(sizeof(struct whdl_data));
-    (void)xasprintf(&data->str, "# %s\n", file->path);
-    data->len = strlen(data->str);
-    data->alloclen = data->len + 1;
+    headlen = xasprintf(&head, "# %s\n", file->path);
+    sb = new_strbuf();
+    strbuf_add(sb, head, headlen);
 
     /* Create the Emitter object. */
     if (!yaml_emitter_initialize(&emitter))
         goto emitter_error;
 
-    yaml_emitter_set_output(&emitter, yaml_write_handler, data);
+    yaml_emitter_set_output(&emitter, yaml_write_handler, sb);
     yaml_emitter_set_unicode(&emitter, 1);
 
     /* Create and emit the STREAM-START event. */
@@ -72,35 +67,29 @@ tags_to_yaml(const struct tfile *restrict file)
     if (!yaml_emitter_emit(&emitter, &event))
         goto emitter_error;
 
-    count = file->tagkeys(file, &tagkeys);
-    if (count < 0)
-        errx(-1, "tags_to_yaml: tagkeys (%s backend)", file->lib);
-    for (i = 0; i < count; i++) {
-        /* emit the key */
-        if (!yaml_scalar_event_initialize(&event, NULL,
-                    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)tagkeys[i], -1,
-                    1, 1, YAML_PLAIN_SCALAR_STYLE))
+    T = file->get(file, NULL);
+    if (T == NULL)
+        errx(-1, "tags_to_yaml: %s", last_error_msg(file));
+    TAILQ_FOREACH(t, T->tags, next) {
+        TAILQ_FOREACH(v, t->values, next) {
+            /* emit the key */
+            if (!yaml_scalar_event_initialize(&event, NULL,
+                        (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->key, -1,
+                        1, 1, YAML_PLAIN_SCALAR_STYLE))
             goto event_error;
+            if (!yaml_emitter_emit(&emitter, &event))
+                goto emitter_error;
+            /* emit the value */
+        if (!yaml_scalar_event_initialize(&event, NULL,
+                    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)v->value, -1,
+                    1, 1, YAML_PLAIN_SCALAR_STYLE)) {
+            goto event_error;
+        }
         if (!yaml_emitter_emit(&emitter, &event))
             goto emitter_error;
-        /* emit the value */
-        value = file->get(file, tagkeys[i]);
-        if (value == NULL)
-            errx(-1, "tags_to_yaml: bad tagkeys/get (%s backend)", file->lib);
-        if (!yaml_scalar_event_initialize(&event, NULL,
-                    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)value, -1, 1, 1,
-                    YAML_PLAIN_SCALAR_STYLE)) {
-            xfree(value);
-            goto event_error;
         }
-        if (!yaml_emitter_emit(&emitter, &event)) {
-            xfree(value);
-            goto emitter_error;
-        }
-        xfree(tagkeys[i]);
-        xfree(value);
     }
-    xfree(tagkeys);
+    destroy_tag_list(T);
 
     /* Create and emit the MAPPING-END event. */
     if (!yaml_mapping_end_event_initialize(&event))
@@ -123,42 +112,37 @@ tags_to_yaml(const struct tfile *restrict file)
     /* Destroy the Emitter object. */
     yaml_emitter_delete(&emitter);
     yaml_event_delete(&event);
-    ret = data->str;
-    xfree(data);
+    ret = strbuf_get(sb);
+    destroy_strbuf(sb);
     return (ret);
 
 event_error:
-    errx(ENOMEM, "tags_to_yaml: can't init event");
+    errx(errno = ENOMEM, "tags_to_yaml: can't init event");
     /* NOTREACHED */
 emitter_error:
     errx(-1, "tags_to_yaml: emit error");
 }
 
 
-bool
+struct tag_list *
 yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
 {
-    int count, i;
     struct tag_list *T;
-    struct ttag *tag;
-    struct ttagv *v;
     yaml_parser_t parser;
     yaml_event_t event;
     bool stop = false;
     bool inmap = false, donemap = false;
-    bool success = true;
     char *key = NULL, *value = NULL;
-    char **tagkeys;
 
-    assert_not_null(file);
     assert_not_null(stream);
+    assert_not_null(file);
+
+    T = new_tag_list();
 
     if (!yaml_parser_initialize(&parser))
         goto parser_error;
-
     yaml_parser_set_input_file(&parser, stream);
 
-    T = new_tag_list();
     while (!stop) {
         if (!yaml_parser_parse(&parser, &event))
             goto parser_error;
@@ -170,36 +154,34 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
             continue;
 
         case YAML_ALIAS_EVENT:
-            warnx("YAML parser got unexpected YAML_ALIAS_EVENT at line %zu",
+            set_error_msg(T, "YAML parser got unexpected "
+                    "YAML_ALIAS_EVENT at line %zu",
                    parser.context_mark.line + 1);
             stop = true;
-            success = false;
             break;
         case YAML_SEQUENCE_START_EVENT:
-            warnx("YAML parser got unexpected YAML_SEQUENCE_START_EVENT at line %zu",
+            set_error_msg(T, "YAML parser got unexpected "
+                    "YAML_SEQUENCE_START_EVENT at line %zu",
                     parser.context_mark.line + 1);
             stop = true;
-            success = false;
             break;
         case YAML_SEQUENCE_END_EVENT:
-            warnx("YAML parser got unexpected YAML_SEQUENCE_END_EVENT at line %zu",
+            set_error_msg(T, "YAML parser got unexpected "
+                    "YAML_SEQUENCE_END_EVENT at line %zu",
                     parser.context_mark.line + 1);
             stop = true;
-            success = false;
             break;
 
         case YAML_MAPPING_START_EVENT:
             if (inmap) {
-                warnx("unexpected nested mapping at line %zu",
+                set_error_msg(T, "unexpected nested mapping at line %zu",
                         parser.context_mark.line + 1);
                 stop = true;
-                success = false;
             }
             else if (donemap) {
-                warnx("unexpected extra mapping, needed only one. at line %zu",
-                        parser.context_mark.line + 1);
+                set_error_msg(T, "unexpected extra mapping, needed only one. "
+                        "at line %zu", parser.context_mark.line + 1);
                 stop = true;
-                success = false;
             }
             else
                 inmap = true;
@@ -210,16 +192,14 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
             break;
         case YAML_SCALAR_EVENT:
             if (!inmap) {
-                warnx("unexpected scalar at line %zu",
+                set_error_msg(T, "unexpected scalar at line %zu",
                         parser.context_mark.line + 1);
                 stop = true;
-                success = false;
             }
             else if (donemap) {
-                warnx("unexpected extra scalar after mapping at line %zu",
+                set_error_msg(T, "unexpected extra scalar after mapping at line %zu",
                         parser.context_mark.line + 1);
                 stop = true;
-                success = false;
             }
             else if (key == NULL) {
                 key = xcalloc(event.data.scalar.length + 1, sizeof(char));
@@ -229,7 +209,7 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
                 value = xcalloc(event.data.scalar.length + 1, sizeof(char));
                 memcpy(value, event.data.scalar.value,
                         event.data.scalar.length);
-                assert(tag_list_insert(T, key, value, NULL));
+                tag_list_insert(T, key, value);
                 xfree(key);
                 xfree(value);
             }
@@ -240,49 +220,32 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
         }
     }
 
-    if (success) {
-        count = file->tagkeys(file, &tagkeys);
-        if (count < 0)
-            errx(-1, "yaml_to_tags: tagkeys (%s backend)", file->lib);
-        for (i = 0; i < count; i++) {
-            file->set(file, tagkeys[i], NULL);
-            xfree(tagkeys[i]);
-        }
-        xfree(tagkeys);
-
-        TAILQ_FOREACH(tag, T->tags, next) {
-            TAILQ_FOREACH(v, tag->values, next)
-                (void)file->set(file, tag->key, v->val);
-        }
-    }
-
-    destroy_tag_list(T);
     yaml_event_delete(&event);
     yaml_parser_delete(&parser);
-    return (success);
+    return (T);
 
 parser_error:
     switch (parser.error) {
     case YAML_MEMORY_ERROR:
-        err(ENOMEM, "yaml_to_tags: YAML Parser");
-        /* NOTREACHED */
+        set_error_msg(T, "yaml_to_tags: YAML Parser (ENOMEM)");
+        break;
     case YAML_READER_ERROR:
         if (parser.problem_value != -1) {
-            errx(-1, "yaml_to_tags: Reader error: %s: #%X at %zu\n",
+            set_error_msg(T, "yaml_to_tags: Reader error: %s: #%X at %zu\n",
                     parser.problem,
                     parser.problem_value,
                     parser.problem_offset);
         }
         else {
-            errx(-1, "yaml_to_tags: Reader error: %s at %zu\n",
+            set_error_msg(T, "yaml_to_tags: Reader error: %s at %zu\n",
                     parser.problem,
                     parser.problem_offset);
         }
-        /* NOTREACHED */
+        break;
     case YAML_SCANNER_ERROR: /* FALLTHROUGH */
     case YAML_PARSER_ERROR:
         if (parser.context) {
-            errx(-1, "yaml_to_tags: %s error: %s at line %zu, column %zu\n"
+            set_error_msg(T, "yaml_to_tags: %s error: %s at line %zu, column %zu\n"
                     "%s at line %zu, column %zu\n",
                     parser.error == YAML_SCANNER_ERROR ? "Scanner" : "Parser",
                     parser.context,
@@ -293,51 +256,50 @@ parser_error:
                     parser.problem_mark.column + 1);
         }
         else {
-            errx(-1, "yaml_to_tags: %s error: %s at line %zu, column %zu\n",
+            set_error_msg(T, "yaml_to_tags: %s error: %s at line %zu, column %zu\n",
                     parser.error == YAML_SCANNER_ERROR ? "Scanner" : "Parser",
                     parser.problem,
                     parser.problem_mark.line + 1,
                     parser.problem_mark.column + 1);
         }
-        /* NOTREACHED */
+        break;
     case YAML_NO_ERROR:       /* FALLTHROUGH */
     case YAML_COMPOSER_ERROR: /* FALLTHROUGH */
     case YAML_WRITER_ERROR:   /* FALLTHROUGH */
     case YAML_EMITTER_ERROR:
-        errx(-1, "libyaml internal error\n"
+        set_error_msg(T, "libyaml internal error\n"
                 "bad error type while parsing: %s",
                 parser.error == YAML_NO_ERROR ? "YAML_NO_ERROR" :
                 parser.error == YAML_COMPOSER_ERROR ? "YAML_COMPOSER_ERROR" :
                 parser.error == YAML_WRITER_ERROR ? "YAML_WRITER_ERROR" :
                 parser.error == YAML_EMITTER_ERROR ? "YAML_EMITTER_ERROR" :
                 "impossible");
-        /* NOTREACHED */
+        break;
     }
-    /* NOTREACHED */
-    return (false); /* make gcc happy */
+
+    yaml_event_delete(&event);
+    yaml_parser_delete(&parser);
+    return (T);
 }
 
 
 int
-yaml_write_handler(void *dataptr, unsigned char *buffer, size_t size)
+yaml_write_handler(void *data, unsigned char *buffer, size_t size)
 {
     bool error = false;
-    struct whdl_data *data;
+    struct strbuf *sb;
+    char *s;
 
-    assert_not_null(dataptr);
+    assert_not_null(data);
     assert_not_null(buffer);
 
-    if (dataptr == NULL || buffer == NULL)
+    if (data == NULL || buffer == NULL)
         error = true;
     else {
-        data = dataptr;
-        if (data->len + size + 1 > data->alloclen) {
-            data->alloclen += size + BUFSIZ;
-            data->str = xrealloc(data->str, data->alloclen);
-        }
-        memcpy(data->str + data->len, buffer, size);
-        data->len += size;
-        data->str[data->len] = '\0';
+        s = xcalloc(size + 1, sizeof(char));
+        memcpy(s, buffer, size);
+        sb = data;
+        strbuf_add(sb, s, size);
     }
 
     if (error)

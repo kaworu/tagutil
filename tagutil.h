@@ -44,7 +44,7 @@ bool user_edit(const char *restrict path);
  * print the given file's tag to stdin.
  */
 _t__nonnull(1)
-bool tagutil_print(const struct tfile *restrict file);
+bool tagutil_print(struct tfile *restrict file);
 
 /*
  * parse the given file (path) and update the file's tag.

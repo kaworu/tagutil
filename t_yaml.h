@@ -18,14 +18,19 @@
  * returned value has to be free()d.
  */
 _t__nonnull(1)
-char * tags_to_yaml(const struct tfile *restrict file);
+char * tags_to_yaml(struct tfile *restrict file);
 
 
 /*
- * read a yaml file and set the tag of given file accordingly.
- * return false if a problem occured, true otherwise.
+ * read a yaml file.
+ *
+ * On error last_error_msg(file) contains an error message and NULL is
+ * returned. Otherwhise the loaded tag_list is returned.
+ *
+ * returned value has to be free()d (see destroy_tag_list()).
  */
 _t__nonnull(1) _t__nonnull(2)
-bool yaml_to_tags(struct tfile *restrict file, FILE *restrict stream);
+struct tag_list * yaml_to_tags(struct tfile *restrict file,
+        FILE *restrict stream);
 
 #endif /* not T_YAML_H */

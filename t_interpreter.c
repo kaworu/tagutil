@@ -123,7 +123,7 @@ eval_cmp(const struct tfile *restrict file,
             ret = strtod(s, NULL) - rhs->token->value.dbl;
         else if (rhs->token->kind == TSTRING)
             ret = (double)strcmp(s, rhs->token->value.str);
-        free(_s);
+        xfree(_s);
         break;
     case TUNDEF:
         if (lhs->token->kind == TFILENAME || lhs->token->kind == TBACKEND)
@@ -136,7 +136,7 @@ eval_cmp(const struct tfile *restrict file,
             else
                 ret = 1.0;
         }
-        free(_s);
+        xfree(_s);
         break;
     case TFILENAME: /* FALLTHROUGH */
     case TTAGKEY:
@@ -155,15 +155,15 @@ eval_cmp(const struct tfile *restrict file,
             else
                 r = _r = file->get(file, rhs->token->value.str);
             if (r == NULL || l == NULL) {
-                free(_l);
-                free(_r);
+                xfree(_l);
+                xfree(_r);
                 *undef = true;
                 return (0);
             }
             /* XXX: cast? */
             ret = (double)strcmp(l, r);
-            free(_l);
-            free(_r);
+            xfree(_l);
+            xfree(_r);
         }
         else {
             ret = eval_cmp(file, rhs, lhs, undef);
@@ -249,6 +249,6 @@ eval_match(const struct tfile *restrict file,
             /* NOTREACHED */
     }
 
-    free(_s);
+    xfree(_s);
     return (ret);
 }

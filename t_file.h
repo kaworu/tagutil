@@ -4,33 +4,36 @@
  * t_file.h
  *
  * tagutil Tag File
+ * You can rely on the fact that this header include the t_tag.h header.
  */
 #include "t_config.h"
 
+#include "t_tag.h"
+
 #include <stdbool.h>
 
-/* set() return values */
-enum tfile_set_status {
-    TFILE_SET_STATUS_OK,
-    TFILE_SET_STATUS_BADARG,
-    TFILE_SET_STATUS_LIBERROR
-};
 
-
+/* abstract music file, with method members */
 struct tfile {
     const char *path;
     const char *lib;
+    char *errmsg;
     void *data;
 
     /*
-     * constructor, return NULL if it couldn't create the struct.
+     * constructor.
      *
+     * return NULL if it couldn't create the struct.
      * returned value has to be free()d (use file->destroy(file)).
      */
     struct tfile * (*create)(const char *restrict path);
 
     /*
-     * save the file, return true if no error, false otherwise.
+     * write the file.
+     *
+     * return true if no error, false otherwise.
+     * On success last_error_msg(self) is NULL, otherwise it contains an error
+     * message.
      */
     bool (*save)(struct tfile *restrict self);
 
@@ -40,28 +43,36 @@ struct tfile {
     void (*destroy)(struct tfile *restrict self);
 
     /*
-     * return a the value of the tag "key". If there isn't any, or it's not
-     * supported it return NULL.
+     * return a the values of the tag key.
      *
-     * returned value has to be free()d.
+     * If key is NULL, all the tags are returned.
+     * If there is no values fo key, ret->tcount is 0.
+     *
+     * On error, NULL is returned and last_error_msg(self) contains an error
+     * message, otherwise last_error_msg(self) is NULL.
+     *
+     * returned value has to be free()d (use destroy_tag_list()).
      */
-    char * (*get)(const struct tfile *restrict self, const char *restrict key);
+    struct tag_list * (*get)(struct tfile *restrict self,
+            const char *restrict key);
 
     /*
-     * set the tag key to value newval.
-     * if newval == NULL, the tag is deleted (provided that the backend support
-     * tag deletion).
+     * clear the given key tag (all values).
+     *
+     * if T is NULL, all tags will be cleared.
+     *
+     * On success true is returned, otherwise false is returned and
+     * last_error_msg(self) contains an error message.
      */
-    enum tfile_set_status (*set)(struct tfile *restrict self,
-            const char *restrict key, const char *restrict newval);
+    bool (*clear)(struct tfile *restrict self, const struct tag_list *restrict T);
 
     /*
-     * store an array of the tag key that are set in kptr. return -1 if error,
-     * or the count of tag keys in kptr otherwise.
+     * add the tags of given tag_list in self.
      *
-     * stored values (in kptr) have to be free()d.
+     * On success true is returned, otherwise false is returned and
+     * last_error_msg(self) contains an error message.
      */
-    long (*tagkeys)(const struct tfile *restrict self, char ***kptr);
+    bool (*add)(struct tfile *restrict self, const struct tag_list *restrict T);
 };
 
 #endif /* not T_FILE_H */

@@ -25,15 +25,13 @@ void ftgeneric_destroy(struct tfile *restrict self);
 _t__nonnull(1)
 bool ftgeneric_save(struct tfile *restrict self);
 
-_t__nonnull(1) _t__nonnull(2)
-char * ftgeneric_get(const struct tfile *restrict self,
+_t__nonnull(1)
+struct tag_list * ftgeneric_get(struct tfile *restrict self,
         const char *restrict key);
-_t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-enum tfile_set_status ftgeneric_set(struct tfile *restrict self,
-        const char *restrict key, const char *restrict newval);
-
+_t__nonnull(1)
+bool ftgeneric_clear(struct tfile *restrict self, const struct tag_list *restrict T);
 _t__nonnull(1) _t__nonnull(2)
-long ftgeneric_tagkeys(const struct tfile *restrict self, char ***kptr);
+bool ftgeneric_add(struct tfile *restrict self, const struct tag_list *restrict T);
 
 
 void
@@ -46,7 +44,7 @@ ftgeneric_destroy(struct tfile *restrict self)
 
     d = self->data;
     taglib_file_free(d->file);
-
+    reset_error_msg(self);
     xfree(self);
 }
 
@@ -54,147 +52,201 @@ ftgeneric_destroy(struct tfile *restrict self)
 bool
 ftgeneric_save(struct tfile *restrict self)
 {
+    bool ok;
     struct ftgeneric_data *d;
 
     assert_not_null(self);
     assert_not_null(self->data);
+    reset_error_msg(self);
 
     d = self->data;
-
-    if (taglib_file_save(d->file))
-		return (true);
-	else
-		return (false);
+	ok = taglib_file_save(d->file);
+    if (!ok)
+        set_error_msg(self, "%s error", self->lib);
+    return (ok);
 }
 
 
-char *
-ftgeneric_get(const struct tfile *restrict self, const char *restrict key)
+static const char * _taglibkeys[] = {
+    "album", "artist", "comment", "date", "genre", "title", "tracknumber"
+};
+struct tag_list *
+ftgeneric_get(struct tfile *restrict self, const char *restrict key)
 {
+    int i;
     unsigned int uintval;
     struct ftgeneric_data *d;
-    char *ret;
+    struct tag_list *T;
+    char *value;
 
     assert_not_null(self);
     assert_not_null(self->data);
-    assert_not_null(key);
+    reset_error_msg(self);
 
     d = self->data;
-    ret = NULL;
+    T = new_tag_list();
 
-    if (strcmp(key, "artist") == 0)
-        ret = taglib_tag_artist(d->tag);
-    else if (strcmp(key, "album") == 0)
-        ret = taglib_tag_album(d->tag);
-    else if (strcmp(key, "comment") == 0)
-        ret = taglib_tag_comment(d->tag);
-    else if (strcmp(key, "genre") == 0)
-        ret = taglib_tag_genre(d->tag);
-    else if (strcmp(key, "title") == 0)
-        ret = taglib_tag_title(d->tag);
-    else if (strcmp(key, "track") == 0) {
-        uintval = taglib_tag_track(d->tag);
-        if (uintval > 0)
-            (void)xasprintf(&ret, "%02u", uintval);
+    for (i = 0; i < 7; i++) {
+        if (key) {
+            if (strcasecmp(key, _taglibkeys[i]) != 0)
+                continue;
+        }
+        value = NULL;
+        switch (i) {
+        case 0:
+            value = taglib_tag_album(d->tag);
+            break;
+        case 1:
+            value = taglib_tag_artist(d->tag);
+            break;
+        case 2:
+            value = taglib_tag_comment(d->tag);
+            break;
+        case 3:
+            uintval = taglib_tag_year(d->tag);
+            if (uintval > 0)
+                (void)xasprintf(&value, "%04u", taglib_tag_year(d->tag));
+            break;
+        case 4:
+            value = taglib_tag_genre(d->tag);
+            break;
+        case 5:
+            value = taglib_tag_title(d->tag);
+            break;
+        case 6:
+            uintval = taglib_tag_track(d->tag);
+            if (uintval > 0)
+                (void)xasprintf(&value, "%02u", uintval);
+            break;
+        }
+        if (value && strempty(value))
+        /* clean value, when TagLib return "" we return NULL */
+            xfree(value);
+
+        if (value) {
+            tag_list_insert(T, _taglibkeys[i], value);
+            xfree(value);
+        }
+        if (key)
+            break;
     }
-    else if (strcmp(key, "year") == 0) {
-        uintval = taglib_tag_year(d->tag);
-        if (uintval > 0)
-            (void)xasprintf(&ret, "%04u", taglib_tag_year(d->tag));
-    }
 
-    if (ret && strempty(ret))
-        xfree(ret);
-
-    return (ret);
+    return (T);
 }
 
 
-enum tfile_set_status
-ftgeneric_set(struct tfile *restrict self, const char *restrict key,
-        const char *restrict newval)
+bool
+ftgeneric_clear(struct tfile *restrict self, const struct tag_list *restrict T)
 {
-    bool erase = false;
+    int i;
+    struct ftgeneric_data *d;
+
+    assert_not_null(self);
+    assert_not_null(self->data);
+    reset_error_msg(self);
+
+    d = self->data;
+
+    for (i = 0; i < 7; i++) {
+        if (T && tag_list_search(T, _taglibkeys[i]) == NULL)
+            continue;
+        switch (i) {
+        case 0:
+            taglib_tag_set_album(d->tag, "");
+            break;
+        case 1:
+            taglib_tag_set_artist(d->tag, "");
+            break;
+        case 2:
+            taglib_tag_set_comment(d->tag, "");
+            break;
+        case 3:
+            taglib_tag_set_year(d->tag, 0);
+            break;
+        case 4:
+            taglib_tag_set_genre(d->tag, "");
+            break;
+        case 5:
+            taglib_tag_set_title(d->tag, "");
+            break;
+        case 6:
+            taglib_tag_set_track(d->tag, 0);
+            break;
+        }
+    }
+
+    return (true);
+}
+
+
+bool
+ftgeneric_add(struct tfile *restrict self, const struct tag_list *restrict T)
+{
     struct ftgeneric_data *d;
     unsigned int uintval;
     char *endptr;
+    struct ttag  *t;
+    struct ttagv *v;
+    bool strfunc;
+    void (*strf)(TagLib_Tag *, const char *);
+    void (*uif)(TagLib_Tag *, unsigned int);
 
+    assert_not_null(T);
     assert_not_null(self);
     assert_not_null(self->data);
-    assert_not_null(key);
+    reset_error_msg(self);
 
     d = self->data;
-    /* this backend can't destroy tags */
-    if (newval == NULL) {
-        erase = true;
-        newval = "";
-    }
 
-    if (strcmp(key, "artist") == 0)
-        taglib_tag_set_artist(d->tag, newval);
-    else if (strcmp(key, "album") == 0)
-        taglib_tag_set_album(d->tag, newval);
-    else if (strcmp(key, "comment") == 0)
-        taglib_tag_set_comment(d->tag, newval);
-    else if (strcmp(key, "genre") == 0)
-        taglib_tag_set_genre(d->tag, newval);
-    else if (strcmp(key, "title") == 0)
-        taglib_tag_set_title(d->tag, newval);
-    else if (strcmp(key, "track") == 0) {
-        uintval = strtoul(newval, &endptr, 10);
-        if (!erase && (endptr == newval || *endptr != '\0')) {
-            warnx("ftgeneric_set: need Int track argument, got: `%s'", newval);
-            return (TFILE_SET_STATUS_BADARG);
+    TAILQ_FOREACH(t, T->tags, next) {
+        /* detect key function to use */
+        strfunc = true;
+        assert_not_null(t->key);
+        if (strcmp(t->key, "artist") == 0)
+            strf = taglib_tag_set_artist;
+        else if (strcmp(t->key, "album") == 0)
+            strf = taglib_tag_set_album;
+        else if (strcmp(t->key, "comment") == 0)
+            strf = taglib_tag_set_comment;
+        else if (strcmp(t->key, "genre") == 0)
+            strf = taglib_tag_set_genre;
+        else if (strcmp(t->key, "title") == 0)
+            strf = taglib_tag_set_title;
+        else {
+            strfunc = false;
+            if (strcmp(t->key, "tracknumber") == 0)
+                uif = taglib_tag_set_track;
+            else if (strcmp(t->key, "date") == 0)
+                uif = taglib_tag_set_year;
+            else {
+                set_error_msg(self,
+                        "%s backend can't handle `%s' tag", self->lib, t->key);
+                return (false);
+            }
         }
-        else
-            taglib_tag_set_track(d->tag, uintval);
-    }
-    else if (strcmp(key, "year") == 0) {
-        uintval = strtoul(newval, &endptr, 10);
-        if (!erase && (endptr == newval || *endptr != '\0')) {
-            warnx("ftgeneric_set: need Int year argument, got: `%s'", newval);
-            return (TFILE_SET_STATUS_BADARG);
+
+        if (t->vcount != 1) {
+            set_error_msg(self,
+                    "%s backend can only set one tag %s, got %zd",
+                    self->lib, t->key, t->vcount);
+            return (false);
         }
-        else
-            taglib_tag_set_year(d->tag, uintval);
-    }
-    else {
-        warnx("ft_generic_set: %s backend can't handle `%s' tag", self->lib, key);
-        return (TFILE_SET_STATUS_LIBERROR);
-    }
-
-    return (TFILE_SET_STATUS_OK);
-}
-
-
-static const char *_taglibkeys[] = {
-    "album", "artist", "comment", "genre", "title", "track", "year"
-};
-long
-ftgeneric_tagkeys(const struct tfile *restrict self, char ***kptr)
-{
-    char *s;
-    unsigned int i;
-    long count;
-    char **ary;
-
-    assert_not_null(self);
-
-    count = 0;
-    if (kptr != NULL)
-        *kptr = ary = xcalloc(len(_taglibkeys), sizeof(char *));
-
-    for (i = 0; i < len(_taglibkeys); i++) {
-        s = self->get(self, _taglibkeys[i]);
-        if (s != NULL) {
-            if (kptr != NULL)
-                ary[count] = xstrdup(_taglibkeys[i]);
-            count++;
+        v = TAILQ_FIRST(t->values);
+        assert_not_null(v->value);
+        if (strfunc)
+            strf(d->tag, v->value);
+        else {
+            uintval = (unsigned int)strtoul(v->value, &endptr, 10);
+            if (endptr == v->value || *endptr != '\0') {
+                set_error_msg(self, "need Int argument for %s, got: `%s'",
+                        t->key, v->value);
+                return (false);
+            }
+            uif(d->tag, uintval);
         }
-        free(s);
     }
 
-    return (count);
+    return (true);
 }
 
 
@@ -239,10 +291,11 @@ ftgeneric_new(const char *restrict path)
     ret->save     = ftgeneric_save;
     ret->destroy  = ftgeneric_destroy;
     ret->get      = ftgeneric_get;
-    ret->set      = ftgeneric_set;
-    ret->tagkeys  = ftgeneric_tagkeys;
+    ret->clear    = ftgeneric_clear;
+    ret->add      = ftgeneric_add;
 
     ret->lib = "TagLib";
+    ret->errmsg = NULL;
     return (ret);
 }
 

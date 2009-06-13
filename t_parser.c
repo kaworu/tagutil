@@ -15,8 +15,8 @@
 
 
 _t__nonnull(2)
-static inline struct ast * new_ast(struct ast *restrict lhs,
-        struct token *restrict t, struct ast *restrict rhs);
+static struct ast * new_ast(struct ast *restrict lhs, struct token *restrict t,
+        struct ast *restrict rhs);
 
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
 _t__dead2 _t__printflike(4, 5)
@@ -75,7 +75,7 @@ static struct ast *
 parse_cmp_or_match_or_value(struct lexer *restrict L);
 
 
-static inline struct ast *
+static struct ast *
 new_ast(struct ast *restrict lhs, struct token *restrict t,
         struct ast *restrict rhs)
 {

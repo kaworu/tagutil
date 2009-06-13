@@ -85,11 +85,9 @@ int
 main(int argc, char *argv[])
 {
     int i, ch, ret;
-    char *path, *set_value, *set_key, *emsg;
+    char *path, *set_value, *set_key;
     struct stat s;
     struct tfile *file;
-    struct ttag  *tag;
-    struct ttagv *tagv;
 
     if (argc < 2)
         usage();
@@ -130,8 +128,7 @@ main(int argc, char *argv[])
             if (strempty(set_value))
             /* don't allow to set a key to "" we destroy it instead */
                 set_value = NULL;
-            if (!tag_list_insert(s_arg, set_key, set_value, &emsg))
-                errx(-1, "%s", emsg);
+            tag_list_insert(s_arg, set_key, set_value);
             break;
         case 'd':
             dflag = true;
@@ -210,12 +207,12 @@ main(int argc, char *argv[])
         if (fflag)
             tagutil_load(file, f_arg);
         if (sflag) {
-            TAILQ_FOREACH(tag, s_arg->tags, next) {
-                TAILQ_FOREACH(tagv, tag->values, next)
-                    (void)file->set(file, tag->key, tagv->val);
+            if (!file->clear(file, s_arg) || !file->add(file, s_arg))
+                warnx("file `%s' not saved: %s", file->path, last_error_msg(file));
+            else {
+                if (!file->save(file))
+                    err(errno, "couldn't save file `%s'", path);
             }
-            if (!file->save(file))
-                err(errno, "couldn't save file `%s'", path);
         }
         if (eflag)
             tagutil_edit(file);
@@ -311,7 +308,7 @@ user_edit(const char *restrict path)
 
 
 bool
-tagutil_print(const struct tfile *restrict file)
+tagutil_print(struct tfile *restrict file)
 {
     char *yaml;
 
@@ -330,6 +327,7 @@ tagutil_load(struct tfile *restrict file, const char *restrict path)
 {
     FILE *stream;
     bool ret = true;
+    struct tag_list *T;
 
     assert_not_null(file);
     assert_not_null(path);
@@ -338,16 +336,24 @@ tagutil_load(struct tfile *restrict file, const char *restrict path)
         stream = stdin;
     else
         stream = xfopen(path, "r");
-    if (!yaml_to_tags(file, stream)) {
+
+    T = yaml_to_tags(file, stream);
+    if (last_error_msg(T)) {
         ret = false;
-        warnx("file '%s' not saved.", file->path);
+        warnx("error while reading YAML: %s", last_error_msg(T));
+        warnx("file `%s' not saved.", file->path);
     }
     else {
-        if (!file->save(file))
-            err(errno, "can't save file '%s'", file->path);
+        if (!file->clear(file, NULL) || !file->add(file, T))
+            warnx("file `%s' not saved: %s", file->path, last_error_msg(file));
+        else {
+            if (!file->save(file))
+                err(errno, "can't save file '%s'", file->path);
+        }
     }
     if (stream != stdin)
         xfclose(stream);
+    destroy_tag_list(T);
 
     return (ret);
 }
