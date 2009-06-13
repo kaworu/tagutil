@@ -155,8 +155,8 @@ lex_strlit_or_regex(struct lexer *restrict L, struct token  **tptr)
         lex_error(L, t->start, t->end, "unbalanced %c for %s", limit, t->str);
 
     /* do the copy */
-    t->alloclen  = t->end - t->start - skip;
-    t = xrealloc(t, sizeof(struct token) + t->alloclen);
+    t->slen  = t->end - t->start - skip - 1;
+    t = xrealloc(t, sizeof(struct token) + t->slen + 1);
     *tptr = t;
     t->value.str = (char *)(t + 1);
     L->cindex = t->start;
@@ -172,7 +172,7 @@ lex_strlit_or_regex(struct lexer *restrict L, struct token  **tptr)
         t->value.str[i++] = L->c;
     }
     t->value.str[i] = '\0';
-    assert(strlen(t->value.str) + 1 == t->alloclen);
+    assert(strlen(t->value.str) == t->slen);
 
     /* skip limit */
     (void)lexc(L);
@@ -249,8 +249,8 @@ lex_tagkey(struct lexer *restrict L, struct token **tptr)
             lex_error(L, t->start, t->end, "unbalanced { for %s", t->str);
 
         /* do the copy */
-        t->alloclen = t->end - t->start - 1 - skip;
-        t = xrealloc(t, sizeof(struct token) + t->alloclen);
+        t->slen = t->end - t->start - 2 - skip;
+        t = xrealloc(t, sizeof(struct token) + t->slen + 1);
         *tptr = t;
         t->value.str = (char *)(t + 1);
         L->cindex    = t->start + 1;
@@ -266,7 +266,7 @@ lex_tagkey(struct lexer *restrict L, struct token **tptr)
             t->value.str[i++] = L->c;
         }
         t->value.str[i] = '\0';
-        assert(strlen(t->value.str) + 1 == t->alloclen);
+        assert(strlen(t->value.str) == t->slen);
         (void)lexc(L);
     }
     else {
@@ -279,12 +279,12 @@ lex_tagkey(struct lexer *restrict L, struct token **tptr)
                     "%% without tag (use %%{} for the empty tag)");
             /* NOTREACHED */
         }
-        t->alloclen = t->end - t->start + 1;
-        t = xrealloc(t, sizeof(struct token) + t->alloclen);
+        t->slen = t->end - t->start;
+        t = xrealloc(t, sizeof(struct token) + t->slen + 1);
         *tptr = t;
         t->value.str = (char *)(t + 1);
-        memcpy(t->value.str, L->source + t->start + 1, t->alloclen - 1);
-        t->value.str[t->alloclen - 1] = '\0';
+        memcpy(t->value.str, L->source + t->start + 1, t->slen);
+        t->value.str[t->slen] = '\0';
     }
 }
 

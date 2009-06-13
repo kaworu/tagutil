@@ -72,7 +72,7 @@ struct token {
         char *str;     /* TSTRING or TTAGKEY  */
         regex_t regex; /* TREGEX */
     } value;
-    size_t alloclen; /* > 0 if TSTRING or TTAGKEY */
+    size_t slen; /* > 0 if TSTRING or TTAGKEY */
 };
 
 struct lexer {

@@ -129,8 +129,8 @@ rename_lex_next_token(struct lexer *restrict L)
         }
         t->end = L->cindex - 1;
         assert(t->end >= t->start);
-        t->alloclen = t->end - t->start + 2 - skip;
-        t = xrealloc(t, sizeof(struct token) + t->alloclen);
+        t->slen = t->end - t->start + 1 - skip;
+        t = xrealloc(t, sizeof(struct token) + t->slen + 1);
         t->value.str = (char *)(t + 1);
         L->cindex = t->start;
         L->c = L->source[L->cindex];
@@ -147,7 +147,7 @@ rename_lex_next_token(struct lexer *restrict L)
             (void)lexc(L);
         }
         t->value.str[i] = '\0';
-        assert(strlen(t->value.str) + 1 == t->alloclen);
+        assert(strlen(t->value.str) == t->slen);
     }
 
     L->current = t;
