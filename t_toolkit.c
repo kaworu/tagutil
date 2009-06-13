@@ -93,7 +93,12 @@ yesno(const char *restrict question)
             return (false);
         }
 
-        (void)fgets(buffer, len(buffer), stdin);
+        if (fgets(buffer, len(buffer), stdin) == NULL) {
+            if (feof(stdin))
+                return (false);
+            else
+                err(errno, "fgets");
+        }
 
         endl = strchr(buffer, '\n');
         if (endl == NULL) {

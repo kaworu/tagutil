@@ -72,7 +72,7 @@ bool sflag = false;  /* set tags */
 bool fflag = false;  /* load file */
 
 char *f_arg = NULL; /* file */
-char *r_arg = NULL; /* rename pattern */
+struct token **r_arg = NULL; /* rename pattern (compiled) */
 struct ast *x_arg = NULL; /* filter code */
 struct tag_list *s_arg = NULL; /* key=val tags */
 
@@ -107,7 +107,9 @@ main(int argc, char *argv[])
             if (rflag)
                 errx(EINVAL, "-r option set twice");
             rflag = true;
-            r_arg = optarg;
+            if (strempty(optarg))
+                errx(EINVAL, "empty rename pattern");
+            r_arg = rename_parse(optarg);
             break;
         case 'x':
             if (xflag)
@@ -226,6 +228,11 @@ main(int argc, char *argv[])
         destroy_ast(x_arg);
     if (sflag)
         destroy_tag_list(s_arg);
+    if (rflag) {
+        for (i = 0; r_arg[i]; i++)
+            xfree(r_arg[i]);
+        xfree(r_arg);
+    }
 
     return (ret);
 }
@@ -400,23 +407,24 @@ tagutil_edit(struct tfile *restrict file)
 
 
 bool
-tagutil_rename(struct tfile *restrict file, const char *restrict pattern)
+tagutil_rename(struct tfile *restrict file, struct token **restrict tknary)
 {
     char *ext, *result, *dirn, *fname, *question;
 
     assert_not_null(file);
-    assert_not_null(pattern);
-
-    if (strlen(pattern) == 0)
-        errx(EINVAL, "empty rename pattern: '%s'", pattern);
+    assert_not_null(tknary);
 
     ext = strrchr(file->path, '.');
-    if (ext == NULL)
-        errx(-1, "can't find file extension: '%s'", file->path);
-    ext++; /* skip dot */
-    fname = rename_eval(file, pattern);
-    if (fname == NULL)
+    if (ext == NULL) {
+        warnx("can't find file extension for `%s'", file->path);
         return (false);
+    }
+    ext++; /* skip dot */
+    fname = rename_eval(file, tknary);
+    if (fname == NULL) {
+        warnx("%s", last_error_msg(file));
+        return (false);
+    }
 
     /* fname is now OK. store into result the full new path.  */
     dirn = xdirname(file->path);

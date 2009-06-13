@@ -11,22 +11,34 @@
 
 
 /*
- * rename path to new_path. err(3) if new_path already exist.
+ * create a token array usable for rename_eval() from given pattern.
+ * the array is NULL terminated.
+ *
+ * The tag keys in pattern must look like shell variables (i.e. %artist or/and
+ * %{album}). If the tag key is not defined for a file, the tag key is replaced
+ * by its name (i.e. "%{undefined}" or "%undefined" becomes "undefined"). If
+ * you want a litteral %, use \%
+ *
+ * return value and all its elements has to be free()d.
  */
-_t__nonnull(1) _t__nonnull(2)
-void rename_safe(const char *restrict oldpath, const char *restrict newpath);
-
+_t__nonnull(1)
+struct token ** rename_parse(const char *restrict pattern);
 
 /*
- * replace each tag key by their value. The tag keys in pattern must look like
- * shell variables (i.e. %artist or/and %{album}). If the tag key is not
- * defined for a file, the tag key is replaced by its name (i.e. "%{undefined}"
- * or "%undefined" becomes "undefined"). If you want a litteral %, use \%
+ * eval the given token array in the context of given tfile.
+ *
+ * On error last_error_msg(file) is set and NULL is returned. Otherwhise the
+ * result is returned.
  *
  * returned value has to be free()d.
  */
 _t__nonnull(1) _t__nonnull(2)
-char * rename_eval(struct tfile *restrict file, const char *restrict pattern);
+char * rename_eval(struct tfile *restrict file, struct token **restrict ts);
 
+/*
+ * rename path to new_path. err() if new_path already exist.
+ */
+_t__nonnull(1) _t__nonnull(2)
+void rename_safe(const char *restrict oldpath, const char *restrict newpath);
 
 #endif /* not T_RENAMER_H */

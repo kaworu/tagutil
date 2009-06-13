@@ -78,6 +78,47 @@ rename_safe(const char *restrict oldpath,
 }
 
 
+struct token **
+rename_parse(const char *restrict pattern)
+{
+    bool done;
+    struct lexer *L;
+    struct token **ret;
+    size_t count, len;
+
+    assert_not_null(pattern);
+
+    L = new_lexer(pattern);
+    (void)rename_lex_next_token(L);
+    assert(L->current->kind == TSTART);
+    xfree(L->current);
+
+    count = 0;
+    len   = 16;
+    ret   = xcalloc(len + 1, sizeof(struct token *));
+
+    done = false;
+    while (!done) {
+        if (rename_lex_next_token(L)->kind == TEND) {
+            xfree(L->current);
+            done = true;
+        }
+        else {
+            assert(L->current->kind == TTAGKEY || L->current->kind == TSTRING);
+            if (count == (len - 1)) {
+                len = len * 2;
+                ret = xrealloc(ret, (len + 1) * sizeof(struct token *));
+            }
+            ret[count++] = L->current;
+        }
+    }
+    xfree(L);
+
+    ret[count] = NULL;
+    return (ret);
+}
+
+
 struct token *
 rename_lex_next_token(struct lexer *restrict L)
 {
@@ -156,46 +197,61 @@ rename_lex_next_token(struct lexer *restrict L)
 
 
 char *
-rename_eval(struct tfile *restrict file, const char *restrict pattern)
+rename_eval(struct tfile *restrict file, struct token **restrict ts)
 {
-    struct lexer *L;
-    const size_t len = MAXPATHLEN;
+    const struct token *tkn;
+    struct strbuf *sb;
+    struct tag_list *T;
+    struct ttag  *t;
+    struct ttagv *v;
     char *ret, *s;
-    bool done;
+    size_t len;
 
     assert_not_null(file);
-    assert_not_null(pattern);
+    assert_not_null(ts);
 
-    L = new_lexer(pattern);
-    ret = xcalloc(len, sizeof(char));
-
-    (void)rename_lex_next_token(L);
-    assert(L->current->kind == TSTART);
-    xfree(L->current);
-    done = false;
-    while (!done) {
-        if (rename_lex_next_token(L)->kind == TEND)
-            done = true;
-        else {
-            s = NULL;
-            if (L->current->kind == TTAGKEY)
-                s = file->get(file, L->current->value.str);
-
-            if (s == NULL)
-                s = L->current->value.str;
-            if (strlcat(ret, s, len) >= len) {
-                warnx("rename_eval: pattern too long (>MAXPATHLEN) for `%s'",
-                        file->path);
-                xfree(ret);
-                done = true;
+    sb = new_strbuf();
+    tkn = *ts;
+    while (tkn) {
+        s = NULL;
+        if (tkn->kind == TTAGKEY) {
+            T = file->get(file, tkn->value.str);
+            if (T == NULL) {
+                destroy_strbuf(sb);
+                return (NULL);
             }
-            if (s != L->current->value.str)
-                xfree(s);
+            else if (T->tcount > 0) {
+            /* tag exist */
+                assert(T->tcount == 1);
+                t = TAILQ_FIRST(T->tags);
+                assert_not_null(t);
+                assert(t->vcount > 0);
+                if (t->vcount == 1) {
+                /* simple case, t exist and has only one value */
+                    v = TAILQ_FIRST(t->values);
+                }
+                else {
+                /* need the user to choose, if we're really interactiv */
+                /* TODO */ v = TAILQ_FIRST(t->values);
+                }
+                assert_not_null(v);
+                s = xstrdup(v->value);
+                len = v->vlen;
+            }
+            destroy_tag_list(T);
         }
-        xfree(L->current);
+        if (s == NULL) {
+            s = xstrdup(tkn->value.str);
+            len = tkn->slen;
+        }
+        strbuf_add(sb, s, len);
+        /* go to next token */
+        ts += 1;
+        tkn = *ts;
     }
-    xfree(L);
 
+    ret = strbuf_get(sb);
+    destroy_strbuf(sb);
     return (ret);
 }
 

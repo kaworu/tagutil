@@ -9,6 +9,7 @@
 #include <stdbool.h>
 
 #include "t_file.h"
+#include "t_lexer.h"
 
 
 /*
@@ -61,11 +62,13 @@ _t__nonnull(1)
 bool tagutil_edit(struct tfile *restrict file);
 
 /*
- * rename the file at path with the given pattern arg. the pattern can use
- * some keywords for tags (see usage()).
+ * rename the file.
+ *
+ * the pattern tknary is the result of the pattern string compiled by
+ * rename_parse().
  */
 _t__nonnull(1) _t__nonnull(2)
-bool tagutil_rename(struct tfile *restrict file, const char *restrict pattern);
+bool tagutil_rename(struct tfile *restrict file, struct token **restrict tknary);
 
 /*
  * print given path if the file match the given ast (arg).

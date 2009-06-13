@@ -41,7 +41,7 @@ tag_list_insert(struct tag_list *restrict T,
     if (value) {
         vlen = strlen(value);
         v = xmalloc(sizeof(struct ttagv) + vlen + 1);
-        v->vallen = vlen;
+        v->vlen = vlen;
         s = (char *)(v + 1);
         (void)strlcpy(s, value, vlen + 1);
         v->value = s;

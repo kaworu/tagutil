@@ -16,7 +16,7 @@
 
 /* tag value */
 struct ttagv {
-    size_t vallen;
+    size_t vlen;
     const char *value;
     TAILQ_ENTRY(ttagv) next;
 };
