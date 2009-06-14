@@ -23,6 +23,5 @@ List bellow all non-standard (i.e. non C99 or POSIX) C function used.
 - getprogname(3)
 - <sys/queue>
 - strlcat(3), strlcpy(3)
-- dirname(3) (see HAVE_SANE_DIRNAME in t_toolkit.h)
 - open(2) don't O_NOCTTY since BSD do it by default
 --------------------------------------------------------------------------------

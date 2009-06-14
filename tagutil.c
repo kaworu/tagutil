@@ -414,7 +414,8 @@ tagutil_edit(struct tfile *restrict file)
 bool
 tagutil_rename(struct tfile *restrict file, struct token **restrict tknary)
 {
-    char *ext, *result, *dirn, *fname, *question, *errmsg;
+    char *ext, *result, *dirn, *fname, *question;
+    struct terr *e;
 
     assert_not_null(file);
     assert_not_null(tknary);
@@ -432,21 +433,25 @@ tagutil_rename(struct tfile *restrict file, struct token **restrict tknary)
     }
 
     /* fname is now OK. store into result the full new path.  */
-    dirn = xdirname(file->path);
+    dirn = t_dirname(file->path);
+    if (dirn == NULL)
+        err(errno, "%s", dirn);
     /* add the directory to result if needed */
     if (strcmp(dirn, ".") != 0)
         (void)xasprintf(&result, "%s/%s.%s", dirn, fname, ext);
     else
         (void)xasprintf(&result, "%s.%s", fname, ext);
-    freex(fname);
     freex(dirn);
+    freex(fname);
 
     /* ask user for confirmation and rename if user want to */
     if (strcmp(file->path, result) != 0) {
         (void)xasprintf(&question, "rename `%s' to `%s'", file->path, result);
         if (yesno(question)) {
-            if (!rename_safe(file->path, result, &errmsg))
-                err(errno, "%s", errmsg);
+            e = new_terr();
+            if (!rename_safe(file->path, result, e))
+                err(errno, "%s", last_error_msg(e));
+            destroy_terr(e);
         }
         freex(question);
     }

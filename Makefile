@@ -26,7 +26,7 @@ CFLAGS=-g -O0 -Wall -Wextra -Wformat-security -Wnonnull -Waggregate-return \
 	   -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow \
 	   -Wstrict-prototypes -Winline -Wall -fno-inline
 .endif
-CFLAGS+=-D'VERSION="${VERSION}"' -DHAVE_SANE_DIRNAME
+CFLAGS+=-I. -D'VERSION="${VERSION}"'
 
 # libyaml can't use pkg-config :(
 CFLAGS+=-I/usr/local/include

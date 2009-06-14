@@ -71,9 +71,9 @@ lexc_move_to(struct lexer *restrict L, int to)
 {
 
     assert_not_null(L);
-    assert(L->cindex == -1 || (size_t)L->cindex < L->srclen);
 
     L->cindex = to;
+    assert(L->cindex == -1 || (size_t)L->cindex <= L->srclen);
     L->c = L->source[L->cindex];
     if (L->c == '\0')
         assert(L->cindex >= 0 && (size_t)L->cindex == L->srclen);

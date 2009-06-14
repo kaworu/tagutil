@@ -38,11 +38,11 @@ char * rename_eval(struct tfile *restrict file, struct token **restrict ts);
 /*
  * rename path to new_path.
  *
- * return false on error and set *errmsg if errmsg is not null and errno.
+ * return false on error and set last_error_msg(e) if not NULL and errno.
  * return true otherwise.
  */
 _t__nonnull(1) _t__nonnull(2)
 bool rename_safe(const char *restrict oldpath, const char *restrict newpath,
-        char **errmsg);
+        struct terr *restrict e);
 
 #endif /* not T_RENAMER_H */

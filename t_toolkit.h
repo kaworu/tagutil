@@ -12,7 +12,6 @@
 #include <ctype.h>
 #include <errno.h>
 #include <err.h>
-#include <libgen.h> /* dirname(3) */
 #include <regex.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -31,9 +30,33 @@
 
 /* error handling macros */
 #define last_error_msg(o) ((o)->errmsg)
-#define reset_error_msg(o) freex(last_error_msg(o))
+#define reset_error_msg(o) \
+    do { if (o) freex(last_error_msg(o)); } while (/*CONSTCOND*/0)
 #define set_error_msg(o, fmt, ...) \
-    (void)xasprintf(&last_error_msg(o), fmt, ##__VA_ARGS__)
+    do { if (o) (void)xasprintf(&last_error_msg(o), fmt, ##__VA_ARGS__); } while (/*CONSTCOND*/0)
+
+/*
+ * error macros can be used on terr struct or any struct that define a member:
+ *      char *errmsg;
+ *  on this purpose.
+ */
+struct terr {
+    char *errmsg;
+};
+
+/*
+ * create a terr struct.
+ */
+_t__unused
+static inline struct terr *
+new_terr(void);
+
+/*
+ * free a terr struct.
+ */
+_t__unused _t__nonnull(1)
+static inline void
+destroy_terr(struct terr *restrict e);
 
 
 /* MEMORY FUNCTIONS */
@@ -57,17 +80,6 @@ static inline FILE * xfopen(const char *restrict path, const char *restrict mode
 
 _t__unused _t__nonnull(1)
 static inline void xfclose(FILE *restrict stream);
-
-/*
- * try to have a sane dirname,
- * FreeBSD and OpenBSD define:
- *
- *      char * dirname(const char *)
- *
- * returned value has to be free()d.
- */
-_t__unused _t__nonnull(1)
-static inline char * xdirname(const char *restrict path);
 
 
 /* BASIC STRING OPERATIONS */
@@ -142,6 +154,14 @@ static inline void destroy_strbuf(struct strbuf *restrict sb);
  * Honor Yflag and Nflag.
  */
 bool yesno(const char *restrict question);
+
+/*
+ * reentrant dirname.
+ *
+ * returned value has to be free()d.
+ */
+_t__unused
+char * t_dirname(const char *);
 
 /**********************************************************************/
 
@@ -218,31 +238,6 @@ xfclose(FILE *restrict stream)
 
     if (fclose(stream) != 0)
         err(errno, "fclose");
-}
-
-
-static inline char *
-xdirname(const char *restrict path)
-{
-    char *dirn;
-#if !defined(HAVE_SANE_DIRNAME)
-    char *garbage;
-#endif
-
-    assert_not_null(path);
-
-#if !defined(HAVE_SANE_DIRNAME)
-    if ((dirn = dirname(garbage = xstrdup(path))) == NULL)
-#else
-    if ((dirn = dirname(path)) == NULL)
-#endif
-        err(errno, "dirname");
-    dirn = xstrdup(dirn);
-
-#if !defined(HAVE_SANE_DIRNAME)
-    freex(garbage);  /* no more needed */
-#endif
-    return (dirn);
 }
 
 
@@ -377,5 +372,24 @@ destroy_strbuf(struct strbuf *restrict sb)
     freex(sb->buffers);
     freex(sb->blen);
     freex(sb);
+}
+
+
+static inline struct terr *
+new_terr(void)
+{
+
+    return (xcalloc(1, sizeof(struct terr)));
+}
+
+
+static inline void
+destroy_terr(struct terr *restrict e)
+{
+
+    assert_not_null(e);
+
+    reset_error_msg(e);
+    freex(e);
 }
 #endif /* not T_TOOLKIT_H */

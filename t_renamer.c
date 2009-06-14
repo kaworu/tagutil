@@ -16,8 +16,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "t_toolkit.h"
 #include "t_lexer.h"
+#include "t_toolkit.h"
 #include "t_renamer.h"
 
 
@@ -36,7 +36,7 @@ static int build(char *path, mode_t omode);
 
 bool
 rename_safe(const char *restrict oldpath,
-        const char *restrict newpath, char **errmsg)
+        const char *restrict newpath, struct terr *restrict e)
 {
     bool failed = false;
     struct stat st;
@@ -44,9 +44,20 @@ rename_safe(const char *restrict oldpath,
 
     assert_not_null(oldpath);
     assert_not_null(newpath);
+    reset_error_msg(e);
 
-    olddirn = xdirname(oldpath);
-    newdirn = xdirname(newpath);
+    olddirn = t_dirname(oldpath);
+    if (olddirn == NULL) {
+        set_error_msg(e, "%s", oldpath);
+        return (false);
+    }
+    newdirn = t_dirname(newpath);
+    if (newdirn == NULL) {
+        set_error_msg(e, "%s", newpath);
+        freex(olddirn);
+        return (false);
+    }
+
     if (strcmp(olddirn, newdirn) != 0) {
     /* srcdir != destdir, we need to check if destdir is OK */
         if (dflag) {
@@ -64,8 +75,8 @@ rename_safe(const char *restrict oldpath,
             failed = true;
         }
     }
-    if (failed && errmsg != NULL)
-        (void)xasprintf(errmsg, "%s", newdirn);
+    if (failed)
+        set_error_msg(e, "%s", newdirn);
     freex(olddirn);
     freex(newdirn);
     if (failed)
@@ -73,14 +84,12 @@ rename_safe(const char *restrict oldpath,
 
     if (stat(newpath, &st) == 0) {
         errno = EEXIST;
-        if (errmsg != NULL)
-            (void)xasprintf(errmsg, "%s", newpath);
+        set_error_msg(e, "%s", newpath);
         return (false);
     }
 
     if (rename(oldpath, newpath) == -1) {
-        if (errmsg != NULL)
-            (void)xasprintf(errmsg, "rename");
+        set_error_msg(e, "rename");
         return (false);
     }
 
