@@ -208,8 +208,9 @@ rename_eval(struct tfile *restrict file, struct token **restrict ts)
     size_t len;
     int i;
 
-    assert_not_null(file);
     assert_not_null(ts);
+    assert_not_null(file);
+    reset_error_msg(file);
 
     sb = new_strbuf();
     tkn = *ts;
@@ -263,7 +264,12 @@ rename_eval(struct tfile *restrict file, struct token **restrict ts)
         tkn = *ts;
     }
 
-    ret = strbuf_get(sb);
+    ret = NULL;
+    if (sb->len > MAXPATHLEN)
+        set_error_msg(file, "rename_eval result is too long (>MAXPATHLEN)");
+    else
+        ret = strbuf_get(sb);
+
     destroy_strbuf(sb);
     return (ret);
 }

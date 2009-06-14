@@ -438,7 +438,7 @@ tagutil_rename(struct tfile *restrict file, struct token **restrict tknary)
 
     /* ask user for confirmation and rename if user want to */
     if (strcmp(file->path, result) != 0) {
-        (void)xasprintf(&question, "rename '%s' to '%s'", file->path, result);
+        (void)xasprintf(&question, "rename `%s' to `%s'", file->path, result);
         if (yesno(question))
             rename_safe(file->path, result);
         xfree(question);

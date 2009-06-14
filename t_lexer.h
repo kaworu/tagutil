@@ -73,7 +73,7 @@ struct token {
         regex_t regex; /* TREGEX */
     } value;
     size_t slen; /* > 0 if TSTRING or TTAGKEY */
-    int tindex; /* tag index if TTAGKEY (-1 is star) */
+    int tindex; /* tag index if TTAGKEY (-1 is wildchar) */
 };
 
 struct lexer {
