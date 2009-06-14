@@ -226,17 +226,11 @@ rename_eval(struct tfile *restrict file, struct token **restrict ts)
                 t = TAILQ_FIRST(T->tags);
                 assert_not_null(t);
                 assert(t->vcount > 0);
-                if (t->vcount == 1) {
-                /* simple case, t exist and has only one value */
-                    v = TAILQ_FIRST(t->values);
+                v = ttag_value_by_idx(t, tkn->tindex);
+                if (v) {
+                    s = xstrdup(v->value);
+                    len = v->vlen;
                 }
-                else {
-                /* need the user to choose, if we're really interactiv */
-                /* TODO */ v = TAILQ_FIRST(t->values);
-                }
-                assert_not_null(v);
-                s = xstrdup(v->value);
-                len = v->vlen;
             }
             destroy_tag_list(T);
         }

@@ -16,11 +16,14 @@
 #  define _t__nonnull(x)
 #  define _t__printflike(fmtarg, firstvarg)
 #else
-#include <sys/cdefs.h>
-#  define _t__unused     __unused
-#  define _t__dead2      __dead2
-#  define _t__nonnull(x) __nonnull(x)
-#  define _t__printflike(fmtarg, firstvarg) __printflike(fmtarg, firstvarg)
+#  define _t__unused     __attribute__((unused))
+#  define _t__pure       __attribute__((pure))
+#  define _t__pure2      __attribute__((const))
+#  define _t__dead2      __attribute__((noreturn))
+#  define _t__malloc     __attribute__((malloc))
+#  define _t__nonnull(x) __attribute__((nonnull(x)))
+#  define _t__printflike(fmtarg, firstvararg) \
+    __attribute__((format(printf, fmtarg, firstvararg)))
 #endif /* lint */
 
 

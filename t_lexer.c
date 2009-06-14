@@ -247,7 +247,9 @@ lex_tagkey(struct lexer *restrict L, struct token **tptr)
                     skip += 1;
             }
         }
-        if (L->c == '=') {
+        if (L->c != '=')
+            idx = false;
+        else {
         /* %{tag=idx} */
             idx = true;
             eqindex = L->cindex;

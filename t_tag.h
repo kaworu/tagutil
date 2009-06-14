@@ -31,6 +31,16 @@ struct ttag {
 };
 TAILQ_HEAD(ttag_q, ttag);
 
+
+/*
+ * return the ttagv value at index idx.
+ * if idx >= t->vcount (i.e. idx is a bad index) NULL is returned.
+ */
+_t__unused _t__nonnull(1)
+static inline struct ttagv * ttag_value_by_idx(struct ttag *restrict t,
+        size_t idx);
+
+
 /*
  * a tag list, abstract structure for a music file's tags.
  * It's designed to handle several key with each several possibles values.
@@ -76,4 +86,22 @@ struct ttag * tag_list_search(const struct tag_list *restrict T,
 _t__nonnull(1)
 void destroy_tag_list(const struct tag_list *T);
 
+/********************************************************************************/
+
+static inline struct ttagv *
+ttag_value_by_idx(struct ttag *restrict t, size_t idx)
+{
+    struct ttagv *ret;
+
+    assert_not_null(t);
+
+    ret = NULL;
+    if (idx < t->vcount) {
+        ret = TAILQ_FIRST(t->values);
+        while (idx--)
+            ret = TAILQ_NEXT(ret, next);
+    }
+
+    return (ret);
+}
 #endif /* not T_TAG_H */
