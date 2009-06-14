@@ -183,15 +183,14 @@ rename_lex_next_token(struct lexer *restrict L)
         t->slen = t->end - t->start + 1 - skip;
         t = xrealloc(t, sizeof(struct token) + t->slen + 1);
         t->value.str = (char *)(t + 1);
-        L->cindex = t->start;
-        L->c = L->source[L->cindex];
+        lexc_move_to(L, t->start);
         i = 0;
         while (L->cindex <= t->end) {
             if (L->c == '\\') {
                 if (lexc(L) != '%') {
                     /* rewind */
-                    L->cindex -= 2;
-                    L->c = '\\';
+                    lexc_move(L, -1);
+                    assert(L->c == '\\');
                 }
             }
             t->value.str[i++] = L->c;

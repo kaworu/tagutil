@@ -27,6 +27,7 @@
 /* some handy assert macros */
 #define assert_not_null(x) assert((x) != NULL)
 #define assert_null(x) assert((x) == NULL)
+#define assert_fail() assert(!42)
 
 /* error handling macros */
 #define last_error_msg(o) ((o)->errmsg)

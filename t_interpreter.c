@@ -68,9 +68,9 @@ ast_eval(const struct tfile *restrict file, const struct ast *restrict filter)
         ret = !eval_match(file, filter->lhs, filter->rhs, &undef);
         break;
     default:
-        fprintf(stderr, "internal interpreter error: unexpected AST: `%s'",
-                filter->token->str);
-        abort();
+        (void)fprintf(stderr, "***internal interpreter error*** "
+                "unexpected AST: `%s'\n", filter->token->str);
+        assert_fail();
         /* NOTREACHED */
     }
 
@@ -171,9 +171,10 @@ eval_cmp(const struct tfile *restrict file,
         }
         break;
     default:
-        fprintf(stderr, "internal interpreter error: unexpected token kind:"
-                " lhs(%s) rhs(%s)", lhs->token->str, rhs->token->str);
-        abort();
+        (void)fprintf(stderr, "***internal interpreter error*** "
+                "unexpected token kind: lhs(%s) rhs(%s)\n",
+                lhs->token->str, rhs->token->str);
+        assert_fail();
         /* NOTREACHED */
     }
 
@@ -228,9 +229,9 @@ eval_match(const struct tfile *restrict file,
         s = file->lib;
         break;
     default:
-        fprintf(stderr, "internal interpreter error: unexpected AST: `%s'\n",
+        fprintf(stderr, "***internal interpreter error*** unexpected AST: `%s'\n",
                 strast->token->str);
-        abort();
+        assert_fail();
         /* NOTREACHED */
     }
 

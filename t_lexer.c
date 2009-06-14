@@ -45,11 +45,37 @@ lexc(struct lexer *restrict L)
 
     if (L->c != '\0') {
     /* move forward of one char */
-        assert(L->cindex < (long)L->srclen);
+        assert(L->cindex == -1 || (size_t)L->cindex < L->srclen);
         L->cindex += 1;
         L->c = L->source[L->cindex];
     }
     else
+        assert(L->cindex >= 0 && (size_t)L->cindex == L->srclen);
+
+    return (L->c);
+}
+
+
+char
+lexc_move(struct lexer *restrict L, int delta)
+{
+
+    assert_not_null(L);
+
+    return (lexc_move_to(L, L->cindex + delta));
+}
+
+
+char
+lexc_move_to(struct lexer *restrict L, int to)
+{
+
+    assert_not_null(L);
+    assert(L->cindex == -1 || (size_t)L->cindex < L->srclen);
+
+    L->cindex = to;
+    L->c = L->source[L->cindex];
+    if (L->c == '\0')
         assert(L->cindex >= 0 && (size_t)L->cindex == L->srclen);
 
     return (L->c);
@@ -159,14 +185,14 @@ lex_strlit_or_regex(struct lexer *restrict L, struct token  **tptr)
     t = xrealloc(t, sizeof(struct token) + t->slen + 1);
     *tptr = t;
     t->value.str = (char *)(t + 1);
-    L->cindex = t->start;
+    lexc_move_to(L, t->start);
     i = 0;
     while (lexc(L) != limit) {
         if (L->c == '\\') {
             if (lexc(L) != limit) {
             /* rewind */
-                L->cindex -= 2;
-                L->c = '\\';
+                lexc_move(L, -1);
+                assert(L->c == '\\');
             }
         }
         t->value.str[i++] = L->c;
@@ -194,7 +220,9 @@ lex_strlit_or_regex(struct lexer *restrict L, struct token  **tptr)
                     mflag = true;
                     break;
                 default:
-                    assert(!("bug in regex option lexing"));
+                    (void)fprintf(stderr, "***bug in regex option lexing***\n");
+                    assert_fail();
+                    /* NOTREACHED */
 regopt_error:
                     lex_error(L, t->start, L->cindex,
                             "option %c given twice for REGEX", L->c);
@@ -275,14 +303,14 @@ lex_tagkey(struct lexer *restrict L, struct token **tptr)
         t = xrealloc(t, sizeof(struct token) + t->slen + 1);
         *tptr = t;
         t->value.str = (char *)(t + 1);
-        L->cindex    = t->start + 1;
+        lexc_move_to(L, t->start + 1); /* move on { */
         i = 0;
         while (lexc(L) != (idx ? '=' : '}')) {
             if (L->c == '\\') {
                 if (lexc(L) != '}') {
                     /* rewind */
-                    L->cindex -= 2;
-                    L->c = '\\';
+                    lexc_move(L, -1);
+                    assert(L->c == '\\');
                 }
             }
             t->value.str[i++] = L->c;
@@ -290,7 +318,7 @@ lex_tagkey(struct lexer *restrict L, struct token **tptr)
         if (idx) {
         /* eat idx digits */
             while (lexc(L) != '}')
-                continue;
+                assert(L->c);
         }
         t->value.str[i] = '\0';
         assert(strlen(t->value.str) == t->slen);
@@ -484,9 +512,9 @@ lex_next_token(struct lexer *restrict L)
                 if (!isalnum(c) && c != '_') {
                     t->kind = lexkeywords[i].kind;
                     t->str  = lexkeywords[i].lexem;
-                    L->cindex += lexkeywords[i].lexemlen - 1;
+                    lexc_move(L, lexkeywords[i].lexemlen - 1);
                     t->end = L->cindex;
-                    (void)lexc(L);
+                    assert(lexc(L) == c);
                     found = true;
                 }
             }
@@ -558,6 +586,7 @@ token_debug(struct token *restrict t) {
             break;
         case TSTRING: /* FALLTHROUGH */
             (void)printf("(%s)", t->value.str);
+            break;
         case TTAGKEY:
             (void)printf("(%s@%d)", t->value.str, t->tindex);
             break;
@@ -574,6 +603,7 @@ token_debug(struct token *restrict t) {
 
     return (ret);
 }
+
 int
 main(int argc, char *argv[])
 {

@@ -109,6 +109,21 @@ _t__nonnull(1)
 char lexc(struct lexer *restrict L);
 
 /*
+ * move to newcindex.
+ *
+ * newcindex must be > 0 and <= L->srclen
+ */
+_t__nonnull(1)
+char lexc_move_to(struct lexer *restrict L, int to);
+
+/*
+ * move to L->index + delta.
+ */
+_t__nonnull(1)
+char lexc_move(struct lexer *restrict L, int delta);
+
+
+/*
  * fill given token with TINT or TDOUBLE.
  */
 _t__nonnull(1) _t__nonnull(2)
@@ -121,7 +136,7 @@ _t__nonnull(1) _t__nonnull(2)
 void lex_strlit_or_regex(struct lexer *restrict L, struct token **tptr);
 
 /*
- * realloc() given token and fill it with TTAGKEY;
+ * realloc() given token and fill it with TTAGKEY.
  */
 _t__nonnull(1) _t__nonnull(2)
 void lex_tagkey(struct lexer *restrict L, struct token **tptr);
