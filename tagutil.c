@@ -230,8 +230,8 @@ main(int argc, char *argv[])
         destroy_tag_list(s_arg);
     if (rflag) {
         for (i = 0; r_arg[i]; i++)
-            xfree(r_arg[i]);
-        xfree(r_arg);
+            freex(r_arg[i]);
+        freex(r_arg);
     }
 
     return (ret);
@@ -309,7 +309,7 @@ user_edit(const char *restrict path)
     /* FIXME: fork(2) - wait(2) ? */
     error = system(editcmd);
 
-    xfree(editcmd);
+    freex(editcmd);
     return (error == 0);
 }
 
@@ -324,7 +324,7 @@ tagutil_print(struct tfile *restrict file)
     yaml = tags_to_yaml(file);
     (void)printf("%s\n", yaml);
 
-    xfree(yaml);
+    freex(yaml);
     return (true);
 }
 
@@ -398,10 +398,10 @@ tagutil_edit(struct tfile *restrict file)
 
         if (unlink(tmp_file) != 0)
             err(errno, "can't remove temp file");
-        xfree(tmp_file);
+        freex(tmp_file);
     }
 
-    xfree(yaml);
+    freex(yaml);
     return (ret);
 }
 
@@ -433,8 +433,8 @@ tagutil_rename(struct tfile *restrict file, struct token **restrict tknary)
         (void)xasprintf(&result, "%s/%s.%s", dirn, fname, ext);
     else
         (void)xasprintf(&result, "%s.%s", fname, ext);
-    xfree(fname);
-    xfree(dirn);
+    freex(fname);
+    freex(dirn);
 
     /* ask user for confirmation and rename if user want to */
     if (strcmp(file->path, result) != 0) {
@@ -443,10 +443,10 @@ tagutil_rename(struct tfile *restrict file, struct token **restrict tknary)
             if (!rename_safe(file->path, result, &errmsg))
                 err(errno, "%s", errmsg);
         }
-        xfree(question);
+        freex(question);
     }
 
-    xfree(result);
+    freex(result);
     return (true);
 }
 

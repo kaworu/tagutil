@@ -66,8 +66,8 @@ rename_safe(const char *restrict oldpath,
     }
     if (failed && errmsg != NULL)
         (void)xasprintf(errmsg, "%s", newdirn);
-    xfree(olddirn);
-    xfree(newdirn);
+    freex(olddirn);
+    freex(newdirn);
     if (failed)
         return (false);
 
@@ -101,7 +101,7 @@ rename_parse(const char *restrict pattern)
     L = new_lexer(pattern);
     (void)rename_lex_next_token(L);
     assert(L->current->kind == TSTART);
-    xfree(L->current);
+    freex(L->current);
 
     count = 0;
     len   = 16;
@@ -110,7 +110,7 @@ rename_parse(const char *restrict pattern)
     done = false;
     while (!done) {
         if (rename_lex_next_token(L)->kind == TEND) {
-            xfree(L->current);
+            freex(L->current);
             done = true;
         }
         else {
@@ -122,7 +122,7 @@ rename_parse(const char *restrict pattern)
             ret[count++] = L->current;
         }
     }
-    xfree(L);
+    freex(L);
 
     ret[count] = NULL;
     return (ret);

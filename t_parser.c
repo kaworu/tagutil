@@ -104,8 +104,8 @@ destroy_ast(struct ast *restrict victim)
         destroy_ast(victim->rhs);
         if (victim->token->kind == TREGEX)
             regfree(&victim->token->value.regex);
-        xfree(victim->token);
-        xfree(victim);
+        freex(victim->token);
+        freex(victim);
     }
 }
 
@@ -124,7 +124,7 @@ parse_filter(struct lexer *restrict L)
                 t->str);
         /* NOTREACHED */
     }
-    xfree(t);
+    freex(t);
 
     (void)lex_next_token(L);
     ret = parse_condition(L);
@@ -135,9 +135,9 @@ parse_filter(struct lexer *restrict L)
                 t->str);
         /* NOTREACHED */
     }
-    xfree(t);
+    freex(t);
 
-    xfree(L);
+    freex(L);
     return (ret);
 }
 
@@ -274,8 +274,8 @@ parse_nestedcond(struct lexer *restrict L)
 
     ret->start = oparen->start;
     ret->end   = cparen->end;
-    xfree(oparen);
-    xfree(cparen);
+    freex(oparen);
+    freex(cparen);
     return (ret);
 }
 

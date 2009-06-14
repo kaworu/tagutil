@@ -30,7 +30,7 @@
 
 /* error handling macros */
 #define last_error_msg(o) ((o)->errmsg)
-#define reset_error_msg(o) xfree(last_error_msg(o))
+#define reset_error_msg(o) freex(last_error_msg(o))
 #define set_error_msg(o, fmt, ...) \
     (void)xasprintf(&last_error_msg(o), fmt, ##__VA_ARGS__)
 
@@ -46,7 +46,7 @@ static inline void * xcalloc(size_t nmemb, const size_t size);
 _t__unused
 static inline void * xrealloc(void *ptr, size_t size);
 
-#define xfree(p) do { free(p); (p) = NULL; } while (/*CONSTCOND*/0)
+#define freex(p) do { free(p); (p) = NULL; } while (/*CONSTCOND*/0)
 
 
 /* FILE FUNCTIONS */
@@ -261,7 +261,7 @@ xdirname(const char *restrict path)
     dirn = xstrdup(dirn);
 
 #if !defined(HAVE_SANE_DIRNAME)
-    xfree(garbage);  /* no more needed */
+    freex(garbage);  /* no more needed */
 #endif
     return (dirn);
 }
@@ -394,9 +394,9 @@ destroy_strbuf(struct strbuf *restrict sb)
     assert_not_null(sb);
 
     for (i = sb->blast; i >= 0; i--)
-        xfree(sb->buffers[i]);
-    xfree(sb->buffers);
-    xfree(sb->blen);
-    xfree(sb);
+        freex(sb->buffers[i]);
+    freex(sb->buffers);
+    freex(sb->blen);
+    freex(sb);
 }
 #endif /* not T_TOOLKIT_H */

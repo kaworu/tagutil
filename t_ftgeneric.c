@@ -45,7 +45,7 @@ ftgeneric_destroy(struct tfile *restrict self)
     d = self->data;
     taglib_file_free(d->file);
     reset_error_msg(self);
-    xfree(self);
+    freex(self);
 }
 
 
@@ -121,11 +121,11 @@ ftgeneric_get(struct tfile *restrict self, const char *restrict key)
         }
         if (value && strempty(value))
         /* clean value, when TagLib return "" we return NULL */
-            xfree(value);
+            freex(value);
 
         if (value) {
             tag_list_insert(T, _taglibkeys[i], value);
-            xfree(value);
+            freex(value);
         }
         if (key)
             break;

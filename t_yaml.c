@@ -210,8 +210,8 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
                 memcpy(value, event.data.scalar.value,
                         event.data.scalar.length);
                 tag_list_insert(T, key, value);
-                xfree(key);
-                xfree(value);
+                freex(key);
+                freex(value);
             }
             break;
         case YAML_STREAM_END_EVENT:

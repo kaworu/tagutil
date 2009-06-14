@@ -50,8 +50,8 @@ ftoggvorbis_destroy(struct tfile *restrict self)
     d = self->data;
 
     ov_clear(d->vf);
-    xfree(d->vf);
-    xfree(self);
+    freex(d->vf);
+    freex(self);
 }
 
 
@@ -89,7 +89,7 @@ ftoggvorbis_get(const struct tfile *restrict self, const char *restrict key)
     d = self->data;
     s = xstrdup(key);
     ret = vorbis_comment_query(d->vc, s, /* FIXME */0);
-    xfree(s);
+    freex(s);
 
     if (ret == NULL)
         return (NULL);
@@ -114,8 +114,8 @@ ftoggvorbis_set(struct tfile *restrict self, const char *restrict key,
     n = xstrdup(newval);
     /* FIXME: utf8encode(n) && check k */
     vorbis_comment_add_tag(d->vc, k, n);
-    xfree(k);
-    xfree(n);
+    freex(k);
+    freex(n);
     return (TFILE_SET_STATUS_LIBERROR);
 }
 
@@ -179,10 +179,10 @@ ftoggvorbis_new(const char *restrict path)
     vf = xmalloc(sizeof(struct OggVorbis_File));
     s = xstrdup(path);
     i = ov_fopen(s, vf);
-    xfree(s);
+    freex(s);
     if (i != 0) {
         /* XXX: check OV_EFAULT or OV_EREAD? */
-        xfree(vf);
+        freex(vf);
         return (NULL);
     }
     assert(vc = ov_comment(vf, -1));

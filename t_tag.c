@@ -122,11 +122,11 @@ destroy_tag_list(const struct tag_list *Tconst)
         while (!TAILQ_EMPTY(t->values)) {
             v = TAILQ_FIRST(t->values);
             TAILQ_REMOVE(t->values, v, next);
-            xfree(v);
+            freex(v);
         }
-        xfree(t);
+        freex(t);
     }
     reset_error_msg(T);
-    xfree(T);
+    freex(T);
 }
 

@@ -33,7 +33,7 @@ first_match(const char *restrict str, const char *restrict pattern, const int fl
     case 0:
         return (regmatch);
     case REG_NOMATCH:
-        xfree(regmatch);
+        freex(regmatch);
         return (NULL);
     default:
 error_label:
@@ -60,7 +60,7 @@ has_match(const char *restrict str, const char *restrict pattern)
     if (match == NULL)
         return (false);
     else {
-        xfree(match);
+        freex(match);
         return (true);
     }
 }

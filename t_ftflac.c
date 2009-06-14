@@ -50,7 +50,7 @@ ftflac_destroy(struct tfile *restrict self)
     d = self->data;
 
     FLAC__metadata_chain_delete(d->chain);
-    xfree(self);
+    freex(self);
 }
 
 
@@ -101,7 +101,7 @@ ftflac_get(const struct tfile *restrict self, const char *restrict key)
         }
     }
     assert(strcasecmp(field_name, key) == 0 && "libFLAC returned a bad key");
-    xfree(field_name);
+    freex(field_name);
 
     return (field_value);
 }
@@ -138,7 +138,7 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
         mykey = xstrdup(key);
         strtoupper(mykey);
         b = FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&e, mykey, newval);
-        xfree(mykey);
+        freex(mykey);
         if (!b) {
             if (errno == ENOMEM)
                 err(ENOMEM, "ftflac_set: FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair");
@@ -154,7 +154,7 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
                 warnx("ftflac_set: create a tag with empty value: `%s'", key);
             b = FLAC__metadata_object_vorbiscomment_append_comment(d->vocomments, e, /* copy */false);
             if (!b) {
-                xfree(e.entry);
+                freex(e.entry);
                 warnx("ftflac_set: %s backend error", self->lib);
                 return (TFILE_SET_STATUS_LIBERROR);
             }
@@ -166,7 +166,7 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
                 if (errno == ENOMEM)
                     err(ENOMEM, "ftflac_set: FLAC__metadata_object_vorbiscomment_replace_comment");
                 else {
-                    xfree(e.entry);
+                    freex(e.entry);
                     warnx("ftflac_set: %s backend error", self->lib);
                     return (TFILE_SET_STATUS_LIBERROR);
                 }
@@ -205,7 +205,7 @@ ftflac_tagkeys(const struct tfile *restrict self, char ***kptr)
                 warnx("ftflac_tagkeys: `%s' seems corrupted", self->path);
                 return (-1);
             }
-            xfree(field_value);
+            freex(field_value);
             ret[i] = field_name;
             strtolower(field_name);
         }

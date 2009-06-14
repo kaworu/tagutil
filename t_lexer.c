@@ -112,7 +112,7 @@ lex_number(struct lexer *restrict L, struct token *restrict t)
                 /* NOTREACHED */
             }
         }
-        xfree(num);
+        freex(num);
     }
     t->end = L->cindex - 1;
 }
@@ -591,9 +591,9 @@ main(int argc, char *argv[])
         t = lex_next_token(L);
         the_end = token_debug(t);
         (void)printf(" ");
-        xfree(t);
+        freex(t);
     }
-    xfree(L);
+    freex(L);
 
     return (0);
 }
