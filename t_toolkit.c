@@ -9,63 +9,6 @@
 #include "t_toolkit.h"
 
 
-regmatch_t *
-first_match(const char *restrict str, const char *restrict pattern, const int flags)
-{
-    regex_t regex;
-    regmatch_t *regmatch;
-    int error;
-    char *errbuf;
-
-    assert_not_null(str);
-    assert_not_null(pattern);
-
-    regmatch = xmalloc(sizeof(regmatch_t));
-    error = regcomp(&regex, pattern, flags);
-
-    if (error != 0)
-        goto error_label;
-
-    error = regexec(&regex, str, 1, regmatch, 0);
-    regfree(&regex);
-
-    switch (error) {
-    case 0:
-        return (regmatch);
-    case REG_NOMATCH:
-        freex(regmatch);
-        return (NULL);
-    default:
-error_label:
-        errbuf = xcalloc(BUFSIZ, sizeof(char));
-        (void)regerror(error, &regex, errbuf, BUFSIZ);
-        errx(-1, "first_match: %s", errbuf);
-        /* NOTREACHED */
-    }
-}
-
-
-bool
-has_match(const char *restrict str, const char *restrict pattern)
-{
-    regmatch_t *match;
-
-    assert_not_null(pattern);
-
-    if (str == NULL)
-        return (false);
-
-    match = first_match(str, pattern, REG_ICASE | REG_EXTENDED | REG_NEWLINE | REG_NOSUB);
-
-    if (match == NULL)
-        return (false);
-    else {
-        freex(match);
-        return (true);
-    }
-}
-
-
 bool
 yesno(const char *restrict question)
 {

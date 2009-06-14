@@ -291,7 +291,7 @@ user_edit(const char *restrict path)
     editor = getenv("EDITOR");
     if (editor == NULL)
         errx(-1, "please, set the $EDITOR environment variable.");
-    else if (has_match(editor, "x?emacs"))
+    else if (strcmp(editor, "emacs") == 0)
         /*
          * we're actually so cool, that we keep the user waiting if $EDITOR
          * start slowly. The slow-editor-detection-algorithm used maybe not

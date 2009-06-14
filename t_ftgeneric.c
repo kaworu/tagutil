@@ -253,9 +253,14 @@ ftgeneric_add(struct tfile *restrict self, const struct tag_list *restrict T)
 void
 ftgeneric_init(void)
 {
+    char *lcall, *dot;
 
     /* TagLib specific init */
-    taglib_set_strings_unicode(has_match(getenv("LC_ALL"), "utf-?8"));
+    lcall = getenv("LC_ALL");
+    dot = strchr(lcall, '.');
+    if (dot && strcmp(dot + 1, "UTF-8"))
+        taglib_set_strings_unicode(true);
+
     taglib_set_string_management_enabled(false);
 }
 

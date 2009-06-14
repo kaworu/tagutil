@@ -132,28 +132,6 @@ _t__unused _t__nonnull(1)
 static inline void destroy_strbuf(struct strbuf *restrict sb);
 
 
-/* REGEX STRING OPERATIONS */
-
-/*
- * compile the given pattern, match it with str and return the regmatch_t result.
- * if an error occure (during the compilation or the match), print the error message
- * and err(3). return NULL if there was no match, and a pointer to the regmatch_t
- * otherwise.
- *
- * returned value has to be free()d.
- */
-_t__nonnull(1) _t__nonnull(2)
-regmatch_t * first_match(const char *restrict str,
-        const char *restrict pattern, const int flags);
-
-/*
- * return true if the regex pattern match the given str, false otherwhise.
- * flags are REG_ICASE | REG_EXTENDED | REG_NEWLINE | REG_NOSUB (see regex(3)).
- */
-_t__nonnull(2)
-bool has_match(const char *restrict str, const char *restrict pattern);
-
-
 /* OTHER */
 
 /*
