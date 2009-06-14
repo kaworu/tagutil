@@ -355,7 +355,7 @@ strbuf_add(struct strbuf *restrict sb, char *s, size_t len)
     assert(sb->bcount >= sb->blast);
     assert_not_null(s);
 
-    if (sb->blast == sb->bcount) {
+    if (sb->blast == (sb->bcount - 1)) {
     /* grow */
         sb->bcount  = sb->bcount * 2;
         sb->buffers = xrealloc(sb->buffers, sb->bcount * sizeof(char *));
