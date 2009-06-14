@@ -10,7 +10,6 @@
 #include <sys/stat.h>
 
 #include <ctype.h>
-#include <err.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -35,9 +34,9 @@ _t__nonnull(1)
 static int build(char *path, mode_t omode);
 
 
-void
+bool
 rename_safe(const char *restrict oldpath,
-        const char *restrict newpath)
+        const char *restrict newpath, char **errmsg)
 {
     bool failed = false;
     struct stat st;
@@ -52,7 +51,7 @@ rename_safe(const char *restrict oldpath,
     /* srcdir != destdir, we need to check if destdir is OK */
         if (dflag) {
         /* we are asked to actually create the directory */
-            if (build(newdirn, S_IRWXU | S_IRWXG | S_IRWXO) == 0) /* failure */
+            if (build(newdirn, S_IRWXU | S_IRWXG | S_IRWXO) == 0)
                 failed = true;
         }
         if (stat(newdirn, &st) != 0) {
@@ -65,16 +64,27 @@ rename_safe(const char *restrict oldpath,
             failed = true;
         }
     }
-    if (failed)
-        err(errno, "%s", newdirn);
+    if (failed && errmsg != NULL)
+        (void)xasprintf(errmsg, "%s", newdirn);
     xfree(olddirn);
     xfree(newdirn);
+    if (failed)
+        return (false);
 
-    if (stat(newpath, &st) == 0)
-        err(errno = EEXIST, "%s", newpath);
+    if (stat(newpath, &st) == 0) {
+        errno = EEXIST;
+        if (errmsg != NULL)
+            (void)xasprintf(errmsg, "%s", newpath);
+        return (false);
+    }
 
-    if (rename(oldpath, newpath) == -1)
-        err(errno, "rename");
+    if (rename(oldpath, newpath) == -1) {
+        if (errmsg != NULL)
+            (void)xasprintf(errmsg, "rename");
+        return (false);
+    }
+
+    return (true);
 }
 
 

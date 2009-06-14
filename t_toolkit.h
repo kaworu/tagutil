@@ -32,7 +32,7 @@
 #define last_error_msg(o) ((o)->errmsg)
 #define reset_error_msg(o) xfree(last_error_msg(o))
 #define set_error_msg(o, fmt, ...) \
-    (void)xasprintf(&last_error_msg(o), fmt, ##__VA_ARGS__);
+    (void)xasprintf(&last_error_msg(o), fmt, ##__VA_ARGS__)
 
 
 /* MEMORY FUNCTIONS */

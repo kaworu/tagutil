@@ -409,7 +409,7 @@ tagutil_edit(struct tfile *restrict file)
 bool
 tagutil_rename(struct tfile *restrict file, struct token **restrict tknary)
 {
-    char *ext, *result, *dirn, *fname, *question;
+    char *ext, *result, *dirn, *fname, *question, *errmsg;
 
     assert_not_null(file);
     assert_not_null(tknary);
@@ -439,8 +439,10 @@ tagutil_rename(struct tfile *restrict file, struct token **restrict tknary)
     /* ask user for confirmation and rename if user want to */
     if (strcmp(file->path, result) != 0) {
         (void)xasprintf(&question, "rename `%s' to `%s'", file->path, result);
-        if (yesno(question))
-            rename_safe(file->path, result);
+        if (yesno(question)) {
+            if (!rename_safe(file->path, result, &errmsg))
+                err(errno, "%s", errmsg);
+        }
         xfree(question);
     }
 
