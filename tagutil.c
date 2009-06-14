@@ -322,7 +322,10 @@ tagutil_print(struct tfile *restrict file)
     assert_not_null(file);
 
     yaml = tags_to_yaml(file);
-    (void)printf("%s\n", yaml);
+    if (yaml)
+        (void)printf("%s\n", yaml);
+    else
+        warnx("%s", last_error_msg(file));
 
     freex(yaml);
     return (true);
@@ -376,8 +379,10 @@ tagutil_edit(struct tfile *restrict file)
     assert_not_null(file);
 
     yaml = tags_to_yaml(file);
-    if (yaml == NULL)
+    if (yaml == NULL) {
+        warnx("%s", last_error_msg(file));
         return (false);
+    }
 
     (void)printf("%s\n", yaml);
 

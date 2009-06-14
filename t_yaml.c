@@ -68,8 +68,10 @@ tags_to_yaml(struct tfile *restrict file)
         goto emitter_error;
 
     T = file->get(file, NULL);
-    if (T == NULL)
-        errx(-1, "tags_to_yaml: %s", last_error_msg(file));
+    if (T == NULL) {
+        destroy_strbuf(sb);
+        return (NULL);
+    }
     TAILQ_FOREACH(t, T->tags, next) {
         TAILQ_FOREACH(v, t->values, next) {
             /* emit the key */
