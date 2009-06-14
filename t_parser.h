@@ -16,12 +16,12 @@
  * Condition    ::= <REGEX> ( '=~' | '!~' ) <Value>
  * Condition    ::= '!' '(' <Condition> ')'
  * Condition    ::= '(' <Condition> ')'
- * Value        ::= <TagKey> | <KEYWORD> | <INTEGER> | <DOUBLE> | <STRING>
- * TagKey       ::= SIMPLETAGKEY | BRACETAGKEY
+ * Value        ::= <TAGKEY> | <KEYWORD> | <INTEGER> | <DOUBLE> | <STRING>
+ * TAGKEY       ::= <SIMPLETAGKEY> | <BRACETAGKEY>
  * SIMPLETAGKEY ::= '%' [A-Za-z\-_]+
- * BRACETAGKEY  ::= '%{' ( '\' . | [^}] )* '}'
+ * BRACETAGKEY  ::= '%{' ( '\' [^=] | [^}=] )* ( '=' [0-9]+ )? '}'
  * KEYWORD      ::= 'filename' | 'undef' | 'backend'
- * INTEGER      ::= '0' | [1-9][0-9]*
+ * INTEGER      ::= ( '+' | '-' )? '0' | [1-9][0-9]*
  * DOUBLE       ::= <INTEGER>? '.' [0-9]+
  * STRING       ::= '"' ('\' . | [^"] )* '"'
  * REGEX        ::= '/' ('\' . | [^/] )* '/' <REGOPTS>?

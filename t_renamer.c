@@ -200,12 +200,13 @@ char *
 rename_eval(struct tfile *restrict file, struct token **restrict ts)
 {
     const struct token *tkn;
-    struct strbuf *sb;
+    struct strbuf *sb, *sbv;
     struct tag_list *T;
     struct ttag  *t;
     struct ttagv *v;
     char *ret, *s;
     size_t len;
+    int i;
 
     assert_not_null(file);
     assert_not_null(ts);
@@ -226,10 +227,28 @@ rename_eval(struct tfile *restrict file, struct token **restrict ts)
                 t = TAILQ_FIRST(T->tags);
                 assert_not_null(t);
                 assert(t->vcount > 0);
-                v = ttag_value_by_idx(t, tkn->tindex);
-                if (v) {
-                    s = xstrdup(v->value);
-                    len = v->vlen;
+                if (tkn->tindex == -1 && t->vcount > 1) {
+                /* user ask for *all* tag values */
+                    sbv = new_strbuf();
+                    TAILQ_FOREACH(v, t->values, next) {
+                        strbuf_add(sbv, xstrdup(v->value), v->vlen);
+                        if (v != TAILQ_LAST(t->values, ttagv_q))
+                            strbuf_add(sbv, xstrdup(" - "), 3);
+                    }
+                    s = strbuf_get(sbv);
+                    len = sbv->len;
+                    destroy_strbuf(sbv);
+                }
+                else {
+                /*
+                 * requested one tag, or all but there is only one avaiable.
+                 */
+                    i = tkn->tindex == -1 ? 0 : tkn->tindex;
+                    v = ttag_value_by_idx(t, i);
+                    if (v) {
+                        s = xstrdup(v->value);
+                        len = v->vlen;
+                    }
                 }
             }
             destroy_tag_list(T);

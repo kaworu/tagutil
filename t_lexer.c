@@ -255,8 +255,15 @@ lex_tagkey(struct lexer *restrict L, struct token **tptr)
             eqindex = L->cindex;
             while (isdigit(lexc(L)))
                 t->tindex = 10 * t->tindex + digittoint(L->c);
-            if (L->cindex == eqindex + 1 || (L->c && L->c != '}'))
-                lex_error(L, eqindex + 1, L->cindex, "bad index request");
+            if (L->cindex == eqindex + 1) {
+            /* could be * */
+                if (L->c == '*') {
+                    t->tindex = -1;
+                    (void)lexc(L);
+                }
+                if (L->c && L->c != '}')
+                    lex_error(L, eqindex + 1, L->cindex, "bad index request");
+            }
         }
         t->end = L->cindex;
         if (L->c != '}')
@@ -552,7 +559,7 @@ token_debug(struct token *restrict t) {
         case TSTRING: /* FALLTHROUGH */
             (void)printf("(%s)", t->value.str);
         case TTAGKEY:
-            (void)printf("(%s@%zu)", t->value.str, t->tindex);
+            (void)printf("(%s@%d)", t->value.str, t->tindex);
             break;
         case TREGEX:
             (void)printf("(%s)", (char *)(t + 1));
