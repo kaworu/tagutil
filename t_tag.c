@@ -17,7 +17,7 @@ new_tag_list(void)
     ret = xmalloc(sizeof(struct tag_list) + sizeof(struct ttag_q));
     ret->tags = (struct ttag_q *)(ret + 1);
     ret->tcount = 0;
-    last_error_msg(ret) = NULL;
+    t_error_init(ret);
     TAILQ_INIT(ret->tags);
 
     return (ret);
@@ -126,7 +126,7 @@ destroy_tag_list(const struct tag_list *Tconst)
         }
         freex(t);
     }
-    reset_error_msg(T);
+    t_error_clear(T);
     freex(T);
 }
 

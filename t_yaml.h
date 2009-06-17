@@ -24,7 +24,7 @@ char * tags_to_yaml(struct tfile *restrict file);
 /*
  * read a yaml file.
  *
- * On error last_error_msg(file) contains an error message and NULL is
+ * On error t_error_msg(file) contains an error message and NULL is
  * returned. Otherwhise the loaded tag_list is returned.
  *
  * returned value has to be free()d (see destroy_tag_list()).

@@ -210,7 +210,7 @@ main(int argc, char *argv[])
             tagutil_load(file, f_arg);
         if (sflag) {
             if (!file->clear(file, s_arg) || !file->add(file, s_arg))
-                warnx("file `%s' not saved: %s", file->path, last_error_msg(file));
+                warnx("file `%s' not saved: %s", file->path, t_error_msg(file));
             else {
                 if (!file->save(file))
                     err(errno, "couldn't save file `%s'", path);
@@ -325,7 +325,7 @@ tagutil_print(struct tfile *restrict file)
     if (yaml)
         (void)printf("%s\n", yaml);
     else
-        warnx("%s", last_error_msg(file));
+        warnx("%s", t_error_msg(file));
 
     freex(yaml);
     return (true);
@@ -348,14 +348,14 @@ tagutil_load(struct tfile *restrict file, const char *restrict path)
         stream = xfopen(path, "r");
 
     T = yaml_to_tags(file, stream);
-    if (last_error_msg(T)) {
+    if (t_error_msg(T)) {
         ret = false;
-        warnx("error while reading YAML: %s", last_error_msg(T));
+        warnx("error while reading YAML: %s", t_error_msg(T));
         warnx("file `%s' not saved.", file->path);
     }
     else {
         if (!file->clear(file, NULL) || !file->add(file, T))
-            warnx("file `%s' not saved: %s", file->path, last_error_msg(file));
+            warnx("file `%s' not saved: %s", file->path, t_error_msg(file));
         else {
             if (!file->save(file))
                 err(errno, "can't save file '%s'", file->path);
@@ -380,7 +380,7 @@ tagutil_edit(struct tfile *restrict file)
 
     yaml = tags_to_yaml(file);
     if (yaml == NULL) {
-        warnx("%s", last_error_msg(file));
+        warnx("%s", t_error_msg(file));
         return (false);
     }
 
@@ -415,7 +415,7 @@ bool
 tagutil_rename(struct tfile *restrict file, struct token **restrict tknary)
 {
     char *ext, *result, *dirn, *fname, *question;
-    struct terr *e;
+    struct t_error *e;
 
     assert_not_null(file);
     assert_not_null(tknary);
@@ -428,7 +428,7 @@ tagutil_rename(struct tfile *restrict file, struct token **restrict tknary)
     ext++; /* skip dot */
     fname = rename_eval(file, tknary);
     if (fname == NULL) {
-        warnx("%s", last_error_msg(file));
+        warnx("%s", t_error_msg(file));
         return (false);
     }
 
@@ -448,10 +448,10 @@ tagutil_rename(struct tfile *restrict file, struct token **restrict tknary)
     if (strcmp(file->path, result) != 0) {
         (void)xasprintf(&question, "rename `%s' to `%s'", file->path, result);
         if (yesno(question)) {
-            e = new_terr();
+            e = t_error_new();
             if (!rename_safe(file->path, result, e))
-                err(errno, "%s", last_error_msg(e));
-            destroy_terr(e);
+                err(errno, "%s", t_error_msg(e));
+            t_error_destroy(e);
         }
         freex(question);
     }

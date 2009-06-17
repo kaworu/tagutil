@@ -27,7 +27,7 @@ struct token ** rename_parse(const char *restrict pattern);
 /*
  * eval the given token array in the context of given tfile.
  *
- * On error last_error_msg(file) is set and NULL is returned. Otherwhise the
+ * On error t_error_msg(file) is set and NULL is returned. Otherwhise the
  * result is returned.
  *
  * returned value has to be free()d.
@@ -38,11 +38,11 @@ char * rename_eval(struct tfile *restrict file, struct token **restrict ts);
 /*
  * rename path to new_path.
  *
- * return false on error and set last_error_msg(e) if not NULL and errno.
+ * return false on error and set t_error_msg(e) if not NULL and errno.
  * return true otherwise.
  */
 _t__nonnull(1) _t__nonnull(2)
 bool rename_safe(const char *restrict oldpath, const char *restrict newpath,
-        struct terr *restrict e);
+        struct t_error *restrict e);
 
 #endif /* not T_RENAMER_H */

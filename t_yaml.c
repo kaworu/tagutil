@@ -156,19 +156,19 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
             continue;
 
         case YAML_ALIAS_EVENT:
-            set_error_msg(T, "YAML parser got unexpected "
+            t_error_set(T, "YAML parser got unexpected "
                     "YAML_ALIAS_EVENT at line %zu",
                    parser.context_mark.line + 1);
             stop = true;
             break;
         case YAML_SEQUENCE_START_EVENT:
-            set_error_msg(T, "YAML parser got unexpected "
+            t_error_set(T, "YAML parser got unexpected "
                     "YAML_SEQUENCE_START_EVENT at line %zu",
                     parser.context_mark.line + 1);
             stop = true;
             break;
         case YAML_SEQUENCE_END_EVENT:
-            set_error_msg(T, "YAML parser got unexpected "
+            t_error_set(T, "YAML parser got unexpected "
                     "YAML_SEQUENCE_END_EVENT at line %zu",
                     parser.context_mark.line + 1);
             stop = true;
@@ -176,12 +176,12 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
 
         case YAML_MAPPING_START_EVENT:
             if (inmap) {
-                set_error_msg(T, "unexpected nested mapping at line %zu",
+                t_error_set(T, "unexpected nested mapping at line %zu",
                         parser.context_mark.line + 1);
                 stop = true;
             }
             else if (donemap) {
-                set_error_msg(T, "unexpected extra mapping, needed only one. "
+                t_error_set(T, "unexpected extra mapping, needed only one. "
                         "at line %zu", parser.context_mark.line + 1);
                 stop = true;
             }
@@ -194,12 +194,12 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
             break;
         case YAML_SCALAR_EVENT:
             if (!inmap) {
-                set_error_msg(T, "unexpected scalar at line %zu",
+                t_error_set(T, "unexpected scalar at line %zu",
                         parser.context_mark.line + 1);
                 stop = true;
             }
             else if (donemap) {
-                set_error_msg(T, "unexpected extra scalar after mapping at line %zu",
+                t_error_set(T, "unexpected extra scalar after mapping at line %zu",
                         parser.context_mark.line + 1);
                 stop = true;
             }
@@ -229,17 +229,17 @@ yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
 parser_error:
     switch (parser.error) {
     case YAML_MEMORY_ERROR:
-        set_error_msg(T, "yaml_to_tags: YAML Parser (ENOMEM)");
+        t_error_set(T, "yaml_to_tags: YAML Parser (ENOMEM)");
         break;
     case YAML_READER_ERROR:
         if (parser.problem_value != -1) {
-            set_error_msg(T, "yaml_to_tags: Reader error: %s: #%X at %zu\n",
+            t_error_set(T, "yaml_to_tags: Reader error: %s: #%X at %zu\n",
                     parser.problem,
                     parser.problem_value,
                     parser.problem_offset);
         }
         else {
-            set_error_msg(T, "yaml_to_tags: Reader error: %s at %zu\n",
+            t_error_set(T, "yaml_to_tags: Reader error: %s at %zu\n",
                     parser.problem,
                     parser.problem_offset);
         }
@@ -247,7 +247,7 @@ parser_error:
     case YAML_SCANNER_ERROR: /* FALLTHROUGH */
     case YAML_PARSER_ERROR:
         if (parser.context) {
-            set_error_msg(T, "yaml_to_tags: %s error: %s at line %zu, column %zu\n"
+            t_error_set(T, "yaml_to_tags: %s error: %s at line %zu, column %zu\n"
                     "%s at line %zu, column %zu\n",
                     parser.error == YAML_SCANNER_ERROR ? "Scanner" : "Parser",
                     parser.context,
@@ -258,7 +258,7 @@ parser_error:
                     parser.problem_mark.column + 1);
         }
         else {
-            set_error_msg(T, "yaml_to_tags: %s error: %s at line %zu, column %zu\n",
+            t_error_set(T, "yaml_to_tags: %s error: %s at line %zu, column %zu\n",
                     parser.error == YAML_SCANNER_ERROR ? "Scanner" : "Parser",
                     parser.problem,
                     parser.problem_mark.line + 1,
@@ -269,7 +269,7 @@ parser_error:
     case YAML_COMPOSER_ERROR: /* FALLTHROUGH */
     case YAML_WRITER_ERROR:   /* FALLTHROUGH */
     case YAML_EMITTER_ERROR:
-        set_error_msg(T, "libyaml internal error\n"
+        t_error_set(T, "libyaml internal error\n"
                 "bad error type while parsing: %s",
                 parser.error == YAML_NO_ERROR ? "YAML_NO_ERROR" :
                 parser.error == YAML_COMPOSER_ERROR ? "YAML_COMPOSER_ERROR" :

@@ -49,9 +49,10 @@ static inline struct ttagv * ttag_value_by_idx(struct ttag *restrict t,
  * structure.
  */
 struct tag_list {
-    char *errmsg;
     size_t tcount;
     struct ttag_q *tags;
+
+    ERROR_MSG_MEMBER;
 };
 
 

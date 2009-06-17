@@ -36,7 +36,7 @@ static int build(char *path, mode_t omode);
 
 bool
 rename_safe(const char *restrict oldpath,
-        const char *restrict newpath, struct terr *restrict e)
+        const char *restrict newpath, struct t_error *restrict e)
 {
     bool failed = false;
     struct stat st;
@@ -44,16 +44,16 @@ rename_safe(const char *restrict oldpath,
 
     assert_not_null(oldpath);
     assert_not_null(newpath);
-    reset_error_msg(e);
+    t_error_clear(e);
 
     olddirn = t_dirname(oldpath);
     if (olddirn == NULL) {
-        set_error_msg(e, "%s", oldpath);
+        t_error_set(e, "%s", oldpath);
         return (false);
     }
     newdirn = t_dirname(newpath);
     if (newdirn == NULL) {
-        set_error_msg(e, "%s", newpath);
+        t_error_set(e, "%s", newpath);
         freex(olddirn);
         return (false);
     }
@@ -76,7 +76,7 @@ rename_safe(const char *restrict oldpath,
         }
     }
     if (failed)
-        set_error_msg(e, "%s", newdirn);
+        t_error_set(e, "%s", newdirn);
     freex(olddirn);
     freex(newdirn);
     if (failed)
@@ -84,12 +84,12 @@ rename_safe(const char *restrict oldpath,
 
     if (stat(newpath, &st) == 0) {
         errno = EEXIST;
-        set_error_msg(e, "%s", newpath);
+        t_error_set(e, "%s", newpath);
         return (false);
     }
 
     if (rename(oldpath, newpath) == -1) {
-        set_error_msg(e, "rename");
+        t_error_set(e, "rename");
         return (false);
     }
 
@@ -228,7 +228,7 @@ rename_eval(struct tfile *restrict file, struct token **restrict ts)
 
     assert_not_null(ts);
     assert_not_null(file);
-    reset_error_msg(file);
+    t_error_clear(file);
 
     sb = new_strbuf();
     tkn = *ts;
@@ -284,7 +284,7 @@ rename_eval(struct tfile *restrict file, struct token **restrict ts)
 
     ret = NULL;
     if (sb->len > MAXPATHLEN)
-        set_error_msg(file, "rename_eval result is too long (>MAXPATHLEN)");
+        t_error_set(file, "rename_eval result is too long (>MAXPATHLEN)");
     else
         ret = strbuf_get(sb);
 

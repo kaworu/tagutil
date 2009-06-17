@@ -17,7 +17,6 @@
 struct tfile {
     const char *path;
     const char *lib;
-    char *errmsg;
     void *data;
 
     /*
@@ -32,7 +31,7 @@ struct tfile {
      * write the file.
      *
      * return true if no error, false otherwise.
-     * On success last_error_msg(self) is NULL, otherwise it contains an error
+     * On success t_error_msg(self) is NULL, otherwise it contains an error
      * message.
      */
     bool (*save)(struct tfile *restrict self);
@@ -48,8 +47,8 @@ struct tfile {
      * If key is NULL, all the tags are returned.
      * If there is no values fo key, ret->tcount is 0.
      *
-     * On error, NULL is returned and last_error_msg(self) contains an error
-     * message, otherwise last_error_msg(self) is NULL.
+     * On error, NULL is returned and t_error_msg(self) contains an error
+     * message, otherwise t_error_msg(self) is NULL.
      *
      * returned value has to be free()d (use destroy_tag_list()).
      */
@@ -62,7 +61,7 @@ struct tfile {
      * if T is NULL, all tags will be cleared.
      *
      * On success true is returned, otherwise false is returned and
-     * last_error_msg(self) contains an error message.
+     * t_error_msg(self) contains an error message.
      */
     bool (*clear)(struct tfile *restrict self, const struct tag_list *restrict T);
 
@@ -70,9 +69,12 @@ struct tfile {
      * add the tags of given tag_list in self.
      *
      * On success true is returned, otherwise false is returned and
-     * last_error_msg(self) contains an error message.
+     * t_error_msg(self) contains an error message.
      */
     bool (*add)(struct tfile *restrict self, const struct tag_list *restrict T);
+
+
+    ERROR_MSG_MEMBER;
 };
 
 #endif /* not T_FILE_H */

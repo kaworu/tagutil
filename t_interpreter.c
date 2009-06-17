@@ -190,7 +190,7 @@ eval_match(const struct tfile *restrict file,
     bool die, ret, *undef;
     const char *s;
     char *_s = NULL;
-    char errmsg[BUFSIZ];
+    char *errmsg;
     struct ast *regast, *strast;
 
     assert_not_null(file);
@@ -244,8 +244,8 @@ eval_match(const struct tfile *restrict file,
             ret = false;
             break;
         default:
-            /* FIXME */
-            (void)regerror(error, r, errmsg, sizeof(errmsg));
+            errmsg = xcalloc(BUFSIZ, sizeof(char));
+            (void)regerror(error, r, errmsg, BUFSIZ);
             errx(-1, "interpreter error, can't exec regex: '%s'", errmsg);
             /* NOTREACHED */
     }

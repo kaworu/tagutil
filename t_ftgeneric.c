@@ -8,6 +8,7 @@
 /* TagLib headers */
 #include <tag_c.h>
 
+#include <limits.h>
 #include <stdbool.h>
 
 #include "t_file.h"
@@ -44,7 +45,7 @@ ftgeneric_destroy(struct tfile *restrict self)
 
     d = self->data;
     taglib_file_free(d->file);
-    reset_error_msg(self);
+    t_error_clear(self);
     freex(self);
 }
 
@@ -57,12 +58,12 @@ ftgeneric_save(struct tfile *restrict self)
 
     assert_not_null(self);
     assert_not_null(self->data);
-    reset_error_msg(self);
+    t_error_clear(self);
 
     d = self->data;
 	ok = taglib_file_save(d->file);
     if (!ok)
-        set_error_msg(self, "%s error", self->lib);
+        t_error_set(self, "%s error", self->lib);
     return (ok);
 }
 
@@ -81,7 +82,7 @@ ftgeneric_get(struct tfile *restrict self, const char *restrict key)
 
     assert_not_null(self);
     assert_not_null(self->data);
-    reset_error_msg(self);
+    t_error_clear(self);
 
     d = self->data;
     T = new_tag_list();
@@ -143,7 +144,7 @@ ftgeneric_clear(struct tfile *restrict self, const struct tag_list *restrict T)
 
     assert_not_null(self);
     assert_not_null(self->data);
-    reset_error_msg(self);
+    t_error_clear(self);
 
     d = self->data;
 
@@ -194,7 +195,7 @@ ftgeneric_add(struct tfile *restrict self, const struct tag_list *restrict T)
     assert_not_null(T);
     assert_not_null(self);
     assert_not_null(self->data);
-    reset_error_msg(self);
+    t_error_clear(self);
 
     d = self->data;
 
@@ -219,14 +220,14 @@ ftgeneric_add(struct tfile *restrict self, const struct tag_list *restrict T)
             else if (strcmp(t->key, "date") == 0)
                 uif = taglib_tag_set_year;
             else {
-                set_error_msg(self,
+                t_error_set(self,
                         "%s backend can't handle `%s' tag", self->lib, t->key);
                 return (false);
             }
         }
 
         if (t->vcount != 1) {
-            set_error_msg(self,
+            t_error_set(self,
                     "%s backend can only set one tag %s, got %zd",
                     self->lib, t->key, t->vcount);
             return (false);
@@ -236,10 +237,11 @@ ftgeneric_add(struct tfile *restrict self, const struct tag_list *restrict T)
         if (strfunc)
             strf(d->tag, v->value);
         else {
-            uintval = (unsigned int)strtoul(v->value, &endptr, 10);
-            if (endptr == v->value || *endptr != '\0') {
-                set_error_msg(self, "need Int argument for %s, got: `%s'",
-                        t->key, v->value);
+            const char *msg;
+            uintval = (unsigned int)strtonum(v->value, 0, UINT_MAX, &msg);
+            if (msg) {
+                t_error_set(self, "need Int argument for %s, got: `%s' (%s)",
+                        t->key, v->value, msg);
                 return (false);
             }
             uif(d->tag, uintval);
@@ -300,7 +302,7 @@ ftgeneric_new(const char *restrict path)
     ret->add      = ftgeneric_add;
 
     ret->lib = "TagLib";
-    ret->errmsg = NULL;
+    t_error_init(ret);
     return (ret);
 }
 

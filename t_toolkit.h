@@ -28,37 +28,6 @@
 #define assert_null(x) assert((x) == NULL)
 #define assert_fail() assert(!42)
 
-/* error handling macros */
-#define last_error_msg(o) ((o)->errmsg)
-#define reset_error_msg(o) \
-    do { if (o) freex(last_error_msg(o)); } while (/*CONSTCOND*/0)
-#define set_error_msg(o, fmt, ...) \
-    do { if (o) (void)xasprintf(&last_error_msg(o), fmt, ##__VA_ARGS__); } while (/*CONSTCOND*/0)
-
-/*
- * error macros can be used on terr struct or any struct that define a member:
- *      char *errmsg;
- *  on this purpose.
- */
-struct terr {
-    char *errmsg;
-};
-
-/*
- * create a terr struct.
- */
-_t__unused
-static inline struct terr *
-new_terr(void);
-
-/*
- * free a terr struct.
- */
-_t__unused _t__nonnull(1)
-static inline void
-destroy_terr(struct terr *restrict e);
-
-
 /* MEMORY FUNCTIONS */
 
 _t__unused
@@ -164,6 +133,9 @@ _t__unused
 char * t_dirname(const char *);
 
 /**********************************************************************/
+/* include t_error header now, cause it need's predecl of function like xmalloc */
+#include "t_error.h"
+
 
 static inline void *
 xmalloc(size_t size)
@@ -372,24 +344,5 @@ destroy_strbuf(struct strbuf *restrict sb)
     freex(sb->buffers);
     freex(sb->blen);
     freex(sb);
-}
-
-
-static inline struct terr *
-new_terr(void)
-{
-
-    return (xcalloc(1, sizeof(struct terr)));
-}
-
-
-static inline void
-destroy_terr(struct terr *restrict e)
-{
-
-    assert_not_null(e);
-
-    reset_error_msg(e);
-    freex(e);
 }
 #endif /* not T_TOOLKIT_H */
