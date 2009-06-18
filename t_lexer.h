@@ -94,7 +94,7 @@ struct t_lexer * t_lexer_new(const char *restrict source);
  * free a lexer.
  */
 _t__nonnull(1)
-void t_lexer_destroy(const t_lexer *restrict L);
+void t_lexer_destroy(const struct t_lexer *restrict L);
 
 /*
  * return the next token of given lexer. The first token is always T_START, and

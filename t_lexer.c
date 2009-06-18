@@ -37,7 +37,7 @@ t_lexer_new(const char *restrict source)
 
 
 void
-t_lexer_destroy(const t_lexer *restrict L)
+t_lexer_destroy(const struct t_lexer *restrict L)
 {
 
     assert_not_null(L);
