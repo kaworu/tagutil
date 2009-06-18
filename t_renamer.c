@@ -16,6 +16,7 @@
 
 #include "t_config.h"
 #include "t_toolkit.h"
+#include "t_strbuffer.h"
 #include "t_lexer.h"
 #include "t_renamer.h"
 
@@ -217,7 +218,7 @@ char *
 rename_eval(struct tfile *restrict file, struct token **restrict ts)
 {
     const struct token *tkn;
-    struct strbuf *sb, *sbv;
+    struct t_strbuffer *sb, *sbv;
     struct tag_list *T;
     struct ttag  *t;
     struct ttagv *v;
@@ -229,14 +230,14 @@ rename_eval(struct tfile *restrict file, struct token **restrict ts)
     assert_not_null(file);
     t_error_clear(file);
 
-    sb = new_strbuf();
+    sb = t_strbuffer_new();
     tkn = *ts;
     while (tkn) {
         s = NULL;
         if (tkn->kind == TTAGKEY) {
             T = file->get(file, tkn->value.str);
             if (T == NULL) {
-                destroy_strbuf(sb);
+                t_strbuffer_destroy(sb);
                 return (NULL);
             }
             else if (T->tcount > 0) {
@@ -247,15 +248,15 @@ rename_eval(struct tfile *restrict file, struct token **restrict ts)
                 assert(t->vcount > 0);
                 if (tkn->tindex == -1 && t->vcount > 1) {
                 /* user ask for *all* tag values */
-                    sbv = new_strbuf();
+                    sbv = t_strbuffer_new();
                     TAILQ_FOREACH(v, t->values, next) {
-                        strbuf_add(sbv, xstrdup(v->value), v->vlen);
+                        t_strbuffer_add(sbv, xstrdup(v->value), v->vlen);
                         if (v != TAILQ_LAST(t->values, ttagv_q))
-                            strbuf_add(sbv, xstrdup(" - "), 3);
+                            t_strbuffer_add(sbv, xstrdup(" - "), 3);
                     }
-                    s = strbuf_get(sbv);
+                    s = t_strbuffer_get(sbv);
                     len = sbv->len;
-                    destroy_strbuf(sbv);
+                    t_strbuffer_destroy(sbv);
                 }
                 else {
                 /*
@@ -275,7 +276,7 @@ rename_eval(struct tfile *restrict file, struct token **restrict ts)
             s = xstrdup(tkn->value.str);
             len = tkn->slen;
         }
-        strbuf_add(sb, s, len);
+        t_strbuffer_add(sb, s, len);
         /* go to next token */
         ts += 1;
         tkn = *ts;
@@ -285,9 +286,9 @@ rename_eval(struct tfile *restrict file, struct token **restrict ts)
     if (sb->len > MAXPATHLEN)
         t_error_set(file, "rename_eval result is too long (>MAXPATHLEN)");
     else
-        ret = strbuf_get(sb);
+        ret = t_strbuffer_get(sb);
 
-    destroy_strbuf(sb);
+    t_strbuffer_destroy(sb);
     return (ret);
 }
 

@@ -13,6 +13,7 @@
 #include <yaml.h>
 
 #include "t_config.h"
+#include "t_strbuffer.h"
 #include "t_toolkit.h"
 #include "t_file.h"
 #include "t_yaml.h"
@@ -26,7 +27,7 @@ tags_to_yaml(struct tfile *restrict file)
 {
     yaml_emitter_t emitter;
     yaml_event_t event;
-    struct strbuf *sb;
+    struct t_strbuffer *sb;
     char *head, *ret;
     size_t headlen;
     struct tag_list *T;
@@ -36,8 +37,8 @@ tags_to_yaml(struct tfile *restrict file)
     assert_not_null(file);
 
     headlen = xasprintf(&head, "# %s\n", file->path);
-    sb = new_strbuf();
-    strbuf_add(sb, head, headlen);
+    sb = t_strbuffer_new();
+    t_strbuffer_add(sb, head, headlen);
 
     /* Create the Emitter object. */
     if (!yaml_emitter_initialize(&emitter))
@@ -68,7 +69,7 @@ tags_to_yaml(struct tfile *restrict file)
 
     T = file->get(file, NULL);
     if (T == NULL) {
-        destroy_strbuf(sb);
+        t_strbuffer_destroy(sb);
         return (NULL);
     }
     TAILQ_FOREACH(t, T->tags, next) {
@@ -113,8 +114,8 @@ tags_to_yaml(struct tfile *restrict file)
     /* Destroy the Emitter object. */
     yaml_emitter_delete(&emitter);
     yaml_event_delete(&event);
-    ret = strbuf_get(sb);
-    destroy_strbuf(sb);
+    ret = t_strbuffer_get(sb);
+    t_strbuffer_destroy(sb);
     return (ret);
 
 event_error:
@@ -288,7 +289,7 @@ int
 yaml_write_handler(void *data, unsigned char *buffer, size_t size)
 {
     bool error = false;
-    struct strbuf *sb;
+    struct t_strbuffer *sb;
     char *s;
 
     assert_not_null(data);
@@ -300,7 +301,7 @@ yaml_write_handler(void *data, unsigned char *buffer, size_t size)
         s = xcalloc(size + 1, sizeof(char));
         memcpy(s, buffer, size);
         sb = data;
-        strbuf_add(sb, s, size);
+        t_strbuffer_add(sb, s, size);
     }
 
     if (error)

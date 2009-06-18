@@ -74,45 +74,6 @@ _t__unused _t__nonnull(1)
 static inline void strtolower(char *restrict str);
 
 
-/* BUFFER STRING OPERATIONS */
-
-struct strbuf {
-    char **buffers;
-    int bcount, blast;
-    size_t *blen, len;
-};
-
-/*
- * create and init a strbuf struct.
- */
-_t__unused
-static inline struct strbuf * new_strbuf(void);
-
-/*
- * add the given (NUL-terminated) s to sb.
- * len should be strlen(s).
- *
- * the s pointer should be free()able and is owned by the strbuf after the
- * call.
- */
-_t__unused _t__nonnull(1) _t__nonnull(2)
-static inline void strbuf_add(struct strbuf *restrict sb, char *s, size_t len);
-
-/*
- * return the result of the buffer.
- *
- * returned value has to be free()d.
- */
-_t__unused _t__nonnull(1)
-static inline char * strbuf_get(const struct strbuf *restrict sb);
-
-/*
- * free the given strbuf.
- */
-_t__unused _t__nonnull(1)
-static inline void destroy_strbuf(struct strbuf *restrict sb);
-
-
 /* OTHER */
 
 /*
@@ -274,73 +235,4 @@ strtolower(char *restrict str)
         str[i] = tolower(str[i]);
 }
 
-
-static inline struct strbuf *
-new_strbuf(void)
-{
-    struct strbuf *ret;
-
-    ret = xmalloc(sizeof(struct strbuf));
-
-    ret->len     =  0;
-    ret->bcount  =  8;
-    ret->blast   = -1;
-    ret->buffers = xcalloc(ret->bcount, sizeof(char *));
-    ret->blen    = xcalloc(ret->bcount, sizeof(size_t));
-
-    return (ret);
-}
-
-
-static inline void
-strbuf_add(struct strbuf *restrict sb, char *s, size_t len)
-{
-    assert_not_null(sb);
-    assert(sb->bcount >= sb->blast);
-    assert_not_null(s);
-
-    if (sb->blast == (sb->bcount - 1)) {
-    /* grow */
-        sb->bcount  = sb->bcount * 2;
-        sb->buffers = xrealloc(sb->buffers, sb->bcount * sizeof(char *));
-        sb->blen    = xrealloc(sb->blen,  sb->bcount * sizeof(size_t));
-    }
-    sb->blast += 1;
-    sb->buffers[sb->blast] = s;
-    sb->blen[sb->blast] = len;
-    sb->len += len;
-}
-
-
-static inline char *
-strbuf_get(const struct strbuf *restrict sb)
-{
-    char *ret, *now;
-    int i;
-
-    assert_not_null(sb);
-    assert(sb->bcount >= sb->blast);
-
-    now = ret = xcalloc(sb->len + 1, sizeof(char));
-    for (i = 0; i <= sb->blast; i++) {
-        memcpy(now, sb->buffers[i], sb->blen[i]);
-        now += sb->blen[i];
-    }
-
-    return (ret);
-}
-
-
-static inline void
-destroy_strbuf(struct strbuf *restrict sb)
-{
-    int i;
-    assert_not_null(sb);
-
-    for (i = sb->blast; i >= 0; i--)
-        freex(sb->buffers[i]);
-    freex(sb->buffers);
-    freex(sb->blen);
-    freex(sb);
-}
 #endif /* not T_TOOLKIT_H */
