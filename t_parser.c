@@ -15,31 +15,31 @@
 
 
 _t__nonnull(2)
-static struct ast * new_ast(struct ast *restrict lhs, struct token *restrict t,
+static struct ast * new_ast(struct ast *restrict lhs, struct t_token *restrict t,
         struct ast *restrict rhs);
 
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
 _t__dead2 _t__printflike(4, 5)
-void parse_error(const struct lexer *restrict L,
-        const struct token *restrict start,
-        const struct token *restrict end,
+void parse_error(const struct t_lexer *restrict L,
+        const struct t_token *restrict start,
+        const struct t_token *restrict end,
         const char *fmt, ...);
 
 /* private parse_filter helpers. */
 _t__nonnull(1)
-static struct ast * parse_condition(struct lexer *restrict L);
+static struct ast * parse_condition(struct t_lexer *restrict L);
 
 /*
  * Condition ::= <Condition> '||' <Condition>
  */
 _t__nonnull(1)
-static struct ast * parse_or(struct lexer *restrict L);
+static struct ast * parse_or(struct t_lexer *restrict L);
 
 /*
  * Condition ::= <Condition> '&&' <Condition>
  */
 _t__nonnull(1)
-static struct ast * parse_and(struct lexer *restrict L);
+static struct ast * parse_and(struct t_lexer *restrict L);
 
 /*
  * choose between:
@@ -51,19 +51,19 @@ static struct ast * parse_and(struct lexer *restrict L);
  *    Condition ::= <REGEX> ( '=~' | '!~' ) <Value>
  */
 _t__nonnull(1)
-static struct ast * parse_simple(struct lexer *restrict L);
+static struct ast * parse_simple(struct t_lexer *restrict L);
 
 /*
  * 1) Condition ::= '!' '(' <Condition> ')'
  */
 _t__nonnull(1)
-static struct ast * parse_not(struct lexer *restrict L);
+static struct ast * parse_not(struct t_lexer *restrict L);
 
 /*
  * 2) Condition ::= '(' <Condition> ')'
  */
 _t__nonnull(1)
-static struct ast * parse_nestedcond(struct lexer *restrict L);
+static struct ast * parse_nestedcond(struct t_lexer *restrict L);
 
 /*
  * 3) Condition ::= <Value> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <Value>
@@ -72,11 +72,11 @@ static struct ast * parse_nestedcond(struct lexer *restrict L);
  */
 _t__nonnull(1)
 static struct ast *
-parse_cmp_or_match_or_value(struct lexer *restrict L);
+parse_cmp_or_match_or_value(struct t_lexer *restrict L);
 
 
 static struct ast *
-new_ast(struct ast *restrict lhs, struct token *restrict t,
+new_ast(struct ast *restrict lhs, struct t_token *restrict t,
         struct ast *restrict rhs)
 {
     struct ast *ret;
@@ -102,7 +102,7 @@ destroy_ast(struct ast *restrict victim)
     if (victim != NULL) {
         destroy_ast(victim->lhs);
         destroy_ast(victim->rhs);
-        if (victim->token->kind == TREGEX)
+        if (victim->token->kind == T_REGEX)
             regfree(&victim->token->value.regex);
         freex(victim->token);
         freex(victim);
@@ -111,26 +111,26 @@ destroy_ast(struct ast *restrict victim)
 
 
 struct ast *
-parse_filter(struct lexer *restrict L)
+parse_filter(struct t_lexer *restrict L)
 {
     struct ast *ret;
-    struct token *t;
+    struct t_token *t;
 
     assert_not_null(L);
 
-    t = lex_next_token(L);
-    if (t->kind != TSTART) {
+    t = t_lex_next_token(L);
+    if (t->kind != T_START) {
         parse_error(L, t, t, "expected START to begin, got %s",
                 t->str);
         /* NOTREACHED */
     }
     freex(t);
 
-    (void)lex_next_token(L);
+    (void)t_lex_next_token(L);
     ret = parse_condition(L);
 
     t = L->current;
-    if (t->kind != TEND) {
+    if (t->kind != T_END) {
         parse_error(L, t, t, "expected END at the end, got %s",
                 t->str);
         /* NOTREACHED */
@@ -143,7 +143,7 @@ parse_filter(struct lexer *restrict L)
 
 
 static struct ast *
-parse_condition(struct lexer *restrict L)
+parse_condition(struct t_lexer *restrict L)
 {
 
     assert_not_null(L);
@@ -153,17 +153,17 @@ parse_condition(struct lexer *restrict L)
 
 
 static struct ast *
-parse_or(struct lexer *restrict L)
+parse_or(struct t_lexer *restrict L)
 {
-    struct token *or;
+    struct t_token *or;
     struct ast *ret;
 
     assert_not_null(L);
 
     ret = parse_and(L);
-    while (L->current->kind == TOR) {
+    while (L->current->kind == T_OR) {
         or = L->current;
-        (void)lex_next_token(L);
+        (void)t_lex_next_token(L);
         ret = new_ast(ret, or, parse_and(L));
     }
 
@@ -172,17 +172,17 @@ parse_or(struct lexer *restrict L)
 
 
 struct ast *
-parse_and(struct lexer *restrict L)
+parse_and(struct t_lexer *restrict L)
 {
-    struct token *and;
+    struct t_token *and;
     struct ast *ret;
 
     assert_not_null(L);
 
     ret = parse_simple(L);
-    while (L->current->kind == TAND) {
+    while (L->current->kind == T_AND) {
         and = L->current;
-        (void)lex_next_token(L);
+        (void)t_lex_next_token(L);
         ret = new_ast(ret, and, parse_simple(L));
     }
 
@@ -191,29 +191,29 @@ parse_and(struct lexer *restrict L)
 
 
 static struct ast *
-parse_simple(struct lexer *restrict L)
+parse_simple(struct t_lexer *restrict L)
 {
-    struct token *t;
+    struct t_token *t;
     struct ast *ret;
 
     assert_not_null(L);
 
     t = L->current;
     switch (t->kind) {
-    case TNOT:
+    case T_NOT:
         ret = parse_not(L);
         break;
-    case TOPAREN:
+    case T_OPAREN:
         ret = parse_nestedcond(L);
         break;
-    case TINT:      /* FALLTHROUGH */
-    case TDOUBLE:   /* FALLTHROUGH */
-    case TSTRING:   /* FALLTHROUGH */
-    case TREGEX:    /* FALLTHROUGH */
-    case TFILENAME: /* FALLTHROUGH */
-    case TUNDEF:    /* FALLTHROUGH */
-    case TBACKEND:  /* FALLTHROUGH */
-    case TTAGKEY:
+    case T_INT:      /* FALLTHROUGH */
+    case T_DOUBLE:   /* FALLTHROUGH */
+    case T_STRING:   /* FALLTHROUGH */
+    case T_REGEX:    /* FALLTHROUGH */
+    case T_FILENAME: /* FALLTHROUGH */
+    case T_UNDEF:    /* FALLTHROUGH */
+    case T_BACKEND:  /* FALLTHROUGH */
+    case T_TAGKEY:
         ret = parse_cmp_or_match_or_value(L);
         break;
     default:
@@ -227,18 +227,18 @@ parse_simple(struct lexer *restrict L)
 
 
 static struct ast *
-parse_not(struct lexer *restrict L)
+parse_not(struct t_lexer *restrict L)
 {
-    struct token *not;
+    struct t_token *not;
     struct ast *cond, *ret;
 
     assert_not_null(L);
 
     not = L->current;
-    if (not->kind != TNOT)
+    if (not->kind != T_NOT)
         parse_error(L, not, not, "expected NOT, got %s", not->str);
 
-    (void)lex_next_token(L);
+    (void)t_lex_next_token(L);
     cond = parse_nestedcond(L);
     ret = new_ast(NULL, not, cond);
 
@@ -247,30 +247,30 @@ parse_not(struct lexer *restrict L)
 
 
 static struct ast *
-parse_nestedcond(struct lexer *restrict L)
+parse_nestedcond(struct t_lexer *restrict L)
 {
-    struct token *oparen, *cparen;
+    struct t_token *oparen, *cparen;
     struct ast *ret;
 
     assert_not_null(L);
 
     oparen = L->current;
-    if (oparen->kind != TOPAREN) {
+    if (oparen->kind != T_OPAREN) {
         parse_error(L, oparen, oparen, "expected OPAREN, got %s",
                 oparen->str);
         /* NOTREACHED */
     }
 
-    (void)lex_next_token(L);
+    (void)t_lex_next_token(L);
     ret = parse_condition(L);
 
     cparen = L->current;
-    if (cparen->kind != TCPAREN) {
+    if (cparen->kind != T_CPAREN) {
         parse_error(L, oparen, cparen, "expected CPAREN, got %s",
                 cparen->str);
         /* NOTREACHED */
     }
-    (void)lex_next_token(L);
+    (void)t_lex_next_token(L);
 
     ret->start = oparen->start;
     ret->end   = cparen->end;
@@ -286,21 +286,21 @@ parse_nestedcond(struct lexer *restrict L)
  *    Condition ::= <REGEX> ( '=~' | '!~' ) <Value>
  */
 static struct ast *
-parse_cmp_or_match_or_value(struct lexer *restrict L)
+parse_cmp_or_match_or_value(struct t_lexer *restrict L)
 {
-    struct token *lhstok, *optok, *rhstok;
+    struct t_token *lhstok, *optok, *rhstok;
 
     assert_not_null(L);
     lhstok = L->current;
     switch (lhstok->kind) {
-    case TINT:      /* FALLTHROUGH */
-    case TDOUBLE:   /* FALLTHROUGH */
-    case TSTRING:   /* FALLTHROUGH */
-    case TREGEX:    /* FALLTHROUGH */
-    case TFILENAME: /* FALLTHROUGH */
-    case TUNDEF:    /* FALLTHROUGH */
-    case TBACKEND: /* FALLTHROUGH */
-    case TTAGKEY:
+    case T_INT:      /* FALLTHROUGH */
+    case T_DOUBLE:   /* FALLTHROUGH */
+    case T_STRING:   /* FALLTHROUGH */
+    case T_REGEX:    /* FALLTHROUGH */
+    case T_FILENAME: /* FALLTHROUGH */
+    case T_UNDEF:    /* FALLTHROUGH */
+    case T_BACKEND: /* FALLTHROUGH */
+    case T_TAGKEY:
         break;
     default:
         parse_error(L, lhstok, lhstok, "expected REGEX or value, got %s",
@@ -308,16 +308,16 @@ parse_cmp_or_match_or_value(struct lexer *restrict L)
         /* NOTREACHED */
     }
 
-    optok = lex_next_token(L);
+    optok = t_lex_next_token(L);
     switch (optok->kind) {
-    case TEQ:     /* FALLTHROUGH */
-    case TDIFF:   /* FALLTHROUGH */
-    case TMATCH:  /* FALLTHROUGH */
-    case TNMATCH: /* FALLTHROUGH */
-    case TLT:     /* FALLTHROUGH */
-    case TLE:     /* FALLTHROUGH */
-    case TGT:     /* FALLTHROUGH */
-    case TGE:     /* FALLTHROUGH */
+    case T_EQ:     /* FALLTHROUGH */
+    case T_DIFF:   /* FALLTHROUGH */
+    case T_MATCH:  /* FALLTHROUGH */
+    case T_NMATCH: /* FALLTHROUGH */
+    case T_LT:     /* FALLTHROUGH */
+    case T_LE:     /* FALLTHROUGH */
+    case T_GT:     /* FALLTHROUGH */
+    case T_GE:     /* FALLTHROUGH */
         break;
     default:
         parse_error(L, lhstok, optok, "expected <value operator value>, got %s %s",
@@ -325,16 +325,16 @@ parse_cmp_or_match_or_value(struct lexer *restrict L)
         /* NOTREACHED */
     }
 
-    rhstok = lex_next_token(L);
+    rhstok = t_lex_next_token(L);
     switch (rhstok->kind) {
-    case TINT:      /* FALLTHROUGH */
-    case TDOUBLE:   /* FALLTHROUGH */
-    case TSTRING:   /* FALLTHROUGH */
-    case TREGEX:    /* FALLTHROUGH */
-    case TFILENAME: /* FALLTHROUGH */
-    case TUNDEF:    /* FALLTHROUGH */
-    case TBACKEND:  /* FALLTHROUGH */
-    case TTAGKEY:
+    case T_INT:      /* FALLTHROUGH */
+    case T_DOUBLE:   /* FALLTHROUGH */
+    case T_STRING:   /* FALLTHROUGH */
+    case T_REGEX:    /* FALLTHROUGH */
+    case T_FILENAME: /* FALLTHROUGH */
+    case T_UNDEF:    /* FALLTHROUGH */
+    case T_BACKEND:  /* FALLTHROUGH */
+    case T_TAGKEY:
         break;
     default:
         parse_error(L, rhstok, rhstok, "expected REGEX or value, got %s",
@@ -342,13 +342,13 @@ parse_cmp_or_match_or_value(struct lexer *restrict L)
         /* NOTREACHED */
     }
 
-    if (optok->kind == TMATCH || optok->kind == TNMATCH) {
+    if (optok->kind == T_MATCH || optok->kind == T_NMATCH) {
     /*
      * Condition ::= <Value> ( '=~' | '!~' ) <REGEX>
      * Condition ::= <REGEX> ( '=~' | '!~' ) <Value>
      */
-        if ((lhstok->kind == TREGEX && rhstok->kind == TREGEX) ||
-                (lhstok->kind != TREGEX && rhstok->kind != TREGEX)) {
+        if ((lhstok->kind == T_REGEX && rhstok->kind == T_REGEX) ||
+                (lhstok->kind != T_REGEX && rhstok->kind != T_REGEX)) {
             parse_error(L, lhstok, rhstok, "expected <REGEX (N)MATCH value> or"
                     " <value (N)MATCH REGEX>, got %s %s %s",
                     lhstok->str, optok->str, rhstok->str);
@@ -357,7 +357,7 @@ parse_cmp_or_match_or_value(struct lexer *restrict L)
     }
     else {
     /* Condition ::= <Value> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <Value> */
-        if (lhstok->kind == TREGEX || rhstok->kind == TREGEX) {
+        if (lhstok->kind == T_REGEX || rhstok->kind == T_REGEX) {
             parse_error(L, lhstok, rhstok, "unexpected REGEX (not a MATCH operator!),"
                     " got %s %s %s", lhstok->str, optok->str, rhstok->str);
             /* NOTREACHED */
@@ -365,22 +365,22 @@ parse_cmp_or_match_or_value(struct lexer *restrict L)
     }
 
     /* avoid constant evaluation */
-    if (lhstok->kind != TTAGKEY && lhstok->kind != TFILENAME &&
-            lhstok->kind != TBACKEND && rhstok->kind != TTAGKEY &&
-            rhstok->kind != TFILENAME && rhstok->kind != TBACKEND) {
+    if (lhstok->kind != T_TAGKEY && lhstok->kind != T_FILENAME &&
+            lhstok->kind != T_BACKEND && rhstok->kind != T_TAGKEY &&
+            rhstok->kind != T_FILENAME && rhstok->kind != T_BACKEND) {
         parse_error(L, lhstok, rhstok, "constant comparison: %s %s %s",
                 lhstok->str, optok->str, rhstok->str);
         /* NOTREACHED */
     }
 
-    (void)lex_next_token(L);
+    (void)t_lex_next_token(L);
     return (new_ast(new_ast(NULL, lhstok, NULL), optok, new_ast(NULL, rhstok, NULL)));
 }
 
 
 void
-parse_error(const struct lexer *restrict L,
-        const struct token *restrict startt, const struct token *restrict endt,
+parse_error(const struct t_lexer *restrict L,
+        const struct t_token *restrict startt, const struct t_token *restrict endt,
         const char *fmt, ...)
 {
     va_list args;
@@ -391,7 +391,7 @@ parse_error(const struct lexer *restrict L,
 
     fprintf(stderr, "parser error: ");
     va_start(args, fmt);
-        lex_error0(L, startt->start, endt->end, fmt, args);
+        t_lex_error0(L, startt->start, endt->end, fmt, args);
     va_end(args);
 
     exit(EINVAL);
@@ -407,7 +407,7 @@ ast_debug(struct ast *restrict AST)
     if (AST == NULL)
         return;
 
-    token_debug(AST->token);
+    t_lex_token_debug(AST->token);
     if (AST->rhs) {
         (void)printf("[");
         if (AST->lhs) {
@@ -426,7 +426,7 @@ main(int argc, char *argv[]) {
     if (argc < 2)
         errx(-1, "usage: %s [conditions]\n", argv[0]);
 
-    AST = parse_filter(new_lexer(argv[1]));
+    AST = parse_filter(t_lexer_new(argv[1]));
 
     ast_debug(AST);
     (void)printf("\n");

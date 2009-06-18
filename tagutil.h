@@ -67,7 +67,7 @@ bool tagutil_edit(struct t_file *restrict file);
  * rename_parse().
  */
 _t__nonnull(1) _t__nonnull(2)
-bool tagutil_rename(struct t_file *restrict file, struct token **restrict tknary);
+bool tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary);
 
 /*
  * print given path if the file match the given ast (arg).

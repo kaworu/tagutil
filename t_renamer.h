@@ -23,7 +23,7 @@
  * return value and all its elements has to be free()d.
  */
 _t__nonnull(1)
-struct token ** rename_parse(const char *restrict pattern);
+struct t_token ** rename_parse(const char *restrict pattern);
 
 /*
  * eval the given token array in the context of given t_file.
@@ -34,7 +34,7 @@ struct token ** rename_parse(const char *restrict pattern);
  * returned value has to be free()d.
  */
 _t__nonnull(1) _t__nonnull(2)
-char * rename_eval(struct t_file *restrict file, struct token **restrict ts);
+char * rename_eval(struct t_file *restrict file, struct t_token **restrict ts);
 
 /*
  * rename path to new_path.

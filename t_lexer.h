@@ -13,72 +13,72 @@
 #include "t_config.h"
 
 
-enum tokenkind {
-    TEND,
-    TSTART,
+enum t_tokenkind {
+    T_END,
+    T_START,
 
     /* unary op */
-    TNOT,
+    T_NOT,
 
     /* binary op */
-    TEQ,
-    TDIFF,
-    TMATCH,
-    TNMATCH,
-    TLT,
-    TLE,
-    TGT,
-    TGE,
-    TAND,
-    TOR,
+    T_EQ,
+    T_DIFF,
+    T_MATCH,
+    T_NMATCH,
+    T_LT,
+    T_LE,
+    T_GT,
+    T_GE,
+    T_AND,
+    T_OR,
 
-    TOPAREN,
-    TCPAREN,
+    T_OPAREN,
+    T_CPAREN,
 
     /* types */
-    TINT,
-    TDOUBLE,
-    TSTRING,
-    TREGEX,
-    TFILENAME,
-    TBACKEND,
-    TUNDEF,
-    TTAGKEY
+    T_INT,
+    T_DOUBLE,
+    T_STRING,
+    T_REGEX,
+    T_FILENAME,
+    T_BACKEND,
+    T_UNDEF,
+    T_TAGKEY
 };
 
 
 _t__unused
 static const struct {
-    enum tokenkind kind;
+    enum t_tokenkind kind;
     const char *lexem;
     const size_t lexemlen;
-} lexkeywords[] = {
-    { TFILENAME, "filename", 8 },
-    { TUNDEF,    "undef",    5 },
-    { TBACKEND,  "backend",  7 },
+} t_lex_keywords_table[] = {
+    { T_FILENAME, "filename", 8 },
+    { T_UNDEF,    "undef",    5 },
+    { T_BACKEND,  "backend",  7 },
 };
 
 
-struct token {
+struct t_token {
     const char *str;
-    enum tokenkind kind;
+    enum t_tokenkind kind;
 	int start, end;
     union {
-        int integer;   /* TINT */
-        double dbl;    /* TDOUBLE */
-        char *str;     /* TSTRING or TTAGKEY  */
-        regex_t regex; /* TREGEX */
+        int integer;   /* T_INT */
+        double dbl;    /* T_DOUBLE */
+        char *str;     /* T_STRING or T_TAGKEY  */
+        regex_t regex; /* T_REGEX */
     } value;
-    size_t slen; /* > 0 if TSTRING or TTAGKEY */
-    int tindex; /* tag index if TTAGKEY (-1 is wildchar) */
+    size_t slen; /* > 0 if T_STRING or T_TAGKEY */
+    int tindex; /* tag index if T_TAGKEY (-1 is wildchar) */
 };
 
-struct lexer {
+struct t_lexer {
 	size_t srclen;
     const char *source;
     char c; /* current char */
     int cindex;  /* index of c in source */
-    struct token *current;
+    struct t_token *current;
 };
 
 
@@ -88,22 +88,22 @@ struct lexer {
  * returned value has to be free()d.
  */
 _t__nonnull(1)
-struct lexer * new_lexer(const char *restrict source);
+struct t_lexer * t_lexer_new(const char *restrict source);
 
 /*
- * return the next token of given lexer. The first token is always TSTART, and
- * at the end TEND is always returned when there is no more token.
+ * return the next token of given lexer. The first token is always T_START, and
+ * at the end T_END is always returned when there is no more token.
  *
  * The returned value of the function is L->current, and it has to be free()d.
  */
 _t__nonnull(1)
-struct token * lex_next_token(struct lexer *restrict L);
+struct t_token * t_lex_next_token(struct t_lexer *restrict L);
 
 /*
  * put next char in L->c and increment L->cindex.
  */
 _t__nonnull(1)
-char lexc(struct lexer *restrict L);
+char t_lexc(struct t_lexer *restrict L);
 
 /*
  * move to newcindex.
@@ -111,38 +111,38 @@ char lexc(struct lexer *restrict L);
  * newcindex must be > 0 and <= L->srclen
  */
 _t__nonnull(1)
-char lexc_move_to(struct lexer *restrict L, int to);
+char t_lexc_move_to(struct t_lexer *restrict L, int to);
 
 /*
  * move to L->index + delta.
  */
 _t__nonnull(1)
-char lexc_move(struct lexer *restrict L, int delta);
+char t_lexc_move(struct t_lexer *restrict L, int delta);
 
 
 /*
- * fill given token with TINT or TDOUBLE.
+ * fill given token with T_INT or T_DOUBLE.
  */
 _t__nonnull(1) _t__nonnull(2)
-void lex_number(struct lexer *restrict L, struct token *restrict t);
+void t_lex_number(struct t_lexer *restrict L, struct t_token *restrict t);
 
 /*
- * realloc() given token and fill it with TSTRING or TREGEX.
+ * realloc() given token and fill it with T_STRING or T_REGEX.
  */
 _t__nonnull(1) _t__nonnull(2)
-void lex_strlit_or_regex(struct lexer *restrict L, struct token **tptr);
+void t_lex_strlit_or_regex(struct t_lexer *restrict L, struct t_token **tptr);
 
 /*
- * realloc() given token and fill it with TTAGKEY.
+ * realloc() given token and fill it with T_TAGKEY.
  */
 _t__nonnull(1) _t__nonnull(2)
-void lex_tagkey(struct lexer *restrict L, struct token **tptr);
+void t_lex_tagkey(struct t_lexer *restrict L, struct t_token **tptr);
 
 /*
  * output nicely lexer's error messages and die.
  */
 _t__nonnull(1) _t__dead2 _t__printflike(4, 5)
-void lex_error(const struct lexer *restrict L, int start, int size,
+void t_lex_error(const struct t_lexer *restrict L, int start, int size,
         const char *restrict fmt, ...);
 
 /*
@@ -150,6 +150,6 @@ void lex_error(const struct lexer *restrict L, int start, int size,
  * end.
  */
 _t__nonnull(1)
-void lex_error0(const struct lexer *restrict L, int start, int end,
+void t_lex_error0(const struct t_lexer *restrict L, int start, int end,
         const char *restrict fmt, va_list args);
 #endif /* not T_LEXER_H */

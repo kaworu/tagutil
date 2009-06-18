@@ -38,41 +38,41 @@ t_interpreter_eval_ast(const struct t_file *restrict file,
 
     undef = false;
     switch (filter->token->kind) {
-    case TNOT:
+    case T_NOT:
         ret = !(t_interpreter_eval_ast(file, filter->rhs));
         break;
-    case TAND:
+    case T_AND:
         ret = t_interpreter_eval_ast(file, filter->lhs);
         if (ret)
             ret = t_interpreter_eval_ast(file, filter->rhs);
         break;
-    case TOR:
+    case T_OR:
         ret = t_interpreter_eval_ast(file, filter->lhs);
         if (!ret)
             ret = t_interpreter_eval_ast(file, filter->rhs);
         break;
-    case TEQ:
+    case T_EQ:
         ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) == 0);
         break;
-    case TDIFF:
+    case T_DIFF:
         ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) != 0);
         break;
-    case TLT:
+    case T_LT:
         ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) <  0);
         break;
-    case TLE:
+    case T_LE:
         ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) <= 0);
         break;
-    case TGT:
+    case T_GT:
         ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) >  0);
         break;
-    case TGE:
+    case T_GE:
         ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) >= 0);
         break;
-    case TMATCH:
+    case T_MATCH:
         ret = t_interpreter_eval_match(file, filter->lhs, filter->rhs, &undef);
         break;
-    case TNMATCH:
+    case T_NMATCH:
         ret = !t_interpreter_eval_match(file, filter->lhs, filter->rhs, &undef);
         break;
     default:
@@ -110,34 +110,34 @@ t_interpreter_eval_cmp(const struct t_file *restrict file,
 
     _s = _l = _r = NULL;
     switch (rhs->token->kind) {
-    case TINT:    /* FALLTHROUGH */
-    case TDOUBLE: /* FALLTHROUGH */
-    case TSTRING:
-        if (lhs->token->kind == TFILENAME)
+    case T_INT:    /* FALLTHROUGH */
+    case T_DOUBLE: /* FALLTHROUGH */
+    case T_STRING:
+        if (lhs->token->kind == T_FILENAME)
             s = file->path;
-        else if (lhs->token->kind == TBACKEND)
+        else if (lhs->token->kind == T_BACKEND)
             s = file->lib;
         else {
-            assert(lhs->token->kind == TTAGKEY);
+            assert(lhs->token->kind == T_TAGKEY);
             s = _s = file->get(file, lhs->token->value.str);
             if (s == NULL) {
                 *undef = true;
                 return (0);
             }
         }
-        if (rhs->token->kind == TINT)
+        if (rhs->token->kind == T_INT)
             ret = (double)(strtol(s, NULL, 10) - rhs->token->value.integer);
-        else if (rhs->token->kind == TDOUBLE)
+        else if (rhs->token->kind == T_DOUBLE)
             ret = strtod(s, NULL) - rhs->token->value.dbl;
-        else if (rhs->token->kind == TSTRING)
+        else if (rhs->token->kind == T_STRING)
             ret = (double)strcmp(s, rhs->token->value.str);
         freex(_s);
         break;
-    case TUNDEF:
-        if (lhs->token->kind == TFILENAME || lhs->token->kind == TBACKEND)
+    case T_UNDEF:
+        if (lhs->token->kind == T_FILENAME || lhs->token->kind == T_BACKEND)
             ret = 1.0;
         else {
-            assert(lhs->token->kind == TTAGKEY);
+            assert(lhs->token->kind == T_TAGKEY);
             s = _s = file->get(file, lhs->token->value.str);
             if (s == NULL)
                 ret = 0.0;
@@ -146,19 +146,19 @@ t_interpreter_eval_cmp(const struct t_file *restrict file,
         }
         freex(_s);
         break;
-    case TFILENAME: /* FALLTHROUGH */
-    case TTAGKEY:
-        if (lhs->token->kind == TFILENAME || lhs->token->kind == TTAGKEY ||
-                lhs->token->kind == TBACKEND) {
-            if (lhs->token->kind == TFILENAME)
+    case T_FILENAME: /* FALLTHROUGH */
+    case T_TAGKEY:
+        if (lhs->token->kind == T_FILENAME || lhs->token->kind == T_TAGKEY ||
+                lhs->token->kind == T_BACKEND) {
+            if (lhs->token->kind == T_FILENAME)
                 l = file->path;
-            else if (lhs->token->kind == TBACKEND)
+            else if (lhs->token->kind == T_BACKEND)
                 l = file->lib;
             else
                 l = _l = file->get(file, lhs->token->value.str);
-            if (rhs->token->kind == TFILENAME)
+            if (rhs->token->kind == T_FILENAME)
                 r = file->path;
-            else if (lhs->token->kind == TBACKEND)
+            else if (lhs->token->kind == T_BACKEND)
                 r = file->lib;
             else
                 r = _r = file->get(file, rhs->token->value.str);
@@ -211,7 +211,7 @@ t_interpreter_eval_match(const struct t_file *restrict file,
         undef = _undef;
     *undef = false;
 
-    if (rhs->token->kind == TREGEX) {
+    if (rhs->token->kind == T_REGEX) {
         regast = rhs;
         strast = lhs;
     }
@@ -220,20 +220,20 @@ t_interpreter_eval_match(const struct t_file *restrict file,
         strast = rhs;
     }
 
-    assert(regast->token->kind == TREGEX);
+    assert(regast->token->kind == T_REGEX);
     r = &regast->token->value.regex;
     switch (strast->token->kind) {
-    case TTAGKEY:
+    case T_TAGKEY:
         s = _s = file->get(file, strast->token->value.str);
         if (s == NULL) {
             *undef = true;
             return (false);
         }
         break;
-    case TFILENAME:
+    case T_FILENAME:
         s = file->path;
         break;
-    case TBACKEND:
+    case T_BACKEND:
         s = file->lib;
         break;
     default:

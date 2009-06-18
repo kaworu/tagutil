@@ -27,7 +27,7 @@ extern bool dflag;
  * TODO
  */
 _t__nonnull(1)
-struct token * rename_lex_next_token(struct lexer *restrict L);
+struct t_token * rename_t_lex_next_token(struct t_lexer *restrict L);
 
 /* taken from mkdir(3) */
 _t__nonnull(1)
@@ -97,36 +97,36 @@ rename_safe(const char *restrict oldpath,
 }
 
 
-struct token **
+struct t_token **
 rename_parse(const char *restrict pattern)
 {
     bool done;
-    struct lexer *L;
-    struct token **ret;
+    struct t_lexer *L;
+    struct t_token **ret;
     size_t count, len;
 
     assert_not_null(pattern);
 
-    L = new_lexer(pattern);
-    (void)rename_lex_next_token(L);
-    assert(L->current->kind == TSTART);
+    L = t_lexer_new(pattern);
+    (void)rename_t_lex_next_token(L);
+    assert(L->current->kind == T_START);
     freex(L->current);
 
     count = 0;
     len   = 16;
-    ret   = xcalloc(len + 1, sizeof(struct token *));
+    ret   = xcalloc(len + 1, sizeof(struct t_token *));
 
     done = false;
     while (!done) {
-        if (rename_lex_next_token(L)->kind == TEND) {
+        if (rename_t_lex_next_token(L)->kind == T_END) {
             freex(L->current);
             done = true;
         }
         else {
-            assert(L->current->kind == TTAGKEY || L->current->kind == TSTRING);
+            assert(L->current->kind == T_TAGKEY || L->current->kind == T_STRING);
             if (count == (len - 1)) {
                 len = len * 2;
-                ret = xrealloc(ret, (len + 1) * sizeof(struct token *));
+                ret = xrealloc(ret, (len + 1) * sizeof(struct t_token *));
             }
             ret[count++] = L->current;
         }
@@ -138,19 +138,19 @@ rename_parse(const char *restrict pattern)
 }
 
 
-struct token *
-rename_lex_next_token(struct lexer *restrict L)
+struct t_token *
+rename_t_lex_next_token(struct t_lexer *restrict L)
 {
     int skip, i;
     bool done;
-    struct token *t;
+    struct t_token *t;
     assert_not_null(L);
-    t = xcalloc(1, sizeof(struct token));
+    t = xcalloc(1, sizeof(struct t_token));
 
-    /* check for TSTART */
+    /* check for T_START */
     if (L->cindex == -1) {
-        (void)lexc(L);
-        t->kind  = TSTART;
+        (void)t_lexc(L);
+        t->kind  = T_START;
 		t->str   = "START";
         L->current = t;
         return (L->current);
@@ -160,15 +160,15 @@ rename_lex_next_token(struct lexer *restrict L)
     t->start = L->cindex;
     switch (L->c) {
     case '\0':
-        t->kind = TEND;
+        t->kind = T_END;
         t->str  = "END";
         t->end  = L->cindex;
         break;
     case '%':
-        lex_tagkey(L, &t);
+        t_lex_tagkey(L, &t);
         break;
     default:
-		t->kind = TSTRING;
+		t->kind = T_STRING;
 		t->str  = "STRING";
         done = false;
         while (!done) {
@@ -178,32 +178,32 @@ rename_lex_next_token(struct lexer *restrict L)
                 done = true;
                 break;
             case '\\':
-                if (lexc(L) == '%') {
+                if (t_lexc(L) == '%') {
                     skip++;
-                    (void)lexc(L);
+                    (void)t_lexc(L);
                 }
                 break;
             default:
-                (void)lexc(L);
+                (void)t_lexc(L);
             }
         }
         t->end = L->cindex - 1;
         assert(t->end >= t->start);
         t->slen = t->end - t->start + 1 - skip;
-        t = xrealloc(t, sizeof(struct token) + t->slen + 1);
+        t = xrealloc(t, sizeof(struct t_token) + t->slen + 1);
         t->value.str = (char *)(t + 1);
-        lexc_move_to(L, t->start);
+        t_lexc_move_to(L, t->start);
         i = 0;
         while (L->cindex <= t->end) {
             if (L->c == '\\') {
-                if (lexc(L) != '%') {
+                if (t_lexc(L) != '%') {
                     /* rewind */
-                    lexc_move(L, -1);
+                    t_lexc_move(L, -1);
                     assert(L->c == '\\');
                 }
             }
             t->value.str[i++] = L->c;
-            (void)lexc(L);
+            (void)t_lexc(L);
         }
         t->value.str[i] = '\0';
         assert(strlen(t->value.str) == t->slen);
@@ -215,9 +215,9 @@ rename_lex_next_token(struct lexer *restrict L)
 
 
 char *
-rename_eval(struct t_file *restrict file, struct token **restrict ts)
+rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
 {
-    const struct token *tkn;
+    const struct t_token *tkn;
     struct t_strbuffer *sb, *sbv;
     struct tag_list *T;
     struct ttag  *t;
@@ -234,7 +234,7 @@ rename_eval(struct t_file *restrict file, struct token **restrict ts)
     tkn = *ts;
     while (tkn) {
         s = NULL;
-        if (tkn->kind == TTAGKEY) {
+        if (tkn->kind == T_TAGKEY) {
             T = file->get(file, tkn->value.str);
             if (T == NULL) {
                 t_strbuffer_destroy(sb);

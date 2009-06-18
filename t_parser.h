@@ -34,7 +34,7 @@
 struct ast {
     int start, end;
     struct ast *lhs, *rhs;
-    struct token *token;
+    struct t_token *token;
 };
 
 
@@ -50,6 +50,6 @@ void destroy_ast(struct ast *restrict victim);
  * returned value has to be free()d (use destroy_ast).
  */
 _t__nonnull(1)
-struct ast * parse_filter(struct lexer *restrict L);
+struct ast * parse_filter(struct t_lexer *restrict L);
 
 #endif /* not T_PARSER_H */
