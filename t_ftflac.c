@@ -135,7 +135,7 @@ t_ftflac_set(struct t_file *restrict self, const char *restrict key,
     else {
         /* create the new entry */
         mykey = xstrdup(key);
-        strtoupper(mykey);
+        t_strtoupper(mykey);
         b = FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&e, mykey, newval);
         freex(mykey);
         if (!b) {
@@ -149,7 +149,7 @@ t_ftflac_set(struct t_file *restrict self, const char *restrict key,
 
         if (i == -1) {
         /* doesn't already exist, append it */
-            if (strempty(newval))
+            if (t_strempty(newval))
                 warnx("t_ftflac_set: create a tag with empty value: `%s'", key);
             b = FLAC__metadata_object_vorbiscomment_append_comment(d->vocomments, e, /* copy */false);
             if (!b) {
@@ -206,7 +206,7 @@ t_ftflac_tagkeys(const struct t_file *restrict self, char ***kptr)
             }
             freex(field_value);
             ret[i] = field_name;
-            strtolower(field_name);
+            t_strtolower(field_name);
         }
     }
 

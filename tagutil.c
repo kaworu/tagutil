@@ -105,7 +105,7 @@ main(int argc, char *argv[])
             if (rflag)
                 errx(EINVAL, "-r option set twice");
             rflag = true;
-            if (strempty(optarg))
+            if (t_strempty(optarg))
                 errx(EINVAL, "empty rename pattern");
             r_arg = t_rename_parse(optarg);
             break;
@@ -125,7 +125,7 @@ main(int argc, char *argv[])
                 errx(EINVAL, "invalid -s argument, need key=val: `%s'", set_key);
             *set_value = '\0';
             set_value += 1;
-            if (strempty(set_value))
+            if (t_strempty(set_value))
             /* don't allow to set a key to "" we destroy it instead */
                 set_value = NULL;
             t_taglist_insert(s_arg, set_key, set_value);
@@ -384,7 +384,7 @@ tagutil_edit(struct t_file *restrict file)
 
     (void)printf("%s\n", yaml);
 
-    if (yesno("edit this file")) {
+    if (t_yesno("edit this file")) {
         tmp_file = create_tmpfile();
 
         stream = xfopen(tmp_file, "w");
@@ -445,7 +445,7 @@ tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
     /* ask user for confirmation and rename if user want to */
     if (strcmp(file->path, result) != 0) {
         (void)xasprintf(&question, "rename `%s' to `%s'", file->path, result);
-        if (yesno(question)) {
+        if (t_yesno(question)) {
             e = t_error_new();
             if (!t_rename_safe(file->path, result, e))
                 err(errno, "%s", t_error_msg(e));

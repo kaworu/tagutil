@@ -53,7 +53,7 @@ static inline void xfclose(FILE *restrict stream);
 /* BASIC STRING OPERATIONS */
 
 _t__unused _t__nonnull(1)
-static inline bool strempty(const char *restrict str);
+static inline bool t_strempty(const char *restrict str);
 
 _t__unused _t__nonnull(1)
 static inline char * xstrdup(const char *restrict src);
@@ -65,24 +65,24 @@ static inline int xasprintf(char **ret, const char *fmt, ...);
  * upperize a given string.
  */
 _t__unused _t__nonnull(1)
-static inline void strtoupper(char *restrict str);
+static inline void t_strtoupper(char *restrict str);
 
 /*
  * lowerize a given string.
  */
 _t__unused _t__nonnull(1)
-static inline void strtolower(char *restrict str);
+static inline void t_strtolower(char *restrict str);
 
 
 /* OTHER */
 
 /*
  * print the given question, and read user's input. input should match
- * y|yes|n|no.  yesno() loops until a valid response is given and then return
+ * y|yes|n|no.  t_yesno() loops until a valid response is given and then return
  * true if the response match y|yes, false if it match n|no.
  * Honor Yflag and Nflag.
  */
-bool yesno(const char *restrict question);
+bool t_yesno(const char *restrict question);
 
 /*
  * reentrant dirname.
@@ -171,7 +171,7 @@ xfclose(FILE *restrict stream)
 
 
 static inline bool
-strempty(const char *restrict str)
+t_strempty(const char *restrict str)
 {
 
     assert_not_null(str);
@@ -211,7 +211,7 @@ xasprintf(char **ret, const char *fmt, ...)
 
 
 static inline void
-strtoupper(char *restrict str)
+t_strtoupper(char *restrict str)
 {
     size_t len, i;
 
@@ -224,7 +224,7 @@ strtoupper(char *restrict str)
 
 
 static inline void
-strtolower(char *restrict str)
+t_strtolower(char *restrict str)
 {
     size_t len, i;
 

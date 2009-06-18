@@ -146,7 +146,7 @@ t_ftoggvorbis_tagkeys(const struct t_file *restrict self, char ***kptr)
             len = eq - tag + 1;
             ret[i] = xcalloc(len, sizeof(char));
             memcpy(ret[i], tag, len - 1);
-            strtolower(ret[i]);
+            t_strtolower(ret[i]);
         }
         *kptr = ret;
     }

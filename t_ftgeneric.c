@@ -120,7 +120,7 @@ t_ftgeneric_get(struct t_file *restrict self, const char *restrict key)
                 (void)xasprintf(&value, "%02u", uintval);
             break;
         }
-        if (value && strempty(value))
+        if (value && t_strempty(value))
         /* clean value, when TagLib return "" we return NULL */
             freex(value);
 
