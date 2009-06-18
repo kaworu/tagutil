@@ -19,16 +19,16 @@
 
 
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-static double eval_cmp(const struct tfile *restrict file,
+static double eval_cmp(const struct t_file *restrict file,
         struct ast *restrict lhs, struct ast *restrict rhs, bool *undef);
 
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-static bool eval_match(const struct tfile *restrict file,
+static bool eval_match(const struct t_file *restrict file,
         struct ast *restrict lhs, struct ast *restrict rhs, bool *undef);
 
 
 bool
-ast_eval(const struct tfile *restrict file, const struct ast *restrict filter)
+ast_eval(const struct t_file *restrict file, const struct ast *restrict filter)
 {
     bool ret, undef;
 
@@ -89,7 +89,7 @@ ast_eval(const struct tfile *restrict file, const struct ast *restrict filter)
 
 
 static double
-eval_cmp(const struct tfile *restrict file,
+eval_cmp(const struct t_file *restrict file,
         struct ast *restrict lhs, struct ast *restrict rhs, bool *_undef)
 {
     const char *s, *l, *r;
@@ -189,7 +189,7 @@ eval_cmp(const struct tfile *restrict file,
 }
 
 static bool
-eval_match(const struct tfile *restrict file,
+eval_match(const struct t_file *restrict file,
         struct ast *restrict lhs, struct ast *restrict rhs, bool *_undef)
 {
     regex_t *r;

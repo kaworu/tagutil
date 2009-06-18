@@ -44,13 +44,13 @@ bool user_edit(const char *restrict path);
  * print the given file's tag to stdin.
  */
 _t__nonnull(1)
-bool tagutil_print(struct tfile *restrict file);
+bool tagutil_print(struct t_file *restrict file);
 
 /*
  * parse the given file (path) and update the file's tag.
  */
 _t__nonnull(1) _t__nonnull(2)
-bool tagutil_load(struct tfile *restrict file, const char *restrict path);
+bool tagutil_load(struct t_file *restrict file, const char *restrict path);
 
 /*
  * print the given file's tag and prompt to ask if tag edit is needed. if
@@ -58,7 +58,7 @@ bool tagutil_load(struct tfile *restrict file, const char *restrict path);
  * parse the tempfile and update the file's tag.
  */
 _t__nonnull(1)
-bool tagutil_edit(struct tfile *restrict file);
+bool tagutil_edit(struct t_file *restrict file);
 
 /*
  * rename the file.
@@ -67,13 +67,13 @@ bool tagutil_edit(struct tfile *restrict file);
  * rename_parse().
  */
 _t__nonnull(1) _t__nonnull(2)
-bool tagutil_rename(struct tfile *restrict file, struct token **restrict tknary);
+bool tagutil_rename(struct t_file *restrict file, struct token **restrict tknary);
 
 /*
  * print given path if the file match the given ast (arg).
  */
 _t__nonnull(1) _t__nonnull(2)
-bool tagutil_filter(const struct tfile *restrict file,
+bool tagutil_filter(const struct t_file *restrict file,
         const struct ast *restrict ast);
 
 #endif /* not T_TAGUTIL_H */

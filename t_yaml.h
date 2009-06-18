@@ -17,7 +17,7 @@
  * returned value has to be free()d.
  */
 _t__nonnull(1)
-char * tags_to_yaml(struct tfile *restrict file);
+char * tags_to_yaml(struct t_file *restrict file);
 
 
 /*
@@ -29,7 +29,7 @@ char * tags_to_yaml(struct tfile *restrict file);
  * returned value has to be free()d (see destroy_tag_list()).
  */
 _t__nonnull(1) _t__nonnull(2)
-struct tag_list * yaml_to_tags(struct tfile *restrict file,
+struct tag_list * yaml_to_tags(struct t_file *restrict file,
         FILE *restrict stream);
 
 #endif /* not T_YAML_H */

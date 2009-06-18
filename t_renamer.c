@@ -215,7 +215,7 @@ rename_lex_next_token(struct lexer *restrict L)
 
 
 char *
-rename_eval(struct tfile *restrict file, struct token **restrict ts)
+rename_eval(struct t_file *restrict file, struct token **restrict ts)
 {
     const struct token *tkn;
     struct t_strbuffer *sb, *sbv;

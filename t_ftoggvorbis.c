@@ -23,23 +23,23 @@ struct ftoggvorbis_data {
 
 
 _t__nonnull(1)
-void ftoggvorbis_destroy(struct tfile *restrict self);
+void ftoggvorbis_destroy(struct t_file *restrict self);
 _t__nonnull(1)
-bool ftoggvorbis_save(struct tfile *restrict self);
+bool ftoggvorbis_save(struct t_file *restrict self);
 
 _t__nonnull(1) _t__nonnull(2)
-char * ftoggvorbis_get(const struct tfile *restrict self,
+char * ftoggvorbis_get(const struct t_file *restrict self,
         const char *restrict key);
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-enum tfile_set_status ftoggvorbis_set(struct tfile *restrict self,
+enum t_file_set_status ftoggvorbis_set(struct t_file *restrict self,
         const char *restrict key, const char *restrict newval);
 
 _t__nonnull(1) _t__nonnull(2)
-long ftoggvorbis_tagkeys(const struct tfile *restrict self, char ***kptr);
+long ftoggvorbis_tagkeys(const struct t_file *restrict self, char ***kptr);
 
 
 void
-ftoggvorbis_destroy(struct tfile *restrict self)
+ftoggvorbis_destroy(struct t_file *restrict self)
 {
     struct ftoggvorbis_data *d;
 
@@ -55,7 +55,7 @@ ftoggvorbis_destroy(struct tfile *restrict self)
 
 
 bool
-ftoggvorbis_save(struct tfile *restrict self)
+ftoggvorbis_save(struct t_file *restrict self)
 {
 #if 0
     struct ftoggvorbis_data *d;
@@ -76,7 +76,7 @@ ftoggvorbis_save(struct tfile *restrict self)
 
 
 char *
-ftoggvorbis_get(const struct tfile *restrict self, const char *restrict key)
+ftoggvorbis_get(const struct t_file *restrict self, const char *restrict key)
 {
     char *s, *ret;
     struct ftoggvorbis_data *d;
@@ -97,8 +97,8 @@ ftoggvorbis_get(const struct tfile *restrict self, const char *restrict key)
 }
 
 
-enum tfile_set_status
-ftoggvorbis_set(struct tfile *restrict self, const char *restrict key,
+enum t_file_set_status
+ftoggvorbis_set(struct t_file *restrict self, const char *restrict key,
         const char *restrict newval)
 {
     char *k, *n;
@@ -120,7 +120,7 @@ ftoggvorbis_set(struct tfile *restrict self, const char *restrict key,
 
 
 long
-ftoggvorbis_tagkeys(const struct tfile *restrict self, char ***kptr)
+ftoggvorbis_tagkeys(const struct t_file *restrict self, char ***kptr)
 {
     char **ret, *tag, *eq;
     long i, count;
@@ -162,10 +162,10 @@ ftoggvorbis_init(void)
 }
 
 
-struct tfile *
+struct t_file *
 ftoggvorbis_new(const char *restrict path)
 {
-    struct tfile *ret;
+    struct t_file *ret;
     int i;
     size_t size;
     char *s;
@@ -187,7 +187,7 @@ ftoggvorbis_new(const char *restrict path)
     assert(vc = ov_comment(vf, -1));
 
     size = (strlen(path) + 1) * sizeof(char);
-    ret = xmalloc(sizeof(struct tfile) + sizeof(struct ftoggvorbis_data) + size);
+    ret = xmalloc(sizeof(struct t_file) + sizeof(struct ftoggvorbis_data) + size);
 
     d = (struct ftoggvorbis_data *)(ret + 1);
     d->vf = vf;

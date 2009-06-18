@@ -85,7 +85,7 @@ main(int argc, char *argv[])
     int i, ch, ret;
     char *path, *set_value, *set_key;
     struct stat s;
-    struct tfile *file;
+    struct t_file *file;
 
     if (argc < 2)
         usage();
@@ -313,7 +313,7 @@ user_edit(const char *restrict path)
 
 
 bool
-tagutil_print(struct tfile *restrict file)
+tagutil_print(struct t_file *restrict file)
 {
     char *yaml;
 
@@ -331,7 +331,7 @@ tagutil_print(struct tfile *restrict file)
 
 
 bool
-tagutil_load(struct tfile *restrict file, const char *restrict path)
+tagutil_load(struct t_file *restrict file, const char *restrict path)
 {
     FILE *stream;
     bool ret = true;
@@ -368,7 +368,7 @@ tagutil_load(struct tfile *restrict file, const char *restrict path)
 
 
 bool
-tagutil_edit(struct tfile *restrict file)
+tagutil_edit(struct t_file *restrict file)
 {
     FILE *stream;
     bool ret = true;
@@ -410,7 +410,7 @@ tagutil_edit(struct tfile *restrict file)
 
 
 bool
-tagutil_rename(struct tfile *restrict file, struct token **restrict tknary)
+tagutil_rename(struct t_file *restrict file, struct token **restrict tknary)
 {
     char *ext, *result, *dirn, *fname, *question;
     struct t_error *e;
@@ -460,7 +460,7 @@ tagutil_rename(struct tfile *restrict file, struct token **restrict tknary)
 
 
 bool
-tagutil_filter(const struct tfile *restrict file,
+tagutil_filter(const struct t_file *restrict file,
         const struct ast *restrict ast)
 {
     bool ret;

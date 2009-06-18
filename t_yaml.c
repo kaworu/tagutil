@@ -23,7 +23,7 @@ int yaml_write_handler(void *data, unsigned char *buffer, size_t size);
 
 
 char *
-tags_to_yaml(struct tfile *restrict file)
+tags_to_yaml(struct t_file *restrict file)
 {
     yaml_emitter_t emitter;
     yaml_event_t event;
@@ -127,7 +127,7 @@ emitter_error:
 
 
 struct tag_list *
-yaml_to_tags(struct tfile *restrict file, FILE *restrict stream)
+yaml_to_tags(struct t_file *restrict file, FILE *restrict stream)
 {
     struct tag_list *T;
     yaml_parser_t parser;

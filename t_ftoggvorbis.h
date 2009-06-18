@@ -13,7 +13,7 @@
 void ftoggvorbis_init(void);
 
 _t__nonnull(1)
-struct tfile * ftoggvorbis_new(const char *restrict path);
+struct t_file * ftoggvorbis_new(const char *restrict path);
 
 #else /* not WITH_OGGVORBIS */
 

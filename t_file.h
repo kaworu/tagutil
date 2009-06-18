@@ -17,7 +17,7 @@
 
 
 /* abstract music file, with method members */
-struct tfile {
+struct t_file {
     const char *path;
     const char *lib;
     void *data;
@@ -28,7 +28,7 @@ struct tfile {
      * return NULL if it couldn't create the struct.
      * returned value has to be free()d (use file->destroy(file)).
      */
-    struct tfile * (*create)(const char *restrict path);
+    struct t_file * (*create)(const char *restrict path);
 
     /*
      * write the file.
@@ -37,12 +37,12 @@ struct tfile {
      * On success t_error_msg(self) is NULL, otherwise it contains an error
      * message.
      */
-    bool (*save)(struct tfile *restrict self);
+    bool (*save)(struct t_file *restrict self);
 
     /*
      * free the struct
      */
-    void (*destroy)(struct tfile *restrict self);
+    void (*destroy)(struct t_file *restrict self);
 
     /*
      * return a the values of the tag key.
@@ -55,7 +55,7 @@ struct tfile {
      *
      * returned value has to be free()d (use destroy_tag_list()).
      */
-    struct tag_list * (*get)(struct tfile *restrict self,
+    struct tag_list * (*get)(struct t_file *restrict self,
             const char *restrict key);
 
     /*
@@ -66,7 +66,7 @@ struct tfile {
      * On success true is returned, otherwise false is returned and
      * t_error_msg(self) contains an error message.
      */
-    bool (*clear)(struct tfile *restrict self, const struct tag_list *restrict T);
+    bool (*clear)(struct t_file *restrict self, const struct tag_list *restrict T);
 
     /*
      * add the tags of given tag_list in self.
@@ -74,7 +74,7 @@ struct tfile {
      * On success true is returned, otherwise false is returned and
      * t_error_msg(self) contains an error message.
      */
-    bool (*add)(struct tfile *restrict self, const struct tag_list *restrict T);
+    bool (*add)(struct t_file *restrict self, const struct tag_list *restrict T);
 
 
     ERROR_MSG_MEMBER;

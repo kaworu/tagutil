@@ -14,7 +14,7 @@
 void ftgeneric_init(void);
 
 _t__nonnull(1)
-struct tfile * ftgeneric_new(const char *restrict path);
+struct t_file * ftgeneric_new(const char *restrict path);
 
 #else /* not WITH_TAGLIB */
 

@@ -23,23 +23,23 @@ struct ftflac_data {
 
 
 _t__nonnull(1)
-void ftflac_destroy(struct tfile *restrict self);
+void ftflac_destroy(struct t_file *restrict self);
 _t__nonnull(1)
-bool ftflac_save(struct tfile *restrict self);
+bool ftflac_save(struct t_file *restrict self);
 
 _t__nonnull(1) _t__nonnull(2)
-char * ftflac_get(const struct tfile *restrict self,
+char * ftflac_get(const struct t_file *restrict self,
         const char *restrict key);
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-enum tfile_set_status ftflac_set(struct tfile *restrict self,
+enum t_file_set_status ftflac_set(struct t_file *restrict self,
         const char *restrict key, const char *restrict newval);
 
 _t__nonnull(1) _t__nonnull(2)
-long ftflac_tagkeys(const struct tfile *restrict self, char ***kptr);
+long ftflac_tagkeys(const struct t_file *restrict self, char ***kptr);
 
 
 void
-ftflac_destroy(struct tfile *restrict self)
+ftflac_destroy(struct t_file *restrict self)
 {
     struct ftflac_data *d;
 
@@ -54,7 +54,7 @@ ftflac_destroy(struct tfile *restrict self)
 
 
 bool
-ftflac_save(struct tfile *restrict self)
+ftflac_save(struct t_file *restrict self)
 {
     struct ftflac_data *d;
 
@@ -72,7 +72,7 @@ ftflac_save(struct tfile *restrict self)
 
 
 char *
-ftflac_get(const struct tfile *restrict self, const char *restrict key)
+ftflac_get(const struct t_file *restrict self, const char *restrict key)
 {
     bool b;
     struct ftflac_data *d;
@@ -106,8 +106,8 @@ ftflac_get(const struct tfile *restrict self, const char *restrict key)
 }
 
 
-enum tfile_set_status
-ftflac_set(struct tfile *restrict self, const char *restrict key,
+enum t_file_set_status
+ftflac_set(struct t_file *restrict self, const char *restrict key,
         const char *restrict newval)
 {
     bool b;
@@ -178,7 +178,7 @@ ftflac_set(struct tfile *restrict self, const char *restrict key,
 
 
 long
-ftflac_tagkeys(const struct tfile *restrict self, char ***kptr)
+ftflac_tagkeys(const struct t_file *restrict self, char ***kptr)
 {
     char **ret;
     long i, count;
@@ -221,14 +221,14 @@ ftflac_init(void)
 }
 
 
-struct tfile *
+struct t_file *
 ftflac_new(const char *restrict path)
 {
     FLAC__Metadata_Chain *chain;
     FLAC__Metadata_Iterator *it;
     FLAC__StreamMetadata *vocomments;
     bool b;
-    struct tfile *ret;
+    struct t_file *ret;
     char *s;
     size_t size;
     struct ftflac_data *d;
@@ -265,7 +265,7 @@ ftflac_new(const char *restrict path)
     FLAC__metadata_iterator_delete(it);
 
     size = (strlen(path) + 1) * sizeof(char);
-    ret = xmalloc(sizeof(struct tfile) + sizeof(struct ftflac_data) + size);
+    ret = xmalloc(sizeof(struct t_file) + sizeof(struct ftflac_data) + size);
 
     d = (struct ftflac_data *)(ret + 1);
     d->chain      = chain;

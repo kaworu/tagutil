@@ -21,21 +21,21 @@ struct ftgeneric_data {
 };
 
 _t__nonnull(1)
-void ftgeneric_destroy(struct tfile *restrict self);
+void ftgeneric_destroy(struct t_file *restrict self);
 _t__nonnull(1)
-bool ftgeneric_save(struct tfile *restrict self);
+bool ftgeneric_save(struct t_file *restrict self);
 
 _t__nonnull(1)
-struct tag_list * ftgeneric_get(struct tfile *restrict self,
+struct tag_list * ftgeneric_get(struct t_file *restrict self,
         const char *restrict key);
 _t__nonnull(1)
-bool ftgeneric_clear(struct tfile *restrict self, const struct tag_list *restrict T);
+bool ftgeneric_clear(struct t_file *restrict self, const struct tag_list *restrict T);
 _t__nonnull(1) _t__nonnull(2)
-bool ftgeneric_add(struct tfile *restrict self, const struct tag_list *restrict T);
+bool ftgeneric_add(struct t_file *restrict self, const struct tag_list *restrict T);
 
 
 void
-ftgeneric_destroy(struct tfile *restrict self)
+ftgeneric_destroy(struct t_file *restrict self)
 {
     struct ftgeneric_data *d;
 
@@ -50,7 +50,7 @@ ftgeneric_destroy(struct tfile *restrict self)
 
 
 bool
-ftgeneric_save(struct tfile *restrict self)
+ftgeneric_save(struct t_file *restrict self)
 {
     bool ok;
     struct ftgeneric_data *d;
@@ -71,7 +71,7 @@ static const char * _taglibkeys[] = {
     "album", "artist", "comment", "date", "genre", "title", "tracknumber"
 };
 struct tag_list *
-ftgeneric_get(struct tfile *restrict self, const char *restrict key)
+ftgeneric_get(struct t_file *restrict self, const char *restrict key)
 {
     int i;
     unsigned int uintval;
@@ -136,7 +136,7 @@ ftgeneric_get(struct tfile *restrict self, const char *restrict key)
 
 
 bool
-ftgeneric_clear(struct tfile *restrict self, const struct tag_list *restrict T)
+ftgeneric_clear(struct t_file *restrict self, const struct tag_list *restrict T)
 {
     int i;
     struct ftgeneric_data *d;
@@ -180,7 +180,7 @@ ftgeneric_clear(struct tfile *restrict self, const struct tag_list *restrict T)
 
 
 bool
-ftgeneric_add(struct tfile *restrict self, const struct tag_list *restrict T)
+ftgeneric_add(struct t_file *restrict self, const struct tag_list *restrict T)
 {
     struct ftgeneric_data *d;
     unsigned int uintval;
@@ -266,11 +266,11 @@ ftgeneric_init(void)
 }
 
 
-struct tfile *
+struct t_file *
 ftgeneric_new(const char *restrict path)
 {
     TagLib_File *f;
-    struct tfile *ret;
+    struct t_file *ret;
     size_t size;
     char *s;
     struct ftgeneric_data *d;
@@ -282,7 +282,7 @@ ftgeneric_new(const char *restrict path)
         return (NULL);
 
     size = (strlen(path) + 1) * sizeof(char);
-    ret = xmalloc(sizeof(struct tfile) + sizeof(struct ftgeneric_data) + size);
+    ret = xmalloc(sizeof(struct t_file) + sizeof(struct ftgeneric_data) + size);
 
     d = (struct ftgeneric_data *)(ret + 1);
     d->file  = f;

@@ -26,7 +26,7 @@ _t__nonnull(1)
 struct token ** rename_parse(const char *restrict pattern);
 
 /*
- * eval the given token array in the context of given tfile.
+ * eval the given token array in the context of given t_file.
  *
  * On error t_error_msg(file) is set and NULL is returned. Otherwhise the
  * result is returned.
@@ -34,7 +34,7 @@ struct token ** rename_parse(const char *restrict pattern);
  * returned value has to be free()d.
  */
 _t__nonnull(1) _t__nonnull(2)
-char * rename_eval(struct tfile *restrict file, struct token **restrict ts);
+char * rename_eval(struct t_file *restrict file, struct token **restrict ts);
 
 /*
  * rename path to new_path.

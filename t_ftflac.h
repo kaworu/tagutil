@@ -13,7 +13,7 @@
 void ftflac_init(void);
 
 _t__nonnull(1)
-struct tfile * ftflac_new(const char *restrict path);
+struct t_file * ftflac_new(const char *restrict path);
 
 #else /* not WITH_FLAC */
 
