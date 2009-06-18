@@ -25,8 +25,9 @@ CSTD=c99
 CFLAGS=-g -O0 -Wall -Wextra -Wformat-security -Wnonnull -Waggregate-return \
 	   -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow \
 	   -Wstrict-prototypes -Winline -Wall -fno-inline
+VERSION:=${VERSION}-debug
 .endif
-CFLAGS+=-I. -D'VERSION="${VERSION}"'
+CFLAGS+=-I. -D'T_TAGUTIL_VERSION="${VERSION}"'
 
 # libyaml can't use pkg-config :(
 CFLAGS+=-I/usr/local/include

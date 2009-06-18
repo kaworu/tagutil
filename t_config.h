@@ -1,9 +1,9 @@
 #ifndef T_CONFIG_H
 #define T_CONFIG_H
 
-#if !defined(VERSION)
-#  define VERSION "(unknow version)"
-#endif /* not VERSION */
+#if !defined(T_TAGUTIL_VERSION)
+#  define T_TAGUTIL_VERSION "(unknow version)"
+#endif /* not T_TAGUTIL_VERSION */
 
 /*
  * avoid lint to complain for non C89 keywords and macros

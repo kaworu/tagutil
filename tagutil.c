@@ -240,7 +240,7 @@ void
 usage(void)
 {
 
-    (void)fprintf(stderr, "tagutil v"VERSION "\n\n");
+    (void)fprintf(stderr, "tagutil v"T_TAGUTIL_VERSION "\n\n");
     (void)fprintf(stderr, "usage: %s [OPTION]... [FILE]...\n", getprogname());
     (void)fprintf(stderr, "Modify or display music file's tag.\n");
     (void)fprintf(stderr, "\n");
