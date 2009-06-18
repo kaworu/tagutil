@@ -563,12 +563,12 @@ t_lex_error0(const struct t_lexer *restrict L, int start, int end,
     end = end - start + 1;
     c = (end == 1 ? '^' : '~');
     (void)vfprintf(stderr, fmt, args);
-    (void)fprintf(stderr, "\n%s\n", L->source);
+    (void)fprintf(stderr, "\n\n%s\n", L->source);
     while (start--)
         (void)fprintf(stderr, " ");
     while (end--)
         (void)fprintf(stderr, "%c", c);
-    (void)fprintf(stderr, "\n");
+    (void)fprintf(stderr, "\n\ncan't recovery from previous error.\n");
 }
 
 void
@@ -579,7 +579,7 @@ t_lex_error(const struct t_lexer *restrict L, int start, int end,
 
     assert_not_null(L);
 
-    fprintf(stderr, "lexer error: ");
+    fprintf(stderr, "lexer error:");
     va_start(args, fmt);
         t_lex_error0(L, start, end, fmt, args);
     va_end(args);

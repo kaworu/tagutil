@@ -246,7 +246,7 @@ t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
                 t = TAILQ_FIRST(T->tags);
                 assert_not_null(t);
                 assert(t->vcount > 0);
-                if (tkn->tindex == -1 && t->vcount > 1) {
+                if (tkn->tidx == T_TOKEN_STAR && t->vcount > 1) {
                 /* user ask for *all* tag values */
                     sbv = t_strbuffer_new();
                     TAILQ_FOREACH(v, t->values, next) {
@@ -262,7 +262,7 @@ t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
                 /*
                  * requested one tag, or all but there is only one avaiable.
                  */
-                    i = tkn->tindex == -1 ? 0 : tkn->tindex;
+                    i = tkn->tidx == T_TOKEN_STAR ? 0 : tkn->tidx;
                     v = t_tag_value_by_idx(t, i);
                     if (v) {
                         s = xstrdup(v->value);
