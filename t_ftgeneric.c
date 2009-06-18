@@ -5,6 +5,7 @@
  */
 #include <limits.h>
 #include <stdbool.h>
+#include <string.h>
 
 /* TagLib headers */
 #include <tag_c.h>
@@ -15,29 +16,29 @@
 #include "t_ftgeneric.h"
 
 
-struct ftgeneric_data {
+struct t_ftgeneric_data {
     TagLib_File *file;
     TagLib_Tag  *tag;
 };
 
 _t__nonnull(1)
-void ftgeneric_destroy(struct t_file *restrict self);
+void t_ftgeneric_destroy(struct t_file *restrict self);
 _t__nonnull(1)
-bool ftgeneric_save(struct t_file *restrict self);
+bool t_ftgeneric_save(struct t_file *restrict self);
 
 _t__nonnull(1)
-struct tag_list * ftgeneric_get(struct t_file *restrict self,
+struct tag_list * t_ftgeneric_get(struct t_file *restrict self,
         const char *restrict key);
 _t__nonnull(1)
-bool ftgeneric_clear(struct t_file *restrict self, const struct tag_list *restrict T);
+bool t_ftgeneric_clear(struct t_file *restrict self, const struct tag_list *restrict T);
 _t__nonnull(1) _t__nonnull(2)
-bool ftgeneric_add(struct t_file *restrict self, const struct tag_list *restrict T);
+bool t_ftgeneric_add(struct t_file *restrict self, const struct tag_list *restrict T);
 
 
 void
-ftgeneric_destroy(struct t_file *restrict self)
+t_ftgeneric_destroy(struct t_file *restrict self)
 {
-    struct ftgeneric_data *d;
+    struct t_ftgeneric_data *d;
 
     assert_not_null(self);
     assert_not_null(self->data);
@@ -50,10 +51,10 @@ ftgeneric_destroy(struct t_file *restrict self)
 
 
 bool
-ftgeneric_save(struct t_file *restrict self)
+t_ftgeneric_save(struct t_file *restrict self)
 {
     bool ok;
-    struct ftgeneric_data *d;
+    struct t_ftgeneric_data *d;
 
     assert_not_null(self);
     assert_not_null(self->data);
@@ -71,11 +72,11 @@ static const char * _taglibkeys[] = {
     "album", "artist", "comment", "date", "genre", "title", "tracknumber"
 };
 struct tag_list *
-ftgeneric_get(struct t_file *restrict self, const char *restrict key)
+t_ftgeneric_get(struct t_file *restrict self, const char *restrict key)
 {
     int i;
     unsigned int uintval;
-    struct ftgeneric_data *d;
+    struct t_ftgeneric_data *d;
     struct tag_list *T;
     char *value;
 
@@ -136,10 +137,10 @@ ftgeneric_get(struct t_file *restrict self, const char *restrict key)
 
 
 bool
-ftgeneric_clear(struct t_file *restrict self, const struct tag_list *restrict T)
+t_ftgeneric_clear(struct t_file *restrict self, const struct tag_list *restrict T)
 {
     int i;
-    struct ftgeneric_data *d;
+    struct t_ftgeneric_data *d;
 
     assert_not_null(self);
     assert_not_null(self->data);
@@ -180,9 +181,9 @@ ftgeneric_clear(struct t_file *restrict self, const struct tag_list *restrict T)
 
 
 bool
-ftgeneric_add(struct t_file *restrict self, const struct tag_list *restrict T)
+t_ftgeneric_add(struct t_file *restrict self, const struct tag_list *restrict T)
 {
-    struct ftgeneric_data *d;
+    struct t_ftgeneric_data *d;
     unsigned int uintval;
     char *endptr;
     struct ttag  *t;
@@ -252,7 +253,7 @@ ftgeneric_add(struct t_file *restrict self, const struct tag_list *restrict T)
 
 
 void
-ftgeneric_init(void)
+t_ftgeneric_init(void)
 {
     char *lcall, *dot;
 
@@ -267,13 +268,13 @@ ftgeneric_init(void)
 
 
 struct t_file *
-ftgeneric_new(const char *restrict path)
+t_ftgeneric_new(const char *restrict path)
 {
     TagLib_File *f;
     struct t_file *ret;
     size_t size;
     char *s;
-    struct ftgeneric_data *d;
+    struct t_ftgeneric_data *d;
 
     assert_not_null(path);
 
@@ -282,9 +283,9 @@ ftgeneric_new(const char *restrict path)
         return (NULL);
 
     size = (strlen(path) + 1) * sizeof(char);
-    ret = xmalloc(sizeof(struct t_file) + sizeof(struct ftgeneric_data) + size);
+    ret = xmalloc(sizeof(struct t_file) + sizeof(struct t_ftgeneric_data) + size);
 
-    d = (struct ftgeneric_data *)(ret + 1);
+    d = (struct t_ftgeneric_data *)(ret + 1);
     d->file  = f;
     d->tag   = taglib_file_tag(f);
     ret->data = d;
@@ -293,12 +294,12 @@ ftgeneric_new(const char *restrict path)
     (void)strlcpy(s, path, size);
     ret->path = s;
 
-    ret->create   = ftgeneric_new;
-    ret->save     = ftgeneric_save;
-    ret->destroy  = ftgeneric_destroy;
-    ret->get      = ftgeneric_get;
-    ret->clear    = ftgeneric_clear;
-    ret->add      = ftgeneric_add;
+    ret->create   = t_ftgeneric_new;
+    ret->save     = t_ftgeneric_save;
+    ret->destroy  = t_ftgeneric_destroy;
+    ret->get      = t_ftgeneric_get;
+    ret->clear    = t_ftgeneric_clear;
+    ret->add      = t_ftgeneric_add;
 
     ret->lib = "TagLib";
     t_error_init(ret);

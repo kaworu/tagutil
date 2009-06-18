@@ -16,32 +16,32 @@
 #include "t_ftoggvorbis.h"
 
 
-struct ftoggvorbis_data {
+struct t_ftoggvorbis_data {
     struct OggVorbis_File *vf;
     struct vorbis_comment *vc;
 };
 
 
 _t__nonnull(1)
-void ftoggvorbis_destroy(struct t_file *restrict self);
+void t_ftoggvorbis_destroy(struct t_file *restrict self);
 _t__nonnull(1)
-bool ftoggvorbis_save(struct t_file *restrict self);
+bool t_ftoggvorbis_save(struct t_file *restrict self);
 
 _t__nonnull(1) _t__nonnull(2)
-char * ftoggvorbis_get(const struct t_file *restrict self,
+char * t_ftoggvorbis_get(const struct t_file *restrict self,
         const char *restrict key);
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-enum t_file_set_status ftoggvorbis_set(struct t_file *restrict self,
+enum t_file_set_status t_ftoggvorbis_set(struct t_file *restrict self,
         const char *restrict key, const char *restrict newval);
 
 _t__nonnull(1) _t__nonnull(2)
-long ftoggvorbis_tagkeys(const struct t_file *restrict self, char ***kptr);
+long t_ftoggvorbis_tagkeys(const struct t_file *restrict self, char ***kptr);
 
 
 void
-ftoggvorbis_destroy(struct t_file *restrict self)
+t_ftoggvorbis_destroy(struct t_file *restrict self)
 {
-    struct ftoggvorbis_data *d;
+    struct t_ftoggvorbis_data *d;
 
     assert_not_null(self);
     assert_not_null(self->data);
@@ -55,10 +55,10 @@ ftoggvorbis_destroy(struct t_file *restrict self)
 
 
 bool
-ftoggvorbis_save(struct t_file *restrict self)
+t_ftoggvorbis_save(struct t_file *restrict self)
 {
 #if 0
-    struct ftoggvorbis_data *d;
+    struct t_ftoggvorbis_data *d;
 
     assert_not_null(self);
     assert_not_null(self->data);
@@ -76,10 +76,10 @@ ftoggvorbis_save(struct t_file *restrict self)
 
 
 char *
-ftoggvorbis_get(const struct t_file *restrict self, const char *restrict key)
+t_ftoggvorbis_get(const struct t_file *restrict self, const char *restrict key)
 {
     char *s, *ret;
-    struct ftoggvorbis_data *d;
+    struct t_ftoggvorbis_data *d;
 
     assert_not_null(self);
     assert_not_null(self->data);
@@ -98,11 +98,11 @@ ftoggvorbis_get(const struct t_file *restrict self, const char *restrict key)
 
 
 enum t_file_set_status
-ftoggvorbis_set(struct t_file *restrict self, const char *restrict key,
+t_ftoggvorbis_set(struct t_file *restrict self, const char *restrict key,
         const char *restrict newval)
 {
     char *k, *n;
-    struct ftoggvorbis_data *d;
+    struct t_ftoggvorbis_data *d;
 
     assert_not_null(self);
     assert_not_null(self->data);
@@ -120,12 +120,12 @@ ftoggvorbis_set(struct t_file *restrict self, const char *restrict key,
 
 
 long
-ftoggvorbis_tagkeys(const struct t_file *restrict self, char ***kptr)
+t_ftoggvorbis_tagkeys(const struct t_file *restrict self, char ***kptr)
 {
     char **ret, *tag, *eq;
     long i, count;
     size_t len;
-    struct ftoggvorbis_data *d;
+    struct t_ftoggvorbis_data *d;
 
     assert_not_null(self);
     assert_not_null(self->data);
@@ -156,14 +156,14 @@ ftoggvorbis_tagkeys(const struct t_file *restrict self, char ***kptr)
 
 
 void
-ftoggvorbis_init(void)
+t_ftoggvorbis_init(void)
 {
     return;
 }
 
 
 struct t_file *
-ftoggvorbis_new(const char *restrict path)
+t_ftoggvorbis_new(const char *restrict path)
 {
     struct t_file *ret;
     int i;
@@ -171,7 +171,7 @@ ftoggvorbis_new(const char *restrict path)
     char *s;
     struct OggVorbis_File *vf;
     struct vorbis_comment *vc;
-    struct ftoggvorbis_data *d;
+    struct t_ftoggvorbis_data *d;
 
     assert_not_null(path);
 
@@ -187,9 +187,9 @@ ftoggvorbis_new(const char *restrict path)
     assert(vc = ov_comment(vf, -1));
 
     size = (strlen(path) + 1) * sizeof(char);
-    ret = xmalloc(sizeof(struct t_file) + sizeof(struct ftoggvorbis_data) + size);
+    ret = xmalloc(sizeof(struct t_file) + sizeof(struct t_ftoggvorbis_data) + size);
 
-    d = (struct ftoggvorbis_data *)(ret + 1);
+    d = (struct t_ftoggvorbis_data *)(ret + 1);
     d->vf = vf;
     d->vc = vc;
     ret->data = d;
@@ -198,12 +198,12 @@ ftoggvorbis_new(const char *restrict path)
     (void)strlcpy(s, path, size);
     ret->path = s;
 
-    ret->create   = ftoggvorbis_new;
-    ret->save     = ftoggvorbis_save;
-    ret->destroy  = ftoggvorbis_destroy;
-    ret->get      = ftoggvorbis_get;
-    ret->set      = ftoggvorbis_set;
-    ret->tagkeys  = ftoggvorbis_tagkeys;
+    ret->create   = t_ftoggvorbis_new;
+    ret->save     = t_ftoggvorbis_save;
+    ret->destroy  = t_ftoggvorbis_destroy;
+    ret->get      = t_ftoggvorbis_get;
+    ret->set      = t_ftoggvorbis_set;
+    ret->tagkeys  = t_ftoggvorbis_tagkeys;
 
     ret->lib = "libvorbis";
     return (ret);

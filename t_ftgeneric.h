@@ -11,15 +11,15 @@
 
 #if defined(WITH_TAGLIB)
 
-void ftgeneric_init(void);
+void t_ftgeneric_init(void);
 
 _t__nonnull(1)
-struct t_file * ftgeneric_new(const char *restrict path);
+struct t_file * t_ftgeneric_new(const char *restrict path);
 
 #else /* not WITH_TAGLIB */
 
-# define ftgeneric_init()
-# define ftgeneric_new(path) NULL
+# define t_ftgeneric_init() (void)0
+# define t_ftgeneric_new(path) NULL
 
 #endif /* WITH_TAGLIB */
 #endif /* not T_FTGENERIC_H */

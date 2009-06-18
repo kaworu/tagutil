@@ -10,15 +10,15 @@
 
 #if defined(WITH_OGGVORBIS)
 
-void ftoggvorbis_init(void);
+void t_ftoggvorbis_init(void);
 
 _t__nonnull(1)
-struct t_file * ftoggvorbis_new(const char *restrict path);
+struct t_file * t_ftoggvorbis_new(const char *restrict path);
 
 #else /* not WITH_OGGVORBIS */
 
-# define ftoggvorbis_init()
-# define ftoggvorbis_new(path) NULL
+# define t_ftoggvorbis_init() (void)0
+# define t_ftoggvorbis_new(path) NULL
 
 #endif /* WITH_OGGVORBIS */
 #endif /* not T_FTOGGVORBIS_H */

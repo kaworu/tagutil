@@ -168,9 +168,9 @@ main(int argc, char *argv[])
         pflag = true;
 
     /* init backends */
-    ftflac_init();
-    ftoggvorbis_init();
-    ftgeneric_init();
+    t_ftflac_init();
+    t_ftoggvorbis_init();
+    t_ftgeneric_init();
 
     ret = EXIT_SUCCESS;
     for (i = 0; i < argc; i++) {
@@ -188,11 +188,11 @@ main(int argc, char *argv[])
         }
 
         file = NULL;
-        file = ftflac_new(path);
+        file = t_ftflac_new(path);
         if (file == NULL)
-            file = ftoggvorbis_new(path);
+            file = t_ftoggvorbis_new(path);
         if (file == NULL)
-            file = ftgeneric_new(path);
+            file = t_ftgeneric_new(path);
         if (file == NULL) {
             warnx("`%s' unsuported file format", path);
             ret = EINVAL;
