@@ -3,9 +3,16 @@
  *
  * the tagutil's filter interpreter.
  */
-#include "t_config.h"
+#include <err.h>
+#include <limits.h>
+#include <regex.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "t_toolkit.h"
+#include "t_config.h"
+#include "t_file.h"
 #include "t_lexer.h"
 #include "t_parser.h"
 #include "t_interpreter.h"
@@ -246,7 +253,7 @@ eval_match(const struct tfile *restrict file,
         default:
             errmsg = xcalloc(BUFSIZ, sizeof(char));
             (void)regerror(error, r, errmsg, BUFSIZ);
-            errx(-1, "interpreter error, can't exec regex: '%s'", errmsg);
+            errx(-1, "interpreter error, can't exec regex: `%s'", errmsg);
             /* NOTREACHED */
     }
 

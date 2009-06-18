@@ -3,8 +3,6 @@
  *
  * FLAC format handler using libFLAC.
  */
-#include "t_config.h"
-
 #include <stdbool.h>
 #include <string.h>
 
@@ -12,9 +10,10 @@
 #include <metadata.h>
 #include <format.h>
 
+#include "t_config.h"
+#include "t_toolkit.h"
 #include "t_file.h"
 #include "t_ftflac.h"
-#include "t_toolkit.h"
 
 
 struct ftflac_data {

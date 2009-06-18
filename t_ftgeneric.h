@@ -6,7 +6,6 @@
  * a generic tagutil backend, using TagLib.
  */
 #include "t_config.h"
-
 #include "t_file.h"
 
 

@@ -3,8 +3,6 @@
  *
  * yaml tagutil interface, using libyaml.
  */
-#include "t_config.h"
-
 #include <sys/param.h>
 
 #include <string.h>
@@ -14,6 +12,7 @@
 /* libyaml headers */
 #include <yaml.h>
 
+#include "t_config.h"
 #include "t_toolkit.h"
 #include "t_file.h"
 #include "t_yaml.h"

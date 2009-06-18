@@ -3,10 +3,9 @@
  *
  * tagutil PUID generator, using libofa.
  */
-#include "t_config.h"
-
 #include <ofa1/ofa.h>
 
+#include "t_config.h"
 #include "t_toolkit.h"
 #include "t_wav.h"
 #include "t_puid.h"

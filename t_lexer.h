@@ -6,14 +6,11 @@
  * a hand writted lexer for tagutil.
  * used by the filter function.
  */
-#include "t_config.h"
-
-#include <ctype.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <regex.h>
 
-#include "t_toolkit.h"
+#include "t_config.h"
 
 
 enum tokenkind {

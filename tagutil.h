@@ -3,13 +3,12 @@
 /*
  * tagutil main header.
  */
-#include "t_config.h"
-
-#include <stdio.h>
 #include <stdbool.h>
 
+#include "t_config.h"
 #include "t_file.h"
 #include "t_lexer.h"
+#include "t_parser.h"
 
 
 /*

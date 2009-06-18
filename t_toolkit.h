@@ -6,22 +6,21 @@
  * handy functions toolkit for tagutil.
  *
  */
-#include "t_config.h"
-
-#include </usr/include/assert.h>
+#include </usr/include/assert.h> /* FIXME: libFLAC clash */
 #include <ctype.h>
 #include <errno.h>
 #include <err.h>
-#include <regex.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "t_config.h"
+
 
 /* compute the length of a fixed size array */
-#define len(ary) (sizeof(ary) / sizeof((ary)[0]))
+#define countof(ary) (sizeof(ary) / sizeof((ary)[0]))
 
 /* some handy assert macros */
 #define assert_not_null(x) assert((x) != NULL)
@@ -133,9 +132,6 @@ _t__unused
 char * t_dirname(const char *);
 
 /**********************************************************************/
-/* include t_error header now, cause it need's predecl of function like xmalloc */
-#include "t_error.h"
-
 
 static inline void *
 xmalloc(size_t size)
@@ -240,6 +236,8 @@ xasprintf(char **ret, const char *fmt, ...)
 {
     int i;
     va_list ap;
+
+    assert_not_null(ret);
 
     va_start(ap, fmt);
     i = vasprintf(ret, fmt, ap);

@@ -5,11 +5,10 @@
  *
  * yaml tagutil parser and converter.
  */
-#include "t_config.h"
-
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "t_config.h"
 #include "t_file.h"
 
 /*

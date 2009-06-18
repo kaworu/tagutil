@@ -3,8 +3,6 @@
  *
  * renamer for tagutil.
  */
-#include "t_config.h"
-
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -16,8 +14,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "t_lexer.h"
+#include "t_config.h"
 #include "t_toolkit.h"
+#include "t_lexer.h"
 #include "t_renamer.h"
 
 

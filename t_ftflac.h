@@ -6,7 +6,6 @@
  * FLAC format handler using libFLAC.
  */
 #include "t_config.h"
-
 #include "t_file.h"
 
 #if defined(WITH_FLAC)

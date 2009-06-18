@@ -3,14 +3,13 @@
  *
  * tagutil WAV handler, based on libofa's example
  */
-#include "t_config.h"
-
 #include <errno.h>
 #include <fcntl.h> /* open(2) */
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
+#include "t_config.h"
 #include "t_toolkit.h"
 #include "t_wav.h"
 

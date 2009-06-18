@@ -4,14 +4,13 @@
  * a hand writted lexer for tagutil.
  * used by the filter function.
  */
-#include "t_config.h"
-
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "t_lexer.h"
+#include "t_config.h"
 #include "t_toolkit.h"
+#include "t_lexer.h"
 
 
 struct lexer *
@@ -504,7 +503,7 @@ lex_next_token(struct lexer *restrict L)
     default:
         /* keywords, not optimized at all, no gperf or so */
         found = false;
-        for (i = 0; !found && i < len(lexkeywords); i++) {
+        for (i = 0; !found && i < countof(lexkeywords); i++) {
             if (strncmp(L->source + L->cindex,
                         lexkeywords[i].lexem,
                         lexkeywords[i].lexemlen) == 0) {

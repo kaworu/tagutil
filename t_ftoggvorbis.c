@@ -3,8 +3,6 @@
  *
  * Ogg/Vorbis backend, using libvorbis and libvorbisfile
  */
-#include "t_config.h"
-
 #include <stdbool.h>
 #include <string.h>
 
@@ -12,9 +10,10 @@
 #include <vorbis/vorbisfile.h>
 #include <vorbis/codec.h>
 
+#include "t_config.h"
+#include "t_toolkit.h"
 #include "t_file.h"
 #include "t_ftoggvorbis.h"
-#include "t_toolkit.h"
 
 
 struct ftoggvorbis_data {

@@ -5,13 +5,13 @@
  *
  * tagutil's tag structures/functions.
  */
-#include "t_config.h"
-
 #include <sys/queue.h>
 
 #include <stdbool.h>
 
+#include "t_config.h"
 #include "t_toolkit.h"
+#include "t_error.h"
 
 
 /* tag value */
@@ -92,11 +92,10 @@ void destroy_tag_list(const struct tag_list *T);
 static inline struct ttagv *
 ttag_value_by_idx(struct ttag *restrict t, size_t idx)
 {
-    struct ttagv *ret;
+    struct ttagv *ret = NULL;
 
     assert_not_null(t);
 
-    ret = NULL;
     if (idx < t->vcount) {
         ret = TAILQ_FIRST(t->values);
         while (idx--)

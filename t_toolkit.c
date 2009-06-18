@@ -5,7 +5,6 @@
  *
  */
 #include "t_config.h"
-
 #include "t_toolkit.h"
 
 
@@ -20,7 +19,7 @@ yesno(const char *restrict question)
         if (feof(stdin) && !Yflag && !Nflag)
             return (false);
 
-        (void)memset(buffer, '\0', len(buffer));
+        (void)memset(buffer, '\0', countof(buffer));
 
         if (question != NULL) {
             (void)printf("%s? [y/n] ", question);
@@ -36,7 +35,7 @@ yesno(const char *restrict question)
             return (false);
         }
 
-        if (fgets(buffer, len(buffer), stdin) == NULL) {
+        if (fgets(buffer, countof(buffer), stdin) == NULL) {
             if (feof(stdin))
                 return (false);
             else

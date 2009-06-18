@@ -28,9 +28,6 @@
  * REGOPTS      ::= 'i' | 'm' | 'im' | 'mi'
  */
 #include "t_config.h"
-
-#include <regex.h>
-
 #include "t_lexer.h"
 
 

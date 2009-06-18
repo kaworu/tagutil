@@ -4,9 +4,8 @@
  * tagutil's tag structures/functions.
  */
 #include "t_config.h"
-
-#include "t_tag.h"
 #include "t_toolkit.h"
+#include "t_tag.h"
 
 
 struct tag_list *

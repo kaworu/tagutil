@@ -4,13 +4,16 @@
  * t_file.h
  *
  * tagutil Tag File
- * You can rely on the fact that this header include the t_tag.h header.
+ *
+ * You can rely on the fact that this header include the t_tag.h and t_error.h
+ * header.
  */
-#include "t_config.h"
+#include <stdbool.h>
 
+#include "t_config.h"
+#include "t_error.h"
 #include "t_tag.h"
 
-#include <stdbool.h>
 
 
 /* abstract music file, with method members */

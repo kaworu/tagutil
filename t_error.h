@@ -5,6 +5,8 @@
  *
  * error handling for tagutil.
  */
+#include "t_config.h"
+#include "t_toolkit.h"
 
 
 /* error handling macros */
@@ -12,15 +14,15 @@
 /* used for any struct that need to behave like a t_error */
 #define ERROR_MSG_MEMBER char *__errmsg
 
+/* error message getter */
+#define t_error_msg(o) ((o)->__errmsg)
+
 /* initializer */
-#define t_error_init(o) do { (o)->__errmsg = NULL; } while (/*CONSTCOND*/0)
+#define t_error_init(o) do { t_error_msg(o) = NULL; } while (/*CONSTCOND*/0)
 
 /* set the error message (with printflike syntax) */
 #define t_error_set(o, fmt, ...) \
     do { if (o) (void)xasprintf(&t_error_msg(o), fmt, ##__VA_ARGS__); } while (/*CONSTCOND*/0)
-
-/* error message getter */
-#define t_error_msg(o) ((o)->__errmsg)
 
 /* reset the error message. free it if needed, set to NULL */
 #define t_error_clear(o) \

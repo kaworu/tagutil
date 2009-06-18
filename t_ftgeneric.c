@@ -3,17 +3,16 @@
  *
  * a generic tagutil backend, using TagLib.
  */
-#include "t_config.h"
+#include <limits.h>
+#include <stdbool.h>
 
 /* TagLib headers */
 #include <tag_c.h>
 
-#include <limits.h>
-#include <stdbool.h>
-
+#include "t_config.h"
+#include "t_toolkit.h"
 #include "t_file.h"
 #include "t_ftgeneric.h"
-#include "t_toolkit.h"
 
 
 struct ftgeneric_data {

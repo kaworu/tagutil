@@ -4,14 +4,14 @@
  * a LL(1) recursive descend parser for tagutil.
  * used by the filter function.
  */
-#include "t_config.h"
-
 #include <stdbool.h>
-#include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
 
+#include "t_config.h"
+#include "t_toolkit.h"
 #include "t_lexer.h"
 #include "t_parser.h"
-#include "t_toolkit.h"
 
 
 _t__nonnull(2)

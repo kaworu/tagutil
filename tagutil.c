@@ -38,28 +38,26 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include "t_config.h"
-
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include <errno.h>
 #include <unistd.h> /* getopt(3) */
 
+#include "t_config.h"
+#include "t_toolkit.h"
+#include "t_tag.h"
+#include "t_file.h"
+#include "t_ftflac.h"
+#include "t_ftoggvorbis.h"
+#include "t_ftgeneric.h"
+#include "t_yaml.h"
 #include "t_renamer.h"
 #include "t_lexer.h"
 #include "t_parser.h"
 #include "t_interpreter.h"
-#include "t_yaml.h"
-#include "t_tag.h"
-#include "t_file.h"
-#include "t_toolkit.h"
-
 #include "tagutil.h"
 
-#include "t_ftflac.h"
-#include "t_ftoggvorbis.h"
-#include "t_ftgeneric.h"
 
 bool pflag = false; /* display tags action */
 bool Yflag = false; /* yes answer to all questions */

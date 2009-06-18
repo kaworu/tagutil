@@ -5,8 +5,10 @@
  *
  * tagutil WAV handler, based on libofa's example
  */
-#include "t_config.h"
 #include <stdbool.h>
+
+#include "t_config.h"
+
 
 struct audio_data {
     unsigned char *samples;

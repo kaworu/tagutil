@@ -6,7 +6,6 @@
  * Ogg/Vorbis backend, using libvorbis and libvorbisfile
  */
 #include "t_config.h"
-
 #include "t_file.h"
 
 #if defined(WITH_OGGVORBIS)
