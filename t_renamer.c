@@ -165,7 +165,7 @@ t_rename_lex_next_token(struct t_lexer *restrict L)
         t->end  = L->cindex;
         break;
     case '%':
-        t_lex_tagkey(L, &t);
+        t_lex_tagkey(L, &t, !T_LEXER_ALLOW_STAR_MOD);
         break;
     default:
 		t->kind = T_STRING;

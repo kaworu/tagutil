@@ -37,12 +37,12 @@ t_lexer_new(const char *restrict source)
 
 
 void
-t_lexer_destroy(const struct t_lexer *restrict L)
+t_lexer_destroy(struct t_lexer *restrict L)
 {
 
     assert_not_null(L);
 
-    t_lexer_destroy(L);
+    freex(L);
 }
 
 
@@ -258,9 +258,10 @@ regopt_error:
 
 
 void
-t_lex_tagkey(struct t_lexer *restrict L, struct t_token **tptr)
+t_lex_tagkey(struct t_lexer *restrict L, struct t_token **tptr,
+        bool allow_star_modifier)
 {
-    bool idx;
+    bool has_idx;
     int copyend, eqindex;
     struct t_token *t;
     unsigned int skip, i;
@@ -273,7 +274,6 @@ t_lex_tagkey(struct t_lexer *restrict L, struct t_token **tptr)
     t = *tptr;
     t->kind = T_TAGKEY;
     t->str = "TAGKEY";
-    t->tindex = 0;
 
     if (t_lexc(L) == '{') {
     /* %{tag} */
@@ -285,36 +285,48 @@ t_lex_tagkey(struct t_lexer *restrict L, struct t_token **tptr)
             }
         }
         if (L->c != '=')
-            idx = false;
+            has_idx = false;
         else {
         /* %{tag=idx} */
-            idx = true;
             eqindex = L->cindex;
+            has_idx = true;
+            t->tidx = 0;
             while (isdigit(t_lexc(L)))
-                t->tindex = 10 * t->tindex + digittoint(L->c);
+                t->tidx = 10 * t->tidx + digittoint(L->c);
             if (L->cindex == eqindex + 1) {
             /* could be * */
                 if (L->c == '*') {
-                    t->tindex = -1;
+                    t->tidx_mod = T_TOKEN_STAR_NO_MOD;
+                    t->tidx = T_TOKEN_STAR;
                     (void)t_lexc(L);
+                    if (L->c == '|' || L->c == '&') {
+                    /* wildchar modifier */
+                        if (!allow_star_modifier)
+                            t_lex_error(L, L->cindex, L->cindex, "star modifier not allowed");
+                        else if (L->c == '|')
+                            t->tidx_mod = T_TOKEN_STAR_OR_MOD;
+                        else
+                            t->tidx_mod = T_TOKEN_STAR_AND_MOD;
+                        (void)t_lexc(L);
+                    }
                 }
-                if (L->c && L->c != '}')
-                    t_lex_error(L, eqindex + 1, L->cindex, "bad index request");
             }
+            if (L->c && L->c != '}')
+                t_lex_error(L, eqindex + 1, L->cindex, "bad index request");
         }
         t->end = L->cindex;
         if (L->c != '}')
             t_lex_error(L, t->start, t->end, "unbalanced { for %s", t->str);
 
         /* do the copy */
-        copyend = idx ? eqindex : t->end;
+        copyend = has_idx ? eqindex : t->end;
         t->slen = copyend - t->start - 2 - skip;
         t = xrealloc(t, sizeof(struct t_token) + t->slen + 1);
         *tptr = t;
         t->value.str = (char *)(t + 1);
         t_lexc_move_to(L, t->start + 1); /* move on { */
         i = 0;
-        while (t_lexc(L) != (idx ? '=' : '}')) {
+        while (t_lexc(L) != (has_idx ? '=' : '}')) {
             if (L->c == '\\') {
                 if (t_lexc(L) != '}') {
                     /* rewind */
@@ -324,7 +336,7 @@ t_lex_tagkey(struct t_lexer *restrict L, struct t_token **tptr)
             }
             t->value.str[i++] = L->c;
         }
-        if (idx) {
+        if (has_idx) {
         /* eat idx digits */
             while (t_lexc(L) != '}')
                 assert(L->c);
@@ -508,7 +520,7 @@ t_lex_next_token(struct t_lexer *restrict L)
         t_lex_strlit_or_regex(L, &t);
         break;
     case '%':
-        t_lex_tagkey(L, &t);
+        t_lex_tagkey(L, &t, T_LEXER_ALLOW_STAR_MOD);
         break;
     default:
         /* keywords, not optimized at all, no gperf or so */
@@ -578,39 +590,53 @@ t_lex_error(const struct t_lexer *restrict L, int start, int end,
 
 
 #if 0
-int
+bool
 t_lex_token_debug(struct t_token *restrict t) {
-    int ret = 0;
-    if (t == NULL)
-        return 0;
+    bool the_end = false;
 
-    (void)printf("%s", t->str);
+    if (t) {
+        (void)printf("%s", t->str);
 
-    switch (t->kind) {
-        case T_INT:
-            (void)printf("(%d)", t->value.integer);
-            break;
-        case T_DOUBLE:
-            (void)printf("(%lf)", t->value.dbl);
-            break;
-        case T_STRING: /* FALLTHROUGH */
-            (void)printf("(%s)", t->value.str);
-            break;
-        case T_TAGKEY:
-            (void)printf("(%s@%d)", t->value.str, t->tindex);
-            break;
-        case T_REGEX:
-            (void)printf("(%s)", (char *)(t + 1));
-            break;
-        case T_END:
-            (void)printf("\n");
-            ret = 1;
-            break;
-        default:
-            break;
+        switch (t->kind) {
+            case T_INT:
+                (void)printf("(%d)", t->value.integer);
+                break;
+            case T_DOUBLE:
+                (void)printf("(%lf)", t->value.dbl);
+                break;
+            case T_STRING:
+                (void)printf("(%s)", t->value.str);
+                break;
+            case T_TAGKEY:
+                (void)printf("(%s@", t->value.str);
+                if (t->tidx == T_TOKEN_STAR) {
+                    (void)printf("*");
+                    switch (t->tidx_mod) {
+                    case T_TOKEN_STAR_OR_MOD:
+                        (void)printf("OR");
+                        break;
+                    case T_TOKEN_STAR_AND_MOD:
+                        (void)printf("AND");
+                        break;
+                    }
+                }
+                else
+                    (void)printf("%d", t->tidx);
+                (void)printf(")");
+                break;
+            case T_REGEX:
+                (void)printf("(%s)", (char *)(t + 1));
+                break;
+            case T_END:
+                (void)printf("\n");
+                the_end = true;
+                break;
+            default:
+                break;
+        }
     }
 
-    return (ret);
+    return (the_end);
 }
 
 int
@@ -618,12 +644,11 @@ main(int argc, char *argv[])
 {
     struct t_lexer *L;
     struct t_token *t;
-    int the_end;
+    bool the_end = false;
 
     if (argc < 2)
         errx(-1, "usage: %s [string]\n", argv[0]);
 
-    the_end = 0;
     L = t_lexer_new(argv[1]);
 
     while (!the_end) {

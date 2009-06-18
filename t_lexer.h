@@ -7,6 +7,7 @@
  * used by the filter function.
  */
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <regex.h>
 
@@ -43,7 +44,7 @@ enum t_tokenkind {
     T_FILENAME,
     T_BACKEND,
     T_UNDEF,
-    T_TAGKEY
+    T_TAGKEY,
 };
 
 
@@ -59,6 +60,13 @@ static const struct {
 };
 
 
+#define T_TOKEN_STAR (-1)
+enum t_star_mod {
+    T_TOKEN_STAR_NO_MOD,
+    T_TOKEN_STAR_AND_MOD,
+    T_TOKEN_STAR_OR_MOD,
+};
+
 struct t_token {
     const char *str;
     enum t_tokenkind kind;
@@ -70,7 +78,9 @@ struct t_token {
         regex_t regex; /* T_REGEX */
     } value;
     size_t slen; /* > 0 if T_STRING or T_TAGKEY */
-    int tindex; /* tag index if T_TAGKEY (-1 is wildchar) */
+    int tidx; /* tag index if T_TAGKEY and has_tidx (-1 is star (wildchar)) */
+    enum t_star_mod tidx_mod; /* star modifier if T_TAGKEY and tidx == T_TOKEN_STAR,
+                                 default is T_TOKEN_STAR_NO_MOD */
 };
 
 struct t_lexer {
@@ -94,7 +104,7 @@ struct t_lexer * t_lexer_new(const char *restrict source);
  * free a lexer.
  */
 _t__nonnull(1)
-void t_lexer_destroy(const struct t_lexer *restrict L);
+void t_lexer_destroy(struct t_lexer *restrict L);
 
 /*
  * return the next token of given lexer. The first token is always T_START, and
@@ -140,9 +150,12 @@ void t_lex_strlit_or_regex(struct t_lexer *restrict L, struct t_token **tptr);
 
 /*
  * realloc() given token and fill it with T_TAGKEY.
+ * TODO allow_star_modifier
  */
 _t__nonnull(1) _t__nonnull(2)
-void t_lex_tagkey(struct t_lexer *restrict L, struct t_token **tptr);
+void t_lex_tagkey(struct t_lexer *restrict L, struct t_token **tptr,
+        bool allow_star_modifier);
+#define T_LEXER_ALLOW_STAR_MOD true
 
 /*
  * output nicely lexer's error messages and die.
