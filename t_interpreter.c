@@ -19,16 +19,17 @@
 
 
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-static double eval_cmp(const struct t_file *restrict file,
+static double t_interpreter_eval_cmp(const struct t_file *restrict file,
         struct ast *restrict lhs, struct ast *restrict rhs, bool *undef);
 
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-static bool eval_match(const struct t_file *restrict file,
+static bool t_interpreter_eval_match(const struct t_file *restrict file,
         struct ast *restrict lhs, struct ast *restrict rhs, bool *undef);
 
 
 bool
-ast_eval(const struct t_file *restrict file, const struct ast *restrict filter)
+t_interpreter_eval_ast(const struct t_file *restrict file,
+        const struct ast *restrict filter)
 {
     bool ret, undef;
 
@@ -38,41 +39,41 @@ ast_eval(const struct t_file *restrict file, const struct ast *restrict filter)
     undef = false;
     switch (filter->token->kind) {
     case TNOT:
-        ret = !(ast_eval(file, filter->rhs));
+        ret = !(t_interpreter_eval_ast(file, filter->rhs));
         break;
     case TAND:
-        ret = ast_eval(file, filter->lhs);
+        ret = t_interpreter_eval_ast(file, filter->lhs);
         if (ret)
-            ret = ast_eval(file, filter->rhs);
+            ret = t_interpreter_eval_ast(file, filter->rhs);
         break;
     case TOR:
-        ret = ast_eval(file, filter->lhs);
+        ret = t_interpreter_eval_ast(file, filter->lhs);
         if (!ret)
-            ret = ast_eval(file, filter->rhs);
+            ret = t_interpreter_eval_ast(file, filter->rhs);
         break;
     case TEQ:
-        ret = (eval_cmp(file, filter->lhs, filter->rhs, &undef) == 0);
+        ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) == 0);
         break;
     case TDIFF:
-        ret = (eval_cmp(file, filter->lhs, filter->rhs, &undef) != 0);
+        ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) != 0);
         break;
     case TLT:
-        ret = (eval_cmp(file, filter->lhs, filter->rhs, &undef) <  0);
+        ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) <  0);
         break;
     case TLE:
-        ret = (eval_cmp(file, filter->lhs, filter->rhs, &undef) <= 0);
+        ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) <= 0);
         break;
     case TGT:
-        ret = (eval_cmp(file, filter->lhs, filter->rhs, &undef) >  0);
+        ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) >  0);
         break;
     case TGE:
-        ret = (eval_cmp(file, filter->lhs, filter->rhs, &undef) >= 0);
+        ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) >= 0);
         break;
     case TMATCH:
-        ret = eval_match(file, filter->lhs, filter->rhs, &undef);
+        ret = t_interpreter_eval_match(file, filter->lhs, filter->rhs, &undef);
         break;
     case TNMATCH:
-        ret = !eval_match(file, filter->lhs, filter->rhs, &undef);
+        ret = !t_interpreter_eval_match(file, filter->lhs, filter->rhs, &undef);
         break;
     default:
         (void)fprintf(stderr, "***internal interpreter error*** "
@@ -89,7 +90,7 @@ ast_eval(const struct t_file *restrict file, const struct ast *restrict filter)
 
 
 static double
-eval_cmp(const struct t_file *restrict file,
+t_interpreter_eval_cmp(const struct t_file *restrict file,
         struct ast *restrict lhs, struct ast *restrict rhs, bool *_undef)
 {
     const char *s, *l, *r;
@@ -173,7 +174,7 @@ eval_cmp(const struct t_file *restrict file,
             freex(_r);
         }
         else {
-            ret = eval_cmp(file, rhs, lhs, undef);
+            ret = t_interpreter_eval_cmp(file, rhs, lhs, undef);
             ret = -ret;
         }
         break;
@@ -189,7 +190,7 @@ eval_cmp(const struct t_file *restrict file,
 }
 
 static bool
-eval_match(const struct t_file *restrict file,
+t_interpreter_eval_match(const struct t_file *restrict file,
         struct ast *restrict lhs, struct ast *restrict rhs, bool *_undef)
 {
     regex_t *r;

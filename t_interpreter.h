@@ -13,7 +13,7 @@
 
 
 _t__nonnull(1) _t__nonnull(2)
-bool ast_eval(const struct t_file *restrict file,
+bool t_interpreter_eval_ast(const struct t_file *restrict file,
         const struct ast *restrict filter);
 
 #endif /* not T_INTERPRETER_H */

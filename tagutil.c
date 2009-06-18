@@ -468,7 +468,7 @@ tagutil_filter(const struct t_file *restrict file,
     assert_not_null(file);
     assert_not_null(ast);
 
-    ret = ast_eval(file, ast);
+    ret = t_interpreter_eval_ast(file, ast);
 
     if (ret)
         (void)printf("%s\n", file->path);
