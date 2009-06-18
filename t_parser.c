@@ -137,7 +137,7 @@ t_parse_filter(struct t_lexer *restrict L)
     }
     freex(t);
 
-    freex(L);
+    t_lexer_destroy(L);
     return (ret);
 }
 

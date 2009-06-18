@@ -36,6 +36,16 @@ t_lexer_new(const char *restrict source)
 }
 
 
+void
+t_lexer_destroy(const t_lexer *restrict L)
+{
+
+    assert_not_null(L);
+
+    t_lexer_destroy(L);
+}
+
+
 char
 t_lexc(struct t_lexer *restrict L)
 {
@@ -622,7 +632,7 @@ main(int argc, char *argv[])
         (void)printf(" ");
         freex(t);
     }
-    freex(L);
+    t_lexer_destroy(L);
 
     return (0);
 }

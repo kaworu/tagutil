@@ -185,7 +185,6 @@ t_ftgeneric_add(struct t_file *restrict self, const struct t_taglist *restrict T
 {
     struct t_ftgeneric_data *d;
     unsigned int uintval;
-    char *endptr;
     struct t_tag  *t;
     struct t_tagv *v;
     bool strfunc;

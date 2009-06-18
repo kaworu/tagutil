@@ -110,7 +110,7 @@ t_rename_parse(const char *restrict pattern)
     L = t_lexer_new(pattern);
     (void)t_rename_lex_next_token(L);
     assert(L->current->kind == T_START);
-    freex(L->current);
+    t_lexer_destroy(L->current);
 
     count = 0;
     len   = 16;
@@ -119,7 +119,7 @@ t_rename_parse(const char *restrict pattern)
     done = false;
     while (!done) {
         if (t_rename_lex_next_token(L)->kind == T_END) {
-            freex(L->current);
+            t_lexer_destroy(L->current);
             done = true;
         }
         else {
@@ -131,7 +131,7 @@ t_rename_parse(const char *restrict pattern)
             ret[count++] = L->current;
         }
     }
-    freex(L);
+    t_lexer_destroy(L);
 
     ret[count] = NULL;
     return (ret);
