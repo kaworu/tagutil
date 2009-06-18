@@ -12,7 +12,7 @@
 
 
 /*
- * create a token array usable for rename_eval() from given pattern.
+ * create a token array usable for t_rename_eval() from given pattern.
  * the array is NULL terminated.
  *
  * The tag keys in pattern must look like shell variables (i.e. %artist or/and
@@ -23,7 +23,7 @@
  * return value and all its elements has to be free()d.
  */
 _t__nonnull(1)
-struct t_token ** rename_parse(const char *restrict pattern);
+struct t_token ** t_rename_parse(const char *restrict pattern);
 
 /*
  * eval the given token array in the context of given t_file.
@@ -34,7 +34,7 @@ struct t_token ** rename_parse(const char *restrict pattern);
  * returned value has to be free()d.
  */
 _t__nonnull(1) _t__nonnull(2)
-char * rename_eval(struct t_file *restrict file, struct t_token **restrict ts);
+char * t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts);
 
 /*
  * rename path to new_path.
@@ -43,7 +43,7 @@ char * rename_eval(struct t_file *restrict file, struct t_token **restrict ts);
  * return true otherwise.
  */
 _t__nonnull(1) _t__nonnull(2)
-bool rename_safe(const char *restrict oldpath, const char *restrict newpath,
+bool t_rename_safe(const char *restrict oldpath, const char *restrict newpath,
         struct t_error *restrict e);
 
 #endif /* not T_RENAMER_H */

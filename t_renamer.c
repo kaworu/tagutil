@@ -27,7 +27,7 @@ extern bool dflag;
  * TODO
  */
 _t__nonnull(1)
-struct t_token * rename_t_lex_next_token(struct t_lexer *restrict L);
+struct t_token * t_rename_lex_next_token(struct t_lexer *restrict L);
 
 /* taken from mkdir(3) */
 _t__nonnull(1)
@@ -35,7 +35,7 @@ static int build(char *path, mode_t omode);
 
 
 bool
-rename_safe(const char *restrict oldpath,
+t_rename_safe(const char *restrict oldpath,
         const char *restrict newpath, struct t_error *restrict e)
 {
     bool failed = false;
@@ -67,7 +67,7 @@ rename_safe(const char *restrict oldpath,
         }
         if (stat(newdirn, &st) != 0) {
             if (errno == ENOENT)
-                warnx("rename_safe: forgot -d?");
+                warnx("t_rename_safe: forgot -d?");
             failed = true;
         }
         else if (!S_ISDIR(st.st_mode)) {
@@ -98,7 +98,7 @@ rename_safe(const char *restrict oldpath,
 
 
 struct t_token **
-rename_parse(const char *restrict pattern)
+t_rename_parse(const char *restrict pattern)
 {
     bool done;
     struct t_lexer *L;
@@ -108,7 +108,7 @@ rename_parse(const char *restrict pattern)
     assert_not_null(pattern);
 
     L = t_lexer_new(pattern);
-    (void)rename_t_lex_next_token(L);
+    (void)t_rename_lex_next_token(L);
     assert(L->current->kind == T_START);
     freex(L->current);
 
@@ -118,7 +118,7 @@ rename_parse(const char *restrict pattern)
 
     done = false;
     while (!done) {
-        if (rename_t_lex_next_token(L)->kind == T_END) {
+        if (t_rename_lex_next_token(L)->kind == T_END) {
             freex(L->current);
             done = true;
         }
@@ -139,7 +139,7 @@ rename_parse(const char *restrict pattern)
 
 
 struct t_token *
-rename_t_lex_next_token(struct t_lexer *restrict L)
+t_rename_lex_next_token(struct t_lexer *restrict L)
 {
     int skip, i;
     bool done;
@@ -215,7 +215,7 @@ rename_t_lex_next_token(struct t_lexer *restrict L)
 
 
 char *
-rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
+t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
 {
     const struct t_token *tkn;
     struct t_strbuffer *sb, *sbv;
@@ -284,7 +284,7 @@ rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
 
     ret = NULL;
     if (sb->len > MAXPATHLEN)
-        t_error_set(file, "rename_eval result is too long (>MAXPATHLEN)");
+        t_error_set(file, "t_rename_eval result is too long (>MAXPATHLEN)");
     else
         ret = t_strbuffer_get(sb);
 

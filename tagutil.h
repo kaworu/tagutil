@@ -64,7 +64,7 @@ bool tagutil_edit(struct t_file *restrict file);
  * rename the file.
  *
  * the pattern tknary is the result of the pattern string compiled by
- * rename_parse().
+ * t_rename_parse().
  */
 _t__nonnull(1) _t__nonnull(2)
 bool tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary);

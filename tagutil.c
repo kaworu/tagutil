@@ -107,7 +107,7 @@ main(int argc, char *argv[])
             rflag = true;
             if (strempty(optarg))
                 errx(EINVAL, "empty rename pattern");
-            r_arg = rename_parse(optarg);
+            r_arg = t_rename_parse(optarg);
             break;
         case 'x':
             if (xflag)
@@ -424,7 +424,7 @@ tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
         return (false);
     }
     ext++; /* skip dot */
-    fname = rename_eval(file, tknary);
+    fname = t_rename_eval(file, tknary);
     if (fname == NULL) {
         warnx("%s", t_error_msg(file));
         return (false);
@@ -447,7 +447,7 @@ tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
         (void)xasprintf(&question, "rename `%s' to `%s'", file->path, result);
         if (yesno(question)) {
             e = t_error_new();
-            if (!rename_safe(file->path, result, e))
+            if (!t_rename_safe(file->path, result, e))
                 err(errno, "%s", t_error_msg(e));
             t_error_destroy(e);
         }
