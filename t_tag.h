@@ -15,29 +15,29 @@
 
 
 /* tag value */
-struct ttagv {
+struct t_tagv {
     size_t vlen;
     const char *value;
-    TAILQ_ENTRY(ttagv) next;
+    TAILQ_ENTRY(t_tagv) next;
 };
-TAILQ_HEAD(ttagv_q, ttagv);
+TAILQ_HEAD(t_tagv_q, t_tagv);
 
 /* tag key/values */
-struct ttag {
+struct t_tag {
     size_t keylen, vcount;
     const char *key;
-    struct ttagv_q *values;
-    TAILQ_ENTRY(ttag) next;
+    struct t_tagv_q *values;
+    TAILQ_ENTRY(t_tag) next;
 };
-TAILQ_HEAD(ttag_q, ttag);
+TAILQ_HEAD(t_tag_q, t_tag);
 
 
 /*
- * return the ttagv value at index idx.
+ * return the t_tagv value at index idx.
  * if idx >= t->vcount (i.e. idx is a bad index) NULL is returned.
  */
 _t__unused _t__nonnull(1)
-static inline struct ttagv * ttag_value_by_idx(struct ttag *restrict t,
+static inline struct t_tagv * t_tag_value_by_idx(struct t_tag *restrict t,
         size_t idx);
 
 
@@ -48,51 +48,51 @@ static inline struct ttagv * ttag_value_by_idx(struct ttag *restrict t,
  * errors macros defined in t_toolkit.h can (and should) be used on this
  * structure.
  */
-struct tag_list {
+struct t_taglist {
     size_t tcount;
-    struct ttag_q *tags;
+    struct t_tag_q *tags;
 
     ERROR_MSG_MEMBER;
 };
 
 
 /*
- * create a new tag_list.
- * returned value has to be free()d (see destroy_tag_list()).
+ * create a new t_taglist.
+ * returned value has to be free()d (see t_taglist_destroy()).
  */
-struct tag_list * new_tag_list(void);
+struct t_taglist * t_taglist_new(void);
 
 /*
  * insert a new key/value in T.
- * value can be NULL (for example, if you need to use the tag_list for a
+ * value can be NULL (for example, if you need to use the t_taglist for a
  * clear() call).
  */
 _t__nonnull(1) _t__nonnull(2)
-void tag_list_insert(struct tag_list *restrict T,
+void t_taglist_insert(struct t_taglist *restrict T,
         const char *restrict key, const char *restrict value);
 
 /*
- * find a ttag in T matching given key.
+ * find a t_tag in T matching given key.
  *
- * return the matching ttag if found, or NULL otherwhise.
+ * return the matching t_tag if found, or NULL otherwhise.
  */
 _t__nonnull(1) _t__nonnull(2)
-struct ttag * tag_list_search(const struct tag_list *restrict T,
+struct t_tag * t_taglist_search(const struct t_taglist *restrict T,
         const char *restrict key);
 
 
 /*
- * free the tag_list structure and all the ttag/ttagv.
+ * free the t_taglist structure and all the t_tag/t_tagv.
  */
 _t__nonnull(1)
-void destroy_tag_list(const struct tag_list *T);
+void t_taglist_destroy(const struct t_taglist *T);
 
 /********************************************************************************/
 
-static inline struct ttagv *
-ttag_value_by_idx(struct ttag *restrict t, size_t idx)
+static inline struct t_tagv *
+t_tag_value_by_idx(struct t_tag *restrict t, size_t idx)
 {
-    struct ttagv *ret = NULL;
+    struct t_tagv *ret = NULL;
 
     assert_not_null(t);
 

@@ -219,9 +219,9 @@ t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
 {
     const struct t_token *tkn;
     struct t_strbuffer *sb, *sbv;
-    struct tag_list *T;
-    struct ttag  *t;
-    struct ttagv *v;
+    struct t_taglist *T;
+    struct t_tag  *t;
+    struct t_tagv *v;
     char *ret, *s;
     size_t len;
     int i;
@@ -251,7 +251,7 @@ t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
                     sbv = t_strbuffer_new();
                     TAILQ_FOREACH(v, t->values, next) {
                         t_strbuffer_add(sbv, xstrdup(v->value), v->vlen);
-                        if (v != TAILQ_LAST(t->values, ttagv_q))
+                        if (v != TAILQ_LAST(t->values, t_tagv_q))
                             t_strbuffer_add(sbv, xstrdup(" - "), 3);
                     }
                     s = t_strbuffer_get(sbv);
@@ -263,14 +263,14 @@ t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
                  * requested one tag, or all but there is only one avaiable.
                  */
                     i = tkn->tindex == -1 ? 0 : tkn->tindex;
-                    v = ttag_value_by_idx(t, i);
+                    v = t_tag_value_by_idx(t, i);
                     if (v) {
                         s = xstrdup(v->value);
                         len = v->vlen;
                     }
                 }
             }
-            destroy_tag_list(T);
+            t_taglist_destroy(T);
         }
         if (s == NULL) {
             s = xstrdup(tkn->value.str);

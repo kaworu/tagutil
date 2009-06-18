@@ -24,12 +24,12 @@ char * tags_to_yaml(struct t_file *restrict file);
  * read a yaml file.
  *
  * On error t_error_msg(file) contains an error message and NULL is
- * returned. Otherwhise the loaded tag_list is returned.
+ * returned. Otherwhise the loaded t_taglist is returned.
  *
- * returned value has to be free()d (see destroy_tag_list()).
+ * returned value has to be free()d (see t_taglist_destroy()).
  */
 _t__nonnull(1) _t__nonnull(2)
-struct tag_list * yaml_to_tags(struct t_file *restrict file,
+struct t_taglist * yaml_to_tags(struct t_file *restrict file,
         FILE *restrict stream);
 
 #endif /* not T_YAML_H */

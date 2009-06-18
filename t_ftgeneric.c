@@ -27,12 +27,12 @@ _t__nonnull(1)
 bool t_ftgeneric_save(struct t_file *restrict self);
 
 _t__nonnull(1)
-struct tag_list * t_ftgeneric_get(struct t_file *restrict self,
+struct t_taglist * t_ftgeneric_get(struct t_file *restrict self,
         const char *restrict key);
 _t__nonnull(1)
-bool t_ftgeneric_clear(struct t_file *restrict self, const struct tag_list *restrict T);
+bool t_ftgeneric_clear(struct t_file *restrict self, const struct t_taglist *restrict T);
 _t__nonnull(1) _t__nonnull(2)
-bool t_ftgeneric_add(struct t_file *restrict self, const struct tag_list *restrict T);
+bool t_ftgeneric_add(struct t_file *restrict self, const struct t_taglist *restrict T);
 
 
 void
@@ -71,13 +71,13 @@ t_ftgeneric_save(struct t_file *restrict self)
 static const char * _taglibkeys[] = {
     "album", "artist", "comment", "date", "genre", "title", "tracknumber"
 };
-struct tag_list *
+struct t_taglist *
 t_ftgeneric_get(struct t_file *restrict self, const char *restrict key)
 {
     int i;
     unsigned int uintval;
     struct t_ftgeneric_data *d;
-    struct tag_list *T;
+    struct t_taglist *T;
     char *value;
 
     assert_not_null(self);
@@ -85,7 +85,7 @@ t_ftgeneric_get(struct t_file *restrict self, const char *restrict key)
     t_error_clear(self);
 
     d = self->data;
-    T = new_tag_list();
+    T = t_taglist_new();
 
     for (i = 0; i < 7; i++) {
         if (key) {
@@ -125,7 +125,7 @@ t_ftgeneric_get(struct t_file *restrict self, const char *restrict key)
             freex(value);
 
         if (value) {
-            tag_list_insert(T, _taglibkeys[i], value);
+            t_taglist_insert(T, _taglibkeys[i], value);
             freex(value);
         }
         if (key)
@@ -137,7 +137,7 @@ t_ftgeneric_get(struct t_file *restrict self, const char *restrict key)
 
 
 bool
-t_ftgeneric_clear(struct t_file *restrict self, const struct tag_list *restrict T)
+t_ftgeneric_clear(struct t_file *restrict self, const struct t_taglist *restrict T)
 {
     int i;
     struct t_ftgeneric_data *d;
@@ -149,7 +149,7 @@ t_ftgeneric_clear(struct t_file *restrict self, const struct tag_list *restrict 
     d = self->data;
 
     for (i = 0; i < 7; i++) {
-        if (T && tag_list_search(T, _taglibkeys[i]) == NULL)
+        if (T && t_taglist_search(T, _taglibkeys[i]) == NULL)
             continue;
         switch (i) {
         case 0:
@@ -181,13 +181,13 @@ t_ftgeneric_clear(struct t_file *restrict self, const struct tag_list *restrict 
 
 
 bool
-t_ftgeneric_add(struct t_file *restrict self, const struct tag_list *restrict T)
+t_ftgeneric_add(struct t_file *restrict self, const struct t_taglist *restrict T)
 {
     struct t_ftgeneric_data *d;
     unsigned int uintval;
     char *endptr;
-    struct ttag  *t;
-    struct ttagv *v;
+    struct t_tag  *t;
+    struct t_tagv *v;
     bool strfunc;
     void (*strf)(TagLib_Tag *, const char *);
     void (*uif)(TagLib_Tag *, unsigned int);

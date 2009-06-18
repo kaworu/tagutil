@@ -30,9 +30,9 @@ tags_to_yaml(struct t_file *restrict file)
     struct t_strbuffer *sb;
     char *head, *ret;
     size_t headlen;
-    struct tag_list *T;
-    struct ttag  *t;
-    struct ttagv *v;
+    struct t_taglist *T;
+    struct t_tag  *t;
+    struct t_tagv *v;
 
     assert_not_null(file);
 
@@ -91,7 +91,7 @@ tags_to_yaml(struct t_file *restrict file)
             goto emitter_error;
         }
     }
-    destroy_tag_list(T);
+    t_taglist_destroy(T);
 
     /* Create and emit the MAPPING-END event. */
     if (!yaml_mapping_end_event_initialize(&event))
@@ -126,10 +126,10 @@ emitter_error:
 }
 
 
-struct tag_list *
+struct t_taglist *
 yaml_to_tags(struct t_file *restrict file, FILE *restrict stream)
 {
-    struct tag_list *T;
+    struct t_taglist *T;
     yaml_parser_t parser;
     yaml_event_t event;
     bool stop = false;
@@ -139,7 +139,7 @@ yaml_to_tags(struct t_file *restrict file, FILE *restrict stream)
     assert_not_null(stream);
     assert_not_null(file);
 
-    T = new_tag_list();
+    T = t_taglist_new();
 
     if (!yaml_parser_initialize(&parser))
         goto parser_error;
@@ -211,7 +211,7 @@ yaml_to_tags(struct t_file *restrict file, FILE *restrict stream)
                 value = xcalloc(event.data.scalar.length + 1, sizeof(char));
                 memcpy(value, event.data.scalar.value,
                         event.data.scalar.length);
-                tag_list_insert(T, key, value);
+                t_taglist_insert(T, key, value);
                 freex(key);
                 freex(value);
             }

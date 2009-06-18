@@ -53,9 +53,9 @@ struct t_file {
      * On error, NULL is returned and t_error_msg(self) contains an error
      * message, otherwise t_error_msg(self) is NULL.
      *
-     * returned value has to be free()d (use destroy_tag_list()).
+     * returned value has to be free()d (use t_taglist_destroy()).
      */
-    struct tag_list * (*get)(struct t_file *restrict self,
+    struct t_taglist * (*get)(struct t_file *restrict self,
             const char *restrict key);
 
     /*
@@ -66,15 +66,15 @@ struct t_file {
      * On success true is returned, otherwise false is returned and
      * t_error_msg(self) contains an error message.
      */
-    bool (*clear)(struct t_file *restrict self, const struct tag_list *restrict T);
+    bool (*clear)(struct t_file *restrict self, const struct t_taglist *restrict T);
 
     /*
-     * add the tags of given tag_list in self.
+     * add the tags of given t_taglist in self.
      *
      * On success true is returned, otherwise false is returned and
      * t_error_msg(self) contains an error message.
      */
-    bool (*add)(struct t_file *restrict self, const struct tag_list *restrict T);
+    bool (*add)(struct t_file *restrict self, const struct t_taglist *restrict T);
 
 
     ERROR_MSG_MEMBER;

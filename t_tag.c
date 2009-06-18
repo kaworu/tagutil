@@ -8,13 +8,13 @@
 #include "t_tag.h"
 
 
-struct tag_list *
-new_tag_list(void)
+struct t_taglist *
+t_taglist_new(void)
 {
-    struct tag_list *ret;
+    struct t_taglist *ret;
 
-    ret = xmalloc(sizeof(struct tag_list) + sizeof(struct ttag_q));
-    ret->tags = (struct ttag_q *)(ret + 1);
+    ret = xmalloc(sizeof(struct t_taglist) + sizeof(struct t_tag_q));
+    ret->tags = (struct t_tag_q *)(ret + 1);
     ret->tcount = 0;
     t_error_init(ret);
     TAILQ_INIT(ret->tags);
@@ -24,14 +24,14 @@ new_tag_list(void)
 
 
 void
-tag_list_insert(struct tag_list *restrict T,
+t_taglist_insert(struct t_taglist *restrict T,
         const char *restrict key, const char *restrict value)
 {
     size_t len;
     ssize_t vlen;
     char *s;
-    struct ttag  *t, *kinq;
-    struct ttagv *v;
+    struct t_tag  *t, *kinq;
+    struct t_tagv *v;
 
     assert_not_null(key);
     assert_not_null(T);
@@ -39,7 +39,7 @@ tag_list_insert(struct tag_list *restrict T,
     /* create v if needed */
     if (value) {
         vlen = strlen(value);
-        v = xmalloc(sizeof(struct ttagv) + vlen + 1);
+        v = xmalloc(sizeof(struct t_tagv) + vlen + 1);
         v->vlen = vlen;
         s = (char *)(v + 1);
         (void)strlcpy(s, value, vlen + 1);
@@ -48,10 +48,10 @@ tag_list_insert(struct tag_list *restrict T,
     else
         v = NULL;
 
-    /* look if a ttag matching key already exist */
+    /* look if a t_tag matching key already exist */
     len = strlen(key);
     kinq = NULL;
-    TAILQ_FOREACH_REVERSE(t, T->tags, ttag_q, next) {
+    TAILQ_FOREACH_REVERSE(t, T->tags, t_tag_q, next) {
         if (t->keylen == len && strcasecmp(key, t->key) == 0) {
             kinq = t;
             break;
@@ -59,12 +59,12 @@ tag_list_insert(struct tag_list *restrict T,
     }
 
     if (kinq == NULL) {
-    /* doesn't exist, create a new ttag (delete) */
-        kinq = xmalloc(sizeof(struct ttag) + sizeof(struct ttagv_q) + len + 1);
+    /* doesn't exist, create a new t_tag (delete) */
+        kinq = xmalloc(sizeof(struct t_tag) + sizeof(struct t_tagv_q) + len + 1);
         TAILQ_INSERT_TAIL(T->tags, kinq, next);
         T->tcount++;
 
-        kinq->values = (struct ttagv_q *)(kinq + 1);
+        kinq->values = (struct t_tagv_q *)(kinq + 1);
         TAILQ_INIT(kinq->values);
         kinq->vcount = 0;
 
@@ -82,11 +82,11 @@ tag_list_insert(struct tag_list *restrict T,
 }
 
 
-struct ttag *
-tag_list_search(const struct tag_list *restrict T, const char *restrict key)
+struct t_tag *
+t_taglist_search(const struct t_taglist *restrict T, const char *restrict key)
 {
     size_t len;
-    struct ttag  *t, *target;
+    struct t_tag  *t, *target;
 
     assert_not_null(T);
     assert_not_null(key);
@@ -105,13 +105,13 @@ tag_list_search(const struct tag_list *restrict T, const char *restrict key)
 
 
 void
-destroy_tag_list(const struct tag_list *Tconst)
+t_taglist_destroy(const struct t_taglist *Tconst)
 {
-    struct ttag  *t;
-    struct ttagv *v;
-    struct tag_list *T;
+    struct t_tag  *t;
+    struct t_tagv *v;
+    struct t_taglist *T;
 
-    T = (struct tag_list *)Tconst; /* break const */
+    T = (struct t_taglist *)Tconst; /* break const */
 
     assert_not_null(T);
 

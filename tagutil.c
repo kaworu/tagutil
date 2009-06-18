@@ -72,7 +72,7 @@ bool fflag = false;  /* load file */
 char *f_arg = NULL; /* file */
 struct t_token **r_arg = NULL; /* rename pattern (compiled) */
 struct t_ast *x_arg = NULL; /* filter code */
-struct tag_list *s_arg = NULL; /* key=val tags */
+struct t_taglist *s_arg = NULL; /* key=val tags */
 
 
 /*
@@ -118,7 +118,7 @@ main(int argc, char *argv[])
         case 's':
             sflag = true;
             if (s_arg == NULL)
-                s_arg = new_tag_list();
+                s_arg = t_taglist_new();
             set_key = optarg;
             set_value = strchr(set_key, '=');
             if (set_value == NULL)
@@ -128,7 +128,7 @@ main(int argc, char *argv[])
             if (strempty(set_value))
             /* don't allow to set a key to "" we destroy it instead */
                 set_value = NULL;
-            tag_list_insert(s_arg, set_key, set_value);
+            t_taglist_insert(s_arg, set_key, set_value);
             break;
         case 'd':
             dflag = true;
@@ -225,7 +225,7 @@ main(int argc, char *argv[])
     if (xflag)
         t_ast_destroy(x_arg);
     if (sflag)
-        destroy_tag_list(s_arg);
+        t_taglist_destroy(s_arg);
     if (rflag) {
         for (i = 0; r_arg[i]; i++)
             freex(r_arg[i]);
@@ -335,7 +335,7 @@ tagutil_load(struct t_file *restrict file, const char *restrict path)
 {
     FILE *stream;
     bool ret = true;
-    struct tag_list *T;
+    struct t_taglist *T;
 
     assert_not_null(file);
     assert_not_null(path);
@@ -361,7 +361,7 @@ tagutil_load(struct t_file *restrict file, const char *restrict path)
     }
     if (stream != stdin)
         xfclose(stream);
-    destroy_tag_list(T);
+    t_taglist_destroy(T);
 
     return (ret);
 }
