@@ -20,16 +20,16 @@
 
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
 static double t_interpreter_eval_cmp(const struct t_file *restrict file,
-        struct ast *restrict lhs, struct ast *restrict rhs, bool *undef);
+        struct t_ast *restrict lhs, struct t_ast *restrict rhs, bool *undef);
 
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
 static bool t_interpreter_eval_match(const struct t_file *restrict file,
-        struct ast *restrict lhs, struct ast *restrict rhs, bool *undef);
+        struct t_ast *restrict lhs, struct t_ast *restrict rhs, bool *undef);
 
 
 bool
 t_interpreter_eval_ast(const struct t_file *restrict file,
-        const struct ast *restrict filter)
+        const struct t_ast *restrict filter)
 {
     bool ret, undef;
 
@@ -91,7 +91,7 @@ t_interpreter_eval_ast(const struct t_file *restrict file,
 
 static double
 t_interpreter_eval_cmp(const struct t_file *restrict file,
-        struct ast *restrict lhs, struct ast *restrict rhs, bool *_undef)
+        struct t_ast *restrict lhs, struct t_ast *restrict rhs, bool *_undef)
 {
     const char *s, *l, *r;
     char *_s, *_l, *_r; /* not const, can be free()d */
@@ -191,7 +191,7 @@ t_interpreter_eval_cmp(const struct t_file *restrict file,
 
 static bool
 t_interpreter_eval_match(const struct t_file *restrict file,
-        struct ast *restrict lhs, struct ast *restrict rhs, bool *_undef)
+        struct t_ast *restrict lhs, struct t_ast *restrict rhs, bool *_undef)
 {
     regex_t *r;
     int error;
@@ -199,7 +199,7 @@ t_interpreter_eval_match(const struct t_file *restrict file,
     const char *s;
     char *_s = NULL;
     char *errmsg;
-    struct ast *regast, *strast;
+    struct t_ast *regast, *strast;
 
     assert_not_null(file);
     assert_not_null(rhs);

@@ -74,6 +74,6 @@ bool tagutil_rename(struct t_file *restrict file, struct t_token **restrict tkna
  */
 _t__nonnull(1) _t__nonnull(2)
 bool tagutil_filter(const struct t_file *restrict file,
-        const struct ast *restrict ast);
+        const struct t_ast *restrict ast);
 
 #endif /* not T_TAGUTIL_H */

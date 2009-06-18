@@ -71,7 +71,7 @@ bool fflag = false;  /* load file */
 
 char *f_arg = NULL; /* file */
 struct t_token **r_arg = NULL; /* rename pattern (compiled) */
-struct ast *x_arg = NULL; /* filter code */
+struct t_ast *x_arg = NULL; /* filter code */
 struct tag_list *s_arg = NULL; /* key=val tags */
 
 
@@ -113,7 +113,7 @@ main(int argc, char *argv[])
             if (xflag)
                 errx(EINVAL, "-x option set twice");
             xflag = true;
-            x_arg = parse_filter(t_lexer_new(optarg));
+            x_arg = t_parse_filter(t_lexer_new(optarg));
             break;
         case 's':
             sflag = true;
@@ -223,7 +223,7 @@ main(int argc, char *argv[])
     }
 
     if (xflag)
-        destroy_ast(x_arg);
+        t_ast_destroy(x_arg);
     if (sflag)
         destroy_tag_list(s_arg);
     if (rflag) {
@@ -461,7 +461,7 @@ tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
 
 bool
 tagutil_filter(const struct t_file *restrict file,
-        const struct ast *restrict ast)
+        const struct t_ast *restrict ast)
 {
     bool ret;
 

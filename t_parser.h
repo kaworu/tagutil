@@ -31,9 +31,9 @@
 #include "t_lexer.h"
 
 
-struct ast {
+struct t_ast {
     int start, end;
-    struct ast *lhs, *rhs;
+    struct t_ast *lhs, *rhs;
     struct t_token *token;
 };
 
@@ -41,15 +41,15 @@ struct ast {
 /*
  * free given ast recursivly (victim can be NULL).
  */
-void destroy_ast(struct ast *restrict victim);
+void t_ast_destroy(struct t_ast *restrict victim);
 
 /*
  * parse the filter with the given lexer.
  * free the given lexer after parsing.
  *
- * returned value has to be free()d (use destroy_ast).
+ * returned value has to be free()d (use t_ast_destroy).
  */
 _t__nonnull(1)
-struct ast * parse_filter(struct t_lexer *restrict L);
+struct t_ast * t_parse_filter(struct t_lexer *restrict L);
 
 #endif /* not T_PARSER_H */
