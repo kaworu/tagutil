@@ -19,11 +19,11 @@
 #include "t_yaml.h"
 
 
-int yaml_write_handler(void *data, unsigned char *buffer, size_t size);
+int t_yaml_write_handler(void *data, unsigned char *buffer, size_t size);
 
 
 char *
-tags_to_yaml(struct t_file *restrict file)
+t_tags2yaml(struct t_file *restrict file)
 {
     yaml_emitter_t emitter;
     yaml_event_t event;
@@ -44,7 +44,7 @@ tags_to_yaml(struct t_file *restrict file)
     if (!yaml_emitter_initialize(&emitter))
         goto emitter_error;
 
-    yaml_emitter_set_output(&emitter, yaml_write_handler, sb);
+    yaml_emitter_set_output(&emitter, t_yaml_write_handler, sb);
     yaml_emitter_set_unicode(&emitter, 1);
 
     /* Create and emit the STREAM-START event. */
@@ -119,15 +119,15 @@ tags_to_yaml(struct t_file *restrict file)
     return (ret);
 
 event_error:
-    errx(errno = ENOMEM, "tags_to_yaml: can't init event");
+    errx(errno = ENOMEM, "t_tags2yaml: can't init event");
     /* NOTREACHED */
 emitter_error:
-    errx(-1, "tags_to_yaml: emit error");
+    errx(-1, "t_tags2yaml: emit error");
 }
 
 
 struct t_taglist *
-yaml_to_tags(struct t_file *restrict file, FILE *restrict stream)
+t_yaml2tags(struct t_file *restrict file, FILE *restrict stream)
 {
     struct t_taglist *T;
     yaml_parser_t parser;
@@ -229,17 +229,17 @@ yaml_to_tags(struct t_file *restrict file, FILE *restrict stream)
 parser_error:
     switch (parser.error) {
     case YAML_MEMORY_ERROR:
-        t_error_set(T, "yaml_to_tags: YAML Parser (ENOMEM)");
+        t_error_set(T, "t_yaml2tags: YAML Parser (ENOMEM)");
         break;
     case YAML_READER_ERROR:
         if (parser.problem_value != -1) {
-            t_error_set(T, "yaml_to_tags: Reader error: %s: #%X at %zu\n",
+            t_error_set(T, "t_yaml2tags: Reader error: %s: #%X at %zu\n",
                     parser.problem,
                     parser.problem_value,
                     parser.problem_offset);
         }
         else {
-            t_error_set(T, "yaml_to_tags: Reader error: %s at %zu\n",
+            t_error_set(T, "t_yaml2tags: Reader error: %s at %zu\n",
                     parser.problem,
                     parser.problem_offset);
         }
@@ -247,7 +247,7 @@ parser_error:
     case YAML_SCANNER_ERROR: /* FALLTHROUGH */
     case YAML_PARSER_ERROR:
         if (parser.context) {
-            t_error_set(T, "yaml_to_tags: %s error: %s at line %zu, column %zu\n"
+            t_error_set(T, "t_yaml2tags: %s error: %s at line %zu, column %zu\n"
                     "%s at line %zu, column %zu\n",
                     parser.error == YAML_SCANNER_ERROR ? "Scanner" : "Parser",
                     parser.context,
@@ -258,7 +258,7 @@ parser_error:
                     parser.problem_mark.column + 1);
         }
         else {
-            t_error_set(T, "yaml_to_tags: %s error: %s at line %zu, column %zu\n",
+            t_error_set(T, "t_yaml2tags: %s error: %s at line %zu, column %zu\n",
                     parser.error == YAML_SCANNER_ERROR ? "Scanner" : "Parser",
                     parser.problem,
                     parser.problem_mark.line + 1,
@@ -286,7 +286,7 @@ parser_error:
 
 
 int
-yaml_write_handler(void *data, unsigned char *buffer, size_t size)
+t_yaml_write_handler(void *data, unsigned char *buffer, size_t size)
 {
     bool error = false;
     struct t_strbuffer *sb;

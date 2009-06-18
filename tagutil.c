@@ -319,7 +319,7 @@ tagutil_print(struct t_file *restrict file)
 
     assert_not_null(file);
 
-    yaml = tags_to_yaml(file);
+    yaml = t_tags2yaml(file);
     if (yaml)
         (void)printf("%s\n", yaml);
     else
@@ -345,7 +345,7 @@ tagutil_load(struct t_file *restrict file, const char *restrict path)
     else
         stream = xfopen(path, "r");
 
-    T = yaml_to_tags(file, stream);
+    T = t_yaml2tags(file, stream);
     if (t_error_msg(T)) {
         ret = false;
         warnx("error while reading YAML: %s", t_error_msg(T));
@@ -376,7 +376,7 @@ tagutil_edit(struct t_file *restrict file)
 
     assert_not_null(file);
 
-    yaml = tags_to_yaml(file);
+    yaml = t_tags2yaml(file);
     if (yaml == NULL) {
         warnx("%s", t_error_msg(file));
         return (false);
