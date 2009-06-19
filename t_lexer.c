@@ -261,8 +261,7 @@ void
 t_lex_tagkey(struct t_lexer *restrict L, struct t_token **tptr,
         bool allow_star_modifier)
 {
-    bool has_idx;
-    int copyend, eqindex;
+    int copyend;
     struct t_token *t;
     unsigned int skip, i;
 
@@ -273,95 +272,110 @@ t_lex_tagkey(struct t_lexer *restrict L, struct t_token **tptr,
 
     t = *tptr;
     t->kind = T_TAGKEY;
-    t->str = "TAGKEY";
+    t->str  = "TAGKEY";
+    t->tidx = 0;
 
     if (t_lexc(L) == '{') {
     /* %{tag} */
         skip = 0;
-        while (t_lexc(L) != '\0' && L->c != '}' && L->c != '=') {
+        while (t_lexc(L) != '\0' && L->c != '}' && L->c != '[') {
             if (L->c == '\\') {
-                if (t_lexc(L) == '}')
+                (void)t_lexc(L);
+                if (t_lexc(L) == '}' || L->c == '{' || L->c == '[' || L->c == ']')
                     skip += 1;
             }
         }
-        if (L->c != '=')
-            has_idx = false;
-        else {
-        /* %{tag=idx} */
-            eqindex = L->cindex;
-            has_idx = true;
-            t->tidx = 0;
-            while (isdigit(t_lexc(L)))
-                t->tidx = 10 * t->tidx + digittoint(L->c);
-            if (L->cindex == eqindex + 1) {
-            /* could be * */
-                if (L->c == '*') {
-                    t->tidx_mod = T_TOKEN_STAR_NO_MOD;
-                    t->tidx = T_TOKEN_STAR;
-                    (void)t_lexc(L);
-                    if (L->c == '|' || L->c == '&') {
-                    /* wildchar modifier */
-                        if (!allow_star_modifier)
-                            t_lex_error(L, L->cindex, L->cindex, "star modifier not allowed");
-                        else if (L->c == '|')
-                            t->tidx_mod = T_TOKEN_STAR_OR_MOD;
-                        else
-                            t->tidx_mod = T_TOKEN_STAR_AND_MOD;
-                        (void)t_lexc(L);
-                    }
-                }
-            }
-            if (L->c && L->c != '}')
-                t_lex_error(L, eqindex + 1, L->cindex, "bad index request");
-        }
+        copyend = L->cindex;
+        if (L->c == '[') /* %{tag[idx]} */
+            t_lex_tagidx(L, t, allow_star_modifier);
         t->end = L->cindex;
         if (L->c != '}')
             t_lex_error(L, t->start, t->end, "unbalanced { for %s", t->str);
 
         /* do the copy */
-        copyend = has_idx ? eqindex : t->end;
         t->slen = copyend - t->start - 2 - skip;
         t = xrealloc(t, sizeof(struct t_token) + t->slen + 1);
         *tptr = t;
         t->value.str = (char *)(t + 1);
-        t_lexc_move_to(L, t->start + 1); /* move on { */
+        t_lexc_move_to(L, t->start + 2); /* move on first tagkeychar */
         i = 0;
-        while (t_lexc(L) != (has_idx ? '=' : '}')) {
+        while (L->cindex < copyend) {
             if (L->c == '\\') {
-                if (t_lexc(L) != '}') {
-                    /* rewind */
+                if (t_lexc(L) != '}' || L->c != '{' || L->c != '[' || L->c != ']') {
+                /* rewind */
                     t_lexc_move(L, -1);
                     assert(L->c == '\\');
                 }
             }
             t->value.str[i++] = L->c;
-        }
-        if (has_idx) {
-        /* eat idx digits */
-            while (t_lexc(L) != '}')
-                assert(L->c);
+            (void)t_lexc(L);
         }
         t->value.str[i] = '\0';
         assert(strlen(t->value.str) == t->slen);
-        (void)t_lexc(L);
+        t_lexc_move_to(L, t->end + 1);
     }
     else {
     /* %tag */
         while (isalnum(L->c) || L->c == '-' || L->c == '_')
             (void)t_lexc(L);
-        t->end = L->cindex - 1;
-        if (t->end == t->start) {
+        copyend = L->cindex - 1;
+        if (copyend == t->start) {
             t_lex_error(L, t->start, t->end,
                     "%% without tag (use %%{} for the empty tag)");
             /* NOTREACHED */
         }
-        t->slen = t->end - t->start;
+        if (L->c == '[')
+            t_lex_tagidx(L, t, allow_star_modifier);
+        t->end = L->cindex - 1;
+        t->slen = copyend - t->start;
         t = xrealloc(t, sizeof(struct t_token) + t->slen + 1);
         *tptr = t;
         t->value.str = (char *)(t + 1);
         memcpy(t->value.str, L->source + t->start + 1, t->slen);
         t->value.str[t->slen] = '\0';
     }
+}
+
+
+void
+t_lex_tagidx(struct t_lexer *restrict L, struct t_token *restrict t,
+        bool allow_star_modifier)
+{
+    int start;
+
+    assert_not_null(L);
+    assert_not_null(t);
+    assert(L->c == '[');
+
+    t->tidx = 0; /* just to be sure ;) */
+    start = L->cindex;
+
+    (void)t_lexc(L);
+    if (isdigit(L->c)) {
+        while (isdigit(L->c)) {
+            t->tidx = 10 * t->tidx + digittoint(L->c);
+            (void)t_lexc(L);
+        }
+    }
+    else if (L->c == '*') {
+        t->tidx = T_TOKEN_STAR;
+        t->tidx_mod = T_TOKEN_STAR_NO_MOD;
+        (void)t_lexc(L);
+        if (L->c == '|' || L->c == '&') {
+        /* wildchar modifier */
+            if (!allow_star_modifier)
+                t_lex_error(L, L->cindex, L->cindex, "star modifier not allowed");
+            else if (L->c == '|')
+                t->tidx_mod = T_TOKEN_STAR_OR_MOD;
+            else
+                t->tidx_mod = T_TOKEN_STAR_AND_MOD;
+            (void)t_lexc(L);
+        }
+    }
+
+    if (L->c != ']')
+        t_lex_error(L, start, L->cindex, "bad index request");
+    (void)t_lexc(L);
 }
 
 

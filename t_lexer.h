@@ -158,6 +158,14 @@ void t_lex_tagkey(struct t_lexer *restrict L, struct t_token **tptr,
 #define T_LEXER_ALLOW_STAR_MOD true
 
 /*
+ * helper for t_lex_tagkey.
+ * lex [idx] and leave L->cindex right after the closing ].
+ */
+_t__nonnull(1) _t__nonnull(2)
+void t_lex_tagidx(struct t_lexer *restrict L, struct t_token *restrict t,
+        bool allow_star_modifier);
+
+/*
  * output nicely lexer's error messages and die.
  */
 _t__nonnull(1) _t__dead2 _t__printflike(4, 5)
