@@ -18,10 +18,16 @@
 #include "t_interpreter.h"
 
 
+/*
+ * TODO
+ */
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
 static double t_interpreter_eval_cmp(const struct t_file *restrict file,
         struct t_ast *restrict lhs, struct t_ast *restrict rhs, bool *undef);
 
+/*
+ * TODO
+ */
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
 static bool t_interpreter_eval_match(const struct t_file *restrict file,
         struct t_ast *restrict lhs, struct t_ast *restrict rhs, bool *undef);
