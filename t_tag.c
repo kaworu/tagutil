@@ -5,7 +5,62 @@
  */
 #include "t_config.h"
 #include "t_toolkit.h"
+#include "t_error.h"
+#include "t_strbuffer.h"
 #include "t_tag.h"
+
+
+struct t_tagv *
+t_tag_value_by_idx(const struct t_tag *restrict t, size_t idx)
+{
+    struct t_tagv *ret = NULL;
+
+    assert_not_null(t);
+
+    if (idx < t->vcount) {
+        ret = TAILQ_FIRST(t->values);
+        while (idx--)
+            ret = TAILQ_NEXT(ret, next);
+    }
+
+    return (ret);
+}
+
+
+char *
+t_tag_join_values(const struct t_tag *restrict t, const char *restrict sep)
+{
+    size_t seplen;
+    char *ret;
+    struct t_tagv *v, *last;
+    struct t_strbuffer *sb;
+
+    assert_not_null(t);
+
+    switch (t->vcount) {
+    case 0:
+        ret = xcalloc(1, sizeof(char));
+        break;
+    case 1:
+        ret = xstrdup(TAILQ_FIRST(t->values)->value);
+        break;
+    default:
+        if (sep)
+            seplen = strlen(sep);
+        sb = t_strbuffer_new();
+        last = TAILQ_LAST(t->values, t_tagv_q);
+        TAILQ_FOREACH(v, t->values, next) {
+            t_strbuffer_add(sb, xstrdup(v->value), v->vlen);
+            if (sep && seplen > 0 && v != last)
+                t_strbuffer_add(sb, xstrdup(sep), seplen);
+        }
+        ret = t_strbuffer_get(sb);
+        t_strbuffer_destroy(sb);
+    }
+
+    return (ret);
+}
+
 
 
 struct t_taglist *

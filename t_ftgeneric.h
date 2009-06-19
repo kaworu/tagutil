@@ -18,7 +18,7 @@ struct t_file * t_ftgeneric_new(const char *restrict path);
 
 #else /* not WITH_TAGLIB */
 
-# define t_ftgeneric_init() (void)0
+# define t_ftgeneric_init() NOP
 # define t_ftgeneric_new(path) NULL
 
 #endif /* WITH_TAGLIB */

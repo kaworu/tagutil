@@ -23,7 +23,7 @@ enum t_tokenkind {
 
     /* binary op */
     T_EQ,
-    T_DIFF,
+    T_NE,
     T_MATCH,
     T_NMATCH,
     T_LT,

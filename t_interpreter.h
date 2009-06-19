@@ -13,10 +13,12 @@
 
 
 /*
- * TODO
+ * eval the given filter in the context of file.
+ *
+ * return true if file match the filter, false otherwise.
  */
 _t__nonnull(1) _t__nonnull(2)
-bool t_interpreter_eval_ast(const struct t_file *restrict file,
+bool t_interpreter_eval_ast(struct t_file *restrict file,
         const struct t_ast *restrict filter);
 
 #endif /* not T_INTERPRETER_H */

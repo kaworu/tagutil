@@ -372,6 +372,8 @@ t_lex_tagidx(struct t_lexer *restrict L, struct t_token *restrict t,
             (void)t_lexc(L);
         }
     }
+    else
+        t_lex_error(L, start, L->cindex, "bad index request");
 
     if (L->c != ']')
         t_lex_error(L, start, L->cindex, "bad index request");
@@ -415,8 +417,8 @@ t_lex_next_token(struct t_lexer *restrict L)
     case '!':
         switch (t_lexc(L)) {
         case '=':
-            t->kind = T_DIFF;
-            t->str  = "DIFF";
+            t->kind = T_NE;
+            t->str  = "NE";
             t->end  = L->cindex;
             (void)t_lexc(L);
             break;

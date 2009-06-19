@@ -10,7 +10,6 @@
 #include <stdbool.h>
 
 #include "t_config.h"
-#include "t_toolkit.h"
 #include "t_error.h"
 
 
@@ -37,8 +36,19 @@ TAILQ_HEAD(t_tag_q, t_tag);
  * if idx >= t->vcount (i.e. idx is a bad index) NULL is returned.
  */
 _t__unused _t__nonnull(1)
-static inline struct t_tagv * t_tag_value_by_idx(struct t_tag *restrict t,
-        size_t idx);
+struct t_tagv *
+t_tag_value_by_idx(const struct t_tag *restrict t, size_t idx);
+
+/*
+ * return a string with all values of t joined with s.
+ * if s is NULL, the function return the same string as if it has been called
+ * with s == "".
+ *
+ * returned value has to be free()d.
+ */
+_t__unused _t__nonnull(1)
+char * t_tag_join_values(const struct t_tag *restrict t,
+        const char *restrict sep);
 
 
 /*
@@ -87,21 +97,4 @@ struct t_tag * t_taglist_search(const struct t_taglist *restrict T,
 _t__nonnull(1)
 void t_taglist_destroy(const struct t_taglist *T);
 
-/********************************************************************************/
-
-static inline struct t_tagv *
-t_tag_value_by_idx(struct t_tag *restrict t, size_t idx)
-{
-    struct t_tagv *ret = NULL;
-
-    assert_not_null(t);
-
-    if (idx < t->vcount) {
-        ret = TAILQ_FIRST(t->values);
-        while (idx--)
-            ret = TAILQ_NEXT(ret, next);
-    }
-
-    return (ret);
-}
 #endif /* not T_TAG_H */

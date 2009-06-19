@@ -19,30 +19,70 @@
 
 
 /*
- * TODO
+ * compare arg to zero.
  */
-_t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-static double t_interpreter_eval_cmp(const struct t_file *restrict file,
-        struct t_ast *restrict lhs, struct t_ast *restrict rhs, bool *undef);
+typedef bool t_cmp_func(double);
+
+static t_cmp_func t_cmp_eq;
+static t_cmp_func t_cmp_ne;
+static t_cmp_func t_cmp_lt;
+static t_cmp_func t_cmp_le;
+static t_cmp_func t_cmp_gt;
+static t_cmp_func t_cmp_ge;
 
 /*
- * TODO
+ * return the invert function (if you switch rhs and lhs, you might need to
+ * change the operator).
+ */
+_t__nonnull(1)
+t_cmp_func * t_invert(t_cmp_func *f);
+
+/*
+ * eval a comparison between lhs and rhs.
+ */
+_t__nonnull(1) _t__nonnull(2) _t__nonnull(3) _t__nonnull(4)
+static bool t_interpreter_eval_cmp(struct t_file *restrict file,
+        const struct t_ast *restrict lhs, const struct t_ast *restrict rhs,
+        t_cmp_func *f);
+
+_t__nonnull(1) _t__nonnull(3) _t__nonnull(4)
+static bool t_interpreter_eval_int_cmp(struct t_file *restrict file,
+        int i, const struct t_ast *restrict rhs, t_cmp_func *f);
+
+_t__nonnull(1) _t__nonnull(3) _t__nonnull(4)
+static bool t_interpreter_eval_double_cmp(struct t_file *restrict file,
+        double d, const struct t_ast *restrict rhs, t_cmp_func *f);
+
+_t__nonnull(1) _t__nonnull(2) _t__nonnull(3) _t__nonnull(4)
+static bool t_interpreter_eval_str_cmp(struct t_file *restrict file,
+        const char *restrict str, const struct t_ast *restrict rhs,
+        t_cmp_func *f);
+
+_t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
+static bool t_interpreter_eval_undef_cmp(struct t_file *restrict file,
+        const struct t_ast *restrict rhs, t_cmp_func *f);
+
+/*
+ * eval a regex match.
  */
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-static bool t_interpreter_eval_match(const struct t_file *restrict file,
-        struct t_ast *restrict lhs, struct t_ast *restrict rhs, bool *undef);
+static bool t_interpreter_eval_match(struct t_file *restrict file,
+        const struct t_ast *restrict lhs, const struct t_ast *restrict rhs);
+
+_t__nonnull(1) _t__nonnull(2)
+static inline bool t_interpreter_regexec(const regex_t *r, const char *s);
 
 
 bool
-t_interpreter_eval_ast(const struct t_file *restrict file,
+t_interpreter_eval_ast(struct t_file *restrict file,
         const struct t_ast *restrict filter)
 {
-    bool ret, undef;
+    t_cmp_func *f;
+    bool ret;
 
     assert_not_null(file);
     assert_not_null(filter);
 
-    undef = false;
     switch (filter->token->kind) {
     case T_NOT:
         ret = !(t_interpreter_eval_ast(file, filter->rhs));
@@ -57,29 +97,28 @@ t_interpreter_eval_ast(const struct t_file *restrict file,
         if (!ret)
             ret = t_interpreter_eval_ast(file, filter->rhs);
         break;
-    case T_EQ:
-        ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) == 0);
-        break;
-    case T_DIFF:
-        ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) != 0);
-        break;
-    case T_LT:
-        ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) <  0);
-        break;
-    case T_LE:
-        ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) <= 0);
-        break;
-    case T_GT:
-        ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) >  0);
-        break;
+    case T_EQ: /* FALLTHROUGH */
+    case T_NE: /* FALLTHROUGH */
+    case T_LT: /* FALLTHROUGH */
+    case T_LE: /* FALLTHROUGH */
+    case T_GT: /* FALLTHROUGH */
     case T_GE:
-        ret = (t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, &undef) >= 0);
+        switch (filter->token->kind) {
+        case T_EQ: f = t_cmp_eq; break;
+        case T_NE: f = t_cmp_ne; break;
+        case T_LT: f = t_cmp_lt; break;
+        case T_LE: f = t_cmp_le; break;
+        case T_GT: f = t_cmp_gt; break;
+        case T_GE: f = t_cmp_ge; break;
+        default: /* NOTREACHED */ assert_fail();
+        }
+        ret = t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, f);
         break;
     case T_MATCH:
-        ret = t_interpreter_eval_match(file, filter->lhs, filter->rhs, &undef);
+        ret = t_interpreter_eval_match(file, filter->lhs, filter->rhs);
         break;
     case T_NMATCH:
-        ret = !t_interpreter_eval_match(file, filter->lhs, filter->rhs, &undef);
+        ret = !t_interpreter_eval_match(file, filter->lhs, filter->rhs);
         break;
     default:
         (void)fprintf(stderr, "***internal interpreter error*** "
@@ -88,101 +127,93 @@ t_interpreter_eval_ast(const struct t_file *restrict file,
         /* NOTREACHED */
     }
 
-    if (undef)
-        ret = false;
-
     return (ret);
 }
 
 
-static double
-t_interpreter_eval_cmp(const struct t_file *restrict file,
-        struct t_ast *restrict lhs, struct t_ast *restrict rhs, bool *_undef)
+static bool
+t_interpreter_eval_cmp(struct t_file *restrict file,
+        const struct t_ast *restrict lhs, const struct t_ast *restrict rhs,
+        t_cmp_func *f)
 {
-    const char *s, *l, *r;
-    char *_s, *_l, *_r; /* not const, can be free()d */
-    bool die, *undef;
-    double ret;
+    bool ret = false;
+    struct t_taglist *T = NULL;
+    struct t_tag  *t;
+    struct t_tagv *v;
 
     assert_not_null(file);
     assert_not_null(rhs);
     assert_not_null(lhs);
+    assert_not_null(f);
 
-    if (_undef == NULL)
-        undef = &die;
-    else
-        undef = _undef;
-    *undef = false;
-
-    _s = _l = _r = NULL;
-    switch (rhs->token->kind) {
-    case T_INT:    /* FALLTHROUGH */
-    case T_DOUBLE: /* FALLTHROUGH */
+    switch (lhs->token->kind) {
+    case T_INT:
+        ret = t_interpreter_eval_int_cmp(file, lhs->token->value.integer, rhs, f);
+        break;
+    case T_DOUBLE:
+        ret = t_interpreter_eval_double_cmp(file, lhs->token->value.dbl, rhs, f);
+        break;
     case T_STRING:
-        if (lhs->token->kind == T_FILENAME)
-            s = file->path;
-        else if (lhs->token->kind == T_BACKEND)
-            s = file->lib;
-        else {
-            assert(lhs->token->kind == T_TAGKEY);
-            s = _s = file->get(file, lhs->token->value.str);
-            if (s == NULL) {
-                *undef = true;
-                return (0);
-            }
-        }
-        if (rhs->token->kind == T_INT)
-            ret = (double)(strtol(s, NULL, 10) - rhs->token->value.integer);
-        else if (rhs->token->kind == T_DOUBLE)
-            ret = strtod(s, NULL) - rhs->token->value.dbl;
-        else if (rhs->token->kind == T_STRING)
-            ret = (double)strcmp(s, rhs->token->value.str);
-        freex(_s);
+        ret = t_interpreter_eval_str_cmp(file, lhs->token->value.str, rhs, f);
         break;
     case T_UNDEF:
-        if (lhs->token->kind == T_FILENAME || lhs->token->kind == T_BACKEND)
-            ret = 1.0;
-        else {
-            assert(lhs->token->kind == T_TAGKEY);
-            s = _s = file->get(file, lhs->token->value.str);
-            if (s == NULL)
-                ret = 0.0;
-            else
-                ret = 1.0;
-        }
-        freex(_s);
+        ret = t_interpreter_eval_undef_cmp(file, rhs, f);
         break;
-    case T_FILENAME: /* FALLTHROUGH */
+    case T_FILENAME:
+        ret = t_interpreter_eval_str_cmp(file, file->path, rhs, f);
+        break;
+    case T_BACKEND:
+        ret = t_interpreter_eval_str_cmp(file, file->lib, rhs, f);
+        break;
     case T_TAGKEY:
-        if (lhs->token->kind == T_FILENAME || lhs->token->kind == T_TAGKEY ||
-                lhs->token->kind == T_BACKEND) {
-            if (lhs->token->kind == T_FILENAME)
-                l = file->path;
-            else if (lhs->token->kind == T_BACKEND)
-                l = file->lib;
-            else
-                l = _l = file->get(file, lhs->token->value.str);
-            if (rhs->token->kind == T_FILENAME)
-                r = file->path;
-            else if (lhs->token->kind == T_BACKEND)
-                r = file->lib;
-            else
-                r = _r = file->get(file, rhs->token->value.str);
-            if (r == NULL || l == NULL) {
-                freex(_l);
-                freex(_r);
-                *undef = true;
-                return (0);
+        if (rhs->token->kind == T_TAGKEY) {
+            T = file->get(file, lhs->token->value.str);
+            if (T == NULL) {
+                warnx("t_interpreter: `%s': %s",
+                        file->path, t_error_msg(file));
+                break;
             }
-            /* XXX: cast? */
-            ret = (double)strcmp(l, r);
-            freex(_l);
-            freex(_r);
+            if (T->tcount == 0)
+                break;
+            assert(T->tcount == 1);
+            t = TAILQ_FIRST(T->tags);
+            assert(t->vcount > 0);
+            if (lhs->token->tidx == T_TOKEN_STAR) {
+                char *s;
+                switch (lhs->token->tidx_mod) {
+                case T_TOKEN_STAR_NO_MOD:
+                    s = t_tag_join_values(t, " - ");
+                    ret = t_interpreter_eval_str_cmp(file, s, rhs, f);
+                    freex(s);
+                    break;
+                case T_TOKEN_STAR_OR_MOD:
+                    ret = false;
+                    TAILQ_FOREACH(v, t->values, next) {
+                        if (t_interpreter_eval_str_cmp(file, v->value, rhs, f)) {
+                            ret = true;
+                            break;
+                        }
+                    }
+                    break;
+                case T_TOKEN_STAR_AND_MOD:
+                    ret = true;
+                    TAILQ_FOREACH(v, t->values, next) {
+                        if (!t_interpreter_eval_str_cmp(file, v->value, rhs, f)) {
+                            ret = false;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+            else {
+                v = t_tag_value_by_idx(t, lhs->token->tidx);
+                if (v)
+                    ret = t_interpreter_eval_str_cmp(file, v->value, rhs, f);
+            }
         }
-        else {
-            ret = t_interpreter_eval_cmp(file, rhs, lhs, undef);
-            ret = -ret;
-        }
+        else
+            ret = t_interpreter_eval_cmp(file, rhs, lhs, t_invert(f));
         break;
     default:
         (void)fprintf(stderr, "***internal interpreter error*** "
@@ -192,30 +223,27 @@ t_interpreter_eval_cmp(const struct t_file *restrict file,
         /* NOTREACHED */
     }
 
+    if (T)
+        t_taglist_destroy(T);
     return (ret);
 }
 
+
 static bool
-t_interpreter_eval_match(const struct t_file *restrict file,
-        struct t_ast *restrict lhs, struct t_ast *restrict rhs, bool *_undef)
+t_interpreter_eval_match(struct t_file *restrict file,
+        const struct t_ast *restrict lhs, const struct t_ast *restrict rhs)
 {
-    regex_t *r;
-    int error;
-    bool die, ret, *undef;
-    const char *s;
-    char *_s = NULL;
-    char *errmsg;
-    struct t_ast *regast, *strast;
+    const regex_t *r;
+    bool ret = false;
+    const char *cs;
+    const struct t_ast *regast, *strast;
+    struct t_taglist *T = NULL;
+    struct t_tag  *t;
+    struct t_tagv *v;
 
     assert_not_null(file);
     assert_not_null(rhs);
     assert_not_null(lhs);
-
-    if (_undef == NULL)
-        undef = &die;
-    else
-        undef = _undef;
-    *undef = false;
 
     if (rhs->token->kind == T_REGEX) {
         regast = rhs;
@@ -225,22 +253,61 @@ t_interpreter_eval_match(const struct t_file *restrict file,
         regast = lhs;
         strast = rhs;
     }
-
     assert(regast->token->kind == T_REGEX);
+
     r = &regast->token->value.regex;
     switch (strast->token->kind) {
     case T_TAGKEY:
-        s = _s = file->get(file, strast->token->value.str);
-        if (s == NULL) {
-            *undef = true;
-            return (false);
+        T = file->get(file, strast->token->value.str);
+        if (T == NULL) {
+            warnx("t_interpreter: `%s': %s",
+                    file->path, t_error_msg(file));
+            break;
+        }
+        if (T->tcount == 0)
+            break;
+        assert(T->tcount == 1);
+        t = TAILQ_FIRST(T->tags);
+        assert(t->vcount > 0);
+        if (strast->token->tidx == T_TOKEN_STAR) {
+            char *s;
+            switch (strast->token->tidx_mod) {
+            case T_TOKEN_STAR_NO_MOD:
+                s = t_tag_join_values(t, " - ");
+                ret = t_interpreter_regexec(r, s);
+                freex(s);
+                break;
+            case T_TOKEN_STAR_OR_MOD:
+                ret = false;
+                TAILQ_FOREACH(v, t->values, next) {
+                    if (t_interpreter_regexec(r, v->value))
+                        ret = true;
+                        break;
+                    }
+                break;
+            case T_TOKEN_STAR_AND_MOD:
+                ret = true;
+                TAILQ_FOREACH(v, t->values, next) {
+                    if (!t_interpreter_regexec(r, v->value))
+                        ret = false;
+                        break;
+                    }
+                break;
+            }
+        }
+        else {
+            v = t_tag_value_by_idx(t, strast->token->tidx);
+            if (v)
+                ret = t_interpreter_regexec(r, v->value);
         }
         break;
+    case T_BACKEND: /* FALLTHROUGH */
     case T_FILENAME:
-        s = file->path;
-        break;
-    case T_BACKEND:
-        s = file->lib;
+        if (strast->token->kind == T_FILENAME)
+            cs = file->path;
+        else
+            cs = file->lib;
+        ret = t_interpreter_regexec(r, cs);
         break;
     default:
         fprintf(stderr, "***internal interpreter error*** unexpected AST: `%s'\n",
@@ -249,21 +316,391 @@ t_interpreter_eval_match(const struct t_file *restrict file,
         /* NOTREACHED */
     }
 
-    error = regexec(r, s, /* nmatch */1, /* captures */NULL, /* eflags */0);
-    switch (error) {
-        case 0:
-            ret = true;
-            break;
-        case REG_NOMATCH:
-            ret = false;
-            break;
-        default:
-            errmsg = xcalloc(BUFSIZ, sizeof(char));
-            (void)regerror(error, r, errmsg, BUFSIZ);
-            errx(-1, "interpreter error, can't exec regex: `%s'", errmsg);
-            /* NOTREACHED */
-    }
-
-    freex(_s);
+    if (T)
+        t_taglist_destroy(T);
     return (ret);
 }
+
+
+static inline bool
+t_interpreter_regexec(const regex_t *r, const char *s)
+{
+    int error;
+    bool ret;
+    char *errmsg;
+
+    assert_not_null(s);
+    assert_not_null(r);
+
+    error = regexec(r, s, /* nmatch */1, /* captures */NULL, /* eflags */0);
+    switch (error) {
+    case 0:
+        ret = true;
+        break;
+    case REG_NOMATCH:
+        ret = false;
+        break;
+    default:
+        errmsg = xcalloc(BUFSIZ, sizeof(char));
+        (void)regerror(error, r, errmsg, BUFSIZ);
+        errx(-1, "interpreter error, can't exec regex: `%s'", errmsg);
+        /* NOTREACHED */
+    }
+
+    return (ret);
+}
+
+
+static bool
+t_cmp_eq(double d)
+{
+    return (d == 0);
+}
+
+
+static bool
+t_cmp_ne(double d)
+{
+    return (d != 0);
+}
+
+
+static bool
+t_cmp_lt(double d)
+{
+    return (d < 0);
+}
+
+
+static bool
+t_cmp_le(double d)
+{
+    return (d <= 0);
+}
+
+
+static bool
+t_cmp_gt(double d)
+{
+    return (d > 0);
+}
+
+
+static bool
+t_cmp_ge(double d)
+{
+    return (d >= 0);
+}
+
+t_cmp_func *
+t_invert(t_cmp_func *f)
+{
+    t_cmp_func *ret;
+
+    assert_not_null(f);
+
+    if (f == t_cmp_eq || f == t_cmp_ne)
+        ret = f;
+    else if (f == t_cmp_lt)
+        ret = t_cmp_gt;
+    else if (f == t_cmp_le)
+        ret = t_cmp_ge;
+    else if (f == t_cmp_gt)
+        ret = t_cmp_lt;
+    else if (f == t_cmp_ge)
+        ret = t_cmp_le;
+    else {
+        (void)fprintf(stderr, "***internal interpreter error*** "
+                "unexpected function in t_invert");
+        assert_fail();
+        /* NOTREACHED */
+    }
+
+    return (ret);
+}
+
+
+static bool
+t_interpreter_eval_int_cmp(struct t_file *restrict file,
+        int i, const struct t_ast *restrict rhs, t_cmp_func *f)
+{
+    const char *cs;
+    bool ret = false;
+    struct t_taglist *T = NULL;
+    struct t_tag  *t;
+    struct t_tagv *v;
+
+    assert_not_null(file);
+    assert_not_null(rhs);
+    assert_not_null(f);
+
+    switch (rhs->token->kind) {
+    case T_FILENAME: /* FALLTHROUGH */
+    case T_BACKEND:
+        if (rhs->token->kind == T_FILENAME)
+            cs = file->path;
+        else
+            cs = file->lib;
+        ret = (*f)((double)(i - strtol(cs, NULL, 10)));
+        break;
+    case T_TAGKEY:
+        T = file->get(file, rhs->token->value.str);
+        if (T == NULL) {
+            warnx("t_interpreter: `%s': %s",
+                    file->path, t_error_msg(file));
+            break;
+        }
+        if (T->tcount == 0)
+            break;
+        assert(T->tcount == 1);
+        t = TAILQ_FIRST(T->tags);
+        assert(t->vcount > 0);
+        if (rhs->token->tidx == T_TOKEN_STAR) {
+            char *s;
+            switch (rhs->token->tidx_mod) {
+            case T_TOKEN_STAR_NO_MOD:
+                s = t_tag_join_values(t, " - ");
+                ret = (*f)((double)(i - strtol(s, NULL, 10)));
+                freex(s);
+                break;
+            case T_TOKEN_STAR_OR_MOD:
+                ret = false;
+                TAILQ_FOREACH(v, t->values, next) {
+                    if ((*f)((double)(i - strtol(v->value, NULL, 10)))) {
+                        ret = true;
+                        break;
+                    }
+                }
+                break;
+            case T_TOKEN_STAR_AND_MOD:
+                ret = true;
+                TAILQ_FOREACH(v, t->values, next) {
+                    if (!(*f)((double)(i - strtol(v->value, NULL, 10)))) {
+                        ret = false;
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        else {
+            v = t_tag_value_by_idx(t, rhs->token->tidx);
+            if (v)
+                ret = (*f)((double)(i - strtol(v->value, NULL, 10)));
+        }
+        break;
+    default:
+        (void)fprintf(stderr, "***internal interpreter error*** "
+                "unexpected token kind: rhs(%s)\n", rhs->token->str);
+        assert_fail();
+        /* NOTREACHED */
+    }
+
+    if (T)
+        t_taglist_destroy(T);
+    return (ret);
+}
+
+
+static bool
+t_interpreter_eval_double_cmp(struct t_file *restrict file,
+        double d, const struct t_ast *restrict rhs, t_cmp_func *f)
+{
+    const char *cs;
+    bool ret = false;
+    struct t_taglist *T = NULL;
+    struct t_tag  *t;
+    struct t_tagv *v;
+
+    assert_not_null(file);
+    assert_not_null(rhs);
+    assert_not_null(f);
+
+    switch (rhs->token->kind) {
+    case T_FILENAME: /* FALLTHROUGH */
+    case T_BACKEND:
+        if (rhs->token->kind == T_FILENAME)
+            cs = file->path;
+        else
+            cs = file->lib;
+        ret = (*f)(d - strtod(cs, NULL));
+        break;
+    case T_TAGKEY:
+        T = file->get(file, rhs->token->value.str);
+        if (T == NULL) {
+            warnx("t_interpreter: `%s': %s",
+                    file->path, t_error_msg(file));
+            break;
+        }
+        if (T->tcount == 0)
+            break;
+        assert(T->tcount == 1);
+        t = TAILQ_FIRST(T->tags);
+        assert(t->vcount > 0);
+        if (rhs->token->tidx == T_TOKEN_STAR) {
+            char *s;
+            switch (rhs->token->tidx_mod) {
+            case T_TOKEN_STAR_NO_MOD:
+                s = t_tag_join_values(t, " - ");
+                ret = (*f)(d - strtod(s, NULL));
+                freex(s);
+                break;
+            case T_TOKEN_STAR_OR_MOD:
+                ret = false;
+                TAILQ_FOREACH(v, t->values, next) {
+                    if ((*f)(d - strtod(v->value, NULL)))
+                        ret = true;
+                        break;
+                    }
+                break;
+            case T_TOKEN_STAR_AND_MOD:
+                ret = true;
+                TAILQ_FOREACH(v, t->values, next) {
+                    if (!(*f)(d - strtod(v->value, NULL))) {
+                        ret = false;
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        else {
+            v = t_tag_value_by_idx(t, rhs->token->tidx);
+            if (v)
+                ret = (*f)(d - strtod(v->value, NULL));
+        }
+        break;
+    default:
+        (void)fprintf(stderr, "***internal interpreter error*** "
+                "unexpected token kind: rhs(%s)\n", rhs->token->str);
+        assert_fail();
+        /* NOTREACHED */
+    }
+
+    if (T)
+        t_taglist_destroy(T);
+    return (ret);
+}
+
+
+static bool
+t_interpreter_eval_str_cmp(struct t_file *restrict file,
+        const char *restrict str, const struct t_ast *restrict rhs,
+        t_cmp_func *f)
+{
+    const char *cs;
+    bool ret = false;
+    struct t_taglist *T = NULL;
+    struct t_tag  *t;
+    struct t_tagv *v;
+
+    assert_not_null(file);
+    assert_not_null(rhs);
+    assert_not_null(f);
+
+    switch (rhs->token->kind) {
+    case T_FILENAME: /* FALLTHROUGH */
+    case T_BACKEND:
+        if (rhs->token->kind == T_FILENAME)
+            cs = file->path;
+        else
+            cs = file->lib;
+        ret = (*f)((double)strcmp(str, cs));
+        break;
+    case T_TAGKEY:
+        T = file->get(file, rhs->token->value.str);
+        if (T == NULL) {
+            warnx("t_interpreter: `%s': %s",
+                    file->path, t_error_msg(file));
+            break;
+        }
+        if (T->tcount == 0)
+            break;
+        assert(T->tcount == 1);
+        t = TAILQ_FIRST(T->tags);
+        assert(t->vcount > 0);
+        if (rhs->token->tidx == T_TOKEN_STAR) {
+            char *s;
+            switch (rhs->token->tidx_mod) {
+            case T_TOKEN_STAR_NO_MOD:
+                s = t_tag_join_values(t, " - ");
+                ret = (*f)((double)strcmp(str, s));
+                freex(s);
+                break;
+            case T_TOKEN_STAR_OR_MOD:
+                TAILQ_FOREACH(v, t->values, next) {
+                    if ((*f)((double)strcmp(str, v->value)))
+                        ret = true;
+                        break;
+                    }
+                break;
+            case T_TOKEN_STAR_AND_MOD:
+                ret = true;
+                TAILQ_FOREACH(v, t->values, next) {
+                    if (!(*f)((double)strcmp(str, v->value)))
+                        ret = false;
+                        break;
+                    }
+                break;
+            }
+        }
+        else {
+            v = t_tag_value_by_idx(t, rhs->token->tidx);
+            if (v)
+                ret = (*f)((double)strcmp(str, v->value));
+        }
+        break;
+    default:
+        (void)fprintf(stderr, "***internal interpreter error*** "
+                "unexpected token kind: rhs(%s)\n", rhs->token->str);
+        assert_fail();
+        /* NOTREACHED */
+    }
+
+    if (T)
+        t_taglist_destroy(T);
+    return (ret);
+}
+
+
+static bool
+t_interpreter_eval_undef_cmp(struct t_file *restrict file,
+        const struct t_ast *restrict rhs, t_cmp_func *f)
+{
+    double def = 0;
+    struct t_taglist *T = NULL;
+    struct t_tag *t;
+
+    assert_not_null(file);
+    assert_not_null(rhs);
+    assert_not_null(f);
+
+    switch (rhs->token->kind) {
+    case T_TAGKEY:
+        T = file->get(file, rhs->token->value.str);
+        if (T == NULL) {
+            warnx("t_interpreter: `%s': %s",
+                    file->path, t_error_msg(file));
+            return (false);
+        }
+        if (T->tcount == 0)
+            def = 0;
+        else {
+            assert(T->tcount == 1);
+            t = TAILQ_FIRST(T->tags);
+            assert(t->vcount > 0);
+            def = 1;
+        }
+        break;
+    default:
+        (void)fprintf(stderr, "***internal interpreter error*** "
+                "unexpected token kind: rhs(%s)\n", rhs->token->str);
+        assert_fail();
+        /* NOTREACHED */
+    }
+
+    if (T)
+        t_taglist_destroy(T);
+    return ((*f)(def));
+}
+

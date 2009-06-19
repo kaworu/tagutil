@@ -311,7 +311,7 @@ parse_cmp_or_match_or_value(struct t_lexer *restrict L)
     optok = t_lex_next_token(L);
     switch (optok->kind) {
     case T_EQ:     /* FALLTHROUGH */
-    case T_DIFF:   /* FALLTHROUGH */
+    case T_NE:     /* FALLTHROUGH */
     case T_MATCH:  /* FALLTHROUGH */
     case T_NMATCH: /* FALLTHROUGH */
     case T_LT:     /* FALLTHROUGH */

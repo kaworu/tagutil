@@ -1,20 +1,26 @@
 Installation
 ------------
 
+Notes:
+    - do *not* compile tagutil with -DNDEBUG
+
 Dependencies:
     - pkg-config (build dep)
     - libyaml
 
 Optionals Dependencies:
-    - TagLib (>=1.5)
     - libFLAC
+    - libvorbis
+    - TagLib (>=1.5)
 
 make options:
+    WITH_OGGVORBIS
+        If you want the ogg/vorbis files to be handled by libvorbis.
     WITH_FLAC
         If you want the flac files to be handled by libFLAC.
     WITH_TAGLIB
         generic backend. Can handle a lot of different file type, but only a
-        limited set of tags (artist, title, album, track, year, genre and
+        limited set of tags (artist, title, album, tracknumber, date, genre and
         comment)
     DEBUG
         build tagutil with debug symbols (-g compiler option) and warnings.

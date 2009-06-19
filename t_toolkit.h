@@ -22,6 +22,9 @@
 /* compute the length of a fixed size array */
 #define countof(ary) (sizeof(ary) / sizeof((ary)[0]))
 
+/* No Operation */
+#define NOP (void)0
+
 /* some handy assert macros */
 #define assert_not_null(x) assert((x) != NULL)
 #define assert_null(x) assert((x) == NULL)

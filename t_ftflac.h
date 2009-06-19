@@ -17,7 +17,7 @@ struct t_file * t_ftflac_new(const char *restrict path);
 
 #else /* not WITH_FLAC */
 
-# define t_ftflac_init() (void)0
+# define t_ftflac_init() NOP
 # define t_ftflac_new(path) NULL
 
 #endif /* WITH_FLAC */

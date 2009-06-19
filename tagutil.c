@@ -460,7 +460,7 @@ tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
 
 
 bool
-tagutil_filter(const struct t_file *restrict file,
+tagutil_filter(struct t_file *restrict file,
         const struct t_ast *restrict ast)
 {
     bool ret;
