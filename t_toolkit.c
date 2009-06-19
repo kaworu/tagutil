@@ -50,7 +50,7 @@ t_yesno(const char *restrict question)
         }
         else {
             *endl = '\0';
-            t_strtolower(buffer);
+            (void)t_strtolower(buffer);
             if (strcmp(buffer, "n") == 0 || strcmp(buffer, "no") == 0)
                 return (false);
             else if (strcmp(buffer, "y") == 0 || strcmp(buffer, "yes") == 0)

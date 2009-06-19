@@ -222,7 +222,7 @@ t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
     struct t_taglist *T;
     struct t_tag  *t;
     struct t_tagv *v;
-    char *ret, *s;
+    char *ret, *s, *slash;
     size_t len;
     int i;
 
@@ -262,6 +262,18 @@ t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
                 }
             }
             t_taglist_destroy(T);
+            if (s) {
+            /* check for slash in tag value */
+                slash = strchr(s, '/');
+                if (slash) {
+                    warnx("rename_eval: `%s': tag `%s' has / in value, "
+                            "replacing by `-'", file->path, tkn->value.str);
+                    do {
+                        *slash = '-';
+                        slash = strchr(slash, '/');
+                    } while (slash);
+                }
+            }
         }
         if (s == NULL) {
             s = xstrdup(tkn->value.str);

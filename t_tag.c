@@ -126,6 +126,7 @@ t_taglist_insert(struct t_taglist *restrict T,
         kinq->keylen = len;
         s = (char *)(kinq->values + 1);
         (void)strlcpy(s, key, len + 1);
+        t_strtolower(s);
         kinq->key = s;
 
     }

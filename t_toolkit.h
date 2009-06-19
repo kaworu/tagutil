@@ -68,13 +68,13 @@ static inline int xasprintf(char **ret, const char *fmt, ...);
  * upperize a given string.
  */
 _t__unused _t__nonnull(1)
-static inline void t_strtoupper(char *restrict str);
+static inline char * t_strtoupper(char *restrict str);
 
 /*
  * lowerize a given string.
  */
 _t__unused _t__nonnull(1)
-static inline void t_strtolower(char *restrict str);
+static inline char * t_strtolower(char *restrict str);
 
 
 /* OTHER */
@@ -213,7 +213,7 @@ xasprintf(char **ret, const char *fmt, ...)
 }
 
 
-static inline void
+static inline char *
 t_strtoupper(char *restrict str)
 {
     size_t len, i;
@@ -223,10 +223,12 @@ t_strtoupper(char *restrict str)
     len = strlen(str);
     for (i = 0; i < len; i++)
         str[i] = toupper(str[i]);
+
+    return (str);
 }
 
 
-static inline void
+static inline char *
 t_strtolower(char *restrict str)
 {
     size_t len, i;
@@ -236,6 +238,8 @@ t_strtolower(char *restrict str)
     len = strlen(str);
     for (i = 0; i < len; i++)
         str[i] = tolower(str[i]);
+
+    return (str);
 }
 
 #endif /* not T_TOOLKIT_H */
