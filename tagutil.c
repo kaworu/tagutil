@@ -92,8 +92,12 @@ main(int argc, char *argv[])
 
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
-    while ((ch = getopt(argc, argv, "edhNYf:r:x:s:")) != -1) {
+    while ((ch = getopt(argc, argv, "aedhNYf:r:x:s:")) != -1) {
         switch ((char)ch) {
+        case 'a': /* secret undocumented option */
+            (void)printf("The Answer is 42\n");
+            exit(EXIT_SUCCESS);
+            /* NOTREACHED */
         case 'e':
             eflag = true;
             break;
