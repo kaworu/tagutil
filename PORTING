@@ -10,6 +10,7 @@ We try to ~follow the KNF guideline (see style(9)) in general.
 
 3.
 $SOMEONE has to do something for porting issues.
+$SOMEONE has to do something for the build process.
 
 4.
 testers, patches and reports are welcome :)
@@ -24,5 +25,4 @@ List bellow all non-standard (i.e. non C99 or POSIX) C function used.
 - getprogname(3)
 - <sys/queue>
 - strlcat(3), strlcpy(3)
-- open(2) don't O_NOCTTY since BSD do it by default
 --------------------------------------------------------------------------------

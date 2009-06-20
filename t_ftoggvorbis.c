@@ -12,6 +12,7 @@
 
 #include "t_config.h"
 #include "t_toolkit.h"
+#include "t_strbuffer.h"
 #include "t_file.h"
 #include "t_ftoggvorbis.h"
 
@@ -24,18 +25,21 @@ struct t_ftoggvorbis_data {
 
 _t__nonnull(1)
 void t_ftoggvorbis_destroy(struct t_file *restrict self);
+
 _t__nonnull(1)
 bool t_ftoggvorbis_save(struct t_file *restrict self);
 
-_t__nonnull(1) _t__nonnull(2)
-char * t_ftoggvorbis_get(const struct t_file *restrict self,
+_t__nonnull(1)
+struct t_taglist * t_ftoggvorbis_get(struct t_file *restrict self,
         const char *restrict key);
-_t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-enum t_file_set_status t_ftoggvorbis_set(struct t_file *restrict self,
-        const char *restrict key, const char *restrict newval);
+
+_t__nonnull(1)
+bool t_ftoggvorbis_clear(struct t_file *restrict self,
+        const struct t_taglist *T);
 
 _t__nonnull(1) _t__nonnull(2)
-long t_ftoggvorbis_tagkeys(const struct t_file *restrict self, char ***kptr);
+bool t_ftoggvorbis_add(struct t_file *restrict self,
+        const struct t_taglist *T);
 
 
 void
@@ -57,101 +61,152 @@ t_ftoggvorbis_destroy(struct t_file *restrict self)
 bool
 t_ftoggvorbis_save(struct t_file *restrict self)
 {
-#if 0
-    struct t_ftoggvorbis_data *d;
-
     assert_not_null(self);
-    assert_not_null(self->data);
+    t_error_clear(self);
 
-    d = self->data;
-    FLAC__metadata_chain_sort_padding(d->chain);
-    if (FLAC__metadata_chain_write(d->chain, /* padding */true,
-                /* preserve_file_stats */false))
-        return (true);
-    else
-        return (false);
-#endif
-    return true;
+    /* FIXME */
+    t_error_set(self, "%s: read-only support", self->lib);
+    return (false);
 }
 
 
-char *
-t_ftoggvorbis_get(const struct t_file *restrict self, const char *restrict key)
+struct t_taglist *
+t_ftoggvorbis_get(struct t_file *restrict self, const char *restrict key)
 {
-    char *s, *ret;
+    int i;
+    char *copy, *eq;
+    const char *c;
+    size_t keylen;
+    struct t_taglist *T;
     struct t_ftoggvorbis_data *d;
 
     assert_not_null(self);
     assert_not_null(self->data);
-    assert_not_null(key);
+    t_error_clear(self);
 
     d = self->data;
-    s = xstrdup(key);
-    ret = vorbis_comment_query(d->vc, s, /* FIXME */0);
-    freex(s);
+    T = t_taglist_new();
+    if (key)
+        keylen = strlen(key);
 
-    if (ret == NULL)
-        return (NULL);
-    else
-        return (xstrdup(ret));
-}
-
-
-enum t_file_set_status
-t_ftoggvorbis_set(struct t_file *restrict self, const char *restrict key,
-        const char *restrict newval)
-{
-    char *k, *n;
-    struct t_ftoggvorbis_data *d;
-
-    assert_not_null(self);
-    assert_not_null(self->data);
-    assert_not_null(key);
-
-    d = self->data;
-    k = xstrdup(key);
-    n = xstrdup(newval);
-    /* FIXME: utf8encode(n) && check k */
-    vorbis_comment_add_tag(d->vc, k, n);
-    freex(k);
-    freex(n);
-    return (TFILE_SET_STATUS_LIBERROR);
-}
-
-
-long
-t_ftoggvorbis_tagkeys(const struct t_file *restrict self, char ***kptr)
-{
-    char **ret, *tag, *eq;
-    long i, count;
-    size_t len;
-    struct t_ftoggvorbis_data *d;
-
-    assert_not_null(self);
-    assert_not_null(self->data);
-
-    d = self->data;
-    count = (long)d->vc->comments;
-
-    if (kptr != NULL) {
-        ret = xcalloc(count, sizeof(char *));
-        for (i = 0; i < count; i++) {
-            tag = d->vc->user_comments[i];
-            eq  = strchr(tag, '=');
-            if (eq == NULL) {
-                errx(-1, "invalid comment `%s' (%s backend)", self->path,
-                        self->lib);
-                /* NOTREACHED */
-            }
-            len = eq - tag + 1;
-            ret[i] = xcalloc(len, sizeof(char));
-            memcpy(ret[i], tag, len - 1);
-            t_strtolower(ret[i]);
+    for (i = 0; i < d->vc->comments; i++) {
+        c = d->vc->user_comments[i];
+        if (key) {
+            if (strncasecmp(key, c, keylen) != 0 || c[keylen] != '=')
+                continue;
         }
-        *kptr = ret;
+        copy = xstrdup(c);
+        eq = strchr(copy, '=');
+        if (eq == NULL) {
+            t_error_set(self, "`%s' seems corrupted", self->path);
+            freex(copy);
+            t_taglist_destroy(T);
+            return (NULL);
+        }
+        *eq = '\0';
+        t_taglist_insert(T, copy, eq + 1);
+        freex(copy);
     }
 
-    return (count);
+    return (T);
+}
+
+
+bool
+t_ftoggvorbis_clear(struct t_file *restrict self, const struct t_taglist *T)
+{
+    int i, count;
+    char *c;
+    struct t_tag  *t;
+    struct t_ftoggvorbis_data *d;
+
+    assert_not_null(self);
+    assert_not_null(self->data);
+    t_error_clear(self);
+
+    d = self->data;
+
+    if (T) {
+        TAILQ_FOREACH(t, T->tags, next) {
+            for (i = 0; i < d->vc->comments; i++) {
+                c = d->vc->user_comments[i];
+                if (c) {
+                    if (strncasecmp(t->key, c, t->keylen) == 0 &&
+                            c[t->keylen] == '=')
+                        freex(d->vc->user_comments[i]);
+                }
+            }
+        }
+        count = 0;
+        for (i = 0; i < d->vc->comments; i++) {
+            if (d->vc->user_comments[i]) {
+                if (count != i) {
+                    d->vc->user_comments[count] = d->vc->user_comments[i];
+                    d->vc->comment_lengths[count] = d->vc->comment_lengths[i];
+                }
+                count++;
+            }
+        }
+        d->vc->comments = count;
+        d->vc->user_comments = xrealloc(d->vc->user_comments,
+                (d->vc->comments + 1) * sizeof(*d->vc->user_comments));
+        d->vc->comment_lengths = xrealloc(d->vc->comment_lengths,
+                (d->vc->comments + 1) * sizeof(*d->vc->comment_lengths));
+        /* vorbis_comment_add() set the last comment to NULL, we do the same */
+        d->vc->user_comments[d->vc->comments]   = NULL;
+        d->vc->comment_lengths[d->vc->comments] = 0;
+    }
+    else
+        vorbis_comment_clear(d->vc);
+    return (true);
+}
+
+
+bool
+t_ftoggvorbis_add(struct t_file *restrict self, const struct t_taglist *T)
+{
+    int count;
+    size_t len, bsize;
+    char *tageq;
+    struct t_tag  *t;
+    struct t_tagv *v;
+    struct t_ftoggvorbis_data *d;
+
+    assert_not_null(T);
+    assert_not_null(self);
+    assert_not_null(self->data);
+    t_error_clear(self);
+
+    d = self->data;
+    count = 0;
+    TAILQ_FOREACH(t, T->tags, next) {
+        TAILQ_FOREACH(v, t->values, next)
+            count++;
+    }
+    d->vc->user_comments = xrealloc(d->vc->user_comments,
+            (d->vc->comments + count + 1) * sizeof(*d->vc->user_comments));
+    d->vc->comment_lengths = xrealloc(d->vc->comment_lengths,
+            (d->vc->comments + count + 1) * sizeof(*d->vc->comment_lengths));
+
+    TAILQ_FOREACH(t, T->tags, next) {
+        /* FIXME: check t->key , utf8 value */
+        TAILQ_FOREACH(v, t->values, next) {
+            len = t->keylen + 1 + v->vlen;
+            bsize = len + 1;
+            tageq = xcalloc(bsize, sizeof(char));
+            if (strlcpy(tageq, t->key, bsize) >= bsize ||
+                    strlcat(tageq, "=", bsize) >= bsize ||
+                    strlcat(tageq, v->value, bsize) >= bsize)
+                assert_fail();
+            d->vc->comment_lengths[d->vc->comments] = len;
+            d->vc->user_comments[d->vc->comments]   = tageq;
+            d->vc->comments++;
+        }
+    }
+    /* vorbis_comment_add() set the last comment to NULL, we do the same */
+    d->vc->user_comments[d->vc->comments]   = NULL;
+    d->vc->comment_lengths[d->vc->comments] = 0;
+    return (true);
 }
 
 
@@ -202,9 +257,10 @@ t_ftoggvorbis_new(const char *restrict path)
     ret->save     = t_ftoggvorbis_save;
     ret->destroy  = t_ftoggvorbis_destroy;
     ret->get      = t_ftoggvorbis_get;
-    ret->set      = t_ftoggvorbis_set;
-    ret->tagkeys  = t_ftoggvorbis_tagkeys;
+    ret->clear    = t_ftoggvorbis_clear;
+    ret->add      = t_ftoggvorbis_add;
 
+    t_error_init(ret);
     ret->lib = "libvorbis";
     return (ret);
 }

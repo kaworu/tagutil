@@ -24,15 +24,18 @@ struct t_ftflac_data {
 
 _t__nonnull(1)
 void t_ftflac_destroy(struct t_file *restrict self);
+
 _t__nonnull(1)
 bool t_ftflac_save(struct t_file *restrict self);
 
 _t__nonnull(1)
 struct t_taglist * t_ftflac_get(struct t_file *restrict self,
         const char *restrict key);
+
 _t__nonnull(1)
 bool t_ftflac_clear(struct t_file *restrict self,
         const struct t_taglist *restrict T);
+
 _t__nonnull(1) _t__nonnull(2)
 bool t_ftflac_add(struct t_file *restrict self,
         const struct t_taglist *restrict T);

@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h> /* mkstemp(3) */
 
 #include "t_config.h"
 
@@ -52,6 +53,17 @@ static inline FILE * xfopen(const char *restrict path, const char *restrict mode
 _t__unused _t__nonnull(1)
 static inline void xfclose(FILE *restrict stream);
 
+_t__unused _t__nonnull(1)
+static inline void xunlink(const char *restrict path);
+
+/*
+ * create a temporary file in $TMPDIR. if $TMPDIR is not set, /tmp is
+ * used. return the full path to the temp file created.
+ *
+ * returned value has to be free()d.
+ */
+_t__unused _t__nonnull(1)
+static inline char * t_mkstemp(const char *restrict dir);
 
 /* BASIC STRING OPERATIONS */
 
@@ -170,6 +182,32 @@ xfclose(FILE *restrict stream)
 
     if (fclose(stream) != 0)
         err(errno, "fclose");
+}
+
+
+static inline void
+xunlink(const char *restrict path)
+{
+    assert_not_null(path);
+
+    if (unlink(path) != 0)
+        err(errno, "unlink");
+}
+
+
+static inline char *
+t_mkstemp(const char *restrict dir)
+{
+    char *f;
+
+    assert_not_null(dir);
+
+    (void)xasprintf(&f, "%s/%s-XXXXXX", dir, getprogname());
+
+    if (mkstemp(f) == -1)
+        err(errno, "mkstemp(\"%s\")", f);
+
+    return (f);
 }
 
 

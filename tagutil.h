@@ -18,17 +18,6 @@ _t__dead2
 void usage(void);
 
 
-/* FILE FUNCTIONS */
-
-/*
- * create a temporary file in $TMPDIR. if $TMPDIR is not set, /tmp is
- * used. return the full path to the temp file created.
- *
- * returned value has to be free()d.
- */
-char * create_tmpfile(void);
-
-
 /* TAG FUNCTIONS */
 
 /*

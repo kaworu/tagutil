@@ -87,9 +87,6 @@ main(int argc, char *argv[])
     struct stat s;
     struct t_file *file;
 
-    if (argc < 2)
-        usage();
-
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
     while ((ch = getopt(argc, argv, "aedhNYf:r:x:s:")) != -1) {
@@ -157,9 +154,10 @@ main(int argc, char *argv[])
     argc -= optind;
     argv += optind;
 
-    if (argc == 0)
-        errx(EINVAL, "No file argument given, run `%s -h' to see help.",
+    if (argc == 0) {
+        errx(EINVAL, "missing file argument.\nrun `%s -h' to see help.",
                 getprogname());
+    }
     if (dflag && !rflag)
         errx(EINVAL, "-d is only valid with -r");
     i  = ((sflag || eflag || rflag) ? 1 : 0);
@@ -213,9 +211,9 @@ main(int argc, char *argv[])
         if (sflag) {
             if (!file->clear(file, s_arg) || !file->add(file, s_arg))
                 warnx("file `%s' not saved: %s", file->path, t_error_msg(file));
-            else {
-                if (!file->save(file))
-                    err(errno, "couldn't save file `%s'", path);
+            else if (!file->save(file)) {
+                    errx(errno ? errno : -1, "couldn't save file `%s': %s",
+                            path, t_error_msg(file));
             }
         }
         if (eflag)
@@ -261,24 +259,6 @@ usage(void)
     (void)fprintf(stderr, "\n");
 
     exit(EXIT_SUCCESS);
-}
-
-
-char *
-create_tmpfile(void)
-{
-    char *tmpdir, *tmpf;
-
-    tmpdir = getenv("TMPDIR");
-    if (tmpdir == NULL)
-        tmpdir = "/tmp";
-
-    (void)xasprintf(&tmpf, "%s/%s-XXXXXX", tmpdir, getprogname());
-
-    if (mkstemp(tmpf) == -1)
-        err(errno, "can't create '%s' file", tmpf);
-
-    return (tmpf);
 }
 
 
@@ -389,7 +369,7 @@ tagutil_edit(struct t_file *restrict file)
     (void)printf("%s\n", yaml);
 
     if (t_yesno("edit this file")) {
-        tmp_file = create_tmpfile();
+        tmp_file = t_mkstemp("/tmp");
 
         stream = xfopen(tmp_file, "w");
         (void)fprintf(stream, "%s", yaml);
@@ -403,8 +383,7 @@ tagutil_edit(struct t_file *restrict file)
         else
             ret = tagutil_load(file, tmp_file);
 
-        if (unlink(tmp_file) != 0)
-            err(errno, "can't remove temp file");
+        xunlink(tmp_file);
         freex(tmp_file);
     }
 

@@ -23,15 +23,18 @@ struct t_ftgeneric_data {
 
 _t__nonnull(1)
 void t_ftgeneric_destroy(struct t_file *restrict self);
+
 _t__nonnull(1)
 bool t_ftgeneric_save(struct t_file *restrict self);
 
 _t__nonnull(1)
 struct t_taglist * t_ftgeneric_get(struct t_file *restrict self,
         const char *restrict key);
+
 _t__nonnull(1)
 bool t_ftgeneric_clear(struct t_file *restrict self,
         const struct t_taglist *restrict T);
+
 _t__nonnull(1) _t__nonnull(2)
 bool t_ftgeneric_add(struct t_file *restrict self,
         const struct t_taglist *restrict T);

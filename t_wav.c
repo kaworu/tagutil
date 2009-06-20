@@ -30,7 +30,7 @@ wav_load(const char *path, struct audio_data *ad)
 
     assert_not_null(path);
 
-    fd = open(path, O_RDONLY);
+    fd = open(path, O_RDONLY); /* O_NOCTTY by default */
     if (fd == -1)
         return (-1);
 
