@@ -24,7 +24,7 @@ CSTD=c99
 .if defined(DEBUG)
 CFLAGS=-g -O0 -Wall -Wextra -Wformat-security -Wnonnull -Waggregate-return \
 	   -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow \
-	   -Wstrict-prototypes -Winline -Wall -fno-inline
+	   -Wstrict-prototypes -Winline -fno-inline
 VERSION:=${VERSION}-debug
 .endif
 CFLAGS+=-I. -D'T_TAGUTIL_VERSION="${VERSION}"'
@@ -61,7 +61,7 @@ OGGVORBIS_L!=pkg-config --libs   vorbisfile
 LDADD+=${OGGVORBIS_L}
 .endif
 
-# MPEG layer 3 support with id3lib
+# MPEG layer 3 support with ID3Lib
 .if defined(WITH_MPEG3)
 SRCS+=t_ftmpeg3.c
 # no pkg-config :(

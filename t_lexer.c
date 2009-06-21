@@ -280,7 +280,6 @@ t_lex_tagkey(struct t_lexer *restrict L, struct t_token **tptr,
         skip = 0;
         while (t_lexc(L) != '\0' && L->c != '}' && L->c != '[') {
             if (L->c == '\\') {
-                (void)t_lexc(L);
                 if (t_lexc(L) == '}' || L->c == '{' || L->c == '[' || L->c == ']')
                     skip += 1;
             }
@@ -301,7 +300,7 @@ t_lex_tagkey(struct t_lexer *restrict L, struct t_token **tptr,
         i = 0;
         while (L->cindex < copyend) {
             if (L->c == '\\') {
-                if (t_lexc(L) != '}' || L->c != '{' || L->c != '[' || L->c != ']') {
+                if (t_lexc(L) != '}' && L->c != '{' && L->c != '[' && L->c != ']') {
                 /* rewind */
                     t_lexc_move(L, -1);
                     assert(L->c == '\\');
