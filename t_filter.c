@@ -1,5 +1,5 @@
 /*
- * t_interpreter.c
+ * t_filter.c
  *
  * the tagutil's filter interpreter.
  */
@@ -15,7 +15,7 @@
 #include "t_file.h"
 #include "t_lexer.h"
 #include "t_parser.h"
-#include "t_interpreter.h"
+#include "t_filter.h"
 
 
 /*
@@ -41,40 +41,40 @@ t_cmp_func * t_invert(t_cmp_func *f);
  * eval a comparison between lhs and rhs.
  */
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3) _t__nonnull(4)
-static bool t_interpreter_eval_cmp(struct t_file *restrict file,
+static bool t_filter_eval_cmp(struct t_file *restrict file,
         const struct t_ast *restrict lhs, const struct t_ast *restrict rhs,
         t_cmp_func *f);
 
 _t__nonnull(1) _t__nonnull(3) _t__nonnull(4)
-static bool t_interpreter_eval_int_cmp(struct t_file *restrict file,
+static bool t_filter_eval_int_cmp(struct t_file *restrict file,
         int i, const struct t_ast *restrict rhs, t_cmp_func *f);
 
 _t__nonnull(1) _t__nonnull(3) _t__nonnull(4)
-static bool t_interpreter_eval_double_cmp(struct t_file *restrict file,
+static bool t_filter_eval_double_cmp(struct t_file *restrict file,
         double d, const struct t_ast *restrict rhs, t_cmp_func *f);
 
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3) _t__nonnull(4)
-static bool t_interpreter_eval_str_cmp(struct t_file *restrict file,
+static bool t_filter_eval_str_cmp(struct t_file *restrict file,
         const char *restrict str, const struct t_ast *restrict rhs,
         t_cmp_func *f);
 
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-static bool t_interpreter_eval_undef_cmp(struct t_file *restrict file,
+static bool t_filter_eval_undef_cmp(struct t_file *restrict file,
         const struct t_ast *restrict rhs, t_cmp_func *f);
 
 /*
  * eval a regex match.
  */
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-static bool t_interpreter_eval_match(struct t_file *restrict file,
+static bool t_filter_eval_match(struct t_file *restrict file,
         const struct t_ast *restrict lhs, const struct t_ast *restrict rhs);
 
 _t__nonnull(1) _t__nonnull(2)
-static inline bool t_interpreter_regexec(const regex_t *r, const char *s);
+static inline bool t_filter_regexec(const regex_t *r, const char *s);
 
 
 bool
-t_interpreter_eval_ast(struct t_file *restrict file,
+t_filter_eval(struct t_file *restrict file,
         const struct t_ast *restrict filter)
 {
     t_cmp_func *f;
@@ -85,17 +85,17 @@ t_interpreter_eval_ast(struct t_file *restrict file,
 
     switch (filter->token->kind) {
     case T_NOT:
-        ret = !(t_interpreter_eval_ast(file, filter->rhs));
+        ret = !(t_filter_eval(file, filter->rhs));
         break;
     case T_AND:
-        ret = t_interpreter_eval_ast(file, filter->lhs);
+        ret = t_filter_eval(file, filter->lhs);
         if (ret)
-            ret = t_interpreter_eval_ast(file, filter->rhs);
+            ret = t_filter_eval(file, filter->rhs);
         break;
     case T_OR:
-        ret = t_interpreter_eval_ast(file, filter->lhs);
+        ret = t_filter_eval(file, filter->lhs);
         if (!ret)
-            ret = t_interpreter_eval_ast(file, filter->rhs);
+            ret = t_filter_eval(file, filter->rhs);
         break;
     case T_EQ: /* FALLTHROUGH */
     case T_NE: /* FALLTHROUGH */
@@ -112,16 +112,16 @@ t_interpreter_eval_ast(struct t_file *restrict file,
         case T_GE: f = t_cmp_ge; break;
         default: /* NOTREACHED */ assert_fail();
         }
-        ret = t_interpreter_eval_cmp(file, filter->lhs, filter->rhs, f);
+        ret = t_filter_eval_cmp(file, filter->lhs, filter->rhs, f);
         break;
     case T_MATCH:
-        ret = t_interpreter_eval_match(file, filter->lhs, filter->rhs);
+        ret = t_filter_eval_match(file, filter->lhs, filter->rhs);
         break;
     case T_NMATCH:
-        ret = !t_interpreter_eval_match(file, filter->lhs, filter->rhs);
+        ret = !t_filter_eval_match(file, filter->lhs, filter->rhs);
         break;
     default:
-        (void)fprintf(stderr, "***internal interpreter error*** "
+        (void)fprintf(stderr, "***internal filter error*** "
                 "unexpected AST: `%s'\n", filter->token->str);
         assert_fail();
         /* NOTREACHED */
@@ -132,7 +132,7 @@ t_interpreter_eval_ast(struct t_file *restrict file,
 
 
 static bool
-t_interpreter_eval_cmp(struct t_file *restrict file,
+t_filter_eval_cmp(struct t_file *restrict file,
         const struct t_ast *restrict lhs, const struct t_ast *restrict rhs,
         t_cmp_func *f)
 {
@@ -147,28 +147,28 @@ t_interpreter_eval_cmp(struct t_file *restrict file,
 
     switch (lhs->token->kind) {
     case T_INT:
-        ret = t_interpreter_eval_int_cmp(file, lhs->token->value.integer, rhs, f);
+        ret = t_filter_eval_int_cmp(file, lhs->token->value.integer, rhs, f);
         break;
     case T_DOUBLE:
-        ret = t_interpreter_eval_double_cmp(file, lhs->token->value.dbl, rhs, f);
+        ret = t_filter_eval_double_cmp(file, lhs->token->value.dbl, rhs, f);
         break;
     case T_STRING:
-        ret = t_interpreter_eval_str_cmp(file, lhs->token->value.str, rhs, f);
+        ret = t_filter_eval_str_cmp(file, lhs->token->value.str, rhs, f);
         break;
     case T_UNDEF:
-        ret = t_interpreter_eval_undef_cmp(file, rhs, f);
+        ret = t_filter_eval_undef_cmp(file, rhs, f);
         break;
     case T_FILENAME:
-        ret = t_interpreter_eval_str_cmp(file, file->path, rhs, f);
+        ret = t_filter_eval_str_cmp(file, file->path, rhs, f);
         break;
     case T_BACKEND:
-        ret = t_interpreter_eval_str_cmp(file, file->lib, rhs, f);
+        ret = t_filter_eval_str_cmp(file, file->lib, rhs, f);
         break;
     case T_TAGKEY:
         if (rhs->token->kind == T_TAGKEY) {
             T = file->get(file, lhs->token->value.str);
             if (T == NULL) {
-                warnx("t_interpreter: `%s': %s",
+                warnx("t_filter: `%s': %s",
                         file->path, t_error_msg(file));
                 break;
             }
@@ -179,13 +179,13 @@ t_interpreter_eval_cmp(struct t_file *restrict file,
                 switch (lhs->token->tidx_mod) {
                 case T_TOKEN_STAR_NO_MOD:
                     s = t_taglist_join(T, " - ");
-                    ret = t_interpreter_eval_str_cmp(file, s, rhs, f);
+                    ret = t_filter_eval_str_cmp(file, s, rhs, f);
                     freex(s);
                     break;
                 case T_TOKEN_STAR_OR_MOD:
                     ret = false;
                     t_tagQ_foreach(t, T->tags) {
-                        if (t_interpreter_eval_str_cmp(file, t->value, rhs, f)) {
+                        if (t_filter_eval_str_cmp(file, t->value, rhs, f)) {
                             ret = true;
                             break;
                         }
@@ -194,7 +194,7 @@ t_interpreter_eval_cmp(struct t_file *restrict file,
                 case T_TOKEN_STAR_AND_MOD:
                     ret = true;
                     t_tagQ_foreach(t, T->tags) {
-                        if (!t_interpreter_eval_str_cmp(file, t->value, rhs, f)) {
+                        if (!t_filter_eval_str_cmp(file, t->value, rhs, f)) {
                             ret = false;
                             break;
                         }
@@ -205,14 +205,14 @@ t_interpreter_eval_cmp(struct t_file *restrict file,
             else {
                 t = t_taglist_tag_at(T, lhs->token->tidx);
                 if (t != NULL)
-                    ret = t_interpreter_eval_str_cmp(file, t->value, rhs, f);
+                    ret = t_filter_eval_str_cmp(file, t->value, rhs, f);
             }
         }
         else
-            ret = t_interpreter_eval_cmp(file, rhs, lhs, t_invert(f));
+            ret = t_filter_eval_cmp(file, rhs, lhs, t_invert(f));
         break;
     default:
-        (void)fprintf(stderr, "***internal interpreter error*** "
+        (void)fprintf(stderr, "***internal filter error*** "
                 "unexpected token kind: lhs(%s) rhs(%s)\n",
                 lhs->token->str, rhs->token->str);
         assert_fail();
@@ -226,7 +226,7 @@ t_interpreter_eval_cmp(struct t_file *restrict file,
 
 
 static bool
-t_interpreter_eval_match(struct t_file *restrict file,
+t_filter_eval_match(struct t_file *restrict file,
         const struct t_ast *restrict lhs, const struct t_ast *restrict rhs)
 {
     const regex_t *r;
@@ -255,7 +255,7 @@ t_interpreter_eval_match(struct t_file *restrict file,
     case T_TAGKEY:
         T = file->get(file, strast->token->value.str);
         if (T == NULL) {
-            warnx("t_interpreter: `%s': %s",
+            warnx("t_filter: `%s': %s",
                     file->path, t_error_msg(file));
             break;
         }
@@ -266,13 +266,13 @@ t_interpreter_eval_match(struct t_file *restrict file,
             switch (strast->token->tidx_mod) {
             case T_TOKEN_STAR_NO_MOD:
                 s = t_taglist_join(T, " - ");
-                ret = t_interpreter_regexec(r, s);
+                ret = t_filter_regexec(r, s);
                 freex(s);
                 break;
             case T_TOKEN_STAR_OR_MOD:
                 ret = false;
                 t_tagQ_foreach(t, T->tags) {
-                    if (t_interpreter_regexec(r, t->value))
+                    if (t_filter_regexec(r, t->value))
                         ret = true;
                         break;
                     }
@@ -280,7 +280,7 @@ t_interpreter_eval_match(struct t_file *restrict file,
             case T_TOKEN_STAR_AND_MOD:
                 ret = true;
                 t_tagQ_foreach(t, T->tags) {
-                    if (!t_interpreter_regexec(r, t->value))
+                    if (!t_filter_regexec(r, t->value))
                         ret = false;
                         break;
                     }
@@ -290,7 +290,7 @@ t_interpreter_eval_match(struct t_file *restrict file,
         else {
             t = t_taglist_tag_at(T, strast->token->tidx);
             if (t != NULL)
-                ret = t_interpreter_regexec(r, t->value);
+                ret = t_filter_regexec(r, t->value);
         }
         break;
     case T_BACKEND: /* FALLTHROUGH */
@@ -299,10 +299,10 @@ t_interpreter_eval_match(struct t_file *restrict file,
             cs = file->path;
         else
             cs = file->lib;
-        ret = t_interpreter_regexec(r, cs);
+        ret = t_filter_regexec(r, cs);
         break;
     default:
-        fprintf(stderr, "***internal interpreter error*** unexpected AST: `%s'\n",
+        fprintf(stderr, "***internal filter error*** unexpected AST: `%s'\n",
                 strast->token->str);
         assert_fail();
         /* NOTREACHED */
@@ -315,7 +315,7 @@ t_interpreter_eval_match(struct t_file *restrict file,
 
 
 static inline bool
-t_interpreter_regexec(const regex_t *r, const char *s)
+t_filter_regexec(const regex_t *r, const char *s)
 {
     int error;
     bool ret;
@@ -335,7 +335,7 @@ t_interpreter_regexec(const regex_t *r, const char *s)
     default:
         errmsg = xcalloc(BUFSIZ, sizeof(char));
         (void)regerror(error, r, errmsg, BUFSIZ);
-        errx(-1, "interpreter error, can't exec regex: `%s'", errmsg);
+        errx(-1, "filter error, can't exec regex: `%s'", errmsg);
         /* NOTREACHED */
     }
 
@@ -402,7 +402,7 @@ t_invert(t_cmp_func *f)
     else if (f == t_cmp_ge)
         ret = t_cmp_le;
     else {
-        (void)fprintf(stderr, "***internal interpreter error*** "
+        (void)fprintf(stderr, "***internal filter error*** "
                 "unexpected function in t_invert");
         assert_fail();
         /* NOTREACHED */
@@ -413,7 +413,7 @@ t_invert(t_cmp_func *f)
 
 
 static bool
-t_interpreter_eval_int_cmp(struct t_file *restrict file,
+t_filter_eval_int_cmp(struct t_file *restrict file,
         int i, const struct t_ast *restrict rhs, t_cmp_func *f)
 {
     const char *cs;
@@ -437,7 +437,7 @@ t_interpreter_eval_int_cmp(struct t_file *restrict file,
     case T_TAGKEY:
         T = file->get(file, rhs->token->value.str);
         if (T == NULL) {
-            warnx("t_interpreter: `%s': %s",
+            warnx("t_filter: `%s': %s",
                     file->path, t_error_msg(file));
             break;
         }
@@ -478,7 +478,7 @@ t_interpreter_eval_int_cmp(struct t_file *restrict file,
         }
         break;
     default:
-        (void)fprintf(stderr, "***internal interpreter error*** "
+        (void)fprintf(stderr, "***internal filter error*** "
                 "unexpected token kind: rhs(%s)\n", rhs->token->str);
         assert_fail();
         /* NOTREACHED */
@@ -491,7 +491,7 @@ t_interpreter_eval_int_cmp(struct t_file *restrict file,
 
 
 static bool
-t_interpreter_eval_double_cmp(struct t_file *restrict file,
+t_filter_eval_double_cmp(struct t_file *restrict file,
         double d, const struct t_ast *restrict rhs, t_cmp_func *f)
 {
     const char *cs;
@@ -515,7 +515,7 @@ t_interpreter_eval_double_cmp(struct t_file *restrict file,
     case T_TAGKEY:
         T = file->get(file, rhs->token->value.str);
         if (T == NULL) {
-            warnx("t_interpreter: `%s': %s",
+            warnx("t_filter: `%s': %s",
                     file->path, t_error_msg(file));
             break;
         }
@@ -555,7 +555,7 @@ t_interpreter_eval_double_cmp(struct t_file *restrict file,
         }
         break;
     default:
-        (void)fprintf(stderr, "***internal interpreter error*** "
+        (void)fprintf(stderr, "***internal filter error*** "
                 "unexpected token kind: rhs(%s)\n", rhs->token->str);
         assert_fail();
         /* NOTREACHED */
@@ -568,7 +568,7 @@ t_interpreter_eval_double_cmp(struct t_file *restrict file,
 
 
 static bool
-t_interpreter_eval_str_cmp(struct t_file *restrict file,
+t_filter_eval_str_cmp(struct t_file *restrict file,
         const char *restrict str, const struct t_ast *restrict rhs,
         t_cmp_func *f)
 {
@@ -593,7 +593,7 @@ t_interpreter_eval_str_cmp(struct t_file *restrict file,
     case T_TAGKEY:
         T = file->get(file, rhs->token->value.str);
         if (T == NULL) {
-            warnx("t_interpreter: `%s': %s",
+            warnx("t_filter: `%s': %s",
                     file->path, t_error_msg(file));
             break;
         }
@@ -631,7 +631,7 @@ t_interpreter_eval_str_cmp(struct t_file *restrict file,
         }
         break;
     default:
-        (void)fprintf(stderr, "***internal interpreter error*** "
+        (void)fprintf(stderr, "***internal filter error*** "
                 "unexpected token kind: rhs(%s)\n", rhs->token->str);
         assert_fail();
         /* NOTREACHED */
@@ -644,7 +644,7 @@ t_interpreter_eval_str_cmp(struct t_file *restrict file,
 
 
 static bool
-t_interpreter_eval_undef_cmp(struct t_file *restrict file,
+t_filter_eval_undef_cmp(struct t_file *restrict file,
         const struct t_ast *restrict rhs, t_cmp_func *f)
 {
     double def = 0;
@@ -658,7 +658,7 @@ t_interpreter_eval_undef_cmp(struct t_file *restrict file,
     case T_TAGKEY:
         T = file->get(file, rhs->token->value.str);
         if (T == NULL) {
-            warnx("t_interpreter: `%s': %s",
+            warnx("t_filter: `%s': %s",
                     file->path, t_error_msg(file));
             return (false);
         }
@@ -668,7 +668,7 @@ t_interpreter_eval_undef_cmp(struct t_file *restrict file,
             def = 1;
         break;
     default:
-        (void)fprintf(stderr, "***internal interpreter error*** "
+        (void)fprintf(stderr, "***internal filter error*** "
                 "unexpected token kind: rhs(%s)\n", rhs->token->str);
         assert_fail();
         /* NOTREACHED */

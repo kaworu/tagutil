@@ -55,7 +55,7 @@
 #include "t_renamer.h"
 #include "t_lexer.h"
 #include "t_parser.h"
-#include "t_interpreter.h"
+#include "t_filter.h"
 #include "tagutil.h"
 
 
@@ -468,7 +468,7 @@ tagutil_filter(struct t_file *restrict file,
     assert_not_null(file);
     assert_not_null(ast);
 
-    ret = t_interpreter_eval_ast(file, ast);
+    ret = t_filter_eval(file, ast);
 
     if (ret)
         (void)printf("%s\n", file->path);

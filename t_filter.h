@@ -1,7 +1,7 @@
 #ifndef T_INTERPRETER_H
 #define T_INTERPRETER_H
 /*
- * t_interpreter.h
+ * t_filter.h
  *
  * the tagutil's filter interpreter.
  */
@@ -18,7 +18,7 @@
  * return true if file match the filter, false otherwise.
  */
 _t__nonnull(1) _t__nonnull(2)
-bool t_interpreter_eval_ast(struct t_file *restrict file,
+bool t_filter_eval(struct t_file *restrict file,
         const struct t_ast *restrict filter);
 
 #endif /* not T_INTERPRETER_H */
