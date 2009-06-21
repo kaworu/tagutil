@@ -220,11 +220,9 @@ t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
     const struct t_token *tkn;
     struct t_strbuffer *sb;
     struct t_taglist *T;
-    struct t_tag  *t;
-    struct t_tagv *v;
+    struct t_tag *t;
     char *ret, *s, *slash;
     size_t len;
-    int i;
 
     assert_not_null(ts);
     assert_not_null(file);
@@ -232,7 +230,7 @@ t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
 
     sb = t_strbuffer_new();
     tkn = *ts;
-    while (tkn) {
+    while (tkn != NULL) {
         s = NULL;
         if (tkn->kind == T_TAGKEY) {
             T = file->get(file, tkn->value.str);
@@ -240,29 +238,24 @@ t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
                 t_strbuffer_destroy(sb);
                 return (NULL);
             }
-            else if (T->tcount > 0) {
+            else if (T->count > 0) {
             /* tag exist */
-                assert(T->tcount == 1);
-                t = TAILQ_FIRST(T->tags);
-                assert_not_null(t);
-                assert(t->vcount > 0);
                 if (tkn->tidx == T_TOKEN_STAR) {
                 /* user ask for *all* tag values */
-                    s = t_tag_join_values(t, " - ");
+                    s = t_taglist_join(T, " - ");
                     len = strlen(s);
                 }
                 else {
                 /* requested one tag */
-                    i = tkn->tidx == T_TOKEN_STAR ? 0 : tkn->tidx;
-                    v = t_tag_value_by_idx(t, i);
-                    if (v) {
-                        s = xstrdup(v->value);
-                        len = v->vlen;
+                    t = t_taglist_tag_at(T, tkn->tidx);
+                    if (t != NULL) {
+                        s = xstrdup(t->value);
+                        len = t->valuelen;
                     }
                 }
             }
             t_taglist_destroy(T);
-            if (s) {
+            if (s != NULL) {
             /* check for slash in tag value */
                 slash = strchr(s, '/');
                 if (slash) {

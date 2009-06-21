@@ -20,9 +20,9 @@
 
 
 /*
- * TODO
+ * libyaml parser helper.
  */
-int t_yaml_write_handler(void *data, unsigned char *buffer, size_t size);
+yaml_write_handler_t t_yaml_whdl;
 
 
 char *
@@ -35,7 +35,6 @@ t_tags2yaml(struct t_file *restrict file)
     size_t headlen;
     struct t_taglist *T;
     struct t_tag  *t;
-    struct t_tagv *v;
 
     assert_not_null(file);
 
@@ -47,7 +46,7 @@ t_tags2yaml(struct t_file *restrict file)
     if (!yaml_emitter_initialize(&emitter))
         goto emitter_error;
 
-    yaml_emitter_set_output(&emitter, t_yaml_write_handler, sb);
+    yaml_emitter_set_output(&emitter, t_yaml_whdl, sb);
     yaml_emitter_set_unicode(&emitter, 1);
 
     /* Create and emit the STREAM-START event. */
@@ -75,24 +74,22 @@ t_tags2yaml(struct t_file *restrict file)
         t_strbuffer_destroy(sb);
         return (NULL);
     }
-    TAILQ_FOREACH(t, T->tags, next) {
-        TAILQ_FOREACH(v, t->values, next) {
-            /* emit the key */
-            if (!yaml_scalar_event_initialize(&event, NULL,
-                        (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->key, -1,
-                        1, 1, YAML_PLAIN_SCALAR_STYLE))
-            goto event_error;
-            if (!yaml_emitter_emit(&emitter, &event))
-                goto emitter_error;
-            /* emit the value */
+    t_tagQ_foreach(t, T->tags) {
+        /* emit the key */
         if (!yaml_scalar_event_initialize(&event, NULL,
-                    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)v->value, -1,
+                    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->key, -1,
+                    1, 1, YAML_PLAIN_SCALAR_STYLE))
+            goto event_error;
+        if (!yaml_emitter_emit(&emitter, &event))
+            goto emitter_error;
+        /* emit the value */
+        if (!yaml_scalar_event_initialize(&event, NULL,
+                    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->value, -1,
                     1, 1, YAML_PLAIN_SCALAR_STYLE)) {
             goto event_error;
         }
         if (!yaml_emitter_emit(&emitter, &event))
             goto emitter_error;
-        }
     }
     t_taglist_destroy(T);
 
@@ -135,8 +132,8 @@ t_yaml2tags(struct t_file *restrict file, FILE *restrict stream)
     struct t_taglist *T;
     yaml_parser_t parser;
     yaml_event_t event;
-    bool stop = false;
-    bool inmap = false, donemap = false;
+    bool stop;
+    bool inmap, donemap;
     char *key = NULL, *value = NULL;
 
     assert_not_null(stream);
@@ -148,6 +145,7 @@ t_yaml2tags(struct t_file *restrict file, FILE *restrict stream)
         goto parser_error;
     yaml_parser_set_input_file(&parser, stream);
 
+    inmap = donemap = stop = false;
     while (!stop) {
         if (!yaml_parser_parse(&parser, &event))
             goto parser_error;
@@ -159,34 +157,34 @@ t_yaml2tags(struct t_file *restrict file, FILE *restrict stream)
             continue;
 
         case YAML_ALIAS_EVENT:
-            t_error_set(T, "YAML parser got unexpected "
+            t_error_set(file, "YAML parser got unexpected "
                     "YAML_ALIAS_EVENT at line %zu",
                    parser.context_mark.line + 1);
-            stop = true;
+            goto cleanup;
             break;
         case YAML_SEQUENCE_START_EVENT:
-            t_error_set(T, "YAML parser got unexpected "
+            t_error_set(file, "YAML parser got unexpected "
                     "YAML_SEQUENCE_START_EVENT at line %zu",
                     parser.context_mark.line + 1);
-            stop = true;
+            goto cleanup;
             break;
         case YAML_SEQUENCE_END_EVENT:
-            t_error_set(T, "YAML parser got unexpected "
+            t_error_set(file, "YAML parser got unexpected "
                     "YAML_SEQUENCE_END_EVENT at line %zu",
                     parser.context_mark.line + 1);
-            stop = true;
+            goto cleanup;
             break;
 
         case YAML_MAPPING_START_EVENT:
             if (inmap) {
-                t_error_set(T, "unexpected nested mapping at line %zu",
+                t_error_set(file, "unexpected nested mapping at line %zu",
                         parser.context_mark.line + 1);
-                stop = true;
+                goto cleanup;
             }
             else if (donemap) {
-                t_error_set(T, "unexpected extra mapping, needed only one. "
+                t_error_set(file, "unexpected extra mapping, needed only one. "
                         "at line %zu", parser.context_mark.line + 1);
-                stop = true;
+                goto cleanup;
             }
             else
                 inmap = true;
@@ -197,14 +195,14 @@ t_yaml2tags(struct t_file *restrict file, FILE *restrict stream)
             break;
         case YAML_SCALAR_EVENT:
             if (!inmap) {
-                t_error_set(T, "unexpected scalar at line %zu",
+                t_error_set(file, "unexpected scalar at line %zu",
                         parser.context_mark.line + 1);
-                stop = true;
+                goto cleanup;
             }
             else if (donemap) {
-                t_error_set(T, "unexpected extra scalar after mapping at line %zu",
+                t_error_set(file, "unexpected extra scalar after mapping at line %zu",
                         parser.context_mark.line + 1);
-                stop = true;
+                goto cleanup;
             }
             else if (key == NULL) {
                 key = xcalloc(event.data.scalar.length + 1, sizeof(char));
@@ -232,17 +230,17 @@ t_yaml2tags(struct t_file *restrict file, FILE *restrict stream)
 parser_error:
     switch (parser.error) {
     case YAML_MEMORY_ERROR:
-        t_error_set(T, "t_yaml2tags: YAML Parser (ENOMEM)");
+        t_error_set(file, "t_yaml2tags: YAML Parser (ENOMEM)");
         break;
     case YAML_READER_ERROR:
         if (parser.problem_value != -1) {
-            t_error_set(T, "t_yaml2tags: Reader error: %s: #%X at %zu\n",
+            t_error_set(file, "t_yaml2tags: Reader error: %s: #%X at %zu\n",
                     parser.problem,
                     parser.problem_value,
                     parser.problem_offset);
         }
         else {
-            t_error_set(T, "t_yaml2tags: Reader error: %s at %zu\n",
+            t_error_set(file, "t_yaml2tags: Reader error: %s at %zu\n",
                     parser.problem,
                     parser.problem_offset);
         }
@@ -250,7 +248,7 @@ parser_error:
     case YAML_SCANNER_ERROR: /* FALLTHROUGH */
     case YAML_PARSER_ERROR:
         if (parser.context) {
-            t_error_set(T, "t_yaml2tags: %s error: %s at line %zu, column %zu\n"
+            t_error_set(file, "t_yaml2tags: %s error: %s at line %zu, column %zu\n"
                     "%s at line %zu, column %zu\n",
                     parser.error == YAML_SCANNER_ERROR ? "Scanner" : "Parser",
                     parser.context,
@@ -261,7 +259,7 @@ parser_error:
                     parser.problem_mark.column + 1);
         }
         else {
-            t_error_set(T, "t_yaml2tags: %s error: %s at line %zu, column %zu\n",
+            t_error_set(file, "t_yaml2tags: %s error: %s at line %zu, column %zu\n",
                     parser.error == YAML_SCANNER_ERROR ? "Scanner" : "Parser",
                     parser.problem,
                     parser.problem_mark.line + 1,
@@ -272,7 +270,7 @@ parser_error:
     case YAML_COMPOSER_ERROR: /* FALLTHROUGH */
     case YAML_WRITER_ERROR:   /* FALLTHROUGH */
     case YAML_EMITTER_ERROR:
-        t_error_set(T, "libyaml internal error\n"
+        t_error_set(file, "libyaml internal error\n"
                 "bad error type while parsing: %s",
                 parser.error == YAML_NO_ERROR ? "YAML_NO_ERROR" :
                 parser.error == YAML_COMPOSER_ERROR ? "YAML_COMPOSER_ERROR" :
@@ -282,14 +280,16 @@ parser_error:
         break;
     }
 
+cleanup:
     yaml_event_delete(&event);
     yaml_parser_delete(&parser);
-    return (T);
+    t_taglist_destroy(T);
+    return (NULL);
 }
 
 
 int
-t_yaml_write_handler(void *data, unsigned char *buffer, size_t size)
+t_yaml_whdl(void *data, unsigned char *buffer, size_t size)
 {
     bool error = false;
     struct t_strbuffer *sb;

@@ -330,9 +330,9 @@ tagutil_load(struct t_file *restrict file, const char *restrict path)
         stream = xfopen(path, "r");
 
     T = t_yaml2tags(file, stream);
-    if (t_error_msg(T)) {
+    if (T == NULL) {
         ret = false;
-        warnx("error while reading YAML: %s", t_error_msg(T));
+        warnx("error while reading YAML: %s", t_error_msg(file));
         warnx("file `%s' not saved.", file->path);
     }
     else {
@@ -342,10 +342,10 @@ tagutil_load(struct t_file *restrict file, const char *restrict path)
             if (!file->save(file))
                 err(errno, "can't save file '%s'", file->path);
         }
+        t_taglist_destroy(T);
     }
     if (stream != stdin)
         xfclose(stream);
-    t_taglist_destroy(T);
 
     return (ret);
 }

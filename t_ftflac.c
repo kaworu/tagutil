@@ -23,51 +23,51 @@ struct t_ftflac_data {
 
 
 _t__nonnull(1)
-void t_ftflac_destroy(struct t_file *restrict self);
+void t_ftflac_destroy(struct t_file *restrict file);
 
 _t__nonnull(1)
-bool t_ftflac_save(struct t_file *restrict self);
+bool t_ftflac_save(struct t_file *restrict file);
 
 _t__nonnull(1)
-struct t_taglist * t_ftflac_get(struct t_file *restrict self,
+struct t_taglist * t_ftflac_get(struct t_file *restrict file,
         const char *restrict key);
 
 _t__nonnull(1)
-bool t_ftflac_clear(struct t_file *restrict self,
+bool t_ftflac_clear(struct t_file *restrict file,
         const struct t_taglist *restrict T);
 
 _t__nonnull(1) _t__nonnull(2)
-bool t_ftflac_add(struct t_file *restrict self,
+bool t_ftflac_add(struct t_file *restrict file,
         const struct t_taglist *restrict T);
 
 
 void
-t_ftflac_destroy(struct t_file *restrict self)
+t_ftflac_destroy(struct t_file *restrict file)
 {
     struct t_ftflac_data *d;
 
-    assert_not_null(self);
-    assert_not_null(self->data);
+    assert_not_null(file);
+    assert_not_null(file->data);
 
-    d = self->data;
+    d = file->data;
 
     FLAC__metadata_chain_delete(d->chain);
-    t_error_clear(self);
-    freex(self);
+    t_error_clear(file);
+    freex(file);
 }
 
 
 bool
-t_ftflac_save(struct t_file *restrict self)
+t_ftflac_save(struct t_file *restrict file)
 {
     bool ok;
     struct t_ftflac_data *d;
 
-    assert_not_null(self);
-    assert_not_null(self->data);
-    t_error_clear(self);
+    assert_not_null(file);
+    assert_not_null(file->data);
+    t_error_clear(file);
 
-    d = self->data;
+    d = file->data;
 
     FLAC__metadata_chain_sort_padding(d->chain);
     ok = FLAC__metadata_chain_write(d->chain,
@@ -76,7 +76,7 @@ t_ftflac_save(struct t_file *restrict self)
     if (!ok) {
         FLAC__Metadata_ChainStatus status;
         status = FLAC__metadata_chain_status(d->chain);
-        t_error_set(self, "%s", FLAC__Metadata_ChainStatusString[status]);
+        t_error_set(file, "%s", FLAC__Metadata_ChainStatusString[status]);
     }
 
     return (ok);
@@ -84,7 +84,7 @@ t_ftflac_save(struct t_file *restrict self)
 
 
 struct t_taglist *
-t_ftflac_get(struct t_file *restrict self, const char *restrict key)
+t_ftflac_get(struct t_file *restrict file, const char *restrict key)
 {
     bool b;
     int i = 0;
@@ -95,11 +95,11 @@ t_ftflac_get(struct t_file *restrict self, const char *restrict key)
     char *field_name  = NULL;
     char *field_value = NULL;
 
-    assert_not_null(self);
-    assert_not_null(self->data);
-    t_error_clear(self);
+    assert_not_null(file);
+    assert_not_null(file->data);
+    t_error_clear(file);
 
-    d = self->data;
+    d = file->data;
     T = t_taglist_new();
     count = d->vocomments->data.vorbis_comment.num_comments;
 
@@ -113,10 +113,10 @@ t_ftflac_get(struct t_file *restrict self, const char *restrict key)
         b = FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair(e, &field_name, &field_value);
         if (!b) {
             if (errno == ENOMEM)
-                t_error_set(self, "FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair: %s",
+                t_error_set(file, "FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair: %s",
                         strerror(ENOMEM));
             else
-                t_error_set(self, "`%s' seems corrupted", self->path);
+                t_error_set(file, "`%s' seems corrupted", file->path);
             t_taglist_destroy(T);
             freex(field_name);
             freex(field_value);
@@ -134,33 +134,35 @@ t_ftflac_get(struct t_file *restrict self, const char *restrict key)
 
 
 bool
-t_ftflac_clear(struct t_file *restrict self, const struct t_taglist *restrict T)
+t_ftflac_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 {
     bool b;
     int i = 0;
     struct t_ftflac_data *d;
     struct t_tag *t, *last;
 
-    assert_not_null(self);
-    assert_not_null(self->data);
-    t_error_clear(self);
+    assert_not_null(file);
+    assert_not_null(file->data);
+    t_error_clear(file);
 
-    d = self->data;
+    d = file->data;
     if (T) {
-        if (T->tcount == 0)
+        if (T->count == 0)
             return (true);
-        t = TAILQ_FIRST(T->tags);
-        last = TAILQ_LAST(T->tags, t_tag_q);
+        t = t_tagQ_first(T->tags);
+        last = t_tagQ_last(T->tags);
     }
     for (;;) {
-        if (T) {
+        if (T != NULL) {
             i = FLAC__metadata_object_vorbiscomment_find_entry_from(d->vocomments, 0, t->key);
             if (i == -1) {
                 if (t == last)
                     break;
-                t = TAILQ_NEXT(t, next);
-                i = 0;
-                continue;
+                else {
+                    t = t_tagQ_next(t);
+                    i = 0;
+                    continue;
+                }
             }
         }
         else {
@@ -169,7 +171,7 @@ t_ftflac_clear(struct t_file *restrict self, const struct t_taglist *restrict T)
         }
         b = FLAC__metadata_object_vorbiscomment_delete_comment(d->vocomments, i);
         if (!b) {
-            t_error_set(self, "FLAC__metadata_object_vorbiscomment_delete_comment: %s",
+            t_error_set(file, "FLAC__metadata_object_vorbiscomment_delete_comment: %s",
                     strerror(ENOMEM));
             return (false);
         }
@@ -180,43 +182,40 @@ t_ftflac_clear(struct t_file *restrict self, const struct t_taglist *restrict T)
 
 
 bool
-t_ftflac_add(struct t_file *restrict self, const struct t_taglist *restrict T)
+t_ftflac_add(struct t_file *restrict file, const struct t_taglist *restrict T)
 {
     bool b;
     struct t_ftflac_data *d;
     FLAC__StreamMetadata_VorbisComment_Entry e;
-    struct t_tag  *t;
-    struct t_tagv *v;
+    struct t_tag *t;
 
-    assert_not_null(self);
-    assert_not_null(self->data);
+    assert_not_null(file);
+    assert_not_null(file->data);
     assert_not_null(T);
-    t_error_clear(self);
+    t_error_clear(file);
 
-    d = self->data;
-    TAILQ_FOREACH(t, T->tags, next) {
-        TAILQ_FOREACH(v, t->values, next) {
-            b = FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&e, t->key, v->value);
-            if (!b) {
-                if (errno == ENOMEM) {
-                    t_error_set(self, "FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair: %s",
-                            strerror(ENOMEM));
-                }
-                else
-                    t_error_set(self, "invalid Vorbis tag pair: `%s', `%s'", t->key, v->value);
-                return (false);
+    d = file->data;
+    t_tagQ_foreach(t, T->tags) {
+        b = FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&e, t->key, t->value);
+        if (!b) {
+            if (errno == ENOMEM) {
+                t_error_set(file, "FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair: %s",
+                        strerror(ENOMEM));
             }
-            b = FLAC__metadata_object_vorbiscomment_append_comment(d->vocomments, e, /* copy */false);
-            if (!b) {
-                freex(e.entry);
-                if (errno == ENOMEM) {
-                    t_error_set(self, "FLAC__metadata_object_vorbiscomment_append_comment: %s",
-                            strerror(ENOMEM));
-                }
-                else
-                    t_error_set(self, "invalid Vorbis tag entry created with: `%s', `%s'", t->key, v->value);
-                return (false);
+            else
+                t_error_set(file, "invalid Vorbis tag pair: `%s', `%s'", t->key, t->value);
+            return (false);
+        }
+        b = FLAC__metadata_object_vorbiscomment_append_comment(d->vocomments, e, /* copy */false);
+        if (!b) {
+            freex(e.entry);
+            if (errno == ENOMEM) {
+                t_error_set(file, "FLAC__metadata_object_vorbiscomment_append_comment: %s",
+                        strerror(ENOMEM));
             }
+            else
+                t_error_set(file, "invalid Vorbis tag entry created with: `%s', `%s'", t->key, t->value);
+            return (false);
         }
     }
 

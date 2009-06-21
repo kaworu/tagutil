@@ -34,15 +34,15 @@ struct t_file {
      * write the file.
      *
      * return true if no error, false otherwise.
-     * On success t_error_msg(self) is NULL, otherwise it contains an error
+     * On success t_error_msg(file) is NULL, otherwise it contains an error
      * message.
      */
-    bool (*save)(struct t_file *restrict self);
+    bool (*save)(struct t_file *restrict file);
 
     /*
      * free the struct
      */
-    void (*destroy)(struct t_file *restrict self);
+    void (*destroy)(struct t_file *restrict file);
 
     /*
      * return a the values of the tag key.
@@ -50,12 +50,12 @@ struct t_file {
      * If key is NULL, all the tags are returned.
      * If there is no values fo key, ret->tcount is 0.
      *
-     * On error, NULL is returned and t_error_msg(self) contains an error
-     * message, otherwise t_error_msg(self) is NULL.
+     * On error, NULL is returned and t_error_msg(file) contains an error
+     * message, otherwise t_error_msg(file) is NULL.
      *
      * returned value has to be free()d (use t_taglist_destroy()).
      */
-    struct t_taglist * (*get)(struct t_file *restrict self,
+    struct t_taglist * (*get)(struct t_file *restrict file,
             const char *restrict key);
 
     /*
@@ -64,17 +64,17 @@ struct t_file {
      * if T is NULL, all tags will be cleared.
      *
      * On success true is returned, otherwise false is returned and
-     * t_error_msg(self) contains an error message.
+     * t_error_msg(file) contains an error message.
      */
-    bool (*clear)(struct t_file *restrict self, const struct t_taglist *restrict T);
+    bool (*clear)(struct t_file *restrict file, const struct t_taglist *restrict T);
 
     /*
-     * add the tags of given t_taglist in self.
+     * add the tags of given t_taglist in file.
      *
      * On success true is returned, otherwise false is returned and
-     * t_error_msg(self) contains an error message.
+     * t_error_msg(file) contains an error message.
      */
-    bool (*add)(struct t_file *restrict self, const struct t_taglist *restrict T);
+    bool (*add)(struct t_file *restrict file, const struct t_taglist *restrict T);
 
 
     ERROR_MSG_MEMBER;

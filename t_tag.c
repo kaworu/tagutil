@@ -3,6 +3,8 @@
  *
  * tagutil's tag structures/functions.
  */
+#include <string.h>
+
 #include "t_config.h"
 #include "t_toolkit.h"
 #include "t_error.h"
@@ -10,69 +12,18 @@
 #include "t_tag.h"
 
 
-struct t_tagv *
-t_tag_value_by_idx(const struct t_tag *restrict t, size_t idx)
-{
-    struct t_tagv *ret = NULL;
-
-    assert_not_null(t);
-
-    if (idx < t->vcount) {
-        ret = TAILQ_FIRST(t->values);
-        while (idx--)
-            ret = TAILQ_NEXT(ret, next);
-    }
-
-    return (ret);
-}
-
-
-char *
-t_tag_join_values(const struct t_tag *restrict t, const char *restrict sep)
-{
-    size_t seplen;
-    char *ret;
-    struct t_tagv *v, *last;
-    struct t_strbuffer *sb;
-
-    assert_not_null(t);
-
-    switch (t->vcount) {
-    case 0:
-        ret = xcalloc(1, sizeof(char));
-        break;
-    case 1:
-        ret = xstrdup(TAILQ_FIRST(t->values)->value);
-        break;
-    default:
-        if (sep)
-            seplen = strlen(sep);
-        sb = t_strbuffer_new();
-        last = TAILQ_LAST(t->values, t_tagv_q);
-        TAILQ_FOREACH(v, t->values, next) {
-            t_strbuffer_add(sb, xstrdup(v->value), v->vlen);
-            if (sep && seplen > 0 && v != last)
-                t_strbuffer_add(sb, xstrdup(sep), seplen);
-        }
-        ret = t_strbuffer_get(sb);
-        t_strbuffer_destroy(sb);
-    }
-
-    return (ret);
-}
-
-
-
 struct t_taglist *
 t_taglist_new(void)
 {
     struct t_taglist *ret;
 
-    ret = xmalloc(sizeof(struct t_taglist) + sizeof(struct t_tag_q));
-    ret->tags = (struct t_tag_q *)(ret + 1);
-    ret->tcount = 0;
+    ret = xmalloc(sizeof(struct t_taglist) + sizeof(struct t_tagQ));
+    ret->tags = (struct t_tagQ *)(ret + 1);
+    ret->count = 0;
+    ret->childcount = 0;
+    ret->parent = NULL;
     t_error_init(ret);
-    TAILQ_INIT(ret->tags);
+    t_tagQ_init(ret->tags);
 
     return (ret);
 }
@@ -82,104 +33,162 @@ void
 t_taglist_insert(struct t_taglist *restrict T,
         const char *restrict key, const char *restrict value)
 {
-    size_t len;
-    ssize_t vlen;
+    size_t klen, vlen;
+    struct t_tag *t;
     char *s;
-    struct t_tag  *t, *kinq;
-    struct t_tagv *v;
 
-    assert_not_null(key);
     assert_not_null(T);
+    assert_not_null(key);
+    assert_not_null(value);
 
-    /* create v if needed */
-    if (value) {
-        vlen = strlen(value);
-        v = xmalloc(sizeof(struct t_tagv) + vlen + 1);
-        v->vlen = vlen;
-        s = (char *)(v + 1);
-        (void)strlcpy(s, value, vlen + 1);
-        v->value = s;
-    }
-    else
-        v = NULL;
+    klen = strlen(key);
+    vlen = strlen(value);
 
-    /* look if a t_tag matching key already exist */
+    t = xmalloc(sizeof(struct t_tag) + klen + 1 + vlen + 1);
+    t->keylen = klen;
+    t->valuelen = vlen;
+    t->key = s = (char *)(t + 1);
+    (void)strlcpy(s, key, t->keylen + 1);
+    t_strtolower(s);
+    t->value = s = (char *)(t->key + t->keylen + 1);
+    (void)strlcpy(s, value, t->valuelen + 1);
+
+    t_tagQ_insert(T->tags, t);
+    T->count++;
+}
+
+
+struct t_taglist *
+t_taglist_filter(const struct t_taglist *restrict T,
+        const char *restrict key, bool onlyfirst)
+{
+    size_t len;
+    struct t_taglist *ret;
+    struct t_tag *t, *n;
+
+    assert_not_null(T);
+    assert_not_null(key);
+
+    ret = NULL;
     len = strlen(key);
-    kinq = NULL;
-    TAILQ_FOREACH_REVERSE(t, T->tags, t_tag_q, next) {
-        if (t->keylen == len && strcasecmp(key, t->key) == 0) {
-            kinq = t;
-            break;
+    t_tagQ_foreach(t, T->tags) {
+        if (len == t->keylen && strcasecmp(t->key, key) == 0) {
+            if (ret == NULL)
+                ret = t_taglist_new();
+            n = xmalloc(sizeof(struct t_tag));
+            n->keylen   = t->keylen;
+            n->key      = t->key;
+            n->valuelen = t->valuelen;
+            n->value    = t->value;
+            t_tagQ_insert(ret->tags, n);
+            ret->count++;
+            if (onlyfirst)
+                break;
         }
     }
 
-    if (kinq == NULL) {
-    /* doesn't exist, create a new t_tag (delete) */
-        kinq = xmalloc(sizeof(struct t_tag) + sizeof(struct t_tagv_q) + len + 1);
-        TAILQ_INSERT_TAIL(T->tags, kinq, next);
-        T->tcount++;
-
-        kinq->values = (struct t_tagv_q *)(kinq + 1);
-        TAILQ_INIT(kinq->values);
-        kinq->vcount = 0;
-
-        kinq->keylen = len;
-        s = (char *)(kinq->values + 1);
-        (void)strlcpy(s, key, len + 1);
-        t_strtolower(s);
-        kinq->key = s;
-
+    if (ret != NULL) {
+    /* ret is now a child of T */
+        /* break const, look how bad we are :) */
+        ret->parent = (struct t_taglist *)T;
+        ret->parent->childcount++;
+        if (onlyfirst)
+            assert(ret->count == 1);
     }
 
-    if (v) {
-        TAILQ_INSERT_TAIL(kinq->values, v, next);
-        kinq->vcount++;
+    return (ret);
+}
+
+
+unsigned int
+t_taglist_filter_count(const struct t_taglist *restrict T,
+        const char *restrict key, bool onlyfirst)
+{
+    size_t len;
+    unsigned int ret;
+    struct t_tag *t;
+
+    assert_not_null(T);
+    assert_not_null(key);
+
+    ret = 0;
+    len = strlen(key);
+    t_tagQ_foreach(t, T->tags) {
+        if (len == t->keylen && strcasecmp(t->key, key) == 0) {
+            ret++;
+            if (onlyfirst)
+                break;
+        }
     }
+
+    return (ret);
+}
+
+
+char *
+t_taglist_join(struct t_taglist *restrict T, const char *restrict j)
+{
+    char *s;
+    size_t jlen;
+    struct t_strbuffer *sb;
+    struct t_tag *t, *last;
+
+    assert_not_null(T);
+
+    if (T->count == 0)
+        return (xcalloc(1, sizeof(char)));
+
+    jlen = strlen(j);
+    sb = t_strbuffer_new();
+    last = t_tagQ_last(T->tags);
+
+    t_tagQ_foreach(t, T->tags) {
+        t_strbuffer_add(sb, xstrdup(t->value), t->valuelen);
+        if (t != last)
+            t_strbuffer_add(sb, xstrdup(j), jlen);
+    }
+    s = t_strbuffer_get(sb);
+    t_strbuffer_destroy(sb);
+
+    return (s);
 }
 
 
 struct t_tag *
-t_taglist_search(const struct t_taglist *restrict T, const char *restrict key)
+t_taglist_tag_at(struct t_taglist *restrict T, unsigned int idx)
 {
-    size_t len;
-    struct t_tag  *t, *target;
+    struct t_tag *t;
 
     assert_not_null(T);
-    assert_not_null(key);
 
-    len = strlen(key);
-    target = NULL;
-    TAILQ_FOREACH(t, T->tags, next) {
-        if (len == t->keylen && strcasecmp(t->key, key) == 0) {
-            target = t;
-            break;
-        }
+    t = t_tagQ_first(T->tags);
+    while (t != NULL && idx > 0) {
+        idx--;
+        t = t_tagQ_next(t);
     }
 
-    return (target);
+    return (t);
 }
 
 
 void
-t_taglist_destroy(const struct t_taglist *Tconst)
+t_taglist_destroy(struct t_taglist *restrict T)
 {
-    struct t_tag  *t;
-    struct t_tagv *v;
-    struct t_taglist *T;
-
-    T = (struct t_taglist *)Tconst; /* break const */
+    struct t_tag *t1, *t2;
 
     assert_not_null(T);
+    assert(T->childcount == 0);
 
-    while (!TAILQ_EMPTY(T->tags)) {
-        t = TAILQ_FIRST(T->tags);
-        TAILQ_REMOVE(T->tags, t, next);
-        while (!TAILQ_EMPTY(t->values)) {
-            v = TAILQ_FIRST(t->values);
-            TAILQ_REMOVE(t->values, v, next);
-            freex(v);
-        }
-        freex(t);
+    if (T->parent != NULL) {
+        assert(T->parent->childcount > 0);
+        T->parent->childcount--;
+    }
+
+    t1 = t_tagQ_first(T->tags);
+    while (t1 != NULL) {
+        t2 = t_tagQ_next(t1);
+        freex(t1);
+        t1 = t2;
     }
     t_error_clear(T);
     freex(T);

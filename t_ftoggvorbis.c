@@ -24,54 +24,54 @@ struct t_ftoggvorbis_data {
 
 
 _t__nonnull(1)
-void t_ftoggvorbis_destroy(struct t_file *restrict self);
+void t_ftoggvorbis_destroy(struct t_file *restrict file);
 
 _t__nonnull(1)
-bool t_ftoggvorbis_save(struct t_file *restrict self);
+bool t_ftoggvorbis_save(struct t_file *restrict file);
 
 _t__nonnull(1)
-struct t_taglist * t_ftoggvorbis_get(struct t_file *restrict self,
+struct t_taglist * t_ftoggvorbis_get(struct t_file *restrict file,
         const char *restrict key);
 
 _t__nonnull(1)
-bool t_ftoggvorbis_clear(struct t_file *restrict self,
+bool t_ftoggvorbis_clear(struct t_file *restrict file,
         const struct t_taglist *T);
 
 _t__nonnull(1) _t__nonnull(2)
-bool t_ftoggvorbis_add(struct t_file *restrict self,
+bool t_ftoggvorbis_add(struct t_file *restrict file,
         const struct t_taglist *T);
 
 
 void
-t_ftoggvorbis_destroy(struct t_file *restrict self)
+t_ftoggvorbis_destroy(struct t_file *restrict file)
 {
     struct t_ftoggvorbis_data *d;
 
-    assert_not_null(self);
-    assert_not_null(self->data);
+    assert_not_null(file);
+    assert_not_null(file->data);
 
-    d = self->data;
+    d = file->data;
 
     ov_clear(d->vf);
     freex(d->vf);
-    freex(self);
+    freex(file);
 }
 
 
 bool
-t_ftoggvorbis_save(struct t_file *restrict self)
+t_ftoggvorbis_save(struct t_file *restrict file)
 {
-    assert_not_null(self);
-    t_error_clear(self);
+    assert_not_null(file);
+    t_error_clear(file);
 
     /* FIXME */
-    t_error_set(self, "%s: read-only support", self->lib);
+    t_error_set(file, "%s: read-only support", file->lib);
     return (false);
 }
 
 
 struct t_taglist *
-t_ftoggvorbis_get(struct t_file *restrict self, const char *restrict key)
+t_ftoggvorbis_get(struct t_file *restrict file, const char *restrict key)
 {
     int i;
     char *copy, *eq;
@@ -80,11 +80,11 @@ t_ftoggvorbis_get(struct t_file *restrict self, const char *restrict key)
     struct t_taglist *T;
     struct t_ftoggvorbis_data *d;
 
-    assert_not_null(self);
-    assert_not_null(self->data);
-    t_error_clear(self);
+    assert_not_null(file);
+    assert_not_null(file->data);
+    t_error_clear(file);
 
-    d = self->data;
+    d = file->data;
     T = t_taglist_new();
     if (key)
         keylen = strlen(key);
@@ -98,7 +98,7 @@ t_ftoggvorbis_get(struct t_file *restrict self, const char *restrict key)
         copy = xstrdup(c);
         eq = strchr(copy, '=');
         if (eq == NULL) {
-            t_error_set(self, "`%s' seems corrupted", self->path);
+            t_error_set(file, "`%s' seems corrupted", file->path);
             freex(copy);
             t_taglist_destroy(T);
             return (NULL);
@@ -113,24 +113,24 @@ t_ftoggvorbis_get(struct t_file *restrict self, const char *restrict key)
 
 
 bool
-t_ftoggvorbis_clear(struct t_file *restrict self, const struct t_taglist *T)
+t_ftoggvorbis_clear(struct t_file *restrict file, const struct t_taglist *T)
 {
     int i, count;
     char *c;
-    struct t_tag  *t;
+    struct t_tag *t;
     struct t_ftoggvorbis_data *d;
 
-    assert_not_null(self);
-    assert_not_null(self->data);
-    t_error_clear(self);
+    assert_not_null(file);
+    assert_not_null(file->data);
+    t_error_clear(file);
 
-    d = self->data;
+    d = file->data;
 
-    if (T) {
-        TAILQ_FOREACH(t, T->tags, next) {
+    if (T != NULL) {
+        t_tagQ_foreach(t, T->tags) {
             for (i = 0; i < d->vc->comments; i++) {
                 c = d->vc->user_comments[i];
-                if (c) {
+                if (c != NULL) {
                     if (strncasecmp(t->key, c, t->keylen) == 0 &&
                             c[t->keylen] == '=')
                         freex(d->vc->user_comments[i]);
@@ -163,45 +163,40 @@ t_ftoggvorbis_clear(struct t_file *restrict self, const struct t_taglist *T)
 
 
 bool
-t_ftoggvorbis_add(struct t_file *restrict self, const struct t_taglist *T)
+t_ftoggvorbis_add(struct t_file *restrict file, const struct t_taglist *T)
 {
     int count;
     size_t len, bsize;
     char *tageq;
-    struct t_tag  *t;
-    struct t_tagv *v;
+    struct t_tag *t;
     struct t_ftoggvorbis_data *d;
 
     assert_not_null(T);
-    assert_not_null(self);
-    assert_not_null(self->data);
-    t_error_clear(self);
+    assert_not_null(file);
+    assert_not_null(file->data);
+    t_error_clear(file);
 
-    d = self->data;
+    d = file->data;
     count = 0;
-    TAILQ_FOREACH(t, T->tags, next) {
-        TAILQ_FOREACH(v, t->values, next)
-            count++;
-    }
+    t_tagQ_foreach(t, T->tags)
+        count++;
     d->vc->user_comments = xrealloc(d->vc->user_comments,
             (d->vc->comments + count + 1) * sizeof(*d->vc->user_comments));
     d->vc->comment_lengths = xrealloc(d->vc->comment_lengths,
             (d->vc->comments + count + 1) * sizeof(*d->vc->comment_lengths));
 
-    TAILQ_FOREACH(t, T->tags, next) {
-        /* FIXME: check t->key , utf8 value */
-        TAILQ_FOREACH(v, t->values, next) {
-            len = t->keylen + 1 + v->vlen;
-            bsize = len + 1;
-            tageq = xcalloc(bsize, sizeof(char));
-            if (strlcpy(tageq, t->key, bsize) >= bsize ||
-                    strlcat(tageq, "=", bsize) >= bsize ||
-                    strlcat(tageq, v->value, bsize) >= bsize)
-                assert_fail();
-            d->vc->comment_lengths[d->vc->comments] = len;
-            d->vc->user_comments[d->vc->comments]   = tageq;
-            d->vc->comments++;
-        }
+    t_tagQ_foreach(t, T->tags) {
+        /* FIXME: check t->key , utf8 t->value */
+        len = t->keylen + 1 + t->valuelen;
+        bsize = len + 1;
+        tageq = xcalloc(bsize, sizeof(char));
+        if (strlcpy(tageq, t->key, bsize) >= bsize ||
+                strlcat(tageq, "=", bsize) >= bsize ||
+                strlcat(tageq, t->value, bsize) >= bsize)
+            assert_fail();
+        d->vc->comment_lengths[d->vc->comments] = len;
+        d->vc->user_comments[d->vc->comments]   = tageq;
+        d->vc->comments++;
     }
     /* vorbis_comment_add() set the last comment to NULL, we do the same */
     d->vc->user_comments[d->vc->comments]   = NULL;

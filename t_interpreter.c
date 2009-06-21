@@ -138,8 +138,7 @@ t_interpreter_eval_cmp(struct t_file *restrict file,
 {
     bool ret = false;
     struct t_taglist *T = NULL;
-    struct t_tag  *t;
-    struct t_tagv *v;
+    struct t_tag *t;
 
     assert_not_null(file);
     assert_not_null(rhs);
@@ -173,23 +172,20 @@ t_interpreter_eval_cmp(struct t_file *restrict file,
                         file->path, t_error_msg(file));
                 break;
             }
-            if (T->tcount == 0)
+            if (T->count == 0)
                 break;
-            assert(T->tcount == 1);
-            t = TAILQ_FIRST(T->tags);
-            assert(t->vcount > 0);
             if (lhs->token->tidx == T_TOKEN_STAR) {
                 char *s;
                 switch (lhs->token->tidx_mod) {
                 case T_TOKEN_STAR_NO_MOD:
-                    s = t_tag_join_values(t, " - ");
+                    s = t_taglist_join(T, " - ");
                     ret = t_interpreter_eval_str_cmp(file, s, rhs, f);
                     freex(s);
                     break;
                 case T_TOKEN_STAR_OR_MOD:
                     ret = false;
-                    TAILQ_FOREACH(v, t->values, next) {
-                        if (t_interpreter_eval_str_cmp(file, v->value, rhs, f)) {
+                    t_tagQ_foreach(t, T->tags) {
+                        if (t_interpreter_eval_str_cmp(file, t->value, rhs, f)) {
                             ret = true;
                             break;
                         }
@@ -197,8 +193,8 @@ t_interpreter_eval_cmp(struct t_file *restrict file,
                     break;
                 case T_TOKEN_STAR_AND_MOD:
                     ret = true;
-                    TAILQ_FOREACH(v, t->values, next) {
-                        if (!t_interpreter_eval_str_cmp(file, v->value, rhs, f)) {
+                    t_tagQ_foreach(t, T->tags) {
+                        if (!t_interpreter_eval_str_cmp(file, t->value, rhs, f)) {
                             ret = false;
                             break;
                         }
@@ -207,9 +203,9 @@ t_interpreter_eval_cmp(struct t_file *restrict file,
                 }
             }
             else {
-                v = t_tag_value_by_idx(t, lhs->token->tidx);
-                if (v)
-                    ret = t_interpreter_eval_str_cmp(file, v->value, rhs, f);
+                t = t_taglist_tag_at(T, lhs->token->tidx);
+                if (t != NULL)
+                    ret = t_interpreter_eval_str_cmp(file, t->value, rhs, f);
             }
         }
         else
@@ -239,7 +235,6 @@ t_interpreter_eval_match(struct t_file *restrict file,
     const struct t_ast *regast, *strast;
     struct t_taglist *T = NULL;
     struct t_tag  *t;
-    struct t_tagv *v;
 
     assert_not_null(file);
     assert_not_null(rhs);
@@ -264,31 +259,28 @@ t_interpreter_eval_match(struct t_file *restrict file,
                     file->path, t_error_msg(file));
             break;
         }
-        if (T->tcount == 0)
+        if (T->count == 0)
             break;
-        assert(T->tcount == 1);
-        t = TAILQ_FIRST(T->tags);
-        assert(t->vcount > 0);
         if (strast->token->tidx == T_TOKEN_STAR) {
             char *s;
             switch (strast->token->tidx_mod) {
             case T_TOKEN_STAR_NO_MOD:
-                s = t_tag_join_values(t, " - ");
+                s = t_taglist_join(T, " - ");
                 ret = t_interpreter_regexec(r, s);
                 freex(s);
                 break;
             case T_TOKEN_STAR_OR_MOD:
                 ret = false;
-                TAILQ_FOREACH(v, t->values, next) {
-                    if (t_interpreter_regexec(r, v->value))
+                t_tagQ_foreach(t, T->tags) {
+                    if (t_interpreter_regexec(r, t->value))
                         ret = true;
                         break;
                     }
                 break;
             case T_TOKEN_STAR_AND_MOD:
                 ret = true;
-                TAILQ_FOREACH(v, t->values, next) {
-                    if (!t_interpreter_regexec(r, v->value))
+                t_tagQ_foreach(t, T->tags) {
+                    if (!t_interpreter_regexec(r, t->value))
                         ret = false;
                         break;
                     }
@@ -296,9 +288,9 @@ t_interpreter_eval_match(struct t_file *restrict file,
             }
         }
         else {
-            v = t_tag_value_by_idx(t, strast->token->tidx);
-            if (v)
-                ret = t_interpreter_regexec(r, v->value);
+            t = t_taglist_tag_at(T, strast->token->tidx);
+            if (t != NULL)
+                ret = t_interpreter_regexec(r, t->value);
         }
         break;
     case T_BACKEND: /* FALLTHROUGH */
@@ -428,7 +420,6 @@ t_interpreter_eval_int_cmp(struct t_file *restrict file,
     bool ret = false;
     struct t_taglist *T = NULL;
     struct t_tag  *t;
-    struct t_tagv *v;
 
     assert_not_null(file);
     assert_not_null(rhs);
@@ -450,23 +441,20 @@ t_interpreter_eval_int_cmp(struct t_file *restrict file,
                     file->path, t_error_msg(file));
             break;
         }
-        if (T->tcount == 0)
+        if (T->count == 0)
             break;
-        assert(T->tcount == 1);
-        t = TAILQ_FIRST(T->tags);
-        assert(t->vcount > 0);
         if (rhs->token->tidx == T_TOKEN_STAR) {
             char *s;
             switch (rhs->token->tidx_mod) {
             case T_TOKEN_STAR_NO_MOD:
-                s = t_tag_join_values(t, " - ");
+                s = t_taglist_join(T, " - ");
                 ret = (*f)((double)(i - strtol(s, NULL, 10)));
                 freex(s);
                 break;
             case T_TOKEN_STAR_OR_MOD:
                 ret = false;
-                TAILQ_FOREACH(v, t->values, next) {
-                    if ((*f)((double)(i - strtol(v->value, NULL, 10)))) {
+                t_tagQ_foreach(t, T->tags) {
+                    if ((*f)((double)(i - strtol(t->value, NULL, 10)))) {
                         ret = true;
                         break;
                     }
@@ -474,8 +462,8 @@ t_interpreter_eval_int_cmp(struct t_file *restrict file,
                 break;
             case T_TOKEN_STAR_AND_MOD:
                 ret = true;
-                TAILQ_FOREACH(v, t->values, next) {
-                    if (!(*f)((double)(i - strtol(v->value, NULL, 10)))) {
+                t_tagQ_foreach(t, T->tags) {
+                    if (!(*f)((double)(i - strtol(t->value, NULL, 10)))) {
                         ret = false;
                         break;
                     }
@@ -484,9 +472,9 @@ t_interpreter_eval_int_cmp(struct t_file *restrict file,
             }
         }
         else {
-            v = t_tag_value_by_idx(t, rhs->token->tidx);
-            if (v)
-                ret = (*f)((double)(i - strtol(v->value, NULL, 10)));
+            t = t_taglist_tag_at(T, rhs->token->tidx);
+            if (t != NULL)
+                ret = (*f)((double)(i - strtol(t->value, NULL, 10)));
         }
         break;
     default:
@@ -510,7 +498,6 @@ t_interpreter_eval_double_cmp(struct t_file *restrict file,
     bool ret = false;
     struct t_taglist *T = NULL;
     struct t_tag  *t;
-    struct t_tagv *v;
 
     assert_not_null(file);
     assert_not_null(rhs);
@@ -532,31 +519,28 @@ t_interpreter_eval_double_cmp(struct t_file *restrict file,
                     file->path, t_error_msg(file));
             break;
         }
-        if (T->tcount == 0)
+        if (T->count == 0)
             break;
-        assert(T->tcount == 1);
-        t = TAILQ_FIRST(T->tags);
-        assert(t->vcount > 0);
         if (rhs->token->tidx == T_TOKEN_STAR) {
             char *s;
             switch (rhs->token->tidx_mod) {
             case T_TOKEN_STAR_NO_MOD:
-                s = t_tag_join_values(t, " - ");
+                s = t_taglist_join(T, " - ");
                 ret = (*f)(d - strtod(s, NULL));
                 freex(s);
                 break;
             case T_TOKEN_STAR_OR_MOD:
                 ret = false;
-                TAILQ_FOREACH(v, t->values, next) {
-                    if ((*f)(d - strtod(v->value, NULL)))
+                t_tagQ_foreach(t, T->tags) {
+                    if ((*f)(d - strtod(t->value, NULL)))
                         ret = true;
                         break;
                     }
                 break;
             case T_TOKEN_STAR_AND_MOD:
                 ret = true;
-                TAILQ_FOREACH(v, t->values, next) {
-                    if (!(*f)(d - strtod(v->value, NULL))) {
+                t_tagQ_foreach(t, T->tags) {
+                    if (!(*f)(d - strtod(t->value, NULL))) {
                         ret = false;
                         break;
                     }
@@ -565,9 +549,9 @@ t_interpreter_eval_double_cmp(struct t_file *restrict file,
             }
         }
         else {
-            v = t_tag_value_by_idx(t, rhs->token->tidx);
-            if (v)
-                ret = (*f)(d - strtod(v->value, NULL));
+            t = t_taglist_tag_at(T, rhs->token->tidx);
+            if (t != NULL)
+                ret = (*f)(d - strtod(t->value, NULL));
         }
         break;
     default:
@@ -592,7 +576,6 @@ t_interpreter_eval_str_cmp(struct t_file *restrict file,
     bool ret = false;
     struct t_taglist *T = NULL;
     struct t_tag  *t;
-    struct t_tagv *v;
 
     assert_not_null(file);
     assert_not_null(rhs);
@@ -614,30 +597,27 @@ t_interpreter_eval_str_cmp(struct t_file *restrict file,
                     file->path, t_error_msg(file));
             break;
         }
-        if (T->tcount == 0)
+        if (T->count == 0)
             break;
-        assert(T->tcount == 1);
-        t = TAILQ_FIRST(T->tags);
-        assert(t->vcount > 0);
         if (rhs->token->tidx == T_TOKEN_STAR) {
             char *s;
             switch (rhs->token->tidx_mod) {
             case T_TOKEN_STAR_NO_MOD:
-                s = t_tag_join_values(t, " - ");
+                s = t_taglist_join(T, " - ");
                 ret = (*f)((double)strcmp(str, s));
                 freex(s);
                 break;
             case T_TOKEN_STAR_OR_MOD:
-                TAILQ_FOREACH(v, t->values, next) {
-                    if ((*f)((double)strcmp(str, v->value)))
+                t_tagQ_foreach(t, T->tags) {
+                    if ((*f)((double)strcmp(str, t->value)))
                         ret = true;
                         break;
                     }
                 break;
             case T_TOKEN_STAR_AND_MOD:
                 ret = true;
-                TAILQ_FOREACH(v, t->values, next) {
-                    if (!(*f)((double)strcmp(str, v->value)))
+                t_tagQ_foreach(t, T->tags) {
+                    if (!(*f)((double)strcmp(str, t->value)))
                         ret = false;
                         break;
                     }
@@ -645,9 +625,9 @@ t_interpreter_eval_str_cmp(struct t_file *restrict file,
             }
         }
         else {
-            v = t_tag_value_by_idx(t, rhs->token->tidx);
-            if (v)
-                ret = (*f)((double)strcmp(str, v->value));
+            t = t_taglist_tag_at(T, rhs->token->tidx);
+            if (t != NULL)
+                ret = (*f)((double)strcmp(str, t->value));
         }
         break;
     default:
@@ -669,7 +649,6 @@ t_interpreter_eval_undef_cmp(struct t_file *restrict file,
 {
     double def = 0;
     struct t_taglist *T = NULL;
-    struct t_tag *t;
 
     assert_not_null(file);
     assert_not_null(rhs);
@@ -683,14 +662,10 @@ t_interpreter_eval_undef_cmp(struct t_file *restrict file,
                     file->path, t_error_msg(file));
             return (false);
         }
-        if (T->tcount == 0)
+        if (T->count == 0)
             def = 0;
-        else {
-            assert(T->tcount == 1);
-            t = TAILQ_FIRST(T->tags);
-            assert(t->vcount > 0);
+        else
             def = 1;
-        }
         break;
     default:
         (void)fprintf(stderr, "***internal interpreter error*** "
@@ -699,7 +674,7 @@ t_interpreter_eval_undef_cmp(struct t_file *restrict file,
         /* NOTREACHED */
     }
 
-    if (T)
+    if (T != NULL)
         t_taglist_destroy(T);
     return ((*f)(def));
 }
