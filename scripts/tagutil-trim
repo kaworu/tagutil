@@ -4,20 +4,28 @@ require 'yaml'
 require 'open3'
 
 ARGV.each do |arg|
-  s = String.new
-  Open3.popen3('tagutil', arg) { |_, pstdout, _| s = pstdout.read }
 
-  if $?.success?
-    y = YAML.load(s)
-    stripped = Hash.new
-    y.each { |key,val| stripped[key] = val.to_s.strip }
+  Open3.popen3('tagutil', arg) do |_, pstdout, pstderr|
+    $s = pstdout.read
+    $e = pstderr.read
+  end
+  yaml = YAML.load($s)
+
+  if not yaml
+    STDERR.puts($e)
+  else
+    stripped = Array.new
+    yaml.each do |hash|
+      hash.each do |key, val|
+        newval = if val.respond_to?(:strip) then val.to_s.strip else val end
+        stripped << { key => newval }
+      end
+    end
 
     Open3.popen3('tagutil', '-f', '-', arg) do |pstdin, pstdout, pstderr|
       pstdin << stripped.to_yaml
       pstdin.close
-      STDOUT.puts(pstdout.read)
-      STDOUT.flush
-      STDERR.puts(pstderr.read)
+      STDERR.puts($e) unless ($e = pstderr.read).strip.empty?
     end
   end
 end
