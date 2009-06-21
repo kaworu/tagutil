@@ -128,7 +128,6 @@ t_taglist_filter_count(const struct t_taglist *restrict T,
 char *
 t_taglist_join(struct t_taglist *restrict T, const char *restrict j)
 {
-    char *s;
     size_t jlen;
     struct t_strbuffer *sb;
     struct t_tag *t, *last;
@@ -143,14 +142,12 @@ t_taglist_join(struct t_taglist *restrict T, const char *restrict j)
     last = t_tagQ_last(T->tags);
 
     t_tagQ_foreach(t, T->tags) {
-        t_strbuffer_add(sb, xstrdup(t->value), t->valuelen);
+        t_strbuffer_add(sb, t->value, t->valuelen, T_STRBUFFER_NOFREE);
         if (t != last)
-            t_strbuffer_add(sb, xstrdup(j), jlen);
+            t_strbuffer_add(sb, j, jlen, T_STRBUFFER_NOFREE);
     }
-    s = t_strbuffer_get(sb);
-    t_strbuffer_destroy(sb);
 
-    return (s);
+    return (t_strbuffer_get(sb));
 }
 
 

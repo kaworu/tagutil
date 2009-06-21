@@ -123,12 +123,11 @@ main(int argc, char *argv[])
             set_key = optarg;
             set_value = strchr(set_key, '=');
             if (set_value == NULL)
-                errx(EINVAL, "invalid -s argument, need key=val: `%s'", set_key);
+                errx(EINVAL, "`%s': invalid -s argument (no equal)", set_key);
             *set_value = '\0';
             set_value += 1;
             if (t_strempty(set_value))
-            /* don't allow to set a key to "" we destroy it instead */
-                set_value = NULL;
+                errx(EINVAL, "`%s': invalid -s argument (empty value)", set_key);
             t_taglist_insert(s_arg, set_key, set_value);
             break;
         case 'd':

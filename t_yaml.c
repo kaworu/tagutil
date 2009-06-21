@@ -31,7 +31,7 @@ t_tags2yaml(struct t_file *restrict file)
     yaml_emitter_t emitter;
     yaml_event_t event;
     struct t_strbuffer *sb;
-    char *head, *ret;
+    char *head;
     size_t headlen;
     struct t_taglist *T;
     struct t_tag  *t;
@@ -40,7 +40,7 @@ t_tags2yaml(struct t_file *restrict file)
 
     headlen = xasprintf(&head, "# %s\n", file->path);
     sb = t_strbuffer_new();
-    t_strbuffer_add(sb, head, headlen);
+    t_strbuffer_add(sb, head, headlen, T_STRBUFFER_FREE);
 
     /* Create the Emitter object. */
     if (!yaml_emitter_initialize(&emitter))
@@ -114,9 +114,7 @@ t_tags2yaml(struct t_file *restrict file)
     /* Destroy the Emitter object. */
     yaml_emitter_delete(&emitter);
     yaml_event_delete(&event);
-    ret = t_strbuffer_get(sb);
-    t_strbuffer_destroy(sb);
-    return (ret);
+    return (t_strbuffer_get(sb));
 
 event_error:
     errx(errno = ENOMEM, "t_tags2yaml: can't init event");
@@ -293,7 +291,6 @@ t_yaml_whdl(void *data, unsigned char *buffer, size_t size)
 {
     bool error = false;
     struct t_strbuffer *sb;
-    char *s;
 
     assert_not_null(data);
     assert_not_null(buffer);
@@ -301,10 +298,10 @@ t_yaml_whdl(void *data, unsigned char *buffer, size_t size)
     if (data == NULL || buffer == NULL)
         error = true;
     else {
-        s = xcalloc(size + 1, sizeof(char));
-        memcpy(s, buffer, size);
         sb = data;
-        t_strbuffer_add(sb, s, size);
+        char *s = xcalloc(size + 1, sizeof(char));
+        memcpy(s, buffer, size);
+        t_strbuffer_add(sb, s, size, T_STRBUFFER_FREE);
     }
 
     if (error)

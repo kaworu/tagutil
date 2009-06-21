@@ -268,11 +268,10 @@ t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
                 }
             }
         }
-        if (s == NULL) {
-            s = xstrdup(tkn->value.str);
-            len = tkn->slen;
-        }
-        t_strbuffer_add(sb, s, len);
+        if (s != NULL)
+            t_strbuffer_add(sb, s, len, T_STRBUFFER_FREE);
+        else
+            t_strbuffer_add(sb, tkn->value.str, tkn->slen, T_STRBUFFER_NOFREE);
         /* go to next token */
         ts += 1;
         tkn = *ts;
@@ -283,8 +282,6 @@ t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
         t_error_set(file, "t_rename_eval result is too long (>MAXPATHLEN)");
     else
         ret = t_strbuffer_get(sb);
-
-    t_strbuffer_destroy(sb);
     return (ret);
 }
 
