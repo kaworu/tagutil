@@ -37,7 +37,7 @@ struct t_taglist {
     size_t count;
     struct t_tagQ *tags;
 
-    ERROR_MSG_MEMBER;
+    T_ERROR_MSG_MEMBER;
     unsigned int childcount;
     struct t_taglist *parent;
 };

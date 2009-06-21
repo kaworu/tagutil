@@ -349,7 +349,7 @@ tagutil_load(struct t_file *restrict file, const char *restrict path)
     T = t_yaml2tags(file, stream);
     if (T == NULL) {
         ret = false;
-        warnx("error while reading YAML: %s", t_error_msg(file));
+        warnx("error while loading `%s': %s", path, t_error_msg(file));
         warnx("file `%s' not saved.", file->path);
     }
     else {
@@ -413,7 +413,7 @@ bool
 tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
 {
     char *ext, *result, *dirn, *fname, *question;
-    struct t_error *e;
+    struct t_error e;
 
     assert_not_null(file);
     assert_not_null(tknary);
@@ -446,10 +446,9 @@ tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
     if (strcmp(file->path, result) != 0) {
         (void)xasprintf(&question, "rename `%s' to `%s'", file->path, result);
         if (t_yesno(question)) {
-            e = t_error_new();
-            if (!t_rename_safe(file->path, result, e))
-                err(errno, "%s", t_error_msg(e));
-            t_error_destroy(e);
+            t_error_init(&e);
+            if (!t_rename_safe(file->path, result, &e))
+                err(errno, "%s", t_error_msg(&e));
         }
         freex(question);
     }

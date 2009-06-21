@@ -12,7 +12,7 @@
 /* error handling macros */
 
 /* used for any struct that need to behave like a t_error */
-#define ERROR_MSG_MEMBER char *__errmsg
+#define T_ERROR_MSG_MEMBER char *__errmsg
 
 /* error message getter */
 #define t_error_msg(o) ((o)->__errmsg)
@@ -31,7 +31,7 @@
 
 /*
  * error macros can be used on t_error struct or any struct that define a member:
- *      char *__errmsg; (via the ERROR_MSG_MEMBER macro).
+ *      char *__errmsg; (via the T_ERROR_MSG_MEMBER macro).
  *  on this purpose. You should never access to ->__errmsg but use the macros
  *  defined for this  purpose.
  *
@@ -39,7 +39,7 @@
  *  that way we can always pass it to free().
  */
 struct t_error {
-    ERROR_MSG_MEMBER;
+    T_ERROR_MSG_MEMBER;
 };
 
 

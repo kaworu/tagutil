@@ -77,7 +77,7 @@ struct t_file {
     bool (*add)(struct t_file *restrict file, const struct t_taglist *restrict T);
 
 
-    ERROR_MSG_MEMBER;
+    T_ERROR_MSG_MEMBER;
 };
 
 #endif /* not T_FILE_H */
