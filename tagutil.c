@@ -62,6 +62,7 @@
 bool pflag = false; /* display tags action */
 bool Yflag = false; /* yes answer to all questions */
 bool Nflag = false; /* no  answer to all questions */
+bool bflag = false; /* show backend */
 bool eflag = false; /* edit */
 bool dflag = false; /* create directory with rename */
 bool rflag = false;  /* rename */
@@ -89,12 +90,15 @@ main(int argc, char *argv[])
 
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
-    while ((ch = getopt(argc, argv, "aedhNYf:r:x:s:")) != -1) {
+    while ((ch = getopt(argc, argv, "abedhNYf:r:x:s:")) != -1) {
         switch ((char)ch) {
         case 'a': /* secret undocumented option */
             (void)printf("The Answer is 42\n");
             exit(EXIT_SUCCESS);
             /* NOTREACHED */
+        case 'b':
+            bflag = true;
+            break;
         case 'e':
             eflag = true;
             break;
@@ -159,12 +163,12 @@ main(int argc, char *argv[])
     }
     if (dflag && !rflag)
         errx(EINVAL, "-d is only valid with -r");
-    i  = ((sflag || eflag || rflag) ? 1 : 0);
+    i  = ((bflag || sflag || eflag || rflag) ? 1 : 0);
     i += (xflag ? 1 : 0);
     i += (fflag ? 1 : 0);
     if (i > 1)
         errx(EINVAL, "-x and/or -f option must be used alone");
-    if (!xflag && !fflag && !rflag && !sflag && !eflag)
+    if (!bflag && !xflag && !fflag && !rflag && !sflag && !eflag)
     /* no action given, fallback to default */
         pflag = true;
 
@@ -201,6 +205,8 @@ main(int argc, char *argv[])
         }
 
         /* modifiy tag, edit, rename */
+        if (bflag)
+            (void)printf("%s: %s\n", file->path, file->lib);
         if (pflag)
             tagutil_print(file);
         if (xflag)
@@ -245,8 +251,20 @@ usage(void)
     (void)fprintf(stderr, "usage: %s [OPTION]... [FILE]...\n", getprogname());
     (void)fprintf(stderr, "Modify or display music file's tag.\n");
     (void)fprintf(stderr, "\n");
+    (void)fprintf(stderr, "Backend:\n");
+#if defined(WITH_FLAC)
+    (void)fprintf(stderr, "  libFLAC:   flac files format, use `Vorbis comment' metadata tags.\n");
+#endif
+#if defined(WITH_OGGVORBIS)
+    (void)fprintf(stderr, "  libvorbis: Ogg/Vorbis files format, use `Vorbis comment' metadata tags.\n");
+#endif
+#if defined(WITH_TAGLIB)
+    (void)fprintf(stderr, "  TagLib:    multiple file format (flac,ogg,mp3...), can handle only a limited set of tags.\n");
+#endif
+    (void)fprintf(stderr, "\n");
     (void)fprintf(stderr, "Options:\n");
     (void)fprintf(stderr, "  -h              show this help\n");
+    (void)fprintf(stderr, "  -b              display backend used for each files\n");
     (void)fprintf(stderr, "  -Y              answer yes to all questions\n");
     (void)fprintf(stderr, "  -N              answer no  to all questions\n");
     (void)fprintf(stderr, "  -e              show tag and prompt for editing (need $EDITOR environment variable)\n");
