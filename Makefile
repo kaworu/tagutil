@@ -29,7 +29,7 @@ VERSION:=${VERSION}-debug
 .endif
 CFLAGS+=-I. -D'T_TAGUTIL_VERSION="${VERSION}"'
 
-# libyaml can't use pkg-config :(
+# libyaml doesn't use pkg-config :(
 CFLAGS+=-I/usr/local/include
 LDADD+=-L/usr/local/lib -lyaml
 
@@ -46,7 +46,7 @@ LDADD+=${TAGLIB_L}
 .if defined(WITH_FLAC)
 SRCS+=t_ftflac.c
 FLAC_I!=pkg-config --cflags flac
-# add with -iquote to avoid a assert.h clash
+# use -iquote instead of -I to avoid a assert.h clash
 CFLAGS+=-DWITH_FLAC ${FLAC_I:S/-I/-iquote /}
 FLAC_L!=pkg-config --libs   flac
 LDADD+=${FLAC_L}
@@ -59,6 +59,16 @@ OGGVORBIS_I!=pkg-config --cflags vorbisfile
 CFLAGS+=-DWITH_OGGVORBIS ${OGGVORBIS_I}
 OGGVORBIS_L!=pkg-config --libs   vorbisfile
 LDADD+=${OGGVORBIS_L}
+.endif
+
+# MPEG layer 3 support with id3lib
+.if defined(WITH_MPEG3)
+SRCS+=t_ftmpeg3.c
+# no pkg-config :(
+MPEG3_I=-I/usr/local/include
+CFLAGS+=-DWITH_MPEG3 ${MPEG3_I}
+MPEG3_L=-lid3
+LDADD+=${MPEG3_L}
 .endif
 
 
