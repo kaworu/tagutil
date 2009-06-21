@@ -10,7 +10,7 @@
 #include <stdbool.h>
 
 /* libyaml headers */
-#include <yaml.h>
+#include "yaml.h"
 
 #include "t_config.h"
 #include "t_strbuffer.h"

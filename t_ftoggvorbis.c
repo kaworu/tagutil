@@ -7,8 +7,8 @@
 #include <string.h>
 
 /* Vorbis headers */
-#include <vorbis/vorbisfile.h>
-#include <vorbis/codec.h>
+#include "vorbis/vorbisfile.h"
+#include "vorbis/codec.h"
 
 #include "t_config.h"
 #include "t_toolkit.h"

@@ -8,7 +8,7 @@
 #include <string.h>
 
 /* TagLib headers */
-#include <tag_c.h>
+#include "tag_c.h"
 
 #include "t_config.h"
 #include "t_toolkit.h"

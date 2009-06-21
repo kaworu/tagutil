@@ -46,7 +46,8 @@ LDADD+=${TAGLIB_L}
 .if defined(WITH_FLAC)
 SRCS+=t_ftflac.c
 FLAC_I!=pkg-config --cflags flac
-CFLAGS+=-DWITH_FLAC ${FLAC_I}
+# add with -iquote to avoid a assert.h clash
+CFLAGS+=-DWITH_FLAC ${FLAC_I:S/-I/-iquote /}
 FLAC_L!=pkg-config --libs   flac
 LDADD+=${FLAC_L}
 .endif

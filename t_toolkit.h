@@ -6,7 +6,7 @@
  * handy functions toolkit for tagutil.
  *
  */
-#include </usr/include/assert.h> /* FIXME: libFLAC clash */
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <err.h>

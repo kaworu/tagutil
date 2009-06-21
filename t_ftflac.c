@@ -7,8 +7,8 @@
 #include <string.h>
 
 /* libFLAC headers */
-#include <metadata.h>
-#include <format.h>
+#include "metadata.h"
+#include "format.h"
 
 #include "t_config.h"
 #include "t_toolkit.h"
