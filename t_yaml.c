@@ -56,15 +56,20 @@ t_tags2yaml(struct t_file *restrict file)
         goto emitter_error;
 
     /* Create and emit the DOCUMENT-START event. */
-    if (!yaml_document_start_event_initialize(&event, NULL, NULL, NULL,
+    if (!yaml_document_start_event_initialize(&event,
+                /* version directive */NULL,
+                /* tag_directives_start */NULL,
+                /* tag_directives_end */NULL,
                 /* implicit */0))
         goto event_error;
     if (!yaml_emitter_emit(&emitter, &event))
         goto emitter_error;
 
-    /* Create and emit the MAPPING-START event. */
-    if (!yaml_mapping_start_event_initialize(&event, NULL,
-                (yaml_char_t *)YAML_MAP_TAG, 1, YAML_BLOCK_MAPPING_STYLE))
+    /* XXX: yaml_char_t */
+    /* Create and emit the SEQUENCE-START event. */
+    if (!yaml_sequence_start_event_initialize(&event, /* anchor */NULL,
+                (yaml_char_t *)YAML_SEQ_TAG, /* implicit */1,
+                YAML_BLOCK_MAPPING_STYLE))
         goto event_error;
     if (!yaml_emitter_emit(&emitter, &event))
         goto emitter_error;
@@ -75,26 +80,42 @@ t_tags2yaml(struct t_file *restrict file)
         return (NULL);
     }
     t_tagQ_foreach(t, T->tags) {
-        /* emit the key */
-        if (!yaml_scalar_event_initialize(&event, NULL,
-                    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->key, -1,
-                    1, 1, YAML_PLAIN_SCALAR_STYLE))
+        /* Create and emit the MAPPING-START event. */
+        if (!yaml_mapping_start_event_initialize(&event, /* anchor */NULL,
+                    (yaml_char_t *)YAML_MAP_TAG, /* implicit */1,
+                    YAML_BLOCK_MAPPING_STYLE))
             goto event_error;
         if (!yaml_emitter_emit(&emitter, &event))
             goto emitter_error;
-        /* emit the value */
-        if (!yaml_scalar_event_initialize(&event, NULL,
-                    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->value, -1,
-                    1, 1, YAML_PLAIN_SCALAR_STYLE)) {
+
+        /* create and emit the SCALAR event for the key */
+        if (!yaml_scalar_event_initialize(&event, /* anchor */NULL,
+                    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->key,
+                    t->keylen, /* plain_implicit */1, /* quoted_implicit */1,
+                    YAML_PLAIN_SCALAR_STYLE))
             goto event_error;
-        }
+        if (!yaml_emitter_emit(&emitter, &event))
+            goto emitter_error;
+
+        /* create and emit the SCALAR event for the value */
+        if (!yaml_scalar_event_initialize(&event, /* anchor */NULL,
+                    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->value,
+                    t->valuelen, /* plain_implicit */1, /* quoted_implicit */1,
+                    YAML_PLAIN_SCALAR_STYLE))
+            goto event_error;
+        if (!yaml_emitter_emit(&emitter, &event))
+            goto emitter_error;
+
+        /* Create and emit the MAPPING-END event. */
+        if (!yaml_mapping_end_event_initialize(&event))
+            goto event_error;
         if (!yaml_emitter_emit(&emitter, &event))
             goto emitter_error;
     }
     t_taglist_destroy(T);
 
-    /* Create and emit the MAPPING-END event. */
-    if (!yaml_mapping_end_event_initialize(&event))
+    /* Create and emit the SEQUENCE-END event. */
+    if (!yaml_sequence_end_event_initialize(&event))
         goto event_error;
     if (!yaml_emitter_emit(&emitter, &event))
         goto emitter_error;
@@ -130,9 +151,8 @@ t_yaml2tags(struct t_file *restrict file, FILE *restrict stream)
     struct t_taglist *T;
     yaml_parser_t parser;
     yaml_event_t event;
-    bool stop;
-    bool inmap, donemap;
     char *key = NULL, *value = NULL;
+    bool parse;
 
     assert_not_null(stream);
     assert_not_null(file);
@@ -143,14 +163,21 @@ t_yaml2tags(struct t_file *restrict file, FILE *restrict stream)
         goto parser_error;
     yaml_parser_set_input_file(&parser, stream);
 
-    inmap = donemap = stop = false;
-    while (!stop) {
+    /* FIXME: parsing like that sucks, it's too dummy, write a true FSM parser
+            please :) */
+    parse = true;
+    while (parse) {
         if (!yaml_parser_parse(&parser, &event))
             goto parser_error;
+
         switch (event.type) {
         case YAML_DOCUMENT_END_EVENT:   /* FALLTHROUGH */
         case YAML_STREAM_START_EVENT:   /* FALLTHROUGH */
         case YAML_DOCUMENT_START_EVENT: /* FALLTHROUGH */
+        case YAML_SEQUENCE_START_EVENT: /* FALLTHROUGH */
+        case YAML_SEQUENCE_END_EVENT:   /* FALLTHROUGH */
+        case YAML_MAPPING_START_EVENT:  /* FALLTHROUGH */
+        case YAML_MAPPING_END_EVENT:    /* FALLTHROUGH */
         case YAML_NO_EVENT:
             continue;
 
@@ -159,50 +186,8 @@ t_yaml2tags(struct t_file *restrict file, FILE *restrict stream)
                     "YAML_ALIAS_EVENT at line %zu",
                    parser.context_mark.line + 1);
             goto cleanup;
-            break;
-        case YAML_SEQUENCE_START_EVENT:
-            t_error_set(file, "YAML parser got unexpected "
-                    "YAML_SEQUENCE_START_EVENT at line %zu",
-                    parser.context_mark.line + 1);
-            goto cleanup;
-            break;
-        case YAML_SEQUENCE_END_EVENT:
-            t_error_set(file, "YAML parser got unexpected "
-                    "YAML_SEQUENCE_END_EVENT at line %zu",
-                    parser.context_mark.line + 1);
-            goto cleanup;
-            break;
-
-        case YAML_MAPPING_START_EVENT:
-            if (inmap) {
-                t_error_set(file, "unexpected nested mapping at line %zu",
-                        parser.context_mark.line + 1);
-                goto cleanup;
-            }
-            else if (donemap) {
-                t_error_set(file, "unexpected extra mapping, needed only one. "
-                        "at line %zu", parser.context_mark.line + 1);
-                goto cleanup;
-            }
-            else
-                inmap = true;
-            break;
-        case YAML_MAPPING_END_EVENT:
-            donemap = true;
-            inmap = false;
-            break;
         case YAML_SCALAR_EVENT:
-            if (!inmap) {
-                t_error_set(file, "unexpected scalar at line %zu",
-                        parser.context_mark.line + 1);
-                goto cleanup;
-            }
-            else if (donemap) {
-                t_error_set(file, "unexpected extra scalar after mapping at line %zu",
-                        parser.context_mark.line + 1);
-                goto cleanup;
-            }
-            else if (key == NULL) {
+            if (key == NULL) {
                 key = xcalloc(event.data.scalar.length + 1, sizeof(char));
                 memcpy(key, event.data.scalar.value, event.data.scalar.length);
             }
@@ -216,7 +201,7 @@ t_yaml2tags(struct t_file *restrict file, FILE *restrict stream)
             }
             break;
         case YAML_STREAM_END_EVENT:
-            stop = true;
+            parse = false;
             break;
         }
     }
