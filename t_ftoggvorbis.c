@@ -86,12 +86,12 @@ t_ftoggvorbis_get(struct t_file *restrict file, const char *restrict key)
 
     d = file->data;
     T = t_taglist_new();
-    if (key)
+    if (key != NULL)
         keylen = strlen(key);
 
     for (i = 0; i < d->vc->comments; i++) {
         c = d->vc->user_comments[i];
-        if (key) {
+        if (key != NULL) {
             if (strncasecmp(key, c, keylen) != 0 || c[keylen] != '=')
                 continue;
         }
@@ -139,7 +139,7 @@ t_ftoggvorbis_clear(struct t_file *restrict file, const struct t_taglist *T)
         }
         count = 0;
         for (i = 0; i < d->vc->comments; i++) {
-            if (d->vc->user_comments[i]) {
+            if (d->vc->user_comments[i] != NULL) {
                 if (count != i) {
                     d->vc->user_comments[count] = d->vc->user_comments[i];
                     d->vc->comment_lengths[count] = d->vc->comment_lengths[i];
@@ -165,8 +165,7 @@ t_ftoggvorbis_clear(struct t_file *restrict file, const struct t_taglist *T)
 bool
 t_ftoggvorbis_add(struct t_file *restrict file, const struct t_taglist *T)
 {
-    int count;
-    size_t len, bsize;
+    size_t len;
     char *tageq;
     struct t_tag *t;
     struct t_ftoggvorbis_data *d;
@@ -177,23 +176,15 @@ t_ftoggvorbis_add(struct t_file *restrict file, const struct t_taglist *T)
     t_error_clear(file);
 
     d = file->data;
-    count = 0;
-    t_tagQ_foreach(t, T->tags)
-        count++;
+
     d->vc->user_comments = xrealloc(d->vc->user_comments,
-            (d->vc->comments + count + 1) * sizeof(*d->vc->user_comments));
+            (d->vc->comments + T->count + 1) * sizeof(*d->vc->user_comments));
     d->vc->comment_lengths = xrealloc(d->vc->comment_lengths,
-            (d->vc->comments + count + 1) * sizeof(*d->vc->comment_lengths));
+            (d->vc->comments + T->count + 1) * sizeof(*d->vc->comment_lengths));
 
     t_tagQ_foreach(t, T->tags) {
-        /* FIXME: check t->key , utf8 t->value */
-        len = t->keylen + 1 + t->valuelen;
-        bsize = len + 1;
-        tageq = xcalloc(bsize, sizeof(char));
-        if (strlcpy(tageq, t->key, bsize) >= bsize ||
-                strlcat(tageq, "=", bsize) >= bsize ||
-                strlcat(tageq, t->value, bsize) >= bsize)
-            assert_fail();
+        /* FIXME: check vorbisness of t->key , utf8 t->value */
+        len = xasprintf(&tageq, "%s=%s", t->key, t->value);
         d->vc->comment_lengths[d->vc->comments] = len;
         d->vc->user_comments[d->vc->comments]   = tageq;
         d->vc->comments++;
@@ -236,7 +227,7 @@ t_ftoggvorbis_new(const char *restrict path)
     }
     assert(vc = ov_comment(vf, -1));
 
-    size = (strlen(path) + 1) * sizeof(char);
+    size = strlen(path) + 1;
     ret = xmalloc(sizeof(struct t_file) + sizeof(struct t_ftoggvorbis_data) + size);
 
     d = (struct t_ftoggvorbis_data *)(ret + 1);
@@ -245,7 +236,7 @@ t_ftoggvorbis_new(const char *restrict path)
     ret->data = d;
 
     s = (char *)(d + 1);
-    (void)strlcpy(s, path, size);
+    assert(strlcpy(s, path, size) < size);
     ret->path = s;
 
     ret->create   = t_ftoggvorbis_new;

@@ -276,7 +276,7 @@ t_ftgeneric_new(const char *restrict path)
     if (f == NULL || !taglib_file_is_valid(f))
         return (NULL);
 
-    size = (strlen(path) + 1) * sizeof(char);
+    size = strlen(path) + 1;
     ret = xmalloc(sizeof(struct t_file) + sizeof(struct t_ftgeneric_data) + size);
 
     d = (struct t_ftgeneric_data *)(ret + 1);
@@ -285,7 +285,7 @@ t_ftgeneric_new(const char *restrict path)
     ret->data = d;
 
     s = (char *)(d + 1);
-    (void)strlcpy(s, path, size);
+    assert(strlcpy(s, path, size) < size);
     ret->path = s;
 
     ret->create   = t_ftgeneric_new;

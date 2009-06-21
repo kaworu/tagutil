@@ -18,11 +18,12 @@ testers, patches and reports are welcome :)
 5.
 List bellow all non-standard (i.e. non C99 or POSIX) C function used.
 --------------------------------------------------------------------------------
-- strtonum(3)
+- <sys/queue>
 - err(3) family functions.
 - strdup(3)
 - asprintf(3)
+---------------------------------IN-COMPAT--------------------------------------
+- strtonum(3)
 - getprogname(3)
-- <sys/queue>
-- strlcat(3), strlcpy(3)
+- strlcpy(3)
 --------------------------------------------------------------------------------

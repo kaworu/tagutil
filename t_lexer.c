@@ -27,7 +27,7 @@ t_lexer_new(const char *restrict source)
 
     L->srclen = len - 1;
     s = (char *)(L + 1);
-    strlcpy(s, source, len);
+    assert(strlcpy(s, source, len) < len);
     L->source = s;
     L->c = -1;
     L->cindex = -1;

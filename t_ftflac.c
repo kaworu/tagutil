@@ -273,7 +273,7 @@ t_ftflac_new(const char *restrict path)
     }
     FLAC__metadata_iterator_delete(it);
 
-    size = (strlen(path) + 1) * sizeof(char);
+    size = strlen(path) + 1;
     ret = xmalloc(sizeof(struct t_file) + sizeof(struct t_ftflac_data) + size);
 
     d = (struct t_ftflac_data *)(ret + 1);
@@ -282,7 +282,7 @@ t_ftflac_new(const char *restrict path)
     ret->data = d;
 
     s = (char *)(d + 1);
-    (void)strlcpy(s, path, size);
+    assert(strlcpy(s, path, size) < size);
     ret->path = s;
 
     ret->create   = t_ftflac_new;
