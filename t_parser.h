@@ -18,8 +18,10 @@
  * Condition    ::= '(' <Condition> ')'
  * Value        ::= <TAGKEY> | <KEYWORD> | <INTEGER> | <DOUBLE> | <STRING>
  * TAGKEY       ::= <SIMPLETAGKEY> | <BRACETAGKEY>
- * SIMPLETAGKEY ::= '%' [A-Za-z\-_]+
- * BRACETAGKEY  ::= '%{' ( '\' [^=] | [^}=] )* ( '=' [0-9]+ )? '}'
+ * SIMPLETAGKEY ::= '%' [A-Za-z\-_]+ <TAGKEYIDX>?
+ * BRACETAGKEY  ::= '%{' ( '\' [\[\]{}] | [^\[\]{}] )* <TAGKEYIDX>? }
+ * TAGKEYIDX    ::= '[' [0-9]+ ']'
+ * TAGKEYIDX    ::= '[*' ( '&' | '|' )? ']'
  * KEYWORD      ::= 'filename' | 'undef' | 'backend'
  * INTEGER      ::= ( '+' | '-' )? '0' | [1-9][0-9]*
  * DOUBLE       ::= <INTEGER>? '.' [0-9]+
