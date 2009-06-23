@@ -64,6 +64,7 @@ bool pflag = false; /* display tags action */
 bool Yflag = false; /* yes answer to all questions */
 bool Nflag = false; /* no  answer to all questions */
 bool bflag = false; /* show backend */
+bool cflag = false; /* clear */
 bool eflag = false; /* edit */
 bool dflag = false; /* create directory with rename */
 bool rflag = false;  /* rename */
@@ -74,7 +75,8 @@ bool fflag = false;  /* load file */
 char *f_arg = NULL; /* file */
 struct t_token **r_arg = NULL; /* rename pattern (compiled) */
 struct t_ast *x_arg = NULL; /* filter code */
-struct t_taglist *s_arg = NULL; /* key=val tags */
+struct t_taglist *c_arg = NULL; /* key=val tags (clear) */
+struct t_taglist *s_arg = NULL; /* key=val tags (set) */
 
 
 /*
@@ -91,7 +93,7 @@ main(int argc, char *argv[])
 
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
-    while ((ch = getopt(argc, argv, "abedhNYf:r:x:s:")) != -1) {
+    while ((ch = getopt(argc, argv, "abedhNYc:f:r:x:s:")) != -1) {
         switch ((char)ch) {
         case 'a': /* secret undocumented option */
             (void)printf("The Answer is 42\n");
@@ -99,6 +101,12 @@ main(int argc, char *argv[])
             /* NOTREACHED */
         case 'b':
             bflag = true;
+            break;
+        case 'c':
+            cflag = true;
+            if (c_arg == NULL)
+                c_arg = t_taglist_new();
+            t_taglist_insert(c_arg, optarg, "");
             break;
         case 'e':
             eflag = true;
@@ -164,12 +172,12 @@ main(int argc, char *argv[])
     }
     if (dflag && !rflag)
         errx(EINVAL, "-d is only valid with -r");
-    i  = ((bflag || sflag || eflag || rflag) ? 1 : 0);
+    i  = ((bflag || sflag || cflag || eflag || rflag) ? 1 : 0);
     i += (xflag ? 1 : 0);
     i += (fflag ? 1 : 0);
     if (i > 1)
         errx(EINVAL, "-x and/or -f option must be used alone");
-    if (!bflag && !xflag && !fflag && !rflag && !sflag && !eflag)
+    if (!bflag && !xflag && !fflag && !rflag && !sflag && !eflag && !cflag)
     /* no action given, fallback to default */
         pflag = true;
 
@@ -217,6 +225,14 @@ main(int argc, char *argv[])
             tagutil_filter(file, x_arg);
         if (fflag)
             tagutil_load(file, f_arg);
+        if (cflag) {
+            if (!file->clear(file, c_arg))
+                warnx("file `%s' not saved: %s", file->path, t_error_msg(file));
+            else if (!file->save(file)) {
+                errx(errno ? errno : -1, "couldn't save file `%s': %s",
+                        path, t_error_msg(file));
+            }
+        }
         if (sflag) {
             if (!file->clear(file, s_arg) || !file->add(file, s_arg))
                 warnx("file `%s' not saved: %s", file->path, t_error_msg(file));
@@ -237,6 +253,8 @@ main(int argc, char *argv[])
         t_ast_destroy(x_arg);
     if (sflag)
         t_taglist_destroy(s_arg);
+    if (cflag)
+        t_taglist_destroy(c_arg);
     if (rflag) {
         for (i = 0; r_arg[i]; i++)
             freex(r_arg[i]);
@@ -268,13 +286,14 @@ usage(void)
     (void)fprintf(stderr, "\n");
     (void)fprintf(stderr, "Options:\n");
     (void)fprintf(stderr, "  -h              show this help\n");
-    (void)fprintf(stderr, "  -b              display backend used for each files\n");
+    (void)fprintf(stderr, "  -b              display backend used\n");
+    (void)fprintf(stderr, "  -c TAG          clear all tag TAG\n");
     (void)fprintf(stderr, "  -Y              answer yes to all questions\n");
     (void)fprintf(stderr, "  -N              answer no  to all questions\n");
     (void)fprintf(stderr, "  -e              show tag and prompt for editing (need $EDITOR environment variable)\n");
     (void)fprintf(stderr, "  -f PATH         load PATH yaml file in given music files.\n");
     (void)fprintf(stderr, "  -x FILTER       print files in matching FILTER\n");
-    (void)fprintf(stderr, "  -s TAG=VALUE    update tag TAG to VALUE for all given files\n");
+    (void)fprintf(stderr, "  -s TAG=VALUE    replace all tag TAG to VALUE\n");
     (void)fprintf(stderr, "  -r [-d] PATTERN rename files with the given PATTERN. you can use keywords in PATTERN:\n");
     (void)fprintf(stderr, "                  %%tag if tag contains only `_', `-' or alphanum characters. %%{tag} otherwise.\n");
     (void)fprintf(stderr, "\n");
