@@ -104,7 +104,7 @@ t_ftflac_get(struct t_file *restrict file, const char *restrict key)
     count = d->vocomments->data.vorbis_comment.num_comments;
 
     for (;;) {
-        if (key)
+        if (key != NULL)
             i = FLAC__metadata_object_vorbiscomment_find_entry_from(d->vocomments, i, key);
         if (i == -1 || (uint32_t)i == count)
             break;
@@ -122,7 +122,7 @@ t_ftflac_get(struct t_file *restrict file, const char *restrict key)
             freex(field_value);
             return (NULL);
         }
-        if (key)
+        if (key != NULL)
             assert(strcasecmp(field_name, key) == 0);
         t_taglist_insert(T, t_strtolower(field_name), field_value);
         freex(field_name);
@@ -146,7 +146,7 @@ t_ftflac_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
     t_error_clear(file);
 
     d = file->data;
-    if (T) {
+    if (T != NULL) {
         if (T->count == 0)
             return (true);
         t = t_tagQ_first(T->tags);
@@ -165,10 +165,8 @@ t_ftflac_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
                 }
             }
         }
-        else {
-            if (d->vocomments->data.vorbis_comment.num_comments == 0)
+        else if (d->vocomments->data.vorbis_comment.num_comments == 0)
                 break;
-        }
         b = FLAC__metadata_object_vorbiscomment_delete_comment(d->vocomments, i);
         if (!b) {
             t_error_set(file, "FLAC__metadata_object_vorbiscomment_delete_comment: %s",

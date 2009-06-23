@@ -63,7 +63,11 @@ LDADD+=${OGGVORBIS_L}
 
 # MPEG layer 3 support with ID3Lib
 .if defined(WITH_MPEG3)
-SRCS+=t_ftmpeg3.c
+SRCS+=t_ftmpeg3.c t_ftmpeg3_tokenize.c
+t_ftmpeg3.o: t_ftmpeg3_tokenize.h
+.if !defined(GPERF)
+GPERF=/usr/local/bin/gperf
+.endif
 # no pkg-config :(
 MPEG3_I=-I/usr/local/include
 CFLAGS+=-DWITH_MPEG3 ${MPEG3_I}
@@ -71,5 +75,19 @@ MPEG3_L=-lid3
 LDADD+=${MPEG3_L}
 .endif
 
-
 .include <bsd.prog.mk>
+
+
+.if defined(WITH_MPEG3)
+t_ftmpeg3_tokenize.c: t_ftmpeg3_tokenize.h
+	build-tools/gperf-mpeg3.sh C ${GPERF} ${CC} '${MPEG3_I}' > ${.TARGET}
+
+t_ftmpeg3_tokenize.h:
+	build-tools/gperf-mpeg3.sh header > ${.TARGET}
+
+clean-t_ftmpeg3_tokenize:
+	rm -f t_ftmpeg3_tokenize.c t_ftmpeg3_tokenize.o t_ftmpeg3_tokenize.h
+
+clean: clean-t_ftmpeg3_tokenize
+
+.endif

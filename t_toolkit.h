@@ -37,7 +37,7 @@ _t__unused
 static inline void * xmalloc(size_t size);
 
 _t__unused
-static inline void * xcalloc(size_t nmemb, const size_t size);
+static inline void * xcalloc(size_t nmemb, size_t size);
 
 _t__unused
 static inline void * xrealloc(void *ptr, size_t size);
@@ -118,8 +118,10 @@ xmalloc(size_t size)
      * we need to ensure that we request at least 1 byte, because malloc(0)
      * could return NULL and we err() if NULL is returned.
      */
-    if (size == 0)
+    if (size == 0) {
+        warnx("xmalloc: xmalloc(0)");
         size = 1;
+    }
     if ((ptr = malloc(size)) == NULL)
         err(ENOMEM, "malloc");
 
@@ -128,14 +130,16 @@ xmalloc(size_t size)
 
 
 static inline void *
-xcalloc(size_t nmemb, const size_t size)
+xcalloc(size_t nmemb, size_t size)
 {
     void *ptr;
 
     if (size == 0)
-        err(EDOOFUS, "calloc(nmemb, 0)");
-    if (nmemb == 0)
-        nmemb = 1;
+        err(EDOOFUS, "xcalloc(?, 0)");
+    if (nmemb == 0) {
+        warnx("xcalloc: xcalloc(0, ?)");
+        size = nmemb = 1;
+    }
     if ((ptr = calloc(nmemb, size)) == NULL)
         err(ENOMEM, "calloc");
 
@@ -148,8 +152,11 @@ xrealloc(void *old_ptr, size_t new_size)
 {
     void *ptr;
 
-    if (new_size == 0)
-        new_size = 1;
+    if (new_size == 0) {
+        free(old_ptr);
+        return (NULL);
+    }
+
     if ((ptr = realloc(old_ptr, new_size)) == NULL)
         err(ENOMEM, "realloc");
 

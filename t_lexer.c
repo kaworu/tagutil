@@ -4,6 +4,7 @@
  * a hand writted lexer for tagutil.
  * used by the filter function.
  */
+#include <limits.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -96,6 +97,7 @@ t_lex_number(struct t_lexer *restrict L, struct t_token *restrict t)
 {
     char *num, *endptr; /* new buffer pointers */
     const char *start, *end; /* source pointers */
+    const char *errmsg;
     bool isfp;
 
     assert_not_null(L);
@@ -140,10 +142,10 @@ t_lex_number(struct t_lexer *restrict L, struct t_token *restrict t)
         else {
             t->kind = T_INT;
 			t->str = "INT";
-            t->value.integer = (int)strtol(num, &endptr, 10);
-            if (!t_strempty(endptr)) {
+            t->value.integer = (int)strtonum(num, INT_MIN, INT_MAX, &errmsg);
+            if (errmsg != NULL) {
                 t_lex_error(L, start - L->source, end - L->source,
-                        "bad integer value");
+                        "bad integer value (%s)", errmsg);
                 /* NOTREACHED */
             }
         }

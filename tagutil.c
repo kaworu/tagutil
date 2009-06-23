@@ -203,7 +203,7 @@ main(int argc, char *argv[])
         if (file == NULL)
             file = t_ftgeneric_new(path);
         if (file == NULL) {
-            warnx("`%s' unsuported file format", path);
+            warnx("`%s' unsupported file format", path);
             ret = EINVAL;
             continue;
         }
