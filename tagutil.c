@@ -60,21 +60,23 @@
 #include "tagutil.h"
 
 
-bool pflag = false; /* display tags action */
-bool Yflag = false; /* yes answer to all questions */
-bool Nflag = false; /* no  answer to all questions */
+bool aflag = false; /* add tag */
 bool bflag = false; /* show backend */
-bool cflag = false; /* clear */
-bool eflag = false; /* edit */
+bool cflag = false; /* clear tag */
 bool dflag = false; /* create directory with rename */
-bool rflag = false;  /* rename */
-bool xflag = false;  /* filter */
-bool sflag = false;  /* set tags */
-bool fflag = false;  /* load file */
+bool eflag = false; /* edit */
+bool fflag = false; /* load file */
+bool Nflag = false; /* answer no to all questions */
+bool pflag = false; /* display tags action */
+bool rflag = false; /* rename */
+bool sflag = false; /* set tags */
+bool xflag = false; /* filter */
+bool Yflag = false; /* answer yes to all questions */
 
 char *f_arg = NULL; /* file */
 struct t_token **r_arg = NULL; /* rename pattern (compiled) */
 struct t_ast *x_arg = NULL; /* filter code */
+struct t_taglist *a_arg = NULL; /* key=val tags (add) */
 struct t_taglist *c_arg = NULL; /* key=val tags (clear) */
 struct t_taglist *s_arg = NULL; /* key=val tags (set) */
 
@@ -87,18 +89,26 @@ int
 main(int argc, char *argv[])
 {
     int i, ch, ret;
-    char *path, *set_value, *set_key;
+    char *path, *value, *key;
     struct stat s;
     struct t_file *file;
 
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
-    while ((ch = getopt(argc, argv, "abedhNYc:f:r:x:s:")) != -1) {
+    while ((ch = getopt(argc, argv, "bedhNYa:c:f:r:s:x:")) != -1) {
         switch ((char)ch) {
-        case 'a': /* secret undocumented option */
-            (void)printf("The Answer is 42\n");
-            exit(EXIT_SUCCESS);
-            /* NOTREACHED */
+        case 'a':
+            aflag = true;
+            if (a_arg == NULL)
+                a_arg = t_taglist_new();
+            key = optarg;
+            value = strchr(key, '=');
+            if (value == NULL)
+                errx(EINVAL, "`%s': invalid -a argument (no equal)", key);
+            *value = '\0';
+            value += 1;
+            t_taglist_insert(a_arg, key, value);
+            break;
         case 'b':
             bflag = true;
             break;
@@ -133,15 +143,13 @@ main(int argc, char *argv[])
             sflag = true;
             if (s_arg == NULL)
                 s_arg = t_taglist_new();
-            set_key = optarg;
-            set_value = strchr(set_key, '=');
-            if (set_value == NULL)
-                errx(EINVAL, "`%s': invalid -s argument (no equal)", set_key);
-            *set_value = '\0';
-            set_value += 1;
-            if (t_strempty(set_value))
-                errx(EINVAL, "`%s': invalid -s argument (empty value)", set_key);
-            t_taglist_insert(s_arg, set_key, set_value);
+            key = optarg;
+            value = strchr(key, '=');
+            if (value == NULL)
+                errx(EINVAL, "`%s': invalid -s argument (no equal)", key);
+            *value = '\0';
+            value += 1;
+            t_taglist_insert(s_arg, key, value);
             break;
         case 'd':
             dflag = true;
@@ -172,12 +180,12 @@ main(int argc, char *argv[])
     }
     if (dflag && !rflag)
         errx(EINVAL, "-d is only valid with -r");
-    i  = ((bflag || sflag || cflag || eflag || rflag) ? 1 : 0);
+    i  = ((aflag || bflag || sflag || cflag || eflag || rflag) ? 1 : 0);
     i += (xflag ? 1 : 0);
     i += (fflag ? 1 : 0);
     if (i > 1)
         errx(EINVAL, "-x and/or -f option must be used alone");
-    if (!bflag && !xflag && !fflag && !rflag && !sflag && !eflag && !cflag)
+    if (!aflag && !bflag && !xflag && !fflag && !rflag && !sflag && !eflag && !cflag)
     /* no action given, fallback to default */
         pflag = true;
 
@@ -241,6 +249,14 @@ main(int argc, char *argv[])
                             path, t_error_msg(file));
             }
         }
+        if (aflag) {
+            if (!file->add(file, a_arg))
+                warnx("file `%s' not saved: %s", file->path, t_error_msg(file));
+            else if (!file->save(file)) {
+                errx(errno ? errno : -1, "couldn't save file `%s': %s",
+                        path, t_error_msg(file));
+            }
+        }
         if (eflag)
             tagutil_edit(file);
         if (rflag)
@@ -253,6 +269,8 @@ main(int argc, char *argv[])
         t_ast_destroy(x_arg);
     if (sflag)
         t_taglist_destroy(s_arg);
+    if (aflag)
+        t_taglist_destroy(a_arg);
     if (cflag)
         t_taglist_destroy(c_arg);
     if (rflag) {
@@ -289,13 +307,14 @@ usage(void)
     (void)fprintf(stderr, "  -b              display backend used\n");
     (void)fprintf(stderr, "  -Y              answer yes to all questions\n");
     (void)fprintf(stderr, "  -N              answer no  to all questions\n");
+    (void)fprintf(stderr, "  -a TAG=VALUE    add a TAG/VALUE pair\n");
     (void)fprintf(stderr, "  -c TAG          clear all tag TAG\n");
     (void)fprintf(stderr, "  -e              show tag and prompt for editing (need $EDITOR environment variable)\n");
     (void)fprintf(stderr, "  -f PATH         load PATH yaml file in given music files.\n");
-    (void)fprintf(stderr, "  -x FILTER       print files in matching FILTER\n");
-    (void)fprintf(stderr, "  -s TAG=VALUE    replace all tag TAG to VALUE\n");
     (void)fprintf(stderr, "  -r [-d] PATTERN rename files with the given PATTERN. you can use keywords in PATTERN:\n");
     (void)fprintf(stderr, "                  %%tag if tag contains only `_', `-' or alphanum characters. %%{tag} otherwise.\n");
+    (void)fprintf(stderr, "  -s TAG=VALUE    equivalent to -c TAG -a TAG=VALUE\n");
+    (void)fprintf(stderr, "  -x FILTER       print files in matching FILTER\n");
     (void)fprintf(stderr, "\n");
 
     exit(EXIT_SUCCESS);
