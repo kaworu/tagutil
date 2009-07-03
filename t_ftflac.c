@@ -44,14 +44,14 @@ bool t_ftflac_add(struct t_file *restrict file,
 void
 t_ftflac_destroy(struct t_file *restrict file)
 {
-    struct t_ftflac_data *d;
+    struct t_ftflac_data *data;
 
     assert_not_null(file);
     assert_not_null(file->data);
 
-    d = file->data;
+    data = file->data;
 
-    FLAC__metadata_chain_delete(d->chain);
+    FLAC__metadata_chain_delete(data->chain);
     t_error_clear(file);
     freex(file);
 }
@@ -61,21 +61,21 @@ bool
 t_ftflac_save(struct t_file *restrict file)
 {
     bool ok;
-    struct t_ftflac_data *d;
+    struct t_ftflac_data *data;
 
     assert_not_null(file);
     assert_not_null(file->data);
     t_error_clear(file);
 
-    d = file->data;
+    data = file->data;
 
-    FLAC__metadata_chain_sort_padding(d->chain);
-    ok = FLAC__metadata_chain_write(d->chain,
+    FLAC__metadata_chain_sort_padding(data->chain);
+    ok = FLAC__metadata_chain_write(data->chain,
             /* padding */true,
             /* preserve_file_stats */false);
     if (!ok) {
         FLAC__Metadata_ChainStatus status;
-        status = FLAC__metadata_chain_status(d->chain);
+        status = FLAC__metadata_chain_status(data->chain);
         t_error_set(file, "%s", FLAC__Metadata_ChainStatusString[status]);
     }
 
@@ -90,7 +90,7 @@ t_ftflac_get(struct t_file *restrict file, const char *restrict key)
     int i = 0;
     uint32_t count;
     struct t_taglist *T;
-    struct t_ftflac_data *d;
+    struct t_ftflac_data *data;
     FLAC__StreamMetadata_VorbisComment_Entry e;
     char *field_name  = NULL;
     char *field_value = NULL;
@@ -99,17 +99,17 @@ t_ftflac_get(struct t_file *restrict file, const char *restrict key)
     assert_not_null(file->data);
     t_error_clear(file);
 
-    d = file->data;
+    data = file->data;
     T = t_taglist_new();
-    count = d->vocomments->data.vorbis_comment.num_comments;
+    count = data->vocomments->data.vorbis_comment.num_comments;
 
     for (;;) {
         if (key != NULL)
-            i = FLAC__metadata_object_vorbiscomment_find_entry_from(d->vocomments, i, key);
+            i = FLAC__metadata_object_vorbiscomment_find_entry_from(data->vocomments, i, key);
         if (i == -1 || (uint32_t)i == count)
             break;
 
-        e = d->vocomments->data.vorbis_comment.comments[i++];
+        e = data->vocomments->data.vorbis_comment.comments[i++];
         b = FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair(e, &field_name, &field_value);
         if (!b) {
             if (errno == ENOMEM)
@@ -138,14 +138,14 @@ t_ftflac_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 {
     bool b;
     int i = 0;
-    struct t_ftflac_data *d;
+    struct t_ftflac_data *data;
     struct t_tag *t, *last;
 
     assert_not_null(file);
     assert_not_null(file->data);
     t_error_clear(file);
 
-    d = file->data;
+    data = file->data;
     if (T != NULL) {
         if (T->count == 0)
             return (true);
@@ -154,7 +154,7 @@ t_ftflac_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
     }
     for (;;) {
         if (T != NULL) {
-            i = FLAC__metadata_object_vorbiscomment_find_entry_from(d->vocomments, 0, t->key);
+            i = FLAC__metadata_object_vorbiscomment_find_entry_from(data->vocomments, 0, t->key);
             if (i == -1) {
                 if (t == last)
                     break;
@@ -165,9 +165,9 @@ t_ftflac_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
                 }
             }
         }
-        else if (d->vocomments->data.vorbis_comment.num_comments == 0)
+        else if (data->vocomments->data.vorbis_comment.num_comments == 0)
                 break;
-        b = FLAC__metadata_object_vorbiscomment_delete_comment(d->vocomments, i);
+        b = FLAC__metadata_object_vorbiscomment_delete_comment(data->vocomments, i);
         if (!b) {
             t_error_set(file, "FLAC__metadata_object_vorbiscomment_delete_comment: %s",
                     strerror(ENOMEM));
@@ -183,7 +183,7 @@ bool
 t_ftflac_add(struct t_file *restrict file, const struct t_taglist *restrict T)
 {
     bool b;
-    struct t_ftflac_data *d;
+    struct t_ftflac_data *data;
     FLAC__StreamMetadata_VorbisComment_Entry e;
     struct t_tag *t;
 
@@ -192,7 +192,7 @@ t_ftflac_add(struct t_file *restrict file, const struct t_taglist *restrict T)
     assert_not_null(T);
     t_error_clear(file);
 
-    d = file->data;
+    data = file->data;
     t_tagQ_foreach(t, T->tags) {
         b = FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&e, t->key, t->value);
         if (!b) {
@@ -204,7 +204,7 @@ t_ftflac_add(struct t_file *restrict file, const struct t_taglist *restrict T)
                 t_error_set(file, "invalid Vorbis tag pair: `%s', `%s'", t->key, t->value);
             return (false);
         }
-        b = FLAC__metadata_object_vorbiscomment_append_comment(d->vocomments, e, /* copy */false);
+        b = FLAC__metadata_object_vorbiscomment_append_comment(data->vocomments, e, /* copy */false);
         if (!b) {
             freex(e.entry);
             if (errno == ENOMEM) {
@@ -231,67 +231,44 @@ t_ftflac_init(void)
 struct t_file *
 t_ftflac_new(const char *restrict path)
 {
-    FLAC__Metadata_Chain *chain;
     FLAC__Metadata_Iterator *it;
-    FLAC__StreamMetadata *vocomments;
     bool b;
-    struct t_file *ret;
-    char *s;
-    size_t size;
-    struct t_ftflac_data *d;
+    struct t_file *file;
+    struct t_ftflac_data data;
 
     assert_not_null(path);
 
-    chain = FLAC__metadata_chain_new();
-    if (chain == NULL)
+    data.chain = FLAC__metadata_chain_new();
+    if (data.chain == NULL)
         err(ENOMEM, "t_ftflac_new: FLAC__metadata_chain_new");
-    if (!FLAC__metadata_chain_read(chain, path)) {
-        FLAC__metadata_chain_delete(chain);
+    if (!FLAC__metadata_chain_read(data.chain, path)) {
+        FLAC__metadata_chain_delete(data.chain);
         return (NULL);
     }
 
     it = FLAC__metadata_iterator_new();
     if (it == NULL)
         err(ENOMEM, "t_ftflac_new: FLAC__metadata_iterator_new");
-    FLAC__metadata_iterator_init(it, chain);
+    FLAC__metadata_iterator_init(it, data.chain);
 
-    vocomments = NULL;
+    data.vocomments = NULL;
     do {
         if (FLAC__metadata_iterator_get_block_type(it) == FLAC__METADATA_TYPE_VORBIS_COMMENT)
-            vocomments = FLAC__metadata_iterator_get_block(it);
-    } while (vocomments == NULL && FLAC__metadata_iterator_next(it));
-    if (vocomments == NULL) {
+            data.vocomments = FLAC__metadata_iterator_get_block(it);
+    } while (data.vocomments == NULL && FLAC__metadata_iterator_next(it));
+    if (data.vocomments == NULL) {
     /* create a new block FLAC__METADATA_TYPE_VORBIS_COMMENT */
-        vocomments = FLAC__metadata_object_new(FLAC__METADATA_TYPE_VORBIS_COMMENT);
-        if (vocomments == NULL)
+        data.vocomments = FLAC__metadata_object_new(FLAC__METADATA_TYPE_VORBIS_COMMENT);
+        if (data.vocomments == NULL)
             err(ENOMEM, "t_ftflac_new: FLAC__metadata_object_new");
-        b = FLAC__metadata_iterator_insert_block_after(it, vocomments);
+        b = FLAC__metadata_iterator_insert_block_after(it, data.vocomments);
         if (!b)
             err(errno, "t_ftflac_new: FLAC__metadata_iterator_insert_block_after");
     }
     FLAC__metadata_iterator_delete(it);
 
-    size = strlen(path) + 1;
-    ret = xmalloc(sizeof(struct t_file) + sizeof(struct t_ftflac_data) + size);
+    file = t_file_new(path, "libFLAC", &data, sizeof(data));
+    T_FILE_FUNC_INIT(file, flac);
 
-    d = (struct t_ftflac_data *)(ret + 1);
-    d->chain      = chain;
-    d->vocomments = vocomments;
-    ret->data = d;
-
-    s = (char *)(d + 1);
-    assert(strlcpy(s, path, size) < size);
-    ret->path = s;
-
-    ret->create   = t_ftflac_new;
-    ret->save     = t_ftflac_save;
-    ret->destroy  = t_ftflac_destroy;
-    ret->get      = t_ftflac_get;
-    ret->clear    = t_ftflac_clear;
-    ret->add      = t_ftflac_add;
-
-    ret->lib = "libFLAC";
-    t_error_init(ret);
-    return (ret);
+    return (file);
 }
-

@@ -31,6 +31,13 @@
 #define assert_null(x) assert((x) == NULL)
 #define assert_fail() assert(!42)
 
+/* taken from FreeBSD's <sys/cdefs.h> */
+#define	T_CONCAT1(x,y)  x ## y
+#define	T_CONCAT(x,y)   T_CONCAT1(x,y)
+#define	T_STRING(x)     #x /* stringify without expanding x */
+#define	T_XSTRING(x)    T_STRING(x)	/* expand x, then stringify */
+
+
 /* MEMORY FUNCTIONS */
 
 _t__unused

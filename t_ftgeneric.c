@@ -43,13 +43,13 @@ bool t_ftgeneric_add(struct t_file *restrict file,
 void
 t_ftgeneric_destroy(struct t_file *restrict file)
 {
-    struct t_ftgeneric_data *d;
+    struct t_ftgeneric_data *data;
 
     assert_not_null(file);
     assert_not_null(file->data);
 
-    d = file->data;
-    taglib_file_free(d->file);
+    data = file->data;
+    taglib_file_free(data->file);
     t_error_clear(file);
     freex(file);
 }
@@ -59,14 +59,14 @@ bool
 t_ftgeneric_save(struct t_file *restrict file)
 {
     bool ok;
-    struct t_ftgeneric_data *d;
+    struct t_ftgeneric_data *data;
 
     assert_not_null(file);
     assert_not_null(file->data);
     t_error_clear(file);
 
-    d = file->data;
-	ok = taglib_file_save(d->file);
+    data = file->data;
+	ok = taglib_file_save(data->file);
     if (!ok)
         t_error_set(file, "%s error: taglib_file_save", file->lib);
     return (ok);
@@ -81,7 +81,7 @@ t_ftgeneric_get(struct t_file *restrict file, const char *restrict key)
 {
     int i;
     unsigned int uintval;
-    struct t_ftgeneric_data *d;
+    struct t_ftgeneric_data *data;
     struct t_taglist *T;
     char *value;
 
@@ -89,7 +89,7 @@ t_ftgeneric_get(struct t_file *restrict file, const char *restrict key)
     assert_not_null(file->data);
     t_error_clear(file);
 
-    d = file->data;
+    data = file->data;
     T = t_taglist_new();
 
     for (i = 0; i < 7; i++) {
@@ -100,27 +100,27 @@ t_ftgeneric_get(struct t_file *restrict file, const char *restrict key)
         value = NULL;
         switch (i) {
         case 0:
-            value = taglib_tag_album(d->tag);
+            value = taglib_tag_album(data->tag);
             break;
         case 1:
-            value = taglib_tag_artist(d->tag);
+            value = taglib_tag_artist(data->tag);
             break;
         case 2:
-            value = taglib_tag_comment(d->tag);
+            value = taglib_tag_comment(data->tag);
             break;
         case 3:
-            uintval = taglib_tag_year(d->tag);
+            uintval = taglib_tag_year(data->tag);
             if (uintval > 0)
-                (void)xasprintf(&value, "%04u", taglib_tag_year(d->tag));
+                (void)xasprintf(&value, "%04u", taglib_tag_year(data->tag));
             break;
         case 4:
-            value = taglib_tag_genre(d->tag);
+            value = taglib_tag_genre(data->tag);
             break;
         case 5:
-            value = taglib_tag_title(d->tag);
+            value = taglib_tag_title(data->tag);
             break;
         case 6:
-            uintval = taglib_tag_track(d->tag);
+            uintval = taglib_tag_track(data->tag);
             if (uintval > 0)
                 (void)xasprintf(&value, "%02u", uintval);
             break;
@@ -145,37 +145,37 @@ bool
 t_ftgeneric_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 {
     int i;
-    struct t_ftgeneric_data *d;
+    struct t_ftgeneric_data *data;
 
     assert_not_null(file);
     assert_not_null(file->data);
     t_error_clear(file);
 
-    d = file->data;
+    data = file->data;
 
     for (i = 0; i < 7; i++) {
         if (T == NULL || t_taglist_filter_count(T, _taglibkeys[i], T_TAG_FIRST)) {
             switch (i) {
             case 0:
-                taglib_tag_set_album(d->tag, "");
+                taglib_tag_set_album(data->tag, "");
                 break;
             case 1:
-                taglib_tag_set_artist(d->tag, "");
+                taglib_tag_set_artist(data->tag, "");
                 break;
             case 2:
-                taglib_tag_set_comment(d->tag, "");
+                taglib_tag_set_comment(data->tag, "");
                 break;
             case 3:
-                taglib_tag_set_year(d->tag, 0);
+                taglib_tag_set_year(data->tag, 0);
                 break;
             case 4:
-                taglib_tag_set_genre(d->tag, "");
+                taglib_tag_set_genre(data->tag, "");
                 break;
             case 5:
-                taglib_tag_set_title(d->tag, "");
+                taglib_tag_set_title(data->tag, "");
                 break;
             case 6:
-                taglib_tag_set_track(d->tag, 0);
+                taglib_tag_set_track(data->tag, 0);
                 break;
             }
         }
@@ -188,7 +188,7 @@ t_ftgeneric_clear(struct t_file *restrict file, const struct t_taglist *restrict
 bool
 t_ftgeneric_add(struct t_file *restrict file, const struct t_taglist *restrict T)
 {
-    struct t_ftgeneric_data *d;
+    struct t_ftgeneric_data *data;
     unsigned int uintval;
     struct t_tag *t;
     bool isstrf;
@@ -200,7 +200,7 @@ t_ftgeneric_add(struct t_file *restrict file, const struct t_taglist *restrict T
     assert_not_null(file->data);
     t_error_clear(file);
 
-    d = file->data;
+    data = file->data;
 
     t_tagQ_foreach(t, T->tags) {
         /* detect key function to use */
@@ -229,7 +229,7 @@ t_ftgeneric_add(struct t_file *restrict file, const struct t_taglist *restrict T
             }
         }
         if (isstrf)
-            strf(d->tag, t->value);
+            strf(data->tag, t->value);
         else {
             const char *msg;
             uintval = (unsigned int)strtonum(t->value, 0, UINT_MAX, &msg);
@@ -238,7 +238,7 @@ t_ftgeneric_add(struct t_file *restrict file, const struct t_taglist *restrict T
                         t->key, t->value, msg);
                 return (false);
             }
-            uif(d->tag, uintval);
+            uif(data->tag, uintval);
         }
     }
 
@@ -265,10 +265,8 @@ struct t_file *
 t_ftgeneric_new(const char *restrict path)
 {
     TagLib_File *f;
-    struct t_file *ret;
-    size_t size;
-    char *s;
-    struct t_ftgeneric_data *d;
+    struct t_file *file;
+    struct t_ftgeneric_data data;
 
     assert_not_null(path);
 
@@ -276,27 +274,12 @@ t_ftgeneric_new(const char *restrict path)
     if (f == NULL || !taglib_file_is_valid(f))
         return (NULL);
 
-    size = strlen(path) + 1;
-    ret = xmalloc(sizeof(struct t_file) + sizeof(struct t_ftgeneric_data) + size);
+    data.file = f;
+    data.tag  = taglib_file_tag(f);
 
-    d = (struct t_ftgeneric_data *)(ret + 1);
-    d->file  = f;
-    d->tag   = taglib_file_tag(f);
-    ret->data = d;
+    file = t_file_new(path, "TagLib", &data, sizeof(data));
+    T_FILE_FUNC_INIT(file, generic);
 
-    s = (char *)(d + 1);
-    assert(strlcpy(s, path, size) < size);
-    ret->path = s;
-
-    ret->create   = t_ftgeneric_new;
-    ret->save     = t_ftgeneric_save;
-    ret->destroy  = t_ftgeneric_destroy;
-    ret->get      = t_ftgeneric_get;
-    ret->clear    = t_ftgeneric_clear;
-    ret->add      = t_ftgeneric_add;
-
-    ret->lib = "TagLib";
-    t_error_init(ret);
-    return (ret);
+    return (file);
 }
 

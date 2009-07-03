@@ -50,7 +50,7 @@ t_taglist_insert(struct t_taglist *restrict T,
     t->key = s = (char *)(t + 1);
     assert(strlcpy(s, key, t->keylen + 1) < (t->keylen + 1));
     t_strtolower(s);
-    t->value = s = (char *)(t->key + t->keylen + 1);
+    t->value = s = (char *)(s + t->keylen + 1);
     assert(strlcpy(s, value, t->valuelen + 1) < (t->valuelen + 1));
 
     t_tagQ_insert(T->tags, t);

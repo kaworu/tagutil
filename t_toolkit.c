@@ -8,12 +8,13 @@
 #include "t_toolkit.h"
 
 
+extern bool Yflag, Nflag;
+
 bool
 t_yesno(const char *restrict question)
 {
     char *endl;
     char buffer[5]; /* strlen("yes\n\0") == 5 */
-    extern bool Yflag, Nflag;
 
     for (;;) {
         if (feof(stdin) && !Yflag && !Nflag)

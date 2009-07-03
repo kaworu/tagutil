@@ -22,9 +22,8 @@ MANDIR?=/man/man
 # C opts
 CSTD=c99
 .if defined(DEBUG)
-CFLAGS=-g -O0 -Wall -Wextra -Wformat-security -Wnonnull -Waggregate-return \
-	   -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow \
-	   -Wstrict-prototypes -Winline -fno-inline
+CFLAGS=-g -O0
+WARNS?=6
 VERSION:=${VERSION}-debug
 .endif
 CFLAGS+=-I. -D'T_TAGUTIL_VERSION="${VERSION}"'

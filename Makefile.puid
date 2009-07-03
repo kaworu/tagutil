@@ -3,6 +3,7 @@
 
 PROG=puid
 SRCS=t_puid.c t_wav.c
+NO_MAN=true
 
 # libofa
 OFA_I!=pkg-config --cflags libofa

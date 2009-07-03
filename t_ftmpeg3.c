@@ -71,14 +71,14 @@ bool t_ftmpeg3_add(struct t_file *restrict file,
 void
 t_ftmpeg3_destroy(struct t_file *restrict file)
 {
-    struct t_ftmpeg3_data *d;
+    struct t_ftmpeg3_data *data;
 
     assert_not_null(file);
     assert_not_null(file->data);
 
-    d = file->data;
+    data = file->data;
 
-    ID3Tag_Delete(d->tag);
+    ID3Tag_Delete(data->tag);
     t_error_clear(file);
     freex(file);
 }
@@ -89,15 +89,15 @@ t_ftmpeg3_save(struct t_file *restrict file)
 {
     bool ret = true;
     ID3_Err e;
-    struct t_ftmpeg3_data *d;
+    struct t_ftmpeg3_data *data;
 
     assert_not_null(file);
     assert_not_null(file->data);
     t_error_clear(file);
 
-    d = file->data;
+    data = file->data;
 
-    e = ID3Tag_Update(d->tag);
+    e = ID3Tag_Update(data->tag);
     if (e != 0) {
         t_error_set(file, "t_ftmpeg3_save: %s", t_ftmpeg3_id3_err_str[e]);
         ret = false;
@@ -111,13 +111,13 @@ struct t_taglist *
 t_ftmpeg3_get(struct t_file *restrict file, const char *restrict key)
 {
     struct t_taglist *T;
-    struct t_ftmpeg3_data *d;
+    struct t_ftmpeg3_data *data;
 
     assert_not_null(file);
     assert_not_null(file->data);
     t_error_clear(file);
 
-    d = file->data;
+    data = file->data;
     T = t_taglist_new();
 
     /* TODO */
@@ -129,13 +129,13 @@ t_ftmpeg3_get(struct t_file *restrict file, const char *restrict key)
 bool
 t_ftmpeg3_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 {
-    struct t_ftmpeg3_data *d;
+    struct t_ftmpeg3_data *data;
 
     assert_not_null(file);
     assert_not_null(file->data);
     t_error_clear(file);
 
-    d = file->data;
+    data = file->data;
 
     /* TODO */
     t_error_set(file, "t_ftmpeg3_clear: still need to be implemented.");
@@ -146,14 +146,14 @@ t_ftmpeg3_clear(struct t_file *restrict file, const struct t_taglist *restrict T
 bool
 t_ftmpeg3_add(struct t_file *restrict file, const struct t_taglist *restrict T)
 {
-    struct t_ftmpeg3_data *d;
+    struct t_ftmpeg3_data *data;
 
     assert_not_null(file);
     assert_not_null(file->data);
     assert_not_null(T);
     t_error_clear(file);
 
-    d = file->data;
+    data = file->data;
 
     /* TODO */
     t_error_set(file, "t_ftmpeg3_add: still need to be implemented.");
@@ -171,10 +171,8 @@ t_ftmpeg3_init(void)
 struct t_file *
 t_ftmpeg3_new(const char *restrict path)
 {
-    char *s;
-    size_t size;
-    struct t_file *ret;
-    struct t_ftmpeg3_data *d;
+    struct t_file *file;
+    struct t_ftmpeg3_data data;
     ID3Tag *tag;
 
     assert_not_null(path);
@@ -185,27 +183,12 @@ t_ftmpeg3_new(const char *restrict path)
         return (NULL);
     }
 
-    size = strlen(path) + 1;
-    ret = xmalloc(sizeof(struct t_file) + sizeof(struct t_ftmpeg3_data) + size);
+    data.tag = tag;
 
-    d = (struct t_ftmpeg3_data *)(ret + 1);
-    d->tag = tag;
-    ret->data = d;
+    file = t_file_new(path, "ID3Lib", &data, sizeof(data));
+    T_FILE_FUNC_INIT(file, mpeg3);
 
-    s = (char *)(d + 1);
-    assert(strlcpy(s, path, size) < size);
-    ret->path = s;
-
-    ret->create   = t_ftmpeg3_new;
-    ret->save     = t_ftmpeg3_save;
-    ret->destroy  = t_ftmpeg3_destroy;
-    ret->get      = t_ftmpeg3_get;
-    ret->clear    = t_ftmpeg3_clear;
-    ret->add      = t_ftmpeg3_add;
-
-    ret->lib = "ID3Lib";
-    t_error_init(ret);
-    return (ret);
+    return (file);
 }
 
 #if 0

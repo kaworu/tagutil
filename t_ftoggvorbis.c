@@ -45,15 +45,15 @@ bool t_ftoggvorbis_add(struct t_file *restrict file,
 void
 t_ftoggvorbis_destroy(struct t_file *restrict file)
 {
-    struct t_ftoggvorbis_data *d;
+    struct t_ftoggvorbis_data *data;
 
     assert_not_null(file);
     assert_not_null(file->data);
 
-    d = file->data;
+    data = file->data;
 
-    ov_clear(d->vf);
-    freex(d->vf);
+    ov_clear(data->vf);
+    freex(data->vf);
     freex(file);
 }
 
@@ -78,19 +78,19 @@ t_ftoggvorbis_get(struct t_file *restrict file, const char *restrict key)
     const char *c;
     size_t keylen;
     struct t_taglist *T;
-    struct t_ftoggvorbis_data *d;
+    struct t_ftoggvorbis_data *data;
 
     assert_not_null(file);
     assert_not_null(file->data);
     t_error_clear(file);
 
-    d = file->data;
+    data = file->data;
     T = t_taglist_new();
     if (key != NULL)
         keylen = strlen(key);
 
-    for (i = 0; i < d->vc->comments; i++) {
-        c = d->vc->user_comments[i];
+    for (i = 0; i < data->vc->comments; i++) {
+        c = data->vc->user_comments[i];
         if (key != NULL) {
             if (strncasecmp(key, c, keylen) != 0 || c[keylen] != '=')
                 continue;
@@ -118,46 +118,46 @@ t_ftoggvorbis_clear(struct t_file *restrict file, const struct t_taglist *T)
     int i, count;
     char *c;
     struct t_tag *t;
-    struct t_ftoggvorbis_data *d;
+    struct t_ftoggvorbis_data *data;
 
     assert_not_null(file);
     assert_not_null(file->data);
     t_error_clear(file);
 
-    d = file->data;
+    data = file->data;
 
     if (T != NULL) {
         t_tagQ_foreach(t, T->tags) {
-            for (i = 0; i < d->vc->comments; i++) {
-                c = d->vc->user_comments[i];
+            for (i = 0; i < data->vc->comments; i++) {
+                c = data->vc->user_comments[i];
                 if (c != NULL) {
                     if (strncasecmp(t->key, c, t->keylen) == 0 &&
                             c[t->keylen] == '=')
-                        freex(d->vc->user_comments[i]);
+                        freex(data->vc->user_comments[i]);
                 }
             }
         }
         count = 0;
-        for (i = 0; i < d->vc->comments; i++) {
-            if (d->vc->user_comments[i] != NULL) {
+        for (i = 0; i < data->vc->comments; i++) {
+            if (data->vc->user_comments[i] != NULL) {
                 if (count != i) {
-                    d->vc->user_comments[count] = d->vc->user_comments[i];
-                    d->vc->comment_lengths[count] = d->vc->comment_lengths[i];
+                    data->vc->user_comments[count] = data->vc->user_comments[i];
+                    data->vc->comment_lengths[count] = data->vc->comment_lengths[i];
                 }
                 count++;
             }
         }
-        d->vc->comments = count;
-        d->vc->user_comments = xrealloc(d->vc->user_comments,
-                (d->vc->comments + 1) * sizeof(*d->vc->user_comments));
-        d->vc->comment_lengths = xrealloc(d->vc->comment_lengths,
-                (d->vc->comments + 1) * sizeof(*d->vc->comment_lengths));
+        data->vc->comments = count;
+        data->vc->user_comments = xrealloc(data->vc->user_comments,
+                (data->vc->comments + 1) * sizeof(*data->vc->user_comments));
+        data->vc->comment_lengths = xrealloc(data->vc->comment_lengths,
+                (data->vc->comments + 1) * sizeof(*data->vc->comment_lengths));
         /* vorbis_comment_add() set the last comment to NULL, we do the same */
-        d->vc->user_comments[d->vc->comments]   = NULL;
-        d->vc->comment_lengths[d->vc->comments] = 0;
+        data->vc->user_comments[data->vc->comments]   = NULL;
+        data->vc->comment_lengths[data->vc->comments] = 0;
     }
     else
-        vorbis_comment_clear(d->vc);
+        vorbis_comment_clear(data->vc);
     return (true);
 }
 
@@ -168,30 +168,30 @@ t_ftoggvorbis_add(struct t_file *restrict file, const struct t_taglist *T)
     size_t len;
     char *tageq;
     struct t_tag *t;
-    struct t_ftoggvorbis_data *d;
+    struct t_ftoggvorbis_data *data;
 
     assert_not_null(T);
     assert_not_null(file);
     assert_not_null(file->data);
     t_error_clear(file);
 
-    d = file->data;
+    data = file->data;
 
-    d->vc->user_comments = xrealloc(d->vc->user_comments,
-            (d->vc->comments + T->count + 1) * sizeof(*d->vc->user_comments));
-    d->vc->comment_lengths = xrealloc(d->vc->comment_lengths,
-            (d->vc->comments + T->count + 1) * sizeof(*d->vc->comment_lengths));
+    data->vc->user_comments = xrealloc(data->vc->user_comments,
+            (data->vc->comments + T->count + 1) * sizeof(*data->vc->user_comments));
+    data->vc->comment_lengths = xrealloc(data->vc->comment_lengths,
+            (data->vc->comments + T->count + 1) * sizeof(*data->vc->comment_lengths));
 
     t_tagQ_foreach(t, T->tags) {
         /* FIXME: check vorbisness of t->key , utf8 t->value */
         len = xasprintf(&tageq, "%s=%s", t->key, t->value);
-        d->vc->comment_lengths[d->vc->comments] = len;
-        d->vc->user_comments[d->vc->comments]   = tageq;
-        d->vc->comments++;
+        data->vc->comment_lengths[data->vc->comments] = len;
+        data->vc->user_comments[data->vc->comments]   = tageq;
+        data->vc->comments++;
     }
     /* vorbis_comment_add() set the last comment to NULL, we do the same */
-    d->vc->user_comments[d->vc->comments]   = NULL;
-    d->vc->comment_lengths[d->vc->comments] = 0;
+    data->vc->user_comments[data->vc->comments]   = NULL;
+    data->vc->comment_lengths[data->vc->comments] = 0;
     return (true);
 }
 
@@ -206,13 +206,12 @@ t_ftoggvorbis_init(void)
 struct t_file *
 t_ftoggvorbis_new(const char *restrict path)
 {
-    struct t_file *ret;
+    struct t_file *file;
     int i;
-    size_t size;
     char *s;
     struct OggVorbis_File *vf;
     struct vorbis_comment *vc;
-    struct t_ftoggvorbis_data *d;
+    struct t_ftoggvorbis_data data;
 
     assert_not_null(path);
 
@@ -225,29 +224,15 @@ t_ftoggvorbis_new(const char *restrict path)
         freex(vf);
         return (NULL);
     }
+    /* FIXME */
     assert(vc = ov_comment(vf, -1));
 
-    size = strlen(path) + 1;
-    ret = xmalloc(sizeof(struct t_file) + sizeof(struct t_ftoggvorbis_data) + size);
+    data.vf = vf;
+    data.vc = vc;
 
-    d = (struct t_ftoggvorbis_data *)(ret + 1);
-    d->vf = vf;
-    d->vc = vc;
-    ret->data = d;
+    t_file_new(path, "libvorbis", &data, sizeof(data));
+    T_FILE_FUNC_INIT(file, oggvorbis);
 
-    s = (char *)(d + 1);
-    assert(strlcpy(s, path, size) < size);
-    ret->path = s;
-
-    ret->create   = t_ftoggvorbis_new;
-    ret->save     = t_ftoggvorbis_save;
-    ret->destroy  = t_ftoggvorbis_destroy;
-    ret->get      = t_ftoggvorbis_get;
-    ret->clear    = t_ftoggvorbis_clear;
-    ret->add      = t_ftoggvorbis_add;
-
-    t_error_init(ret);
-    ret->lib = "libvorbis";
-    return (ret);
+    return (file);
 }
 
