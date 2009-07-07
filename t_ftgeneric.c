@@ -253,9 +253,11 @@ t_ftgeneric_init(void)
 
     /* TagLib specific init */
     lcall = getenv("LC_ALL");
-    dot = strchr(lcall, '.');
-    if (dot && strcmp(dot + 1, "UTF-8"))
-        taglib_set_strings_unicode(true);
+    if (lcall != NULL) {
+        dot = strchr(lcall, '.');
+        if (dot && strcmp(dot + 1, "UTF-8"))
+            taglib_set_strings_unicode(true);
+    }
 
     taglib_set_string_management_enabled(false);
 }
