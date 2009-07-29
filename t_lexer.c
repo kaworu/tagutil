@@ -156,7 +156,7 @@ t_lex_number(struct t_lexer *restrict L, struct t_token *restrict t)
 
 
 void
-t_lex_strlit_or_regex(struct t_lexer *restrict L, struct t_token  **tptr)
+t_lex_strlit_or_regex(struct t_lexer *restrict L, struct t_token **tptr)
 {
     struct t_token *t;
     char limit;

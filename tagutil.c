@@ -39,11 +39,15 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include <sys/types.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 
 #include <errno.h>
-#include <unistd.h> /* getopt(3) */
+#include <unistd.h>
 
 #include "t_config.h"
 #include "t_toolkit.h"
@@ -80,6 +84,7 @@ struct t_taglist *a_arg = NULL; /* key=val tags (add) */
 struct t_taglist *c_arg = NULL; /* key=val tags (clear) */
 struct t_taglist *s_arg = NULL; /* key=val tags (set) */
 
+const char *editor = NULL; /* $EDITOR */
 
 /*
  * get action with getopt(3) and then apply it to all files given in argument.
@@ -93,6 +98,7 @@ main(int argc, char *argv[])
     struct stat s;
     struct t_file *file;
 
+    editor = getenv("EDITOR");
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
     while ((ch = getopt(argc, argv, "bedhNYa:c:f:r:s:x:")) != -1) {
@@ -321,12 +327,12 @@ usage(void)
 bool
 user_edit(const char *restrict path)
 {
-    int error;
-    char *editor, *editcmd;
+    pid_t child;
+    int status;
+    bool ret;
 
     assert_not_null(path);
 
-    editor = getenv("EDITOR");
     if (editor == NULL)
         errx(-1, "please, set the $EDITOR environment variable.");
     else if (strcmp(editor, "emacs") == 0)
@@ -338,17 +344,23 @@ user_edit(const char *restrict path)
          */
         (void)fprintf(stderr, "Starting %s. please wait...\n", editor);
 
-    (void)xasprintf(&editcmd, "%s '%s'", editor, path);
+    switch (child = fork()) {
+    case -1:
+        err(errno, "fork");
+        /* NOTREACHED */
+    case 0:
+    /* child */
+        execlp(editor, editor, path, NULL);
+        err(errno, "execlp");
+        /* NOTREACHED */
+    }
+    /* parent */
+    waitpid(child, &status, 0);
 
-    /* test if the shell is avaiable */
-    if (system(NULL) == 0)
-            err(errno, "can't access shell");
-
-    /* FIXME: fork(2) - wait(2) ? */
-    error = system(editcmd);
-
-    freex(editcmd);
-    return (error == 0);
+    ret = false;
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+        ret = true;
+    return (ret);
 }
 
 
@@ -412,7 +424,7 @@ tagutil_edit(struct t_file *restrict file)
 {
     FILE *stream;
     bool ret = true;
-    char *tmp_file, *yaml, *editor;
+    char *tmp_file, *yaml;
 
     assert_not_null(file);
 
@@ -429,8 +441,7 @@ tagutil_edit(struct t_file *restrict file)
 
         stream = xfopen(tmp_file, "w");
         (void)fprintf(stream, "%s", yaml);
-        editor = getenv("EDITOR");
-        if (editor && strcmp(editor, "vim") == 0)
+        if (editor != NULL && strcmp(editor, "vim") == 0)
             (void)fprintf(stream, "\n# vim:filetype=yaml");
         xfclose(stream);
 
