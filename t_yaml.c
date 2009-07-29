@@ -58,7 +58,7 @@ t_tags2yaml(struct t_file *restrict file)
     char *head;
     size_t headlen;
     struct t_taglist *T;
-    struct t_tag  *t;
+    struct t_tag *t;
 
     assert_not_null(file);
 
@@ -163,7 +163,7 @@ t_tags2yaml(struct t_file *restrict file)
     return (t_strbuffer_get(sb));
 
 event_error:
-    errx(errno = ENOMEM, "t_tags2yaml: can't init event");
+    err(errno = ENOMEM, "t_tags2yaml: can't init event");
     /* NOTREACHED */
 emitter_error:
     errx(-1, "t_tags2yaml: emit error");

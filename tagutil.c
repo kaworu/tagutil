@@ -14,6 +14,7 @@
  *
  * Copyright (c) 2008, Perrin Alexandre <kaworu@kaworu.ch>
  *
+ * FIXME:
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,7 +51,6 @@
 #include "t_file.h"
 #include "t_ftflac.h"
 #include "t_ftoggvorbis.h"
-#include "t_ftmpeg3.h"
 #include "t_ftgeneric.h"
 #include "t_yaml.h"
 #include "t_renamer.h"
@@ -192,7 +192,6 @@ main(int argc, char *argv[])
     /* init backends */
     t_ftflac_init();
     t_ftoggvorbis_init();
-    t_ftmpeg3_init();
     t_ftgeneric_init();
 
     ret = EXIT_SUCCESS;
@@ -214,8 +213,6 @@ main(int argc, char *argv[])
         file = t_ftflac_new(path);
         if (file == NULL)
             file = t_ftoggvorbis_new(path);
-        if (file == NULL)
-            file = t_ftmpeg3_new(path);
         if (file == NULL)
             file = t_ftgeneric_new(path);
         if (file == NULL) {

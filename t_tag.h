@@ -82,6 +82,7 @@ struct t_taglist * t_taglist_filter(const struct t_taglist *restrict T,
 _t__nonnull(1) _t__nonnull(2)
 unsigned int t_taglist_filter_count(const struct t_taglist *restrict T,
         const char *restrict key, bool onlyfirst);
+
 /*
  * return the tag at index idx, or NULL if idx > T->count.
  */

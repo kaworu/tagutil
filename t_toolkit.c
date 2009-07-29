@@ -20,7 +20,7 @@ t_yesno(const char *restrict question)
         if (feof(stdin) && !Yflag && !Nflag)
             return (false);
 
-        (void)memset(buffer, '\0', countof(buffer));
+        (void)memset(buffer, '\0', sizeof(buffer));
 
         if (question != NULL) {
             (void)printf("%s? [y/n] ", question);
