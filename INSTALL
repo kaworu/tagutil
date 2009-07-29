@@ -15,8 +15,6 @@ make options:
         If you want the flac files to be handled by libFLAC.
     WITH_OGGVORBIS
         If you want the ogg/vorbis files to be handled by libvorbis.
-    WITH_MPEG3
-        If you want the mp3 files handled by ID3Lib.
     WITH_TAGLIB
         generic backend. Can handle a lot of different file type, but only a
         limited set of tags (artist, title, album, tracknumber, date, genre and
@@ -27,7 +25,6 @@ make options:
 Optionals Dependencies:
     - WITH_FLAC: libFLAC
     - WITH_OGGVORBIS: libvorbis
-    - WITH_MPEG3: ID3Lib, GNU gperf (>=3.0.3, build dep)
     - WITH_TAGLIB: TagLib (>=1.5)
 
 to build and install tagutil, type (for example):

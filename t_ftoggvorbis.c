@@ -24,25 +24,66 @@ struct t_ftoggvorbis_data {
 
 
 _t__nonnull(1)
-void t_ftoggvorbis_destroy(struct t_file *restrict file);
+static void t_ftoggvorbis_destroy(struct t_file *restrict file);
 
 _t__nonnull(1)
-bool t_ftoggvorbis_save(struct t_file *restrict file);
+static bool t_ftoggvorbis_save(struct t_file *restrict file);
 
 _t__nonnull(1)
-struct t_taglist * t_ftoggvorbis_get(struct t_file *restrict file,
+static struct t_taglist * t_ftoggvorbis_get(struct t_file *restrict file,
         const char *restrict key);
 
 _t__nonnull(1)
-bool t_ftoggvorbis_clear(struct t_file *restrict file,
+static bool t_ftoggvorbis_clear(struct t_file *restrict file,
         const struct t_taglist *T);
 
 _t__nonnull(1) _t__nonnull(2)
-bool t_ftoggvorbis_add(struct t_file *restrict file,
+static bool t_ftoggvorbis_add(struct t_file *restrict file,
         const struct t_taglist *T);
 
 
 void
+t_ftoggvorbis_init(void)
+{
+    return;
+}
+
+
+struct t_file *
+t_ftoggvorbis_new(const char *restrict path)
+{
+    struct t_file *file;
+    int i;
+    char *s;
+    struct OggVorbis_File *vf;
+    struct vorbis_comment *vc;
+    struct t_ftoggvorbis_data data;
+
+    assert_not_null(path);
+
+    vf = xmalloc(sizeof(struct OggVorbis_File));
+    s = xstrdup(path);
+    i = ov_fopen(s, vf);
+    freex(s);
+    if (i != 0) {
+        /* XXX: check OV_EFAULT or OV_EREAD? */
+        freex(vf);
+        return (NULL);
+    }
+    /* FIXME */
+    assert(vc = ov_comment(vf, -1));
+
+    data.vf = vf;
+    data.vc = vc;
+
+    t_file_new(path, "libvorbis", &data, sizeof(data));
+    T_FILE_FUNC_INIT(file, oggvorbis);
+
+    return (file);
+}
+
+
+static void
 t_ftoggvorbis_destroy(struct t_file *restrict file)
 {
     struct t_ftoggvorbis_data *data;
@@ -58,7 +99,7 @@ t_ftoggvorbis_destroy(struct t_file *restrict file)
 }
 
 
-bool
+static bool
 t_ftoggvorbis_save(struct t_file *restrict file)
 {
     assert_not_null(file);
@@ -70,7 +111,7 @@ t_ftoggvorbis_save(struct t_file *restrict file)
 }
 
 
-struct t_taglist *
+static struct t_taglist *
 t_ftoggvorbis_get(struct t_file *restrict file, const char *restrict key)
 {
     int i;
@@ -112,7 +153,7 @@ t_ftoggvorbis_get(struct t_file *restrict file, const char *restrict key)
 }
 
 
-bool
+static bool
 t_ftoggvorbis_clear(struct t_file *restrict file, const struct t_taglist *T)
 {
     int i, count;
@@ -162,7 +203,7 @@ t_ftoggvorbis_clear(struct t_file *restrict file, const struct t_taglist *T)
 }
 
 
-bool
+static bool
 t_ftoggvorbis_add(struct t_file *restrict file, const struct t_taglist *T)
 {
     size_t len;
@@ -194,45 +235,3 @@ t_ftoggvorbis_add(struct t_file *restrict file, const struct t_taglist *T)
     data->vc->comment_lengths[data->vc->comments] = 0;
     return (true);
 }
-
-
-void
-t_ftoggvorbis_init(void)
-{
-    return;
-}
-
-
-struct t_file *
-t_ftoggvorbis_new(const char *restrict path)
-{
-    struct t_file *file;
-    int i;
-    char *s;
-    struct OggVorbis_File *vf;
-    struct vorbis_comment *vc;
-    struct t_ftoggvorbis_data data;
-
-    assert_not_null(path);
-
-    vf = xmalloc(sizeof(struct OggVorbis_File));
-    s = xstrdup(path);
-    i = ov_fopen(s, vf);
-    freex(s);
-    if (i != 0) {
-        /* XXX: check OV_EFAULT or OV_EREAD? */
-        freex(vf);
-        return (NULL);
-    }
-    /* FIXME */
-    assert(vc = ov_comment(vf, -1));
-
-    data.vf = vf;
-    data.vc = vc;
-
-    t_file_new(path, "libvorbis", &data, sizeof(data));
-    T_FILE_FUNC_INIT(file, oggvorbis);
-
-    return (file);
-}
-

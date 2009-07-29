@@ -130,7 +130,6 @@ t_file_new(const char *restrict path,
     file->lib = libname;
 
     t_error_init(file);
-
     return (file);
 }
 
