@@ -76,7 +76,7 @@ t_ftoggvorbis_new(const char *restrict path)
     data.vf = vf;
     data.vc = vc;
 
-    t_file_new(path, "libvorbis", &data, sizeof(data));
+    file = t_file_new(path, "libvorbis", &data, sizeof(data));
     T_FILE_FUNC_INIT(file, oggvorbis);
 
     return (file);

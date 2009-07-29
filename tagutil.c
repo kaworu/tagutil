@@ -307,7 +307,7 @@ usage(void)
     (void)fprintf(stderr, "\n");
     (void)fprintf(stderr, "Options:\n");
     (void)fprintf(stderr, "  -h              show this help\n");
-    (void)fprintf(stderr, "  -b              display backend used\n");
+    (void)fprintf(stderr, "  -b FILES        display backend used\n");
     (void)fprintf(stderr, "  -Y              answer yes to all questions\n");
     (void)fprintf(stderr, "  -N              answer no  to all questions\n");
     (void)fprintf(stderr, "  -a TAG=VALUE    add a TAG/VALUE pair\n");
@@ -327,7 +327,7 @@ usage(void)
 bool
 user_edit(const char *restrict path)
 {
-    pid_t child;
+    pid_t edit /* child process */;
     int status;
     bool ret;
 
@@ -335,27 +335,27 @@ user_edit(const char *restrict path)
 
     if (editor == NULL)
         errx(-1, "please, set the $EDITOR environment variable.");
-    else if (strcmp(editor, "emacs") == 0)
-        /*
-         * we're actually so cool, that we keep the user waiting if $EDITOR
-         * start slowly. The slow-editor-detection-algorithm used maybe not
-         * the best known at the time of writing, but it has shown really good
-         * results and is pretty short and clear.
-         */
-        (void)fprintf(stderr, "Starting %s. please wait...\n", editor);
+    /*
+     * we're actually so cool, that we keep the user waiting if $EDITOR
+     * start slowly. The slow-editor-detection-algorithm used maybe not
+     * the best known at the time of writing, but it has shown really good
+     * results and is pretty short and clear.
+     */
+    if (strcmp(editor, "emacs") == 0)
+        (void)fprintf(stderr, "Starting %s, please wait...\n", editor);
 
-    switch (child = fork()) {
+    switch (edit = fork()) {
     case -1:
         err(errno, "fork");
         /* NOTREACHED */
     case 0:
-    /* child */
-        execlp(editor, editor, path, NULL);
+    /* child (edit process) */
+        execlp(editor, /* argv[0] */editor, /* argv[1] */path, NULL);
         err(errno, "execlp");
         /* NOTREACHED */
     }
-    /* parent */
-    waitpid(child, &status, 0);
+    /* parent (tagutil process) */
+    waitpid(edit, &status, 0);
 
     ret = false;
     if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
@@ -406,10 +406,8 @@ tagutil_load(struct t_file *restrict file, const char *restrict path)
     else {
         if (!file->clear(file, NULL) || !file->add(file, T))
             warnx("file `%s' not saved: %s", file->path, t_error_msg(file));
-        else {
-            if (!file->save(file))
-                err(errno, "can't save file '%s'", file->path);
-        }
+        else if (!file->save(file))
+            err(errno, "can't save file `%s'", file->path);
         t_taglist_destroy(T);
     }
     if (stream != stdin)
@@ -463,7 +461,6 @@ bool
 tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
 {
     char *ext, *result, *dirn, *fname, *question;
-    struct t_error e;
 
     assert_not_null(file);
     assert_not_null(tknary);
@@ -483,7 +480,7 @@ tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
     /* fname is now OK. store into result the full new path.  */
     dirn = t_dirname(file->path);
     if (dirn == NULL)
-        err(errno, "%s", dirn);
+        err(errno, "dirname");
     /* add the directory to result if needed */
     if (strcmp(dirn, ".") != 0)
         (void)xasprintf(&result, "%s/%s.%s", dirn, fname, ext);
@@ -496,6 +493,7 @@ tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
     if (strcmp(file->path, result) != 0) {
         (void)xasprintf(&question, "rename `%s' to `%s'", file->path, result);
         if (t_yesno(question)) {
+            struct t_error e;
             t_error_init(&e);
             if (!t_rename_safe(file->path, result, &e))
                 err(errno, "%s", t_error_msg(&e));
