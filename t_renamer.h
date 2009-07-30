@@ -43,7 +43,6 @@ char * t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
  * return true otherwise.
  */
 _t__nonnull(1) _t__nonnull(2)
-bool t_rename_safe(const char *restrict oldpath, const char *restrict newpath,
-        struct t_error *restrict e);
+bool t_rename_safe(struct t_file *restrict file, const char *restrict newpath);
 
 #endif /* not T_RENAMER_H */

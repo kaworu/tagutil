@@ -35,25 +35,24 @@ static int build(char *path, mode_t omode);
 
 
 bool
-t_rename_safe(const char *restrict oldpath,
-        const char *restrict newpath, struct t_error *restrict e)
+t_rename_safe(struct t_file *restrict file, const char *restrict newpath)
 {
     bool failed = false;
     struct stat st;
     char *olddirn, *newdirn;
 
-    assert_not_null(oldpath);
+    assert_not_null(file);
+    assert_not_null(file->path);
     assert_not_null(newpath);
-    t_error_clear(e);
 
-    olddirn = t_dirname(oldpath);
+    olddirn = t_dirname(file->path);
     if (olddirn == NULL) {
-        t_error_set(e, "%s", oldpath);
+        t_error_set(file, "%s", file->path);
         return (false);
     }
     newdirn = t_dirname(newpath);
     if (newdirn == NULL) {
-        t_error_set(e, "%s", newpath);
+        t_error_set(file, "%s", newpath);
         freex(olddirn);
         return (false);
     }
@@ -76,7 +75,7 @@ t_rename_safe(const char *restrict oldpath,
         }
     }
     if (failed)
-        t_error_set(e, "%s", newdirn);
+        t_error_set(file, "%s", newdirn);
     freex(olddirn);
     freex(newdirn);
     if (failed)
@@ -84,12 +83,12 @@ t_rename_safe(const char *restrict oldpath,
 
     if (stat(newpath, &st) == 0) {
         errno = EEXIST;
-        t_error_set(e, "%s", newpath);
+        t_error_set(file, "%s", newpath);
         return (false);
     }
 
-    if (rename(oldpath, newpath) == -1) {
-        t_error_set(e, "rename");
+    if (rename(file->path, newpath) == -1) {
+        t_error_set(file, "rename");
         return (false);
     }
 

@@ -493,10 +493,8 @@ tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
     if (strcmp(file->path, result) != 0) {
         (void)xasprintf(&question, "rename `%s' to `%s'", file->path, result);
         if (t_yesno(question)) {
-            struct t_error e;
-            t_error_init(&e);
-            if (!t_rename_safe(file->path, result, &e))
-                err(errno, "%s", t_error_msg(&e));
+            if (!t_rename_safe(file, result))
+                err(errno, "%s", t_error_msg(file));
         }
         freex(question);
     }
