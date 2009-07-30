@@ -5,6 +5,7 @@
  * used by the filter function.
  */
 #include <limits.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -97,7 +98,6 @@ t_lex_number(struct t_lexer *restrict L, struct t_token *restrict t)
 {
     char *num, *endptr; /* new buffer pointers */
     const char *start, *end; /* source pointers */
-    const char *errmsg;
     bool isfp;
 
     assert_not_null(L);
@@ -130,24 +130,45 @@ t_lex_number(struct t_lexer *restrict L, struct t_token *restrict t)
         num = xcalloc((end - start + 1) + 1, sizeof(char));
         memcpy(num, start, end - start + 1);
         if (isfp) {
+            double doubleval;
             t->kind = T_DOUBLE;
 			t->str = "DOUBLE";
-            t->value.dbl = strtod(num, &endptr);
-            if (!t_strempty(endptr)) {
+            doubleval = strtod(num, &endptr);
+            if (*endptr != '\0') {
                 t_lex_error(L, start - L->source, end - L->source,
                         "bad floating point value");
                 /* NOTREACHED */
             }
-        }
-        else {
-            t->kind = T_INT;
-			t->str = "INT";
-            t->value.integer = (int)strtonum(num, INT_MIN, INT_MAX, &errmsg);
-            if (errmsg != NULL) {
+            else if (errno == ERANGE) {
                 t_lex_error(L, start - L->source, end - L->source,
-                        "bad integer value (%s)", errmsg);
+                        "bad floating point value (%s)",
+                        (doubleval == HUGE_VAL ? "too large" : "too small"));
                 /* NOTREACHED */
             }
+            t->value.dbl = doubleval;
+        }
+        else {
+            long longval;
+            t->kind = T_INT;
+			t->str = "INT";
+            longval = strtol(num, &endptr, 0);
+            if (*endptr != '\0') {
+            /* garbage after the int value */
+                t_lex_error(L, start - L->source, end - L->source,
+                        "bad integer value");
+                /* NOTREACHED */
+            }
+            else if (longval > INT_MAX || longval < INT_MIN) {
+            /* overflow */
+                t_lex_error(L, start - L->source, end - L->source,
+                        "bad integer value (%s)",
+                        (longval > INT_MAX ? "too large" : "too small"));
+            }
+            else if (errno) {
+            /* should be EINVAL (ERANGE catched by last condition). */
+                assert_fail();
+            }
+            t->value.integer = (int)longval;
         }
         freex(num);
     }
@@ -596,7 +617,7 @@ t_lex_error(const struct t_lexer *restrict L, int start, int end,
 
     assert_not_null(L);
 
-    fprintf(stderr, "lexer error:");
+    fprintf(stderr, "lexer error: ");
     va_start(args, fmt);
         t_lex_error0(L, start, end, fmt, args);
     va_end(args);

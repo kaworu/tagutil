@@ -165,9 +165,10 @@ t_ftflac_get(struct t_file *restrict file, const char *restrict key)
         e = data->vocomments->data.vorbis_comment.comments[i++];
         b = FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair(e, &field_name, &field_value);
         if (!b) {
-            if (errno == ENOMEM)
+            if (errno) {
                 t_error_set(file, "FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair: %s",
-                        strerror(ENOMEM));
+                        strerror(errno));
+            }
             else
                 t_error_set(file, "`%s' seems corrupted", file->path);
             t_taglist_destroy(T);
@@ -249,9 +250,9 @@ t_ftflac_add(struct t_file *restrict file, const struct t_taglist *restrict T)
     t_tagQ_foreach(t, T->tags) {
         b = FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&e, t->key, t->value);
         if (!b) {
-            if (errno == ENOMEM) {
+            if (errno) {
                 t_error_set(file, "FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair: %s",
-                        strerror(ENOMEM));
+                        strerror(errno));
             }
             else
                 t_error_set(file, "invalid Vorbis tag pair: `%s', `%s'", t->key, t->value);
@@ -260,9 +261,9 @@ t_ftflac_add(struct t_file *restrict file, const struct t_taglist *restrict T)
         b = FLAC__metadata_object_vorbiscomment_append_comment(data->vocomments, e, /* copy */false);
         if (!b) {
             freex(e.entry);
-            if (errno == ENOMEM) {
+            if (errno) {
                 t_error_set(file, "FLAC__metadata_object_vorbiscomment_append_comment: %s",
-                        strerror(ENOMEM));
+                        strerror(errno));
             }
             else
                 t_error_set(file, "invalid Vorbis tag entry created with: `%s', `%s'", t->key, t->value);

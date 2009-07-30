@@ -45,7 +45,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-
 #include <errno.h>
 #include <unistd.h>
 
@@ -99,6 +98,7 @@ main(int argc, char *argv[])
     struct t_file *file;
 
     editor = getenv("EDITOR");
+    errno = 0;
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
     while ((ch = getopt(argc, argv, "bedhNYa:c:f:r:s:x:")) != -1) {

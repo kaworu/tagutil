@@ -3,6 +3,7 @@
  *
  * a generic tagutil backend, using TagLib.
  */
+#include <stdlib.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <string.h>
@@ -229,7 +230,6 @@ static bool
 t_ftgeneric_add(struct t_file *restrict file, const struct t_taglist *restrict T)
 {
     struct t_ftgeneric_data *data;
-    unsigned int uintval;
     struct t_tag *t;
     bool isstrf;
     void (*strf)(TagLib_Tag *, const char *);
@@ -271,14 +271,24 @@ t_ftgeneric_add(struct t_file *restrict file, const struct t_taglist *restrict T
         if (isstrf)
             strf(data->tag, t->value);
         else {
-            const char *msg;
-            uintval = (unsigned int)strtonum(t->value, 0, UINT_MAX, &msg);
-            if (msg != NULL) {
-                t_error_set(file, "need Int argument for %s, got: `%s' (%s)",
-                        t->key, t->value, msg);
+            unsigned long ulongval;
+            char *endptr;
+            ulongval = strtoul(t->value, &endptr, 10);
+            if (endptr == t->value || *endptr != '\0') {
+                t_error_set(file, "invalid unsigned int argument for %s: `%s'",
+                        t->key, t->value);
                 return (false);
             }
-            uif(data->tag, uintval);
+            else if (ulongval > UINT_MAX) {
+                t_error_set(file, "invalid unsigned int argument for %s: `%s' (too large)",
+                        t->key, t->value);
+                return (false);
+            }
+            else if (errno) {
+            /* should be EINVAL (ERANGE catched by last condition). */
+                assert_fail();
+            }
+            uif(data->tag, (unsigned int)ulongval);
         }
     }
 
