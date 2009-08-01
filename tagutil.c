@@ -83,7 +83,7 @@ struct t_taglist *a_arg = NULL; /* key=val tags (add) */
 struct t_taglist *c_arg = NULL; /* key=val tags (clear) */
 struct t_taglist *s_arg = NULL; /* key=val tags (set) */
 
-const char *editor = NULL; /* $EDITOR */
+const char *G_editor = NULL; /* $EDITOR */
 
 /*
  * get action with getopt(3) and then apply it to all files given in argument.
@@ -97,7 +97,7 @@ main(int argc, char *argv[])
     struct stat s;
     struct t_file *file;
 
-    editor = getenv("EDITOR");
+    G_editor = getenv("EDITOR");
     errno = 0;
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
@@ -204,6 +204,7 @@ main(int argc, char *argv[])
     for (i = 0; i < argc; i++) {
         path = argv[i];
 
+	/* FIXME: use access ? */
         if (stat(path, &s) != 0) {
             warn("%s", path);
             ret = EINVAL;
@@ -327,40 +328,49 @@ usage(void)
 bool
 user_edit(const char *restrict path)
 {
-    pid_t edit /* child process */;
-    int status;
-    bool ret;
+	pid_t	edit; /* child process */
+	int	status;
+	time_t	before;
+	time_t	after;
+	struct stat s;
 
-    assert_not_null(path);
+	assert_not_null(path);
 
-    if (editor == NULL)
-        errx(-1, "please, set the $EDITOR environment variable.");
-    /*
-     * we're actually so cool, that we keep the user waiting if $EDITOR
-     * start slowly. The slow-editor-detection-algorithm used maybe not
-     * the best known at the time of writing, but it has shown really good
-     * results and is pretty short and clear.
-     */
-    if (strcmp(editor, "emacs") == 0)
-        (void)fprintf(stderr, "Starting %s, please wait...\n", editor);
+	if (G_editor == NULL)
+		errx(-1, "please, set the $EDITOR environment variable.");
+	/*
+	 * we're actually so cool, that we keep the user waiting if $EDITOR
+	 * start slowly. The slow-editor-detection-algorithm used maybe not
+	 * the best known at the time of writing, but it has shown really good
+	 * results and is pretty short and clear.
+	 */
+	if (strcmp(G_editor, "emacs") == 0)
+		(void)fprintf(stderr, "Starting %s, please wait...\n", G_editor);
 
-    switch (edit = fork()) {
-    case -1:
-        err(errno, "fork");
-        /* NOTREACHED */
-    case 0:
-    /* child (edit process) */
-        execlp(editor, /* argv[0] */editor, /* argv[1] */path, NULL);
-        err(errno, "execlp");
-        /* NOTREACHED */
-    }
-    /* parent (tagutil process) */
-    waitpid(edit, &status, 0);
+        if (stat(path, &s) != 0)
+		return (false);
+	before = s.st_mtime;
+	switch (edit = fork()) {
+	case -1:
+		err(errno, "fork");
+		/* NOTREACHED */
+	case 0:
+		/* child (edit process) */
+		execlp(G_editor, /* argv[0] */G_editor, /* argv[1] */path, NULL);
+		err(errno, "execlp");
+		/* NOTREACHED */
+	}
+	/* parent (tagutil process) */
+	waitpid(edit, &status, 0);
 
-    ret = false;
-    if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
-        ret = true;
-    return (ret);
+        if (stat(path, &s) != 0)
+		return (false);
+	after = s.st_mtime;
+	if (before == after)
+		/* the file hasn't been modified */
+		return (false);
+
+	return (WIFEXITED(status) && WEXITSTATUS(status) == 0);
 }
 
 
@@ -439,7 +449,7 @@ tagutil_edit(struct t_file *restrict file)
 
         stream = xfopen(tmp_file, "w");
         (void)fprintf(stream, "%s", yaml);
-        if (editor != NULL && strcmp(editor, "vim") == 0)
+        if (G_editor != NULL && strcmp(G_editor, "vim") == 0)
             (void)fprintf(stream, "\n# vim:filetype=yaml");
         xfclose(stream);
 
