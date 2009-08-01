@@ -92,9 +92,9 @@ const char *G_editor = NULL; /* $EDITOR */
 int
 main(int argc, char *argv[])
 {
+    bool w = false;
     int i, ch, ret;
     char *path, *value, *key;
-    struct stat s;
     struct t_file *file;
 
     G_editor = getenv("EDITOR");
@@ -104,6 +104,7 @@ main(int argc, char *argv[])
     while ((ch = getopt(argc, argv, "bedhNYa:c:f:r:s:x:")) != -1) {
         switch ((char)ch) {
         case 'a':
+	    w = true;
             aflag = true;
             if (a_arg == NULL)
                 a_arg = t_taglist_new();
@@ -119,12 +120,14 @@ main(int argc, char *argv[])
             bflag = true;
             break;
         case 'c':
+	    w = true;
             cflag = true;
             if (c_arg == NULL)
                 c_arg = t_taglist_new();
             t_taglist_insert(c_arg, optarg, "");
             break;
         case 'e':
+	    w = true;
             eflag = true;
             break;
         case 'f':
@@ -132,6 +135,7 @@ main(int argc, char *argv[])
             f_arg = optarg;
             break;
         case 'r':
+	    w = true;
             if (rflag)
                 errx(EINVAL, "-r option set twice");
             rflag = true;
@@ -146,6 +150,7 @@ main(int argc, char *argv[])
             x_arg = t_parse_filter(t_lexer_new(optarg));
             break;
         case 's':
+	    w = true;
             sflag = true;
             if (s_arg == NULL)
                 s_arg = t_taglist_new();
@@ -205,13 +210,8 @@ main(int argc, char *argv[])
         path = argv[i];
 
 	/* FIXME: use access ? */
-        if (stat(path, &s) != 0) {
+        if (access(path, (w ? (R_OK | W_OK) : R_OK)) == -1) {
             warn("%s", path);
-            ret = EINVAL;
-            continue;
-        }
-        else if (!S_ISREG(s.st_mode)) {
-            warnx("`%s' is not a regular file", path);
             ret = EINVAL;
             continue;
         }
