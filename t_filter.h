@@ -1,5 +1,5 @@
-#ifndef T_INTERPRETER_H
-#define T_INTERPRETER_H
+#ifndef	T_INTERPRETER_H
+#define	T_INTERPRETER_H
 /*
  * t_filter.h
  *
@@ -19,6 +19,6 @@
  */
 _t__nonnull(1) _t__nonnull(2)
 bool t_filter_eval(struct t_file *restrict file,
-        const struct t_ast *restrict filter);
+	const struct t_ast *restrict filter);
 
 #endif /* not T_INTERPRETER_H */
