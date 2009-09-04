@@ -201,11 +201,6 @@ main(int argc, char *argv[])
     /* no action given, fallback to default */
         pflag = true;
 
-    /* init backends */
-    t_ftflac_init();
-    t_ftoggvorbis_init();
-    t_ftgeneric_init();
-
     ret = EXIT_SUCCESS;
     for (i = 0; i < argc; i++) {
         path = argv[i];
