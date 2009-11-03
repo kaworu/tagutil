@@ -29,6 +29,50 @@ set(SRCS
     t_filter.c
 )
 
+try_compile(HAS_GETPROGNAME
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_SOURCE_DIR}/build-tests/i_can_haz_getprogname.c)
+if(HAS_GETPROGNAME)
+    add_definitions(-DHAS_GETPROGNAME)
+else()
+    set(SRCS ${SRCS} compat/getprogname.c)
+endif()
+
+try_compile(HAS_STRLCPY
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_SOURCE_DIR}/build-tests/i_can_haz_strlcpy.c)
+if(HAS_STRLCPY)
+    add_definitions(-DHAS_STRLCPY)
+else()
+    set(SRCS ${SRCS} compat/strlcpy.c)
+endif()
+
+try_compile(HAS_STRLCAT
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_SOURCE_DIR}/build-tests/i_can_haz_strlcat.c)
+if(HAS_STRLCAT)
+    add_definitions(-DHAS_STRLCAT)
+else()
+    set(SRCS ${SRCS} compat/strlcat.c)
+endif()
+
+try_compile(HAS_STRDUP
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_SOURCE_DIR}/build-tests/i_can_haz_strdup.c)
+if(HAS_STRDUP)
+    add_definitions(-DHAS_STRDUP)
+else()
+    set(SRCS ${SRCS} compat/strdup.c)
+endif()
+
+try_compile(HAS_SYS_QUEUE_H
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_SOURCE_DIR}/build-tests/i_can_haz_sys_queue_h.c)
+if(HAS_SYS_QUEUE_H)
+    add_definitions(-DHAS_SYS_QUEUE_H)
+endif()
+
+
 if (WITH_TAGLIB)
     set(SRCS ${SRCS} t_ftgeneric.c)
 endif()

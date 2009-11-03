@@ -136,6 +136,9 @@ xmalloc(size_t size)
 }
 
 
+#if !defined(EDOOFUS)
+#define	EDOOFUS		42		/* Programming error */
+#endif
 static inline void *
 xcalloc(size_t nmemb, size_t size)
 {

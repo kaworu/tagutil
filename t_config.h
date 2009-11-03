@@ -23,5 +23,16 @@
 		    __attribute__((format(printf, fmtarg, firstvararg)))
 #endif /* lint */
 
-
+#if !defined(HAS_GETPROGNAME)
+#	include "compat/include/getprogname.h"
+#endif
+#if !defined(HAS_STRLCPY)
+#	include "compat/include/strlcpy.h"
+#endif
+#if !defined(HAS_STRLCAT)
+#	include "compat/include/strlcat.h"
+#endif
+#if !defined(HAS_STRDUP)
+#	include "compat/include/strdup.h"
+#endif
 #endif /* not T_CONFIG_H */
