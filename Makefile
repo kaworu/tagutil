@@ -24,7 +24,7 @@ MANDIR?=/man/man
 CSTD=c99
 .if defined(DEBUG)
 CFLAGS=-g -O0
-WARNS?=6
+WARNS?=1
 VERSION:=${VERSION}-debug
 .endif
 CFLAGS+=-I. -D'T_TAGUTIL_VERSION="${VERSION}"'
