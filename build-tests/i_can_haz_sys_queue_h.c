@@ -1,6 +1,7 @@
 /*
  * build-tests/i_can_haz_sys_queue_h.c
  */
+#include <sys/param.h>
 #include <sys/queue.h>
 
 struct e {
