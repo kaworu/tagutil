@@ -33,7 +33,23 @@
 #ifndef _SYS_QUEUE_H_
 #define	_SYS_QUEUE_H_
 
-#include <sys/cdefs.h>
+#include <stddef.h> /* NULL */
+
+/*
+ * define __offsetof
+ */
+#if __GNUC_PREREQ__(4, 1)
+#define __offsetof(type, field)	 __builtin_offsetof(type, field)
+#else
+#ifndef __cplusplus
+#define	__offsetof(type, field)	((size_t)(&((type *)0)->field))
+#else
+#define __offsetof(type, field)					\
+  (__offsetof__ (reinterpret_cast <size_t>			\
+                 (&reinterpret_cast <const volatile char &>	\
+                  (static_cast<type *> (0)->field))))
+#endif
+#endif
 
 /*
  * This file defines four types of data structures: singly-linked lists,
