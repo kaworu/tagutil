@@ -4,8 +4,7 @@ $ARGC = @ARGV;
 
 if ($ARGC < 2) {
     print STDERR "usage: $0 trackkey [files...]\n"
-}
-else {
+} else {
     $i = 1;
     $trackkey = shift;
     foreach $f (@ARGV) {

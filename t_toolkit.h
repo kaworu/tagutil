@@ -29,7 +29,7 @@
 /* some handy assert macros */
 #define assert_not_null(x) assert((x) != NULL)
 #define assert_null(x) assert((x) == NULL)
-#define assert_fail() assert(!42)
+#define assert_fail() abort()
 
 /* taken from FreeBSD's <sys/cdefs.h> */
 #define	T_CONCAT1(x,y)  x ## y

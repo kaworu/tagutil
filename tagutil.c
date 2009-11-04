@@ -205,7 +205,6 @@ main(int argc, char *argv[])
     for (i = 0; i < argc; i++) {
         path = argv[i];
 
-	/* FIXME: use access ? */
         if (access(path, (w ? (R_OK | W_OK) : R_OK)) == -1) {
             warn("%s", path);
             ret = EINVAL;

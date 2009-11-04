@@ -1,32 +1,24 @@
 Installation
 ------------
 
-Notes:
-    - do *not* compile tagutil with -DNDEBUG
-    - At the time of writting, tagutil need a BSD Make (and maybe a bit of
-      hacking) to build if you're not running FreeBSD.
-
 Dependencies:
     - pkg-config (build dep)
     - libyaml
 
-make options:
-    WITH_FLAC
+Optionals Dependencies:
+    - WITH_FLAC: libFLAC
         If you want the flac files to be handled by libFLAC.
-    WITH_OGGVORBIS
+    - WITH_OGGVORBIS: libvorbis
         If you want the ogg/vorbis files to be handled by libvorbis.
-    WITH_TAGLIB
+    - WITH_TAGLIB: TagLib (>=1.5)
         generic backend. Can handle a lot of different file type, but only a
         limited set of tags (artist, title, album, tracknumber, date, genre and
         comment)
-    DEBUG
-        build tagutil with debug symbols (-g compiler option) and warnings.
 
-Optionals Dependencies:
-    - WITH_FLAC: libFLAC
-    - WITH_OGGVORBIS: libvorbis
-    - WITH_TAGLIB: TagLib (>=1.5)
+Building:
+    type `make', it'll create the build/ directory and call cmake and make to
+    configure and build tagutil.
 
-to build and install tagutil, type (for example):
-    make WITH_FLAC=y WITH_OGGVORBIS=y DEBUG=y
-    make install
+Install:
+    build tagutil, then `cd build && make install'. You might need root access
+    to call `make install'.
