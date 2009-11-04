@@ -102,7 +102,7 @@ t_lex_number(struct t_lexer *restrict L, struct t_token *restrict t)
 
     assert_not_null(L);
     assert_not_null(t);
-    assert(isnumber(L->c) || L->c == '.' || L->c == '+' || L->c == '-');
+    assert(isdigit(L->c) || L->c == '.' || L->c == '+' || L->c == '-');
 
     start = L->source + L->cindex;
     if (L->c == '+' || L->c == '-')
@@ -374,10 +374,10 @@ t_lex_tagidx(struct t_lexer *restrict L, struct t_token *restrict t,
 
     (void)t_lexc(L);
     if (isdigit(L->c)) {
-        while (isdigit(L->c)) {
-            t->tidx = 10 * t->tidx + digittoint(L->c);
+    	do {
+            t->tidx = 10 * t->tidx + (L->c - '0');
             (void)t_lexc(L);
-        }
+        } while (isdigit(L->c));
     }
     else if (L->c == '*') {
         t->tidx = T_TOKEN_STAR;
