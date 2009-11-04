@@ -63,6 +63,7 @@ int main(int argc, char **argv) {
 	    // Print results.
 	    printf(" Title: %s\n", info->getTrack().c_str());
 	    printf("Artist: %s\n", info->getArtist().c_str());
+        printf("print: %s\n", info->getPrint().c_str());
 	    printf("  PUID: %s\n", info->getPUID().c_str());
 	}
 	delete data;

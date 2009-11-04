@@ -1,39 +1,48 @@
 #ifndef T_RENAMER_H
 #define T_RENAMER_H
 /*
- * t_renamer.c
+ * t_renamer.h
  *
  * renamer for tagutil.
  */
 #include "t_config.h"
-
-#include <tag_c.h>
-
-/*
- * you should not modifiy them, eval_tag() implementation might be depend.
- */
-#define kTITLE      "%t"
-#define kALBUM      "%a"
-#define kARTIST     "%A"
-#define kYEAR       "%y"
-#define kTRACK      "%T"
-#define kCOMMENT    "%c"
-#define kGENRE      "%g"
+#include "t_error.h"
+#include "t_file.h"
+#include "t_lexer.h"
 
 
 /*
- * rename path to new_path. err(3) if new_path already exist.
+ * create a token array usable for t_rename_eval() from given pattern.
+ * the array is NULL terminated.
+ *
+ * The tag keys in pattern must look like shell variables (i.e. %artist or/and
+ * %{album}). If the tag key is not defined for a file, the tag key is replaced
+ * by its name (i.e. "%{undefined}" or "%undefined" becomes "undefined"). If
+ * you want a litteral %, use \%
+ *
+ * return value and all its elements has to be free()d.
  */
-__t__nonnull(2) __t__nonnull(3)
-void safe_rename(bool dflag, const char *restrict oldpath,
-        const char *restrict newpath);
-
+_t__nonnull(1)
+struct t_token ** t_rename_parse(const char *restrict pattern);
 
 /*
- * replace each tagutil keywords by their value. see k* keywords.
+ * eval the given token array in the context of given t_file.
+ *
+ * On error t_error_msg(file) is set and NULL is returned. Otherwhise the
+ * result is returned.
+ *
+ * returned value has to be free()d.
  */
-__t__nonnull(1) __t__nonnull(2)
-char * eval_tag(const char *restrict pattern, const TagLib_Tag *restrict tag);
+_t__nonnull(1) _t__nonnull(2)
+char * t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts);
 
+/*
+ * rename path to new_path.
+ *
+ * return false on error and set t_error_msg(e) if not NULL and errno.
+ * return true otherwise.
+ */
+_t__nonnull(1) _t__nonnull(2)
+bool t_rename_safe(struct t_file *restrict file, const char *restrict newpath);
 
 #endif /* not T_RENAMER_H */

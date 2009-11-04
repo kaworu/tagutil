@@ -6,81 +6,86 @@
  *  \__\__,_|\__, |\__,_|\__|_|_|
  *           |___/
  *
+ * FIXME:
  * tagutil is a simple command line tool to edit music file's tag. It use
  * taglib (http://developer.kde.org/~wheeler/taglib.html) to get and set music
  * file's tags so be sure to install it before trying to compile tagutil.
  * for a help lauch tagutil without argument.
  *
- * Copyright (c) 2008, Perrin Alexandre <kaworu@kaworu.ch>
- *
+ * Copyright (c) 2008-2009, Alexandre Perrin <kaworu@kaworu.ch>
  * All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
+ *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer
- *    in this position and unchanged.
+ *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. The name of the author may not be used to endorse or promote products
- *    derived from this software without specific prior written permission
+ * 4. Neither the name of the author nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
-#include "t_config.h"
-
-#include <sys/types.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include <errno.h>
-#include <unistd.h> /* getopt(3) */
+#include <unistd.h>
 
-#include <tag_c.h>
-
-#include "t_lexer.h"
-#include "t_parser.h"
-#include "t_interpreter.h"
+#include "t_config.h"
+#include "t_toolkit.h"
+#include "t_tag.h"
+#include "t_file.h"
+#include "t_ftflac.h"
+#include "t_ftoggvorbis.h"
+#include "t_ftgeneric.h"
 #include "t_yaml.h"
 #include "t_renamer.h"
-#include "t_toolkit.h"
-
+#include "t_lexer.h"
+#include "t_parser.h"
+#include "t_filter.h"
 #include "tagutil.h"
 
 
-bool        pflag = false; /* display tags action */
-bool        Yflag = false; /* yes answer to all questions */
-bool        Nflag = false; /* no  answer to all questions */
-bool        eflag = false; /* edit */
-bool        dflag = false; /* create directory with rename */
-bool        rflag = false;  /* rename */
-bool        xflag = false;  /* filter */
-bool        aflag = false;  /* set album */
-bool        Aflag = false;  /* set artist */
-bool        cflag = false;  /* set comment */
-bool        gflag = false;  /* set genre */
-bool        Tflag = false;  /* set track */
-bool        tflag = false;  /* set title */
-bool        yflag = false;  /* set year */
+bool aflag = false; /* add tag */
+bool bflag = false; /* show backend */
+bool cflag = false; /* clear tag */
+bool dflag = false; /* create directory with rename */
+bool eflag = false; /* edit */
+bool fflag = false; /* load file */
+bool Nflag = false; /* answer no to all questions */
+bool pflag = false; /* display tags action */
+bool rflag = false; /* rename */
+bool sflag = false; /* set tags */
+bool xflag = false; /* filter */
+bool Yflag = false; /* answer yes to all questions */
 
-char       *r_arg; /* rename pattern */
-struct ast *x_arg; /* filter code */
-char       *a_arg; /* album argument */
-char       *A_arg; /* artist argument */
-char       *c_arg; /* comment argument */
-char       *g_arg; /* genre argument */
-int         T_arg;    /* track argument */
-char       *t_arg; /* title argument */
-int         y_arg;    /* year argument */
+char *f_arg = NULL; /* file */
+struct t_token **r_arg = NULL; /* rename pattern (compiled) */
+struct t_ast *x_arg = NULL; /* filter code */
+struct t_taglist *a_arg = NULL; /* key=val tags (add) */
+struct t_taglist *c_arg = NULL; /* key=val tags (clear) */
+struct t_taglist *s_arg = NULL; /* key=val tags (set) */
+
+const char *G_editor = NULL; /* $EDITOR */
+
 /*
  * get action with getopt(3) and then apply it to all files given in argument.
  * usage() is called if an error is detected.
@@ -89,85 +94,74 @@ int
 main(int argc, char *argv[])
 {
     bool w = false;
-    int i, ch;
-    char *file, *endptr;
-    TagLib_File *f;
-    struct stat s;
+    int i, ch, ret;
+    char *path, *value, *key;
+    struct t_file *file;
 
-    if (argc < 2)
-        usage();
-
+    G_editor = getenv("EDITOR");
+    errno = 0;
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
-    while ((ch = getopt(argc, argv, "edhNYt:r:x:a:A:c:g:y:T:")) != -1) {
+    while ((ch = getopt(argc, argv, "bedhNYa:c:f:r:s:x:")) != -1) {
         switch ((char)ch) {
+        case 'a':
+	    w = true;
+            aflag = true;
+            if (a_arg == NULL)
+                a_arg = t_taglist_new();
+            key = optarg;
+            value = strchr(key, '=');
+            if (value == NULL)
+                errx(EINVAL, "`%s': invalid -a argument (no equal)", key);
+            *value = '\0';
+            value += 1;
+            t_taglist_insert(a_arg, key, value);
+            break;
+        case 'b':
+            bflag = true;
+            break;
+        case 'c':
+	    w = true;
+            cflag = true;
+            if (c_arg == NULL)
+                c_arg = t_taglist_new();
+            t_taglist_insert(c_arg, optarg, "");
+            break;
         case 'e':
-            w = eflag = true;
+	    w = true;
+            eflag = true;
+            break;
+        case 'f':
+            fflag = true;
+            f_arg = optarg;
             break;
         case 'r':
+	    w = true;
             if (rflag)
                 errx(EINVAL, "-r option set twice");
             rflag = true;
-            r_arg  = optarg;
+            if (t_strempty(optarg))
+                errx(EINVAL, "empty rename pattern");
+            r_arg = t_rename_parse(optarg);
             break;
         case 'x':
             if (xflag)
                 errx(EINVAL, "-x option set twice");
             xflag = true;
-            x_arg  = parse_filter(new_lexer(optarg));
+            x_arg = t_parse_filter(t_lexer_new(optarg));
             break;
-        case 'a':
-            if (aflag)
-                errx(EINVAL, "-a option set twice");
-            w = true;
-            aflag = true;
-            a_arg  = optarg;
-            break;
-        case 'A':
-            if (Aflag)
-                errx(EINVAL, "-A option set twice");
-            w = true;
-            Aflag = true;
-            A_arg  = optarg;
-            break;
-        case 'c':
-            if (cflag)
-                errx(EINVAL, "-c option set twice");
-            w = true;
-            cflag = true;
-            c_arg  = optarg;
-            break;
-        case 'g':
-            if (gflag)
-                errx(EINVAL, "-g option set twice");
-            w = true;
-            gflag = true;
-            g_arg  = optarg;
-            break;
-        case 'y':
-            if (yflag)
-                errx(EINVAL, "-y option set twice");
-            w = true;
-            yflag = true;
-            y_arg  = (int)strtoul(optarg, &endptr, 10);
-            if (endptr == optarg || *endptr != '\0' || y_arg < 0)
-                errx(EINVAL, "Invalid year argument: '%s'", optarg);
-            break;
-        case 'T':
-            if (Tflag)
-                errx(EINVAL, "-T option set twice");
-            w = true;
-            Tflag = true;
-            T_arg  = (int)strtoul(optarg, &endptr, 10);
-            if (endptr == optarg || *endptr != '\0' || T_arg < 0)
-                errx(EINVAL, "Invalid track argument: '%s'", optarg);
-            break;
-        case 't':
-            if (tflag)
-                errx(EINVAL, "-t option set twice");
-            w = true;
-            tflag = true;
-            t_arg  = optarg;
+        case 's':
+	    w = true;
+            sflag = true;
+            if (s_arg == NULL)
+                s_arg = t_taglist_new();
+            key = optarg;
+            value = strchr(key, '=');
+            if (value == NULL)
+                errx(EINVAL, "`%s': invalid -s argument (no equal)", key);
+            *value = '\0';
+            value += 1;
+            t_taglist_insert(s_arg, key, value);
             break;
         case 'd':
             dflag = true;
@@ -192,77 +186,100 @@ main(int argc, char *argv[])
     argc -= optind;
     argv += optind;
 
-    if (argc == 0)
-        errx(EINVAL, "No file argument given, run `%s -h' to see help.",
+    if (argc == 0) {
+        errx(EINVAL, "missing file argument.\nrun `%s -h' to see help.",
                 getprogname());
+    }
     if (dflag && !rflag)
-        errx(EINVAL, "-d is only valid with -r.");
-    if (xflag && (w || rflag))
-        errx(EINVAL, "-x option must be used alone");
-    if (!xflag && !rflag && !w)
+        errx(EINVAL, "-d is only valid with -r");
+    i  = ((aflag || bflag || sflag || cflag || eflag || rflag) ? 1 : 0);
+    i += (xflag ? 1 : 0);
+    i += (fflag ? 1 : 0);
+    if (i > 1)
+        errx(EINVAL, "-x and/or -f option must be used alone");
+    if (!aflag && !bflag && !xflag && !fflag && !rflag && !sflag && !eflag && !cflag)
     /* no action given, fallback to default */
         pflag = true;
 
-    /* taglib specific init */
-    taglib_set_strings_unicode(has_match(getenv("LC_ALL"), "utf-?8"));
-    taglib_set_string_management_enabled(true);
-
+    ret = EXIT_SUCCESS;
     for (i = 0; i < argc; i++) {
-        file = argv[i];
+        path = argv[i];
 
-        if (stat(file, &s) != 0) {
-            warn("%s", file);
-            continue;
-        }
-        else if (!S_ISREG(s.st_mode)) {
-            warnx("%s is not a regular file", file);
+	/* FIXME: use access ? */
+        if (access(path, (w ? (R_OK | W_OK) : R_OK)) == -1) {
+            warn("%s", path);
+            ret = EINVAL;
             continue;
         }
 
-        f = taglib_file_new(file);
-        if (f == NULL || !taglib_file_is_valid(f)) {
-            warnx("%s is not a valid music file", file);
+        file = NULL;
+        file = t_ftflac_new(path);
+        if (file == NULL)
+            file = t_ftoggvorbis_new(path);
+        if (file == NULL)
+            file = t_ftgeneric_new(path);
+        if (file == NULL) {
+            warnx("`%s' unsupported file format", path);
+            ret = EINVAL;
             continue;
         }
 
         /* modifiy tag, edit, rename */
+        if (bflag)
+            (void)printf("%s: %s\n", file->path, file->lib);
         if (pflag)
-            tagutil_print(file, f);
-        else if (xflag)
-            tagutil_filter(file, f, x_arg);
-        else {
-            if (tflag)
-                tagutil_title(f, t_arg);
-            if (aflag)
-                tagutil_album(f, a_arg);
-            if (Aflag)
-                tagutil_artist(f, A_arg);
-            if (yflag)
-                tagutil_year(f, y_arg);
-            if (Tflag)
-                tagutil_track(f, T_arg);
-            if (cflag)
-                tagutil_comment(f, c_arg);
-            if (gflag)
-                tagutil_genre(f, g_arg);
-            if (eflag)
-                tagutil_edit(file, f);
-            if (w) {
-                if (!taglib_file_save(f))
-                    err(errno, "couldn't save file '%s'", file);
+            tagutil_print(file);
+        if (xflag)
+            tagutil_filter(file, x_arg);
+        if (fflag)
+            tagutil_load(file, f_arg);
+        if (cflag) {
+            if (!file->clear(file, c_arg))
+                warnx("file `%s' not saved: %s", file->path, t_error_msg(file));
+            else if (!file->save(file)) {
+                errx(errno ? errno : -1, "couldn't save file `%s': %s",
+                        path, t_error_msg(file));
             }
-            if (rflag)
-                tagutil_rename(file, f, r_arg);
         }
+        if (sflag) {
+            if (!file->clear(file, s_arg) || !file->add(file, s_arg))
+                warnx("file `%s' not saved: %s", file->path, t_error_msg(file));
+            else if (!file->save(file)) {
+                    errx(errno ? errno : -1, "couldn't save file `%s': %s",
+                            path, t_error_msg(file));
+            }
+        }
+        if (aflag) {
+            if (!file->add(file, a_arg))
+                warnx("file `%s' not saved: %s", file->path, t_error_msg(file));
+            else if (!file->save(file)) {
+                errx(errno ? errno : -1, "couldn't save file `%s': %s",
+                        path, t_error_msg(file));
+            }
+        }
+        if (eflag)
+            tagutil_edit(file);
+        if (rflag)
+            tagutil_rename(file, r_arg);
 
-        taglib_tag_free_strings();
-        taglib_file_free(f);
+        file->destroy(file);
     }
 
     if (xflag)
-        destroy_ast(x_arg);
+        t_ast_destroy(x_arg);
+    if (sflag)
+        t_taglist_destroy(s_arg);
+    if (aflag)
+        t_taglist_destroy(a_arg);
+    if (cflag)
+        t_taglist_destroy(c_arg);
+    if (rflag) {
+        for (i = 0; r_arg[i]; i++)
+            freex(r_arg[i]);
+        freex(r_arg);
+    }
 
-    return (EXIT_SUCCESS);
+    return (ret);
 }
 
 
@@ -270,283 +287,243 @@ void
 usage(void)
 {
 
-    (void)fprintf(stderr, "tagutil v"VERSION "\n\n");
+    (void)fprintf(stderr, "tagutil v"T_TAGUTIL_VERSION "\n\n");
     (void)fprintf(stderr, "usage: %s [OPTION]... [FILE]...\n", getprogname());
     (void)fprintf(stderr, "Modify or display music file's tag.\n");
     (void)fprintf(stderr, "\n");
+    (void)fprintf(stderr, "Backend:\n");
+#if defined(WITH_FLAC)
+    (void)fprintf(stderr, "  libFLAC:   flac files format, use `Vorbis comment' metadata tags.\n");
+#endif
+#if defined(WITH_OGGVORBIS)
+    (void)fprintf(stderr, "  libvorbis: Ogg/Vorbis files format, use `Vorbis comment' metadata tags.\n");
+#endif
+#if defined(WITH_TAGLIB)
+    (void)fprintf(stderr, "  TagLib:    multiple file format (flac,ogg,mp3...), can handle only a limited set of tags.\n");
+#endif
+    (void)fprintf(stderr, "\n");
     (void)fprintf(stderr, "Options:\n");
     (void)fprintf(stderr, "  -h              show this help\n");
-    (void)fprintf(stderr, "  -e              show tag and prompt for editing (need $EDITOR environment variable)\n");
+    (void)fprintf(stderr, "  -b FILES        display backend used\n");
     (void)fprintf(stderr, "  -Y              answer yes to all questions\n");
     (void)fprintf(stderr, "  -N              answer no  to all questions\n");
+    (void)fprintf(stderr, "  -a TAG=VALUE    add a TAG/VALUE pair\n");
+    (void)fprintf(stderr, "  -c TAG          clear all tag TAG\n");
+    (void)fprintf(stderr, "  -e              show tag and prompt for editing (need $EDITOR environment variable)\n");
+    (void)fprintf(stderr, "  -f PATH         load PATH yaml file in given music files.\n");
     (void)fprintf(stderr, "  -r [-d] PATTERN rename files with the given PATTERN. you can use keywords in PATTERN:\n");
-    (void)fprintf(stderr, "                  title(%s), album(%s), artist(%s), year(%s), track(%s), comment(%s),\n",
-                                             kTITLE,    kALBUM,    kARTIST,    kYEAR,    kTRACK,    kCOMMENT);
-    (void)fprintf(stderr, "                  and genre(%s). example: \"%s - %s - (%s) - %s\"\n",
-                                             kGENRE,              kARTIST, kALBUM, kTRACK, kTITLE);
+    (void)fprintf(stderr, "                  %%tag if tag contains only `_', `-' or alphanum characters. %%{tag} otherwise.\n");
+    (void)fprintf(stderr, "  -s TAG=VALUE    equivalent to -c TAG -a TAG=VALUE\n");
     (void)fprintf(stderr, "  -x FILTER       print files in matching FILTER\n");
-    (void)fprintf(stderr, "  -A ARTIST       update artist tag to ARTIST for all given files\n");
-    (void)fprintf(stderr, "  -a ALBUM        update album tag to ALBUM for all given files\n");
-    (void)fprintf(stderr, "  -c COMMENT      update comment tag to COMMENT for all given files\n");
-    (void)fprintf(stderr, "  -T TRACK        update track tag to TRACK for all given files\n");
-    (void)fprintf(stderr, "  -t TITLE        update title tag to TITLE for all given files\n");
-    (void)fprintf(stderr, "  -g GENRE        update genre tag to GENRE for all given files\n");
-    (void)fprintf(stderr, "  -y YEAR         update year tag to YEAR for all given files\n");
     (void)fprintf(stderr, "\n");
 
     exit(EXIT_SUCCESS);
 }
 
 
-char *
-create_tmpfile(void)
-{
-    char *tmpdir, *tmpf;
-
-    tmpdir = getenv("TMPDIR");
-    if (tmpdir == NULL)
-        tmpdir = "/tmp";
-
-    (void)xasprintf(&tmpf, "%s/%s-XXXXXX", tmpdir, getprogname());
-
-    if (mkstemp(tmpf) == -1)
-        err(errno, "can't create '%s' file", tmpf);
-
-    return (tmpf);
-}
-
-
 bool
 user_edit(const char *restrict path)
 {
-    int error;
-    char *editor, *editcmd;
+	pid_t	edit; /* child process */
+	int	status;
+	time_t	before;
+	time_t	after;
+	struct stat s;
 
-    assert_not_null(path);
+	assert_not_null(path);
 
-    editor = getenv("EDITOR");
-    if (editor == NULL)
-        errx(-1, "please, set the $EDITOR environment variable.");
-    else if (has_match(editor, "x?emacs"))
-        /*
-         * we're actually so cool, that we keep the user waiting if $EDITOR
-         * start slowly. The slow-editor-detection-algorithm used maybe not
-         * the best known at the time of writing, but it has shown really good
-         * results and is pretty short and clear.
-         */
-        (void)fprintf(stderr, "Starting %s. please wait...\n", editor);
+	if (G_editor == NULL)
+		errx(-1, "please, set the $EDITOR environment variable.");
+	/*
+	 * we're actually so cool, that we keep the user waiting if $EDITOR
+	 * start slowly. The slow-editor-detection-algorithm used maybe not
+	 * the best known at the time of writing, but it has shown really good
+	 * results and is pretty short and clear.
+	 */
+	if (strcmp(G_editor, "emacs") == 0)
+		(void)fprintf(stderr, "Starting %s, please wait...\n", G_editor);
 
-    (void)xasprintf(&editcmd, "%s '%s'", editor, path);
+        if (stat(path, &s) != 0)
+		return (false);
+	before = s.st_mtime;
+	switch (edit = fork()) {
+	case -1:
+		err(errno, "fork");
+		/* NOTREACHED */
+	case 0:
+		/* child (edit process) */
+		execlp(G_editor, /* argv[0] */G_editor, /* argv[1] */path, NULL);
+		err(errno, "execlp");
+		/* NOTREACHED */
+	}
+	/* parent (tagutil process) */
+	waitpid(edit, &status, 0);
 
-    /* test if the shell is avaiable */
-    if (system(NULL) == 0)
-            err(errno, "can't access shell");
+        if (stat(path, &s) != 0)
+		return (false);
+	after = s.st_mtime;
+	if (before == after)
+		/* the file hasn't been modified */
+		return (false);
 
-    error = system(editcmd);
-
-    free(editcmd);
-    return (error == 0);
+	return (WIFEXITED(status) && WEXITSTATUS(status) == 0);
 }
 
 
 bool
-tagutil_print(const char *restrict path, TagLib_File *restrict f)
+tagutil_print(struct t_file *restrict file)
 {
-    char *infos;
+    char *yaml;
 
-    assert_not_null(path);
-    assert_not_null(f);
+    assert_not_null(file);
 
-    infos = tags_to_yaml(path, taglib_file_tag(f));
-    (void)printf("%s\n", infos);
-
-    free(infos);
-    return (true);
-}
-
-
-bool
-tagutil_edit(const char *restrict path, TagLib_File *restrict f)
-{
-    char *tmp_file, *infos;
-    FILE *stream;
-
-    assert_not_null(path);
-    assert_not_null(f);
-
-    infos = tags_to_yaml(path, taglib_file_tag(f));
-    (void)printf("%s\n", infos);
-
-    if (yesno("edit this file")) {
-        tmp_file = create_tmpfile();
-
-        stream = xfopen(tmp_file, "w");
-        (void)fprintf(stream, "%s", infos);
-        xfclose(stream);
-
-        if (!user_edit(tmp_file)) {
-            free(infos);
-            remove(tmp_file);
-            return (false);
-        }
-
-        stream = xfopen(tmp_file, "r");
-        if (!yaml_to_tags(taglib_file_tag(f), stream))
-            warnx("file '%s' not saved.", path);
-        else {
-            if (!taglib_file_save(f))
-                err(errno, "can't save file '%s'", path);
-        }
-
-        xfclose(stream);
-        /* FIXME: get remove int status */
-        remove(tmp_file);
-        free(tmp_file);
-    }
-
-    free(infos);
-    return (true);
-}
-
-bool
-tagutil_rename(const char *restrict path, TagLib_File *restrict f,
-        const char *restrict pattern)
-{
-    char *ext, *result, *dirn, *fname, *question;
-
-    assert_not_null(path);
-    assert_not_null(f);
-    assert_not_null(pattern);
-
-    if (strlen(pattern) == 0)
-        errx(EINVAL, "wrong rename pattern: '%s'", pattern);
-
-    ext = strrchr(path, '.');
-    if (ext == NULL)
-        errx(-1, "can't find file extension: '%s'", path);
-    ext++; /* skip dot */
-    fname = eval_tag(pattern, taglib_file_tag(f));
-
-    /* fname is now OK. store into result the full new path.  */
-    dirn = xdirname(path);
-    /* add the directory to result if needed */
-    if (strcmp(dirn, ".") != 0)
-        (void)xasprintf(&result, "%s/%s.%s", dirn, fname, ext);
+    yaml = t_tags2yaml(file);
+    if (yaml)
+        (void)printf("%s\n", yaml);
     else
-        (void)xasprintf(&result, "%s.%s", fname, ext);
-    free(fname);
-    free(dirn);
+        warnx("%s", t_error_msg(file));
 
-    /* ask user for confirmation and rename if user want to */
-    if (strcmp(path, result) != 0) {
-        (void)xasprintf(&question, "rename '%s' to '%s'", path, result);
-        if (yesno(question))
-            safe_rename(dflag, path, result);
-        free(question);
-    }
-
-    free(result);
+    freex(yaml);
     return (true);
 }
 
 
 bool
-tagutil_filter(const char *restrict path, TagLib_File *restrict f,
-        const struct ast *restrict ast)
+tagutil_load(struct t_file *restrict file, const char *restrict path)
 {
-    bool ret;
+    FILE *stream;
+    bool ret = true;
+    struct t_taglist *T;
 
+    assert_not_null(file);
     assert_not_null(path);
-    assert_not_null(f);
-    assert_not_null(ast);
 
-    ret = eval(path, taglib_file_tag(f), ast);
+    if (strcmp(path, "-") == 0)
+        stream = stdin;
+    else
+        stream = xfopen(path, "r");
 
-    if (ret)
-        (void)printf("%s\n", path);
+    T = t_yaml2tags(file, stream);
+    if (T == NULL) {
+        ret = false;
+        warnx("error while loading `%s': %s", path, t_error_msg(file));
+        warnx("file `%s' not saved.", file->path);
+    }
+    else {
+        if (!file->clear(file, NULL) || !file->add(file, T))
+            warnx("file `%s' not saved: %s", file->path, t_error_msg(file));
+        else if (!file->save(file))
+            err(errno, "can't save file `%s'", file->path);
+        t_taglist_destroy(T);
+    }
+    if (stream != stdin)
+        xfclose(stream);
 
     return (ret);
 }
 
 
 bool
-tagutil_title(TagLib_File *restrict f, const char *restrict title)
+tagutil_edit(struct t_file *restrict file)
 {
+    FILE *stream;
+    bool ret = true;
+    char *tmp_file, *yaml;
 
-    assert_not_null(f);
-    assert_not_null(title);
+    assert_not_null(file);
 
-    taglib_tag_set_title(taglib_file_tag(f), title);
+    yaml = t_tags2yaml(file);
+    if (yaml == NULL) {
+        warnx("%s", t_error_msg(file));
+        return (false);
+    }
+
+    (void)printf("%s\n", yaml);
+
+    if (t_yesno("edit this file")) {
+        tmp_file = t_mkstemp("/tmp");
+
+        stream = xfopen(tmp_file, "w");
+        (void)fprintf(stream, "%s", yaml);
+        if (G_editor != NULL && strcmp(G_editor, "vim") == 0)
+            (void)fprintf(stream, "\n# vim:filetype=yaml");
+        xfclose(stream);
+
+        if (!user_edit(tmp_file))
+            ret = false;
+        else
+            ret = tagutil_load(file, tmp_file);
+
+        xunlink(tmp_file);
+        freex(tmp_file);
+    }
+
+    freex(yaml);
+    return (ret);
+}
+
+
+bool
+tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
+{
+    char *ext, *result, *dirn, *fname, *question;
+
+    assert_not_null(file);
+    assert_not_null(tknary);
+
+    ext = strrchr(file->path, '.');
+    if (ext == NULL) {
+        warnx("can't find file extension for `%s'", file->path);
+        return (false);
+    }
+    ext++; /* skip dot */
+    fname = t_rename_eval(file, tknary);
+    if (fname == NULL) {
+        warnx("%s", t_error_msg(file));
+        return (false);
+    }
+
+    /* fname is now OK. store into result the full new path.  */
+    dirn = t_dirname(file->path);
+    if (dirn == NULL)
+        err(errno, "dirname");
+    /* add the directory to result if needed */
+    if (strcmp(dirn, ".") != 0)
+        (void)xasprintf(&result, "%s/%s.%s", dirn, fname, ext);
+    else
+        (void)xasprintf(&result, "%s.%s", fname, ext);
+    freex(dirn);
+    freex(fname);
+
+    /* ask user for confirmation and rename if user want to */
+    if (strcmp(file->path, result) != 0) {
+        (void)xasprintf(&question, "rename `%s' to `%s'", file->path, result);
+        if (t_yesno(question)) {
+            if (!t_rename_safe(file, result))
+                err(errno, "%s", t_error_msg(file));
+        }
+        freex(question);
+    }
+
+    freex(result);
     return (true);
 }
 
 
 bool
-tagutil_album(TagLib_File *restrict f, const char *restrict album)
+tagutil_filter(struct t_file *restrict file,
+        const struct t_ast *restrict ast)
 {
+    bool ret;
 
-    assert_not_null(f);
-    assert_not_null(album);
+    assert_not_null(file);
+    assert_not_null(ast);
 
-    taglib_tag_set_album(taglib_file_tag(f), album);
-    return (true);
+    ret = t_filter_eval(file, ast);
+
+    if (ret)
+        (void)printf("%s\n", file->path);
+
+    return (ret);
 }
 
-
-bool
-tagutil_artist(TagLib_File *restrict f, const char *restrict artist)
-{
-    assert_not_null(f);
-    assert_not_null(artist);
-
-    taglib_tag_set_artist(taglib_file_tag(f), artist);
-    return (true);
-}
-
-
-bool
-tagutil_year(TagLib_File *restrict f, int year)
-{
-
-    assert_not_null(f);
-    assert(year > 0);
-
-    taglib_tag_set_year(taglib_file_tag(f), year);
-    return (true);
-}
-
-
-bool
-tagutil_track(TagLib_File *restrict f, int track)
-{
-
-    assert_not_null(f);
-    assert(track > 0);
-
-    taglib_tag_set_track(taglib_file_tag(f), track);
-    return (true);
-}
-
-
-bool
-tagutil_comment(TagLib_File *restrict f, const char *restrict comment)
-{
-
-    assert_not_null(f);
-    assert_not_null(comment);
-
-    taglib_tag_set_comment(taglib_file_tag(f), comment);
-    return (true);
-}
-
-
-bool
-tagutil_genre(TagLib_File *restrict f, const char *restrict genre)
-{
-
-    assert_not_null(f);
-    assert_not_null(genre);
-
-    taglib_tag_set_genre(taglib_file_tag(f), genre);
-    return (true);
-}

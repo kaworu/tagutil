@@ -1,8 +1,32 @@
 Installation
 ------------
-You need taglib 1.5 (http://developer.kde.org/~wheeler/taglib.html) and
-pkg-config.
 
-to build and install tagutil, type:
-make
-make install
+Notes:
+    - do *not* compile tagutil with -DNDEBUG
+    - At the time of writting, tagutil need a BSD Make (and maybe a bit of
+      hacking) to build if you're not running FreeBSD.
+
+Dependencies:
+    - pkg-config (build dep)
+    - libyaml
+
+make options:
+    WITH_FLAC
+        If you want the flac files to be handled by libFLAC.
+    WITH_OGGVORBIS
+        If you want the ogg/vorbis files to be handled by libvorbis.
+    WITH_TAGLIB
+        generic backend. Can handle a lot of different file type, but only a
+        limited set of tags (artist, title, album, tracknumber, date, genre and
+        comment)
+    DEBUG
+        build tagutil with debug symbols (-g compiler option) and warnings.
+
+Optionals Dependencies:
+    - WITH_FLAC: libFLAC
+    - WITH_OGGVORBIS: libvorbis
+    - WITH_TAGLIB: TagLib (>=1.5)
+
+to build and install tagutil, type (for example):
+    make WITH_FLAC=y WITH_OGGVORBIS=y DEBUG=y
+    make install

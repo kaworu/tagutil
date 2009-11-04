@@ -1,296 +1,539 @@
 /*
  * t_yaml.c
  *
- * yaml tagutil parser and converter.
+ * yaml tagutil interface, using libyaml.
  */
-#include "t_config.h"
+#include <sys/param.h>
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
-#include "t_yaml.h"
+/* libyaml headers */
+#include "yaml.h"
+
+#include "t_config.h"
+#include "t_strbuffer.h"
 #include "t_toolkit.h"
-#include "t_lexer.h"
+#include "t_file.h"
+#include "t_yaml.h"
 
 
 /*
- * escape " to \" and \ to \\
+ * libyaml emitter helper.
+ */
+yaml_write_handler_t t_yaml_whdl;
+
+int
+t_yaml_whdl(void *data, unsigned char *buffer, size_t size)
+{
+    bool error = false;
+    struct t_strbuffer *sb;
+
+    assert_not_null(data);
+    assert_not_null(buffer);
+
+    if (data == NULL || buffer == NULL)
+        error = true;
+    else {
+        sb = data;
+        char *s = xcalloc(size + 1, sizeof(char));
+        memcpy(s, buffer, size);
+        t_strbuffer_add(sb, s, size, T_STRBUFFER_FREE);
+    }
+
+    if (error)
+        return (0);
+    else
+        return (1);
+}
+
+
+char *
+t_tags2yaml(struct t_file *restrict file)
+{
+    yaml_emitter_t emitter;
+    yaml_event_t event;
+    struct t_strbuffer *sb;
+    char *head;
+    size_t headlen;
+    struct t_taglist *T;
+    struct t_tag *t;
+
+    assert_not_null(file);
+
+    headlen = xasprintf(&head, "# %s\n", file->path);
+    sb = t_strbuffer_new();
+    t_strbuffer_add(sb, head, headlen, T_STRBUFFER_FREE);
+
+    /* Create the Emitter object. */
+    if (!yaml_emitter_initialize(&emitter))
+        goto emitter_error;
+
+    yaml_emitter_set_output(&emitter, t_yaml_whdl, sb);
+    yaml_emitter_set_unicode(&emitter, 1);
+
+    /* Create and emit the STREAM-START event. */
+    if (!yaml_stream_start_event_initialize(&event, YAML_UTF8_ENCODING))
+        goto event_error;
+    if (!yaml_emitter_emit(&emitter, &event))
+        goto emitter_error;
+
+    /* Create and emit the DOCUMENT-START event. */
+    if (!yaml_document_start_event_initialize(&event,
+                /* version directive */NULL,
+                /* tag_directives_start */NULL,
+                /* tag_directives_end */NULL,
+                /* implicit */0))
+        goto event_error;
+    if (!yaml_emitter_emit(&emitter, &event))
+        goto emitter_error;
+
+    /* Create and emit the SEQUENCE-START event. */
+    if (!yaml_sequence_start_event_initialize(&event, /* anchor */NULL,
+                (yaml_char_t *)YAML_SEQ_TAG, /* implicit */1,
+                YAML_BLOCK_MAPPING_STYLE))
+        goto event_error;
+    if (!yaml_emitter_emit(&emitter, &event))
+        goto emitter_error;
+
+    T = file->get(file, NULL);
+    if (T == NULL) {
+        t_strbuffer_destroy(sb);
+        return (NULL);
+    }
+    t_tagQ_foreach(t, T->tags) {
+        /* Create and emit the MAPPING-START event. */
+        if (!yaml_mapping_start_event_initialize(&event, /* anchor */NULL,
+                    (yaml_char_t *)YAML_MAP_TAG, /* implicit */1,
+                    YAML_BLOCK_MAPPING_STYLE))
+            goto event_error;
+        if (!yaml_emitter_emit(&emitter, &event))
+            goto emitter_error;
+
+        /* create and emit the SCALAR event for the key */
+        if (!yaml_scalar_event_initialize(&event, /* anchor */NULL,
+                    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->key,
+                    t->keylen, /* plain_implicit */1, /* quoted_implicit */1,
+                    YAML_PLAIN_SCALAR_STYLE))
+            goto event_error;
+        if (!yaml_emitter_emit(&emitter, &event))
+            goto emitter_error;
+
+        /* create and emit the SCALAR event for the value */
+        if (!yaml_scalar_event_initialize(&event, /* anchor */NULL,
+                    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->value,
+                    t->valuelen, /* plain_implicit */1, /* quoted_implicit */1,
+                    YAML_PLAIN_SCALAR_STYLE))
+            goto event_error;
+        if (!yaml_emitter_emit(&emitter, &event))
+            goto emitter_error;
+
+        /* Create and emit the MAPPING-END event. */
+        if (!yaml_mapping_end_event_initialize(&event))
+            goto event_error;
+        if (!yaml_emitter_emit(&emitter, &event))
+            goto emitter_error;
+    }
+    t_taglist_destroy(T);
+
+    /* Create and emit the SEQUENCE-END event. */
+    if (!yaml_sequence_end_event_initialize(&event))
+        goto event_error;
+    if (!yaml_emitter_emit(&emitter, &event))
+        goto emitter_error;
+
+    /* Create and emit the DOCUMENT-END event. */
+    if (!yaml_document_end_event_initialize(&event, /* implicit */1))
+        goto event_error;
+    if (!yaml_emitter_emit(&emitter, &event))
+        goto emitter_error;
+
+    /* Create and emit the STREAM-END event. */
+    if (!yaml_stream_end_event_initialize(&event))
+        goto event_error;
+    if (!yaml_emitter_emit(&emitter, &event))
+        goto emitter_error;
+
+    /* Destroy the Emitter object. */
+    yaml_emitter_delete(&emitter);
+    yaml_event_delete(&event);
+
+    return (t_strbuffer_get(sb));
+
+event_error:
+    err(errno = ENOMEM, "t_tags2yaml: can't init event");
+    /* NOTREACHED */
+emitter_error:
+    errx(-1, "t_tags2yaml: emit error");
+}
+
+
+/*
+ * Our parser FSM. we only handle our YAML subset:
  *
- * returned value has to be freed.
+ *  STREAM-START
+ *      (DOCUMENT-START
+ *          (SEQUENCE-START
+ *              (MAPPING-START SCALAR SCALAR MAPPING-END)*
+ *           SEQUENCE-END)?
+ *       DOCUMENT-END)?
+ *  STREAM-END
  */
-__t__nonnull(1)
-char * yaml_escape(const char *restrict s);
+struct t_yaml_fsm;
+typedef void t_yaml_parse_func(struct t_yaml_fsm *restrict FSM,
+        yaml_event_t *e);
 
+t_yaml_parse_func t_yaml_parse_stream_start;
 
-char *
-yaml_escape(const char *restrict s)
+struct t_yaml_fsm {
+    bool hungry;
+    t_yaml_parse_func *handle;
+    char *parsed_key;
+    struct t_taglist *T;
+
+    T_ERROR_MSG_MEMBER;
+};
+
+struct t_taglist *
+t_yaml2tags(struct t_file *restrict file, FILE *restrict stream)
 {
-    char *ret;
-    int toesc, x;
-    unsigned int i;
-    size_t slen;
+    struct t_yaml_fsm FSM;
+    yaml_parser_t parser;
+    yaml_event_t event;
 
-    assert_not_null(s);
-
-    toesc = 0;
-    slen = strlen(s);
-    for (i = 0; i < slen; i++) {
-        if (s[i] == '"' || s[i] == '\\' || s[i] == '\n') {
-            toesc++;
-            i++;
-        }
-    }
-
-    if (toesc == 0)
-        return (xstrdup(s));
-
-    ret = xcalloc(slen + toesc, sizeof(char));
-    x = 0;
-
-    /* take the trailing \0 */
-    for (i = 0; i < slen + 1; i++) {
-        if (s[i] == '\n') {
-            ret[x++] = '\\';
-            ret[x++] = 'n';
-        }
-        else {
-            if (s[i] == '"' || s[i] == '\\')
-                ret[x++] = '\\';
-            ret[x++] = s[i];
-        }
-    }
-
-    return (ret);
-}
-
-
-char *
-tags_to_yaml(const char *restrict path, const TagLib_Tag *restrict tags)
-{
-    char *ret;
-    char *t, *a, *A, *c, *g;
-    unsigned int y, T;
-
-    assert_not_null(path);
-    assert_not_null(tags);
-
-    t = yaml_escape(taglib_tag_title(tags));
-    a = yaml_escape(taglib_tag_album(tags));
-    A = yaml_escape(taglib_tag_artist(tags));
-    y = taglib_tag_year(tags);
-    T = taglib_tag_track(tags);
-    c = yaml_escape(taglib_tag_comment(tags));
-    g = yaml_escape(taglib_tag_genre(tags));
-
-    xasprintf(&ret,
-        "# %s\n"
-        "---\n"
-        "title:   \"%s\"\n"
-        "album:   \"%s\"\n"
-        "artist:  \"%s\"\n"
-        "year:    %u\n"
-        "track:   %u\n"
-        "comment: \"%s\"\n"
-        "genre:   \"%s\"\n",
-            path, t, a, A, y, T, c, g);
-
-    free(t); free(a); free(A); free(c); free(g);
-    return (ret);
-}
-
-
-/*
- * dummy yaml parser. Only handle our yaml output.
- */
-bool
-yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream)
-{
-    bool set_somethin; /* true if we have set at least 1 field */
-    bool is_intval;
-    void *setter;
-    char c;
-    int line;
-    char keyword[9]; /* longest is: comment */
-
-    char *value;
-    unsigned int ivalue;
-    size_t valuelen, i, valueidx;
-
-    assert_not_null(tags);
     assert_not_null(stream);
+    assert_not_null(file);
+    t_error_clear(file);
 
-    if (ftrylockfile(stream) != 0)
-        errx(-1, "yaml_to_tags: can't lock file descriptor.");
+    (void)memset(&FSM, 0, sizeof(FSM));
+    t_error_init(&FSM);
 
-    set_somethin = false;
-    line = 1;
-    valuelen = BUFSIZ;
-    value = xcalloc(valuelen, sizeof(char));
+    if (!yaml_parser_initialize(&parser))
+        goto parser_error;
+    yaml_parser_set_input_file(&parser, stream);
 
-    /* eat first line: ^# <filename>$ */;
-    while (!feof_unlocked(stream) && getc_unlocked(stream) != '\n')
-        ;
+    FSM.handle = t_yaml_parse_stream_start;
+    do {
+        if (!yaml_parser_parse(&parser, &event))
+            goto parser_error;
+        FSM.handle(&FSM, &event);
+    } while (FSM.hungry);
 
-    if (feof_unlocked(stream)) {
-        warnx("yaml_to_tags at line %d: EOF reached before header.", line);
-        goto free_ret_false;
+    if (t_error_msg(&FSM)) {
+        t_error_set(file, "YAML parser: %s", t_error_msg(&FSM));
+        goto cleanup;
     }
 
-    line += 1;
+    yaml_event_delete(&event);
+    yaml_parser_delete(&parser);
+    return (FSM.T);
 
-    /* eat header: ^---$ */
-    if (getc_unlocked(stream) != '-' || getc_unlocked(stream) != '-' ||
-            getc_unlocked(stream) != '-' || getc_unlocked(stream) != '\n') {
-        warnx("yaml_to_tags at line %d: bad yaml header", line);
-        goto free_ret_false;
-    }
-
-    c = getc_unlocked(stream);
-
-    for (;;) {
-        /* ^keyword:  "value"$ */
-        line += 1;
-
-        if (feof_unlocked(stream)) {
-            if (!set_somethin)
-                warnx("yaml_to_tags at line %d: didn't set any tags.", line);
-            break;
-        }
-
-        if (!is_letter(c)) {
-            warnx("yaml_to_tags at line %d: need a letter to begin, got '%c'", line, c);
-            goto free_ret_false;
-        }
-
-        /* get the keyword part */
-        keyword[0] = '\0';
-        for (i = 0; i < len(keyword) - 2 && is_letter(c); i++) {
-            keyword[i] = c;
-            c = getc_unlocked(stream);
-        }
-        keyword[i] = '\0';
-
-        /* get the keyword's setter method */
-        is_intval = false;
-        if (strcmp("genre", keyword) == 0)
-            setter = taglib_tag_set_genre;
-        else if (strcmp("comment", keyword) == 0)
-            setter = taglib_tag_set_comment;
-        else if (strcmp("artist", keyword) == 0)
-            setter = taglib_tag_set_artist;
-        else if (strcmp("album", keyword) == 0)
-            setter = taglib_tag_set_album;
-        else if (strcmp("title", keyword) == 0)
-            setter = taglib_tag_set_title;
-        else if (strcmp("track", keyword) == 0) {
-            is_intval = true;
-            setter = taglib_tag_set_track;
-        }
-        else if (strcmp("year", keyword) == 0) {
-            is_intval = true;
-            setter = taglib_tag_set_year;
+parser_error:
+    switch (parser.error) {
+    case YAML_MEMORY_ERROR:
+        t_error_set(file, "t_yaml2tags: YAML Parser (ENOMEM)");
+        break;
+    case YAML_READER_ERROR:
+        if (parser.problem_value != -1) {
+            t_error_set(file, "t_yaml2tags: Reader error: %s: #%X at %zu\n",
+                    parser.problem,
+                    parser.problem_value,
+                    parser.problem_offset);
         }
         else {
-            warnx("yaml_to_tags at line %d: unknown keyword \"%s\"", line, keyword);
-            goto free_ret_false;
+            t_error_set(file, "t_yaml2tags: Reader error: %s at %zu\n",
+                    parser.problem,
+                    parser.problem_offset);
         }
-
-        /* walk */
-        if (c != ':') {
-            warnx("yaml_to_tags at line %d: expected ':' after \"%s\" but got '%c'",
-                    line, keyword, c);
-            goto free_ret_false;
-        }
-
-        c = getc_unlocked(stream);
-        while (is_blank(c))
-            c = getc_unlocked(stream);
-
-        if (is_intval) {
-        /* parse Int */
-            ivalue = 0;
-            while (is_digit(c)) {
-                ivalue = 10 * ivalue + (c - '0');
-                c = getc_unlocked(stream);
-            }
-
-            if (c != '\n') {
-                warnx("yaml_to_tags at line %d: expected EOL after Int, got '%c'",
-                        line, c);
-                goto free_ret_false;
-            }
-            line += 1;
-            ((void (*)(TagLib_Tag *, unsigned int))setter)(tags, ivalue);
+        break;
+    case YAML_SCANNER_ERROR: /* FALLTHROUGH */
+    case YAML_PARSER_ERROR:
+        if (parser.context) {
+            t_error_set(file, "t_yaml2tags: %s error: %s at line %zu, column %zu\n"
+                    "%s at line %zu, column %zu\n",
+                    parser.error == YAML_SCANNER_ERROR ? "Scanner" : "Parser",
+                    parser.context,
+                    parser.context_mark.line + 1,
+                    parser.context_mark.column + 1,
+                    parser.problem,
+                    parser.problem_mark.line + 1,
+                    parser.problem_mark.column + 1);
         }
         else {
-        /* parse String */
-            if (c != '"') {
-                warnx("yaml_to_tags at line %d: expected '\"' but got '%c'", line, c);
-                goto free_ret_false;
-            }
-
-            /* read the value */
-            valueidx = 0;
-            for (;;) {
-                /* realloc buffer if needed */
-                if (valueidx > valuelen - 2) {
-                    valuelen += BUFSIZ;
-                    xrealloc(&value, valuelen);
-                }
-
-                c = getc_unlocked(stream);
-
-                if (feof_unlocked(stream)) {
-                    warnx("yaml_to_tags at line %d: EOF while reading String", line);
-                    goto free_ret_false;
-                }
-
-                /* handle escape char */
-                if (c == '\\') {
-                    c = getc_unlocked(stream);
-                    if (feof_unlocked(stream)) {
-                        warnx("yaml_to_tags at line %d: EOF while reading String", line);
-                        goto free_ret_false;
-                    }
-                    /* handle \n */
-                    if (c == 'n')
-                        value[valueidx++] = '\n';
-                    else
-                        value[valueidx++] = c;
-                }
-                else if (c == '"') {
-                    if ((c = getc_unlocked(stream)) != '\n') {
-                        warnx("yaml_to_tags at line %d: expected EOL after String, got '%c'",
-                                line, c);
-                        goto free_ret_false;
-                    }
-                    line += 1;
-                    break;
-                }
-                else {
-                    value[valueidx++] = c;
-                    if (c == '\n')
-                        line += 1;
-                }
-            }
-            value[valueidx] = '\0';
-
-            /* set the value */
-            ((void (*)(TagLib_Tag *, const char *))setter)(tags, value);
+            t_error_set(file, "t_yaml2tags: %s error: %s at line %zu, column %zu\n",
+                    parser.error == YAML_SCANNER_ERROR ? "Scanner" : "Parser",
+                    parser.problem,
+                    parser.problem_mark.line + 1,
+                    parser.problem_mark.column + 1);
         }
-
-
-        c = getc_unlocked(stream);
-        set_somethin = true;
+        break;
+    case YAML_NO_ERROR:       /* FALLTHROUGH */
+    case YAML_COMPOSER_ERROR: /* FALLTHROUGH */
+    case YAML_WRITER_ERROR:   /* FALLTHROUGH */
+    case YAML_EMITTER_ERROR:
+        t_error_set(file, "libyaml internal error\n"
+                "bad error type while parsing: %s",
+                parser.error == YAML_NO_ERROR ? "YAML_NO_ERROR" :
+                parser.error == YAML_COMPOSER_ERROR ? "YAML_COMPOSER_ERROR" :
+                parser.error == YAML_WRITER_ERROR ? "YAML_WRITER_ERROR" :
+                parser.error == YAML_EMITTER_ERROR ? "YAML_EMITTER_ERROR" :
+                "impossible");
+        break;
     }
 
 cleanup:
-    funlockfile(stream);
-    free(value);
-    return (set_somethin);
-
-free_ret_false:
-    set_somethin = false;
-    goto cleanup;
+    yaml_event_delete(&event);
+    yaml_parser_delete(&parser);
+    t_error_clear(&FSM);
+    freex(FSM.parsed_key);
+    if (FSM.T)
+        t_taglist_destroy(FSM.T);
+    return (NULL);
 }
 
+
+/*
+ * more stuff for the parsing functions
+ */
+static const char *t_yaml_event_str[] = {
+    [YAML_NO_EVENT]             = "YAML_NO_EVENT",
+    [YAML_STREAM_START_EVENT]   = "YAML_STREAM_START_EVENT",
+    [YAML_STREAM_END_EVENT]     = "YAML_STREAM_END_EVENT",
+    [YAML_DOCUMENT_START_EVENT] = "YAML_DOCUMENT_START_EVENT",
+    [YAML_DOCUMENT_END_EVENT]   = "YAML_DOCUMENT_END_EVENT",
+    [YAML_ALIAS_EVENT]          = "YAML_ALIAS_EVENT",
+    [YAML_SCALAR_EVENT]         = "YAML_SCALAR_EVENT",
+    [YAML_SEQUENCE_START_EVENT] = "YAML_SEQUENCE_START_EVENT",
+    [YAML_SEQUENCE_END_EVENT]   = "YAML_SEQUENCE_END_EVENT",
+    [YAML_MAPPING_START_EVENT]  = "YAML_MAPPING_START_EVENT",
+    [YAML_MAPPING_END_EVENT]    = "YAML_MAPPING_END_EVENT",
+};
+
+t_yaml_parse_func t_yaml_parse_document_start;
+t_yaml_parse_func t_yaml_parse_sequence_start;
+t_yaml_parse_func t_yaml_parse_mapping_start;
+t_yaml_parse_func t_yaml_parse_scalar_key;
+t_yaml_parse_func t_yaml_parse_scalar_value;
+t_yaml_parse_func t_yaml_parse_mapping_end;
+t_yaml_parse_func t_yaml_parse_document_end;
+t_yaml_parse_func t_yaml_parse_stream_end;
+t_yaml_parse_func t_yaml_parse_nop;
+
+
+void
+t_yaml_parse_stream_start(struct t_yaml_fsm *restrict FSM, yaml_event_t *e)
+{
+
+    assert_not_null(FSM);
+    assert_not_null(e);
+
+    if (e->type == YAML_STREAM_START_EVENT) {
+        FSM->T = t_taglist_new();
+        FSM->handle = t_yaml_parse_document_start;
+        FSM->hungry = true;
+    }
+    else {
+        t_error_set(FSM, "expected %s, got %s",
+                t_yaml_event_str[YAML_STREAM_START_EVENT],
+                t_yaml_event_str[e->type]);
+        FSM->hungry = false;
+        FSM->handle = t_yaml_parse_nop;
+    }
+}
+
+
+void
+t_yaml_parse_document_start(struct t_yaml_fsm *restrict FSM, yaml_event_t *e)
+{
+
+    assert_not_null(FSM);
+    assert_not_null(e);
+
+    switch (e->type) {
+    case YAML_DOCUMENT_START_EVENT:
+        FSM->handle = t_yaml_parse_sequence_start;
+        break;
+    case YAML_STREAM_END_EVENT:
+        FSM->hungry = false;
+        FSM->handle = t_yaml_parse_nop;
+        break;
+    default:
+        t_error_set(FSM, "expected %s or %s, got %s",
+                t_yaml_event_str[YAML_DOCUMENT_START_EVENT],
+                t_yaml_event_str[YAML_STREAM_END_EVENT],
+                t_yaml_event_str[e->type]);
+        FSM->hungry = false;
+        FSM->handle = t_yaml_parse_nop;
+        break;
+    }
+}
+
+
+void
+t_yaml_parse_sequence_start(struct t_yaml_fsm *restrict FSM, yaml_event_t *e)
+{
+
+    assert_not_null(FSM);
+    assert_not_null(e);
+
+    switch (e->type) {
+    case YAML_SEQUENCE_START_EVENT:
+        FSM->handle = t_yaml_parse_mapping_start;
+        break;
+    case YAML_DOCUMENT_END_EVENT:
+        FSM->handle = t_yaml_parse_stream_end;
+        break;
+    default:
+        t_error_set(FSM, "expected %s or %s, got %s",
+                t_yaml_event_str[YAML_SEQUENCE_START_EVENT],
+                t_yaml_event_str[YAML_DOCUMENT_END_EVENT],
+                t_yaml_event_str[e->type]);
+        FSM->hungry = false;
+        FSM->handle = t_yaml_parse_nop;
+        break;
+    }
+}
+
+
+void
+t_yaml_parse_mapping_start(struct t_yaml_fsm *restrict FSM, yaml_event_t *e)
+{
+
+    assert_not_null(FSM);
+    assert_not_null(e);
+
+    switch (e->type) {
+    case YAML_MAPPING_START_EVENT:
+        FSM->handle = t_yaml_parse_scalar_key;
+        break;
+    case YAML_SEQUENCE_END_EVENT:
+        FSM->handle = t_yaml_parse_document_end;
+        break;
+    default:
+        t_error_set(FSM, "expected %s or %s, got %s",
+                t_yaml_event_str[YAML_MAPPING_START_EVENT],
+                t_yaml_event_str[YAML_SEQUENCE_END_EVENT],
+                t_yaml_event_str[e->type]);
+        FSM->hungry = false;
+        FSM->handle = t_yaml_parse_nop;
+        break;
+    }
+}
+
+
+void
+t_yaml_parse_scalar_key(struct t_yaml_fsm *restrict FSM, yaml_event_t *e)
+{
+
+    assert_not_null(FSM);
+    assert_not_null(e);
+
+    if (e->type == YAML_SCALAR_EVENT) {
+        FSM->parsed_key = xcalloc(e->data.scalar.length + 1, sizeof(char));
+        (void)memcpy(FSM->parsed_key, e->data.scalar.value, e->data.scalar.length);
+        FSM->handle = t_yaml_parse_scalar_value;
+    }
+    else {
+        t_error_set(FSM, "expected %s (key), got %s",
+                t_yaml_event_str[YAML_SCALAR_EVENT],
+                t_yaml_event_str[e->type]);
+        FSM->hungry = false;
+        FSM->handle = t_yaml_parse_nop;
+    }
+}
+
+
+void
+t_yaml_parse_scalar_value(struct t_yaml_fsm *restrict FSM, yaml_event_t *e)
+{
+    char *value;
+
+    assert_not_null(FSM);
+    assert_not_null(e);
+
+    if (e->type == YAML_SCALAR_EVENT) {
+        value = xcalloc(e->data.scalar.length + 1, sizeof(char));
+        (void)memcpy(value, e->data.scalar.value, e->data.scalar.length);
+        t_taglist_insert(FSM->T, FSM->parsed_key, value);
+        freex(FSM->parsed_key);
+        freex(value);
+        FSM->handle = t_yaml_parse_mapping_end;
+    }
+    else {
+        t_error_set(FSM, "expected %s (value), got %s",
+                t_yaml_event_str[YAML_SCALAR_EVENT],
+                t_yaml_event_str[e->type]);
+        FSM->hungry = false;
+        FSM->handle = t_yaml_parse_nop;
+    }
+}
+
+
+void
+t_yaml_parse_mapping_end(struct t_yaml_fsm *restrict FSM, yaml_event_t *e)
+{
+
+    assert_not_null(FSM);
+    assert_not_null(e);
+
+    if (e->type == YAML_MAPPING_END_EVENT)
+        FSM->handle = t_yaml_parse_mapping_start;
+    else {
+        t_error_set(FSM, "expected %s, got %s",
+                t_yaml_event_str[YAML_MAPPING_END_EVENT],
+                t_yaml_event_str[e->type]);
+        FSM->hungry = false;
+        FSM->handle = t_yaml_parse_nop;
+    }
+}
+
+
+void
+t_yaml_parse_document_end(struct t_yaml_fsm *restrict FSM, yaml_event_t *e)
+{
+
+    assert_not_null(FSM);
+    assert_not_null(e);
+
+    if (e->type == YAML_DOCUMENT_END_EVENT)
+        FSM->handle = t_yaml_parse_stream_end;
+    else {
+        t_error_set(FSM, "expected %s, got %s",
+                t_yaml_event_str[YAML_DOCUMENT_END_EVENT],
+                t_yaml_event_str[e->type]);
+        FSM->hungry = false;
+        FSM->handle = t_yaml_parse_nop;
+    }
+}
+
+
+void
+t_yaml_parse_stream_end(struct t_yaml_fsm *restrict FSM, yaml_event_t *e)
+{
+
+    assert_not_null(FSM);
+    assert_not_null(e);
+
+    if (e->type == YAML_STREAM_END_EVENT) {
+        FSM->handle = t_yaml_parse_nop;
+        FSM->hungry = false;
+        /* ouf! finally! :) */
+    }
+    else {
+        t_error_set(FSM, "expected %s, got %s",
+                t_yaml_event_str[YAML_STREAM_END_EVENT],
+                t_yaml_event_str[e->type]);
+        FSM->hungry = false;
+        FSM->handle = t_yaml_parse_nop;
+    }
+}
+
+
+void
+t_yaml_parse_nop(_t__unused struct t_yaml_fsm *restrict FSM,
+        _t__unused yaml_event_t *e)
+{
+
+    assert_fail();
+}

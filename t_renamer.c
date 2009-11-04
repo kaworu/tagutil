@@ -3,49 +3,70 @@
  *
  * renamer for tagutil.
  */
-#include "t_config.h"
-
+#include <sys/param.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <err.h>
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "t_config.h"
 #include "t_toolkit.h"
+#include "t_strbuffer.h"
+#include "t_lexer.h"
 #include "t_renamer.h"
 
 
+extern bool dflag;
+
+/*
+ * TODO
+ */
+_t__nonnull(1)
+struct t_token * t_rename_lex_next_token(struct t_lexer *restrict L);
+
 /* taken from mkdir(3) */
-__t__nonnull(1)
+_t__nonnull(1)
 static int build(char *path, mode_t omode);
 
 
-void
-safe_rename(bool dflag, const char *restrict oldpath,
-        const char *restrict newpath)
+bool
+t_rename_safe(struct t_file *restrict file, const char *restrict newpath)
 {
     bool failed = false;
     struct stat st;
     char *olddirn, *newdirn;
 
-    assert_not_null(oldpath);
+    assert_not_null(file);
+    assert_not_null(file->path);
     assert_not_null(newpath);
 
-    olddirn = xdirname(oldpath);
-    newdirn = xdirname(newpath);
+    olddirn = t_dirname(file->path);
+    if (olddirn == NULL) {
+        t_error_set(file, "%s", file->path);
+        return (false);
+    }
+    newdirn = t_dirname(newpath);
+    if (newdirn == NULL) {
+        t_error_set(file, "%s", newpath);
+        freex(olddirn);
+        return (false);
+    }
+
     if (strcmp(olddirn, newdirn) != 0) {
     /* srcdir != destdir, we need to check if destdir is OK */
         if (dflag) {
         /* we are asked to actually create the directory */
-            if (build(newdirn, S_IRWXU | S_IRWXG | S_IRWXO) == 0) /* failure */
+            if (build(newdirn, S_IRWXU | S_IRWXG | S_IRWXO) == 0)
                 failed = true;
         }
         if (stat(newdirn, &st) != 0) {
             if (errno == ENOENT)
-                warnx("forgot -d?");
+                warnx("t_rename_safe: forgot -d?");
             failed = true;
         }
         else if (!S_ISDIR(st.st_mode)) {
@@ -54,88 +75,212 @@ safe_rename(bool dflag, const char *restrict oldpath,
         }
     }
     if (failed)
-        err(errno, "%s", newdirn);
-    free(olddirn);
-    free(newdirn);
+        t_error_set(file, "%s", newdirn);
+    freex(olddirn);
+    freex(newdirn);
+    if (failed)
+        return (false);
 
-    if (stat(newpath, &st) == 0)
-        err(errno = EEXIST, "%s", newpath);
+    if (stat(newpath, &st) == 0) {
+        errno = EEXIST;
+        t_error_set(file, "%s", newpath);
+        return (false);
+    }
 
-    if (rename(oldpath, newpath) == -1)
-        err(errno, "rename");
+    if (rename(file->path, newpath) == -1) {
+        t_error_set(file, "rename");
+        return (false);
+    }
+
+    return (true);
+}
+
+
+struct t_token **
+t_rename_parse(const char *restrict pattern)
+{
+    bool done;
+    struct t_lexer *L;
+    struct t_token **ret;
+    size_t count, len;
+
+    assert_not_null(pattern);
+
+    L = t_lexer_new(pattern);
+    (void)t_rename_lex_next_token(L);
+    assert(L->current->kind == T_START);
+    freex(L->current);
+
+    count = 0;
+    len   = 16;
+    ret   = xcalloc(len + 1, sizeof(struct t_token *));
+
+    done = false;
+    while (!done) {
+        if (t_rename_lex_next_token(L)->kind == T_END) {
+            freex(L->current);
+            done = true;
+        }
+        else {
+            assert(L->current->kind == T_TAGKEY || L->current->kind == T_STRING);
+            if (count == (len - 1)) {
+                len = len * 2;
+                ret = xrealloc(ret, (len + 1) * sizeof(struct t_token *));
+            }
+            ret[count++] = L->current;
+        }
+    }
+    t_lexer_destroy(L);
+
+    ret[count] = NULL;
+    return (ret);
+}
+
+
+struct t_token *
+t_rename_lex_next_token(struct t_lexer *restrict L)
+{
+    int skip, i;
+    bool done;
+    struct t_token *t;
+    assert_not_null(L);
+    t = xcalloc(1, sizeof(struct t_token));
+
+    /* check for T_START */
+    if (L->cindex == -1) {
+        (void)t_lexc(L);
+        t->kind  = T_START;
+		t->str   = "START";
+        L->current = t;
+        return (L->current);
+    }
+
+    skip = 0;
+    t->start = L->cindex;
+    switch (L->c) {
+    case '\0':
+        t->kind = T_END;
+        t->str  = "END";
+        t->end  = L->cindex;
+        break;
+    case '%':
+        t_lex_tagkey(L, &t, !T_LEXER_ALLOW_STAR_MOD);
+        break;
+    default:
+		t->kind = T_STRING;
+		t->str  = "STRING";
+        done = false;
+        while (!done) {
+            switch (L->c) {
+            case '%': /* FALLTHROUGH */
+            case '\0':
+                done = true;
+                break;
+            case '\\':
+                if (t_lexc(L) == '%') {
+                    skip++;
+                    (void)t_lexc(L);
+                }
+                break;
+            default:
+                (void)t_lexc(L);
+            }
+        }
+        t->end = L->cindex - 1;
+        assert(t->end >= t->start);
+        t->slen = t->end - t->start + 1 - skip;
+        t = xrealloc(t, sizeof(struct t_token) + t->slen + 1);
+        t->value.str = (char *)(t + 1);
+        t_lexc_move_to(L, t->start);
+        i = 0;
+        while (L->cindex <= t->end) {
+            if (L->c == '\\') {
+                if (t_lexc(L) != '%') {
+                    /* rewind */
+                    t_lexc_move(L, -1);
+                    assert(L->c == '\\');
+                }
+            }
+            t->value.str[i++] = L->c;
+            (void)t_lexc(L);
+        }
+        t->value.str[i] = '\0';
+        assert(strlen(t->value.str) == t->slen);
+    }
+
+    L->current = t;
+    return (L->current);
 }
 
 
 char *
-eval_tag(const char *restrict pattern, const TagLib_Tag *restrict tags)
+t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
 {
-    char *ret, buf[3];
-    const char *val;
-    size_t patternlen, alloc, vallen;
-    unsigned int i, j = 0;
+    const struct t_token *tkn;
+    struct t_strbuffer *sb;
+    struct t_taglist *T;
+    struct t_tag *t;
+    char *ret, *s, *slash;
+    size_t len;
 
-    assert_not_null(pattern);
-    assert_not_null(tags);
+    assert_not_null(ts);
+    assert_not_null(file);
+    t_error_clear(file);
 
-    patternlen = strlen(pattern);
-    alloc = BUFSIZ;
-    ret = xcalloc(alloc, sizeof(char));
-
-    for (i = 0; i < patternlen; i++) {
-        if (j == alloc) {
-            alloc += BUFSIZ;
-            ret = xrealloc(ret, alloc * sizeof(char));
-        }
-
-        if (pattern[i] != '%')
-            ret[j++] = pattern[i];
-        else {
-            switch (pattern[i + 1]) {
-            case '%':
-                val = "%";
-                break;
-            case 'A':
-                val = taglib_tag_artist(tags);
-                break;
-            case 'a':
-                val = taglib_tag_album(tags);
-                break;
-            case 'c':
-                val = taglib_tag_comment(tags);
-                break;
-            case 'g':
-                val = taglib_tag_comment(tags);
-                break;
-            case 'T':
-                snprintf(buf, sizeof(buf), "%02u", taglib_tag_track(tags));
-                val = buf;
-                break;
-            case 't':
-                val = taglib_tag_title(tags);
-                break;
-            case 'y':
-                snprintf(buf, sizeof(buf), "%02u", taglib_tag_year(tags));
-                val = buf;
-                break;
-            default:
-                warnx("%c%c: unknown keyword at %u, skipping.",
-                        pattern[i], pattern[i + 1], i);
-                i += 1; /* skip keyword */
-                continue;
+    sb = t_strbuffer_new();
+    tkn = *ts;
+    while (tkn != NULL) {
+        s = NULL;
+        if (tkn->kind == T_TAGKEY) {
+            T = file->get(file, tkn->value.str);
+            if (T == NULL) {
+                t_strbuffer_destroy(sb);
+                return (NULL);
             }
-            vallen = strlen(val);
-            if (alloc < j + vallen + 1) {
-                alloc += vallen + BUFSIZ;
-                ret = xrealloc(ret, alloc * sizeof(char));
+            else if (T->count > 0) {
+            /* tag exist */
+                if (tkn->tidx == T_TOKEN_STAR) {
+                /* user ask for *all* tag values */
+                    s = t_taglist_join(T, " - ");
+                    len = strlen(s);
+                }
+                else {
+                /* requested one tag */
+                    t = t_taglist_tag_at(T, tkn->tidx);
+                    if (t != NULL) {
+                        s = xstrdup(t->value);
+                        len = t->valuelen;
+                    }
+                }
             }
-            ret[j] = '\0';
-            j = strlcat(ret, val, alloc * sizeof(char));
-
-            i += 1; /* skip keyword */
+            t_taglist_destroy(T);
+            if (s != NULL) {
+            /* check for slash in tag value */
+                slash = strchr(s, '/');
+                if (slash) {
+                    warnx("rename_eval: `%s': tag `%s' has / in value, "
+                            "replacing by `-'", file->path, tkn->value.str);
+                    do {
+                        *slash = '-';
+                        slash = strchr(slash, '/');
+                    } while (slash);
+                }
+            }
         }
+        if (s != NULL)
+            t_strbuffer_add(sb, s, len, T_STRBUFFER_FREE);
+        else
+            t_strbuffer_add(sb, tkn->value.str, tkn->slen, T_STRBUFFER_NOFREE);
+        /* go to next token */
+        ts += 1;
+        tkn = *ts;
     }
 
-    ret[j] = '\0';
+    ret = NULL;
+    if (sb->len > MAXPATHLEN)
+        t_error_set(file, "t_rename_eval result is too long (>MAXPATHLEN)");
+    else
+        ret = t_strbuffer_get(sb);
     return (ret);
 }
 
@@ -143,6 +288,30 @@ eval_tag(const char *restrict pattern, const TagLib_Tag *restrict tags)
 /*-
  * Copyright (c) 1983, 1992, 1993
  *	The Regents of the University of California.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 4. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 #if 0
 __FBSDID("$FreeBSD: src/bin/mkdir/mkdir.c,v 1.33 2006/10/10 20:18:20 ru Exp $");
@@ -152,7 +321,7 @@ __FBSDID("$FreeBSD: src/bin/mkdir/mkdir.c,v 1.33 2006/10/10 20:18:20 ru Exp $");
  * Returns 1 if a directory has been created,
  * 2 if it already existed, and 0 on failure.
  */
-int
+static int
 build(char *path, mode_t omode)
 {
 	struct stat sb;
@@ -196,7 +365,7 @@ build(char *path, mode_t omode)
 		if (mkdir(path, last ? omode : S_IRWXU | S_IRWXG | S_IRWXO) < 0) {
 			if (errno == EEXIST || errno == EISDIR) {
 				if (stat(path, &sb) < 0) {
-					warn("%s", path);
+					warn("rename_build: %s", path);
 					retval = 0;
 					break;
 				} else if (!S_ISDIR(sb.st_mode)) {
@@ -221,3 +390,4 @@ build(char *path, mode_t omode)
 		(void)umask(oumask);
 	return (retval);
 }
+

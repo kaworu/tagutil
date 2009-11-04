@@ -5,38 +5,31 @@
  *
  * yaml tagutil parser and converter.
  */
-#include "t_config.h"
-
 #include <stdbool.h>
 #include <stdio.h>
 
-#include <tag_c.h>
+#include "t_config.h"
+#include "t_file.h"
 
 /*
- * return a yaml formated string.
+ * return a yaml formated string with all the given file's tags.
  *
- * # filename
- * ---
- * title:   "%t"
- * album:   "%a"
- * artist:  "%A"
- * year:    "%y"
- * track:   "%T"
- * comment: "%c"
- * genre:   "%g"
- *
- * '"' and '\' in tags are escaped to \" and \\
+ * returned value has to be free()d.
  */
-__t__nonnull(1) __t__nonnull(2)
-char * tags_to_yaml(const char *restrict path,
-        const TagLib_Tag *restrict tags);
+_t__nonnull(1)
+char * t_tags2yaml(struct t_file *restrict file);
 
 
 /*
- * load a yaml formated string.
- * The string format must be the same as tags_to_yaml returned string.
+ * read a yaml file.
+ *
+ * On error t_error_msg(file) contains an error message and NULL is
+ * returned. Otherwhise the loaded t_taglist is returned.
+ *
+ * returned value has to be free()d (see t_taglist_destroy()).
  */
-__t__nonnull(1) __t__nonnull(2)
-bool yaml_to_tags(TagLib_Tag *restrict tags, FILE *restrict stream);
+_t__nonnull(1) _t__nonnull(2)
+struct t_taglist * t_yaml2tags(struct t_file *restrict file,
+        FILE *restrict stream);
 
 #endif /* not T_YAML_H */

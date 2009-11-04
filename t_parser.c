@@ -4,486 +4,433 @@
  * a LL(1) recursive descend parser for tagutil.
  * used by the filter function.
  */
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdarg.h>
+
 #include "t_config.h"
-
-#include <string.h>
-
+#include "t_toolkit.h"
 #include "t_lexer.h"
 #include "t_parser.h"
-#include "t_toolkit.h"
 
 
-static inline struct ast * new_node(struct ast *restrict lhs,
-        enum tokenkind tkind, struct ast *restrict rhs);
+_t__nonnull(2)
+static struct t_ast * t_ast_new(struct t_ast *restrict lhs,
+        struct t_token *restrict t, struct t_ast *restrict rhs);
 
-static inline struct ast * new_leaf(enum tokenkind tkind, void *value);
+_t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
+_t__dead2 _t__printflike(4, 5)
+void parse_error(const struct t_lexer *restrict L,
+        const struct t_token *restrict start,
+        const struct t_token *restrict end,
+        const char *fmt, ...);
 
-/* private parse_filter helpers. */
-__t__nonnull(1)
-static struct ast * parse_condition(struct lexer *restrict L);
+/* private t_parse_filter helpers. */
+_t__nonnull(1)
+static struct t_ast * t_parse_condition(struct t_lexer *restrict L);
 
 /*
  * Condition ::= <Condition> '||' <Condition>
  */
-__t__nonnull(1)
-static struct ast * parse_or(struct lexer *restrict L);
+_t__nonnull(1)
+static struct t_ast * t_parse_or(struct t_lexer *restrict L);
 
 /*
  * Condition ::= <Condition> '&&' <Condition>
  */
-__t__nonnull(1)
-static struct ast * parse_and(struct lexer *restrict L);
+_t__nonnull(1)
+static struct t_ast * t_parse_and(struct t_lexer *restrict L);
 
 /*
- * choose which factory we need.
+ * choose between:
+ *
+ * 1) Condition ::= '!' '(' <Condition> ')'
+ * 2) Condition ::= '(' <Condition> ')'
+ * 3) Condition ::= <Value> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <Value>
+ *    Condition ::= <Value> ( '=~' | '!~' ) <REGEX>
+ *    Condition ::= <REGEX> ( '=~' | '!~' ) <Value>
  */
-__t__nonnull(1)
-static struct ast * parse_cmp(struct lexer *restrict L);
+_t__nonnull(1)
+static struct t_ast * t_parse_simple(struct t_lexer *restrict L);
 
 /*
- * Condition ::= <IntKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <INTEGER>
+ * 1) Condition ::= '!' '(' <Condition> ')'
  */
-__t__nonnull(1)
-static struct ast * parse_intcmp(struct lexer *restrict L);
+_t__nonnull(1)
+static struct t_ast * t_parse_not(struct t_lexer *restrict L);
 
 /*
- * Condition ::= <StrKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' | '=~' ) <STRING>
- * Condition ::= <StrKeyword> ( '==' | '<' | '<=' | '>' | '>=' | '!=' | '=~' ) <StrKeyword>
- * Condition ::= <StrKeyword> '=~' <REGEX>
+ * 2) Condition ::= '(' <Condition> ')'
  */
-__t__nonnull(1)
-static struct ast * parse_strcmp(struct lexer *restrict L);
+_t__nonnull(1)
+static struct t_ast * t_parse_nestedcond(struct t_lexer *restrict L);
 
 /*
- * Condition ::= '!' '(' <Condition> ')'
+ * 3) Condition ::= <Value> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <Value>
+ *    Condition ::= <Value> ( '=~' | '!~' ) <REGEX>
+ *    Condition ::= <REGEX> ( '=~' | '!~' ) <Value>
  */
-__t__nonnull(1)
-static struct ast * parse_not(struct lexer *restrict L);
-
-/*
- * Condition ::= '(' <Condition> ')'
- */
-__t__nonnull(1)
-static struct ast * parse_nestedcond(struct lexer *restrict L);
+_t__nonnull(1)
+static struct t_ast *
+parse_cmp_or_match_or_value(struct t_lexer *restrict L);
 
 
-static inline struct ast *
-new_node(struct ast *restrict lhs, enum tokenkind tkind,
-        struct ast *restrict rhs)
+static struct t_ast *
+t_ast_new(struct t_ast *restrict lhs, struct t_token *restrict t,
+        struct t_ast *restrict rhs)
 {
-    struct ast *ret;
+    struct t_ast *ret;
 
-    ret = xmalloc(sizeof(struct ast));
+    assert_not_null(t);
 
-    ret->kind = ANODE;
+    ret = xmalloc(sizeof(struct t_ast));
     ret->lhs = lhs;
     ret->rhs = rhs;
-    ret->tkind = tkind;
+    ret->token = t;
 
-    return (ret);
-}
-
-
-static inline struct ast *
-new_leaf(enum tokenkind tkind, void *value)
-{
-    struct ast *ret;
-
-    ret = xmalloc(sizeof(struct ast));
-
-    ret->kind  = ALEAF;
-    ret->tkind = tkind;
-
-    switch(tkind) {
-    case TSTRING:
-        ret->value.string = (char *)value;
-        break;
-    case TREGEX:
-        memcpy(&ret->value.regex, value, sizeof(regex_t));
-        break;
-    case TINT:
-        ret->value.integer = *(int *)value;
-        break;
-    case TTITLE:   /* FALLTHROUGH */
-    case TALBUM:   /* FALLTHROUGH */
-    case TARTIST:  /* FALLTHROUGH */
-    case TYEAR:    /* FALLTHROUGH */
-    case TTRACK:   /* FALLTHROUGH */
-    case TCOMMENT: /* FALLTHROUGH */
-    case TGENRE:   /* FALLTHROUGH */
-    case TFILENAME:
-        /* NOOP */
-        break;
-    default:
-        errx(-1, "parser error, expected leaf.");
-        /* NOTREACHED */
-    }
+    ret->start = (lhs ? lhs->start : t->start);
+    ret->end   = (rhs ? rhs->end   : t->end  );
 
     return (ret);
 }
 
 
 void
-destroy_ast(struct ast *restrict victim)
+t_ast_destroy(struct t_ast *restrict victim)
 {
+
     if (victim != NULL) {
-        switch (victim->kind) {
-        case ANODE:
-            destroy_ast(victim->lhs);
-            destroy_ast(victim->rhs);
-            free(victim);
-            break;
-        case ALEAF:
-            switch(victim->tkind) {
-            case TSTRING:
-                free(victim->value.string);
-                break;
-            case TREGEX:
-                regfree(&victim->value.regex);
-                break;
-            default:
-                /* do nada */;
-            }
-            free(victim);
-            break;
-        default:
-            errx(-1, "error in destroy_ast: AST without kind.");
+        t_ast_destroy(victim->lhs);
+        t_ast_destroy(victim->rhs);
+        if (victim->token->kind == T_REGEX)
+            regfree(&victim->token->value.regex);
+        freex(victim->token);
+        freex(victim);
+    }
+}
+
+
+struct t_ast *
+t_parse_filter(struct t_lexer *restrict L)
+{
+    struct t_ast *ret;
+    struct t_token *t;
+
+    assert_not_null(L);
+
+    t = t_lex_next_token(L);
+    if (t->kind != T_START) {
+        parse_error(L, t, t, "expected START to begin, got %s",
+                t->str);
+        /* NOTREACHED */
+    }
+    freex(t);
+
+    (void)t_lex_next_token(L);
+    ret = t_parse_condition(L);
+
+    t = L->current;
+    if (t->kind != T_END) {
+        parse_error(L, t, t, "expected END at the end, got %s",
+                t->str);
+        /* NOTREACHED */
+    }
+    freex(t);
+
+    t_lexer_destroy(L);
+    return (ret);
+}
+
+
+static struct t_ast *
+t_parse_condition(struct t_lexer *restrict L)
+{
+
+    assert_not_null(L);
+
+    return (t_parse_or(L));
+}
+
+
+static struct t_ast *
+t_parse_or(struct t_lexer *restrict L)
+{
+    struct t_token *or;
+    struct t_ast *ret;
+
+    assert_not_null(L);
+
+    ret = t_parse_and(L);
+    while (L->current->kind == T_OR) {
+        or = L->current;
+        (void)t_lex_next_token(L);
+        ret = t_ast_new(ret, or, t_parse_and(L));
+    }
+
+    return (ret);
+}
+
+
+struct t_ast *
+t_parse_and(struct t_lexer *restrict L)
+{
+    struct t_token *and;
+    struct t_ast *ret;
+
+    assert_not_null(L);
+
+    ret = t_parse_simple(L);
+    while (L->current->kind == T_AND) {
+        and = L->current;
+        (void)t_lex_next_token(L);
+        ret = t_ast_new(ret, and, t_parse_simple(L));
+    }
+
+    return (ret);
+}
+
+
+static struct t_ast *
+t_parse_simple(struct t_lexer *restrict L)
+{
+    struct t_token *t;
+    struct t_ast *ret;
+
+    assert_not_null(L);
+
+    t = L->current;
+    switch (t->kind) {
+    case T_NOT:
+        ret = t_parse_not(L);
+        break;
+    case T_OPAREN:
+        ret = t_parse_nestedcond(L);
+        break;
+    case T_INT:      /* FALLTHROUGH */
+    case T_DOUBLE:   /* FALLTHROUGH */
+    case T_STRING:   /* FALLTHROUGH */
+    case T_REGEX:    /* FALLTHROUGH */
+    case T_FILENAME: /* FALLTHROUGH */
+    case T_UNDEF:    /* FALLTHROUGH */
+    case T_BACKEND:  /* FALLTHROUGH */
+    case T_TAGKEY:
+        ret = parse_cmp_or_match_or_value(L);
+        break;
+    default:
+        parse_error(L, t, t,"expected  NOT, OPAREN, REGEX or value, got %s",
+                t->str);
+        /* NOTREACHED */
+    }
+
+    return (ret);
+}
+
+
+static struct t_ast *
+t_parse_not(struct t_lexer *restrict L)
+{
+    struct t_token *not;
+    struct t_ast *cond, *ret;
+
+    assert_not_null(L);
+
+    not = L->current;
+    if (not->kind != T_NOT)
+        parse_error(L, not, not, "expected NOT, got %s", not->str);
+
+    (void)t_lex_next_token(L);
+    cond = t_parse_nestedcond(L);
+    ret = t_ast_new(NULL, not, cond);
+
+    return (ret);
+}
+
+
+static struct t_ast *
+t_parse_nestedcond(struct t_lexer *restrict L)
+{
+    struct t_token *oparen, *cparen;
+    struct t_ast *ret;
+
+    assert_not_null(L);
+
+    oparen = L->current;
+    if (oparen->kind != T_OPAREN) {
+        parse_error(L, oparen, oparen, "expected OPAREN, got %s",
+                oparen->str);
+        /* NOTREACHED */
+    }
+
+    (void)t_lex_next_token(L);
+    ret = t_parse_condition(L);
+
+    cparen = L->current;
+    if (cparen->kind != T_CPAREN) {
+        parse_error(L, oparen, cparen, "expected CPAREN, got %s",
+                cparen->str);
+        /* NOTREACHED */
+    }
+    (void)t_lex_next_token(L);
+
+    ret->start = oparen->start;
+    ret->end   = cparen->end;
+    freex(oparen);
+    freex(cparen);
+    return (ret);
+}
+
+
+/*
+ * 3) Condition ::= <Value> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <Value>
+ *    Condition ::= <Value> ( '=~' | '!~' ) <REGEX>
+ *    Condition ::= <REGEX> ( '=~' | '!~' ) <Value>
+ */
+static struct t_ast *
+parse_cmp_or_match_or_value(struct t_lexer *restrict L)
+{
+    struct t_token *lhstok, *optok, *rhstok;
+
+    assert_not_null(L);
+    lhstok = L->current;
+    switch (lhstok->kind) {
+    case T_INT:      /* FALLTHROUGH */
+    case T_DOUBLE:   /* FALLTHROUGH */
+    case T_STRING:   /* FALLTHROUGH */
+    case T_REGEX:    /* FALLTHROUGH */
+    case T_FILENAME: /* FALLTHROUGH */
+    case T_UNDEF:    /* FALLTHROUGH */
+    case T_BACKEND: /* FALLTHROUGH */
+    case T_TAGKEY:
+        break;
+    default:
+        parse_error(L, lhstok, lhstok, "expected REGEX or value, got %s",
+                lhstok->str);
+        /* NOTREACHED */
+    }
+
+    optok = t_lex_next_token(L);
+    switch (optok->kind) {
+    case T_EQ:     /* FALLTHROUGH */
+    case T_NE:     /* FALLTHROUGH */
+    case T_MATCH:  /* FALLTHROUGH */
+    case T_NMATCH: /* FALLTHROUGH */
+    case T_LT:     /* FALLTHROUGH */
+    case T_LE:     /* FALLTHROUGH */
+    case T_GT:     /* FALLTHROUGH */
+    case T_GE:     /* FALLTHROUGH */
+        break;
+    default:
+        parse_error(L, lhstok, optok, "expected <value operator value>, got %s %s",
+                lhstok->str, optok->str);
+        /* NOTREACHED */
+    }
+
+    rhstok = t_lex_next_token(L);
+    switch (rhstok->kind) {
+    case T_INT:      /* FALLTHROUGH */
+    case T_DOUBLE:   /* FALLTHROUGH */
+    case T_STRING:   /* FALLTHROUGH */
+    case T_REGEX:    /* FALLTHROUGH */
+    case T_FILENAME: /* FALLTHROUGH */
+    case T_UNDEF:    /* FALLTHROUGH */
+    case T_BACKEND:  /* FALLTHROUGH */
+    case T_TAGKEY:
+        break;
+    default:
+        parse_error(L, rhstok, rhstok, "expected REGEX or value, got %s",
+                rhstok->str);
+        /* NOTREACHED */
+    }
+
+    if (optok->kind == T_MATCH || optok->kind == T_NMATCH) {
+    /*
+     * Condition ::= <Value> ( '=~' | '!~' ) <REGEX>
+     * Condition ::= <REGEX> ( '=~' | '!~' ) <Value>
+     */
+        if ((lhstok->kind == T_REGEX && rhstok->kind == T_REGEX) ||
+                (lhstok->kind != T_REGEX && rhstok->kind != T_REGEX)) {
+            parse_error(L, lhstok, rhstok, "expected <REGEX (N)MATCH value> or"
+                    " <value (N)MATCH REGEX>, got %s %s %s",
+                    lhstok->str, optok->str, rhstok->str);
             /* NOTREACHED */
         }
     }
-}
-
-
-struct ast *
-parse_filter(struct lexer *restrict L)
-{
-    struct ast *ret;
-
-    assert_not_null(L);
-
-    ret = NULL;
-
-    switch (L->current.kind) {
-    case TSTART:
-        lex(L);
-        break;
-    default:
-        errx(-1, "parser error, expected TSTART to begin, got %s",
-                token_to_s(L->current.kind));
-        /* NOTREACHED */
-    }
-
-    ret = parse_condition(L);
-
-    switch (L->current.kind) {
-    case TEOS:
-        lex(L);
-        break;
-    default:
-        errx(-1, "parser error, expected TEOS at the end, got %s",
-                token_to_s(L->current.kind));
-        /* NOTREACHED */
-    }
-
-    free(L);
-    return (ret);
-}
-
-
-static struct ast *
-parse_condition(struct lexer *restrict L)
-{
-
-    assert_not_null(L);
-
-    return (parse_or(L));
-}
-
-
-static struct ast *
-parse_or(struct lexer *restrict L)
-{
-    struct ast *lhs;
-
-    assert_not_null(L);
-
-    lhs = parse_and(L);
-    while (L->current.kind == TOR) {
-        lex(L);
-        lhs = new_node(lhs, TOR, parse_and(L));
-    }
-
-    return (lhs);
-}
-
-
-struct ast *
-parse_and(struct lexer *restrict L)
-{
-    struct ast *lhs;
-
-    assert_not_null(L);
-
-    lhs = parse_cmp(L);
-    while (L->current.kind == TAND) {
-        lex(L);
-        lhs = new_node(lhs, TAND, parse_cmp(L));
-    }
-
-    return (lhs);
-}
-
-
-static struct ast *
-parse_cmp(struct lexer *restrict L)
-{
-    struct ast *ret;
-
-    assert_not_null(L);
-
-    ret = NULL;
-
-    switch(L->current.kind) {
-    case TYEAR: /* FALLTHROUGH */
-    case TTRACK:
-        ret = parse_intcmp(L);
-        break;
-    case TTITLE:   /* FALLTHROUGH */
-    case TALBUM:   /* FALLTHROUGH */
-    case TARTIST:  /* FALLTHROUGH */
-    case TCOMMENT: /* FALLTHROUGH */
-    case TGENRE:   /* FALLTHROUGH */
-    case TFILENAME:
-        ret = parse_strcmp(L);
-        break;
-    case TOPAREN:
-        ret = parse_nestedcond(L);
-        break;
-    case TNOT:
-        ret = parse_not(L);
-        break;
-    default:
-        errx(-1, "parser error at %d-%d: expected keyword or TNOT or TOPAREN, got %s",
-                L->current.start, L->current.end, token_to_s(L->current.kind));
-        /* NOTREACHED */
-    }
-
-    return (ret);
-}
-
-
-static struct ast *
-parse_intcmp(struct lexer *restrict L)
-{
-    struct ast *lhs, *ret;
-    enum tokenkind tkind;
-
-    ret = NULL;
-    lhs = new_leaf(L->current.kind, NULL);
-
-    lex(L);
-    switch (L->current.kind) {
-    case TEQ: /* FALLTHROUGH */
-    case TLT: /* FALLTHROUGH */
-    case TLE: /* FALLTHROUGH */
-    case TGT: /* FALLTHROUGH */
-    case TGE: /* FALLTHROUGH */
-    case TDIFF:
-        tkind = L->current.kind;
-        break;
-    default:
-        errx(-1, "parser error at %d-%d: expected TEQ or TLT or TLE or TGL or TGE or TDIFF, got %s",
-                L->current.start, L->current.end, token_to_s(L->current.kind));
-        /* NOTREACHED */
-    }
-
-    lex(L);
-    switch (L->current.kind) {
-    case TINT:
-        ret = new_node(lhs, tkind, new_leaf(TINT, &L->current.value.integer));
-        lex(L);
-        break;
-    default:
-        errx(-1, "parser error at %d-%d: expected TINT, got %s",
-                L->current.start, L->current.end, token_to_s(L->current.kind));
-        /* NOTREACHED */
-    }
-
-    return (ret);
-}
-
-
-static struct ast *
-parse_strcmp(struct lexer *restrict L)
-{
-    struct ast *lhs, *ret;
-    enum tokenkind tkind;
-
-    assert_not_null(L);
-
-    ret = NULL;
-    lhs = new_leaf(L->current.kind, NULL);
-
-    lex(L);
-    switch (L->current.kind) {
-    case TEQ: /* FALLTHROUGH */
-    case TLT: /* FALLTHROUGH */
-    case TLE: /* FALLTHROUGH */
-    case TGT: /* FALLTHROUGH */
-    case TGE: /* FALLTHROUGH */
-    case TMATCH: /* FALLTHROUGH */
-    case TDIFF:
-        tkind = L->current.kind;
-        break;
-    default:
-        errx(-1, "parser error at %d-%d: expected TEQ or TLT or TLE or TGL or TGE or TDIFF or TMATCH, got %s",
-                L->current.start, L->current.end, token_to_s(L->current.kind));
-        /* NOTREACHED */
-    }
-
-    lex(L);
-    switch (L->current.kind) {
-    case TTITLE:    /* FALLTHROUGH */
-    case TALBUM:    /* FALLTHROUGH */
-    case TARTIST:   /* FALLTHROUGH */
-    case TCOMMENT:  /* FALLTHROUGH */
-    case TGENRE:    /* FALLTHROUGH */
-    case TFILENAME: /* FALLTHROUGH */
-    case TSTRING:
-        if (tkind == TMATCH) {
-            errx(-1, "parser error at %d-%d: expected TREGEX, got %s",
-                L->current.start, L->current.end, token_to_s(L->current.kind));
+    else {
+    /* Condition ::= <Value> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <Value> */
+        if (lhstok->kind == T_REGEX || rhstok->kind == T_REGEX) {
+            parse_error(L, lhstok, rhstok, "unexpected REGEX (not a MATCH operator!),"
+                    " got %s %s %s", lhstok->str, optok->str, rhstok->str);
+            /* NOTREACHED */
         }
-        ret = new_node(lhs, tkind, new_leaf(L->current.kind,
-                    L->current.kind == TSTRING ? L->current.value.string : NULL));
-        break;
-    case TREGEX:
-        if (tkind != TMATCH) {
-            errx(-1, "parser error at %d-%d: expected TSTRING, got %s",
-                L->current.start, L->current.end, token_to_s(L->current.kind));
-        }
-        ret = new_node(lhs, tkind, new_leaf(TREGEX, &L->current.value.regex));
-        break;
-    default:
-        errx(-1, "parser error at %d-%d: expected %s, got %s",
-                L->current.start,
-                L->current.end, tkind == TMATCH ? "TREGEX" : "TSTRING",
-                token_to_s(L->current.kind));
+    }
+
+    /* avoid constant evaluation */
+    if (lhstok->kind != T_TAGKEY && lhstok->kind != T_FILENAME &&
+            lhstok->kind != T_BACKEND && rhstok->kind != T_TAGKEY &&
+            rhstok->kind != T_FILENAME && rhstok->kind != T_BACKEND) {
+        parse_error(L, lhstok, rhstok, "constant comparison: %s %s %s",
+                lhstok->str, optok->str, rhstok->str);
         /* NOTREACHED */
     }
 
-    lex(L);
-    return (ret);
+    (void)t_lex_next_token(L);
+    return (t_ast_new(t_ast_new(NULL, lhstok, NULL), optok, t_ast_new(NULL, rhstok, NULL)));
 }
 
 
-static struct ast *
-parse_not(struct lexer *restrict L)
+void
+parse_error(const struct t_lexer *restrict L,
+        const struct t_token *restrict startt, const struct t_token *restrict endt,
+        const char *fmt, ...)
 {
-    struct ast *cond;
+    va_list args;
 
     assert_not_null(L);
+    assert_not_null(startt);
+    assert_not_null(endt);
 
-    cond = NULL;
+    fprintf(stderr, "parser error: ");
+    va_start(args, fmt);
+        t_lex_error0(L, startt->start, endt->end, fmt, args);
+    va_end(args);
 
-    switch (L->current.kind) {
-    case TNOT:
-        lex(L);
-        break;
-    default:
-        errx(-1, "parser error at %d-%d: expected TNOT, got %s",
-                L->current.start, L->current.end, token_to_s(L->current.kind));
-        /* NOTREACHED */
-    }
-
-    cond = parse_nestedcond(L);
-
-    return (new_node(NULL, TNOT, cond));
-}
-
-
-static struct ast *
-parse_nestedcond(struct lexer *restrict L)
-{
-    struct ast *ret;
-
-    assert_not_null(L);
-
-    ret = NULL;
-
-    switch (L->current.kind) {
-    case TOPAREN:
-        lex(L);
-        break;
-    default:
-        errx(-1, "parser error at %d-%d: expected TOPAREN, got %s",
-                L->current.start, L->current.end, token_to_s(L->current.kind));
-        /* NOTREACHED */
-    }
-
-    ret = parse_condition(L);
-
-    switch (L->current.kind) {
-    case TCPAREN:
-        lex(L);
-        break;
-    default:
-        errx(-1, "parser error at %d-%d: expected TCPAREN, got %s",
-                L->current.start, L->current.end, token_to_s(L->current.kind));
-        /* NOTREACHED */
-    }
-
-    return (ret);
+    exit(EINVAL);
+    /* NOTREACHED */
 }
 
 
 #if 0
 void
-astprint(struct ast *AST)
+t_ast_debug(struct t_ast *restrict AST)
 {
 
     if (AST == NULL)
         return;
 
-    switch (AST->kind) {
-    case ANODE:
-        (void)printf("(");
-        astprint(AST->lhs);
-        (void)printf(" ");
-        (void)printf("%s", token_to_s(AST->tkind));
-        (void)printf(" ");
-        astprint(AST->rhs);
-        (void)printf(")");
-        break;
-    default:
-        (void)printf("%s", token_to_s(AST->tkind));
-        switch (AST->tkind) {
-        case TSTRING:
-            (void)printf("(%s)", AST->value.string);
-            break;
-        case TINT:
-            (void)printf("(%d)", AST->value.integer);
-            break;
-        default:
-            break;
+    t_lex_token_debug(AST->token);
+    if (AST->rhs) {
+        (void)printf("[");
+        if (AST->lhs) {
+            t_ast_debug(AST->lhs);
+            (void)printf(", ");
         }
-        break;
+        t_ast_debug(AST->rhs);
+        (void)printf("]");
     }
 }
 
 int
 main(int argc, char *argv[]) {
-    struct ast *AST;
-    struct lexer *L;
+    struct t_ast *AST;
 
     if (argc < 2)
         errx(-1, "usage: %s [conditions]\n", argv[0]);
 
-    L = new_lexer(argv[1]);
-    AST = parse_filter(L);
+    AST = t_parse_filter(t_lexer_new(argv[1]));
 
-    astprint(AST);
+    t_ast_debug(AST);
     (void)printf("\n");
+    t_ast_destroy(AST);
 
     return (0);
 }

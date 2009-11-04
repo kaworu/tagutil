@@ -3,20 +3,19 @@
  *
  * tagutil WAV handler, based on libofa's example
  */
-#include "t_config.h"
-
 #include <errno.h>
 #include <fcntl.h> /* open(2) */
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
+#include "t_config.h"
 #include "t_toolkit.h"
 #include "t_wav.h"
 
 
 /* write size bytes to buf readed from fd */
-__t__nonnull(2)
+_t__nonnull(2)
 static inline int readBytes(int fd, unsigned char *restrict buf,
         unsigned int size);
 
@@ -31,7 +30,7 @@ wav_load(const char *path, struct audio_data *ad)
 
     assert_not_null(path);
 
-    fd = open(path, O_RDONLY);
+    fd = open(path, O_RDONLY); /* O_NOCTTY by default */
     if (fd == -1)
         return (-1);
 
@@ -59,7 +58,7 @@ wav_load(const char *path, struct audio_data *ad)
     compression = hdr[20] + (hdr[21] << 8);
     /* Type 1 is PCM/Uncompressed */
     if (compression != 1) {
-        warnx("unsuported compression value: %d", compression);
+        warnx("unsupported compression value: %d", compression);
         errno = EINVAL;
         close(fd);
         return (-1);
@@ -68,7 +67,7 @@ wav_load(const char *path, struct audio_data *ad)
     channels = hdr[22] + (hdr[23] << 8);
     /* Only mono or stereo PCM is supported in this example */
     if (channels < 1 || channels > 2) {
-        warnx("unsuported number of channels: %d", channels);
+        warnx("unsupported number of channels: %d", channels);
         errno = EINVAL;
         close(fd);
         return (-1);
@@ -82,7 +81,7 @@ wav_load(const char *path, struct audio_data *ad)
     bits = hdr[34] + (hdr[35] << 8);
     /* Supporting other sample depths will require conversion */
     if (bits != 16) {
-        warnx("unsuported depths : %d", bits);
+        warnx("unsupported depths : %d", bits);
         errno = EINVAL;
         close(fd);
         return (-1);
@@ -116,7 +115,7 @@ wav_load(const char *path, struct audio_data *ad)
 
     samples = xmalloc(bytes);
     if (readBytes(fd, samples, bytes) != bytes) {
-        free(samples);
+        freex(samples);
         close(fd);
         return (-1);
     }

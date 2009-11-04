@@ -1,0 +1,15 @@
+#!/usr/bin/env perl
+
+$ARGC = @ARGV;
+
+if ($ARGC < 2) {
+    print STDERR "usage: $0 trackkey [files...]\n"
+}
+else {
+    $i = 1;
+    $trackkey = shift;
+    foreach $f (@ARGV) {
+        $v = sprintf("%02d", $i++);
+        system(tagutil, "-s", "$trackkey=$v", $f);
+    }
+}

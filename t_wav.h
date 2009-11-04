@@ -5,8 +5,10 @@
  *
  * tagutil WAV handler, based on libofa's example
  */
-#include "t_config.h"
 #include <stdbool.h>
+
+#include "t_config.h"
+
 
 struct audio_data {
     unsigned char *samples;
@@ -15,7 +17,7 @@ struct audio_data {
     bool stereo;
 };
 
-__t__nonnull(1) __t__nonnull(2)
+_t__nonnull(1) _t__nonnull(2)
 int wav_load(const char *path, struct audio_data *ad);
 
 #endif /* not T_WAV_H */

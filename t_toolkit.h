@@ -6,111 +6,129 @@
  * handy functions toolkit for tagutil.
  *
  */
-#include "t_config.h"
-
-#include <assert.h>
+#include </usr/include/assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <err.h>
-#include <libgen.h> /* dirname(3) */
-#include <regex.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h> /* mkstemp(3) */
+
+#include "t_config.h"
 
 
 /* compute the length of a fixed size array */
-#define len(ary) (sizeof(ary) / sizeof((ary)[0]))
+#define countof(ary) (sizeof(ary) / sizeof((ary)[0]))
+
+/* No Operation */
+#define NOP (void)0
 
 /* some handy assert macros */
 #define assert_not_null(x) assert((x) != NULL)
 #define assert_null(x) assert((x) == NULL)
+#define assert_fail() assert(!42)
 
-/* true if the given string is empty (has only whitespace char) */
-#define empty_line(l) has_match((l), "^\\s*$")
+/* taken from FreeBSD's <sys/cdefs.h> */
+#define	T_CONCAT1(x,y)  x ## y
+#define	T_CONCAT(x,y)   T_CONCAT1(x,y)
+#define	T_STRING(x)     #x /* stringify without expanding x */
+#define	T_XSTRING(x)    T_STRING(x)	/* expand x, then stringify */
 
 
 /* MEMORY FUNCTIONS */
 
-__t__unused
-static inline void * xmalloc(const size_t size);
+_t__unused
+static inline void * xmalloc(size_t size);
 
-__t__unused
-static inline void * xcalloc(const size_t nmemb, const size_t size);
+_t__unused
+static inline void * xcalloc(size_t nmemb, size_t size);
 
-__t__unused
-static inline void * xrealloc(void *ptr, const size_t size);
+_t__unused
+static inline void * xrealloc(void *ptr, size_t size);
+
+#define freex(p) do { free(p); (p) = NULL; } while (/*CONSTCOND*/0)
 
 
 /* FILE FUNCTIONS */
 
-__t__unused __t__nonnull(1) __t__nonnull(2)
+_t__unused _t__nonnull(1) _t__nonnull(2)
 static inline FILE * xfopen(const char *restrict path, const char *restrict mode);
 
-__t__unused __t__nonnull(1)
+_t__unused _t__nonnull(1)
 static inline void xfclose(FILE *restrict stream);
 
-/*
- * try to have a sane dirname,
- * FreeBSD and OpenBSD define:
- *
- *      char * dirname(const char *)
- *
- * returned value has to be freed.
- */
-__t__unused __t__nonnull(1)
-static inline char * xdirname(const char *restrict path);
+_t__unused _t__nonnull(1)
+static inline void xunlink(const char *restrict path);
 
+/*
+ * create a temporary file in $TMPDIR. if $TMPDIR is not set, /tmp is
+ * used. return the full path to the temp file created.
+ *
+ * returned value has to be free()d.
+ */
+_t__unused _t__nonnull(1)
+static inline char * t_mkstemp(const char *restrict dir);
 
 /* BASIC STRING OPERATIONS */
 
-__t__unused __t__nonnull(1)
+_t__unused _t__nonnull(1)
+static inline bool t_strempty(const char *restrict str);
+
+_t__unused _t__nonnull(1)
 static inline char * xstrdup(const char *restrict src);
 
-__t__unused __t__printflike(2, 3)
+_t__unused _t__printflike(2, 3)
 static inline int xasprintf(char **ret, const char *fmt, ...);
 
-
-/* REGEX STRING OPERATIONS */
+/*
+ * upperize a given string.
+ */
+_t__unused _t__nonnull(1)
+static inline char * t_strtoupper(char *restrict str);
 
 /*
- * compile the given pattern, match it with str and return the regmatch_t result.
- * if an error occure (during the compilation or the match), print the error message
- * and err(3). return NULL if there was no match, and a pointer to the regmatch_t
- * otherwise.
- *
- * returned value has to be freed.
+ * lowerize a given string.
  */
-__t__unused __t__nonnull(1) __t__nonnull(2)
-static inline regmatch_t * first_match(const char *restrict str, const char *restrict pattern, const int flags);
-
-/*
- * return true if the regex pattern match the given str, false otherwhise.
- * flags are REG_ICASE | REG_EXTENDED | REG_NEWLINE | REG_NOSUB (see regex(3)).
- */
-__t__unused __t__nonnull(2)
-static inline bool has_match(const char *restrict str, const char *restrict pattern);
+_t__unused _t__nonnull(1)
+static inline char * t_strtolower(char *restrict str);
 
 
 /* OTHER */
 
 /*
  * print the given question, and read user's input. input should match
- * y|yes|n|no.  yesno() loops until a valid response is given and then return
+ * y|yes|n|no.  t_yesno() loops until a valid response is given and then return
  * true if the response match y|yes, false if it match n|no.
  * Honor Yflag and Nflag.
  */
-__t__unused
-static inline bool yesno(const char *restrict question);
+bool t_yesno(const char *restrict question);
+
+/*
+ * reentrant dirname.
+ *
+ * returned value has to be free()d.
+ */
+_t__unused
+char * t_dirname(const char *);
 
 /**********************************************************************/
 
 static inline void *
-xmalloc(const size_t size)
+xmalloc(size_t size)
 {
     void *ptr;
 
+    /*
+     * we need to ensure that we request at least 1 byte, because malloc(0)
+     * could return NULL and we err() if NULL is returned.
+     */
+    if (size == 0) {
+        warnx("xmalloc: xmalloc(0)");
+        size = 1;
+    }
     if ((ptr = malloc(size)) == NULL)
         err(ENOMEM, "malloc");
 
@@ -118,11 +136,20 @@ xmalloc(const size_t size)
 }
 
 
+#if !defined(EDOOFUS)
+#define	EDOOFUS		42		/* Programming error */
+#endif
 static inline void *
-xcalloc(const size_t nmemb, const size_t size)
+xcalloc(size_t nmemb, size_t size)
 {
     void *ptr;
 
+    if (size == 0)
+        err(EDOOFUS, "xcalloc(?, 0)");
+    if (nmemb == 0) {
+        warnx("xcalloc: xcalloc(0, ?)");
+        size = nmemb = 1;
+    }
     if ((ptr = calloc(nmemb, size)) == NULL)
         err(ENOMEM, "calloc");
 
@@ -131,9 +158,14 @@ xcalloc(const size_t nmemb, const size_t size)
 
 
 static inline void *
-xrealloc(void *old_ptr, const size_t new_size)
+xrealloc(void *old_ptr, size_t new_size)
 {
     void *ptr;
+
+    if (new_size == 0) {
+        free(old_ptr);
+        return (NULL);
+    }
 
     if ((ptr = realloc(old_ptr, new_size)) == NULL)
         err(ENOMEM, "realloc");
@@ -153,7 +185,7 @@ xfopen(const char *restrict path, const char *restrict mode)
     stream = fopen(path, mode);
 
     if (stream == NULL)
-        err(errno, "can't open file '%s'", path);
+        err(errno, "can't open file `%s'", path);
 
     return (stream);
 }
@@ -170,40 +202,51 @@ xfclose(FILE *restrict stream)
 }
 
 
-static inline char *
-xdirname(const char *restrict path)
+static inline void
+xunlink(const char *restrict path)
 {
-    char *dirn;
-#if !defined(HAVE_SANE_DIRNAME)
-    char *garbage;
-#endif
-
     assert_not_null(path);
 
-#if !defined(HAVE_SANE_DIRNAME)
-    if ((dirn = dirname(garbage = xstrdup(path))) == NULL)
-#else
-    if ((dirn = dirname(path)) == NULL)
-#endif
-        err(errno, "dirname");
-    dirn = xstrdup(dirn);
+    if (unlink(path) != 0)
+        err(errno, "unlink");
+}
 
-#if !defined(HAVE_SANE_DIRNAME)
-    free(garbage);  /* no more needed */
-#endif
-    return (dirn);
+
+static inline char *
+t_mkstemp(const char *restrict dir)
+{
+    char *f;
+
+    assert_not_null(dir);
+
+    (void)xasprintf(&f, "%s/%s-XXXXXX", dir, getprogname());
+
+    if (mkstemp(f) == -1)
+        err(errno, "mkstemp(\"%s\")", f);
+
+    return (f);
+}
+
+
+static inline bool
+t_strempty(const char *restrict str)
+{
+
+    assert_not_null(str);
+
+    return (*str == '\0');
 }
 
 
 static inline char *
 xstrdup(const char *restrict src)
 {
-    char *ptr;
+    char *ret;
 
-    if ((ptr = strdup(src)) == NULL)
+    if ((ret = strdup(src)) == NULL)
         err(ENOMEM, "strdup");
 
-    return (ptr);
+    return (ret);
 }
 
 
@@ -213,112 +256,45 @@ xasprintf(char **ret, const char *fmt, ...)
     int i;
     va_list ap;
 
+    assert_not_null(ret);
+
     va_start(ap, fmt);
     i = vasprintf(ret, fmt, ap);
     if (i < 0)
         err(ENOMEM, "vasprintf");
-
     va_end(ap);
 
     return (i);
 }
 
 
-static inline regmatch_t *
-first_match(const char *restrict str, const char *restrict pattern, const int flags)
+static inline char *
+t_strtoupper(char *restrict str)
 {
-    regex_t regex;
-    regmatch_t *regmatch;
-    int error;
-    char *errbuf;
+    size_t len, i;
 
     assert_not_null(str);
-    assert_not_null(pattern);
 
-    regmatch = xmalloc(sizeof(regmatch_t));
-    error = regcomp(&regex, pattern, flags);
+    len = strlen(str);
+    for (i = 0; i < len; i++)
+        str[i] = toupper(str[i]);
 
-    if (error != 0)
-        goto error_label;
-
-    error = regexec(&regex, str, 1, regmatch, 0);
-    regfree(&regex);
-
-    switch (error) {
-    case 0:
-        return (regmatch);
-    case REG_NOMATCH:
-        free(regmatch);
-        return (NULL);
-    default:
-error_label:
-        errbuf = xcalloc(BUFSIZ, sizeof(char));
-        (void)regerror(error, &regex, errbuf, BUFSIZ);
-        errx(-1, "%s", errbuf);
-        /* NOTREACHED */
-    }
+    return (str);
 }
 
 
-static inline bool
-has_match(const char *restrict str, const char *restrict pattern)
+static inline char *
+t_strtolower(char *restrict str)
 {
-    regmatch_t *match;
+    size_t len, i;
 
-    assert_not_null(pattern);
+    assert_not_null(str);
 
-    if (str == NULL)
-        return (false);
+    len = strlen(str);
+    for (i = 0; i < len; i++)
+        str[i] = tolower(str[i]);
 
-    match = first_match(str, pattern, REG_ICASE | REG_EXTENDED | REG_NEWLINE | REG_NOSUB);
-
-    if (match == NULL)
-        return (false);
-    else {
-        free(match);
-        return (true);
-    }
+    return (str);
 }
 
-
-static inline bool
-yesno(const char *restrict question)
-{
-    char buffer[5]; /* strlen("yes\n\0") == 5 */
-    extern bool Yflag, Nflag;
-
-    for (;;) {
-        if (feof(stdin) && !Yflag && !Nflag)
-            return (false);
-
-        (void)memset(buffer, '\0', len(buffer));
-
-        if (question != NULL) {
-            (void)printf("%s? [y/n] ", question);
-            (void)fflush(stdout);
-        }
-
-        if (Yflag) {
-            (void)printf("y\n");
-            return (true);
-        }
-        else if (Nflag) {
-            (void)printf("n\n");
-            return (false);
-        }
-
-        (void)fgets(buffer, len(buffer), stdin);
-
-        /* if any, eat stdin characters that didn't fit into buffer */
-        if (buffer[strlen(buffer) - 1] != '\n') {
-            while (getc(stdin) != '\n' && !feof(stdin))
-                ;
-        }
-
-        if (has_match(buffer, "^(n|no)$"))
-            return (false);
-        else if (has_match(buffer, "^(y|yes)$"))
-            return (true);
-    }
-}
 #endif /* not T_TOOLKIT_H */

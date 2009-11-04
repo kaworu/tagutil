@@ -1,26 +1,38 @@
-#ifndef T_CONFIG_H
-#define T_CONFIG_H
+#ifndef	T_CONFIG_H
+#define	T_CONFIG_H
 
-#if !defined(VERSION)
-#  define VERSION "(unknow version)"
-#endif /* not VERSION */
+#if !defined(T_TAGUTIL_VERSION)
+#	define	T_TAGUTIL_VERSION "(unknow version)"
+#endif /* not T_TAGUTIL_VERSION */
 
 /*
  * avoid lint to complain for non C89 keywords and macros
  */
 #if defined(lint)
-#  define inline
-#  define restrict
-#  define __t__unused
-#  define __t__nonnull(x)
-#  define __t__dead2
-#  define __t__printflike(fmtarg, firstvarg)
+#	define	inline
+#	define	restrict
+#	define	_t__unused
+#	define	_t__dead2
+#	define	_t__nonnull(x)
+#	define	_t__printflike(fmtarg, firstvarg)
 #else
-#  define __t__unused     __unused
-#  define __t__dead2      __dead2
-#  define __t__nonnull(x) __nonnull(x)
-#  define __t__printflike(fmtarg, firstvarg) __printflike(fmtarg, firstvarg)
+#	define	_t__unused	__attribute__((unused))
+#	define	_t__dead2	__attribute__((noreturn))
+#	define	_t__nonnull(x)	__attribute__((nonnull(x)))
+#	define	_t__printflike(fmtarg, firstvararg) \
+		    __attribute__((format(printf, fmtarg, firstvararg)))
 #endif /* lint */
 
-
+#if !defined(HAS_GETPROGNAME)
+#	include "compat/include/getprogname.h"
+#endif
+#if !defined(HAS_STRLCPY)
+#	include "compat/include/strlcpy.h"
+#endif
+#if !defined(HAS_STRLCAT)
+#	include "compat/include/strlcat.h"
+#endif
+#if !defined(HAS_STRDUP)
+#	include "compat/include/strdup.h"
+#endif
 #endif /* not T_CONFIG_H */
