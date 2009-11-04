@@ -36,6 +36,16 @@
 #include <stddef.h> /* NULL */
 
 /*
+ * Macro to test if we're using a specific version of gcc or later.
+ */
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
+#define	__GNUC_PREREQ__(ma, mi)	\
+	(__GNUC__ > (ma) || __GNUC__ == (ma) && __GNUC_MINOR__ >= (mi))
+#else
+#define	__GNUC_PREREQ__(ma, mi)	0
+#endif
+
+/*
  * define __offsetof
  */
 #if __GNUC_PREREQ__(4, 1)
