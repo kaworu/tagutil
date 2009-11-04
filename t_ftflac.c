@@ -200,6 +200,7 @@ t_ftflac_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 		if (T->count == 0)
 			return (true);
 		t = t_tagQ_first(T->tags);
+		assert_not_null(t);
 		last = t_tagQ_last(T->tags);
 	}
 	for (;;) {

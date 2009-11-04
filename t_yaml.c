@@ -206,11 +206,13 @@ t_yaml2tags(struct t_file *restrict file, FILE *restrict stream)
     assert_not_null(file);
     t_error_clear(file);
 
+    (void)memset(&FSM, 0, sizeof(FSM));
+    t_error_init(&FSM);
+
     if (!yaml_parser_initialize(&parser))
         goto parser_error;
     yaml_parser_set_input_file(&parser, stream);
 
-    (void)memset(&FSM, 0, sizeof(FSM));
     FSM.handle = t_yaml_parse_stream_start;
     do {
         if (!yaml_parser_parse(&parser, &event))

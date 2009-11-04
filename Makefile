@@ -23,11 +23,18 @@ MANDIR?=/man/man
 # C opts
 CSTD=c99
 .if defined(DEBUG)
-CFLAGS=-g -O0
-WARNS?=1
+CFLAGS=-g -O0 -Wall -Wsystem-headers -Wno-format-y2k -W -Wno-unused-parameter \
+	-Wstrict-prototypes -Wmissing-prototypes -Wpointer-arith -Wreturn-type \
+	-Wwrite-strings -Wswitch -Wshadow -Wcast-align -Wunused-parameter \
+	-Wchar-subscripts -Winline -Wnested-externs -Wredundant-decls -Wno-pointer-sign
 VERSION:=${VERSION}-debug
 .endif
 CFLAGS+=-I. -D'T_TAGUTIL_VERSION="${VERSION}"'
+CFLAGS+=	-DHAS_GETPROGNAME \
+			-DHAS_STRLCPY \
+			-DHAS_STRLCAT \
+			-DHAS_STRDUP \
+			-DHAS_SYS_QUEUE_H
 
 # libyaml doesn't use pkg-config :(
 CFLAGS+=-I/usr/local/include

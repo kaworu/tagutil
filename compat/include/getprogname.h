@@ -5,6 +5,8 @@
  *
  * return the current program's name
  */
+
+
 const char * getprogname(void);
 
 #endif /* not T_COMPAT_GETPROGNAME_H */
