@@ -11,16 +11,18 @@
 #if defined(lint)
 #	define	inline
 #	define	restrict
+#	define	_t__weak
 #	define	_t__unused
 #	define	_t__dead2
 #	define	_t__nonnull(x)
 #	define	_t__printflike(fmtarg, firstvarg)
 #else
-#	define	_t__unused	__attribute__((unused))
-#	define	_t__dead2	__attribute__((noreturn))
-#	define	_t__nonnull(x)	__attribute__((nonnull(x)))
+#	define	_t__weak	__attribute__((__weak__))
+#	define	_t__unused	__attribute__((__unused__))
+#	define	_t__dead2	__attribute__((__noreturn__))
+#	define	_t__nonnull(x)	__attribute__((__nonnull__(x)))
 #	define	_t__printflike(fmtarg, firstvararg) \
-		    __attribute__((format(printf, fmtarg, firstvararg)))
+		    __attribute__((__format__(__printf__, fmtarg, firstvararg)))
 #endif /* lint */
 
 #if !defined(HAS_GETPROGNAME)
