@@ -115,14 +115,12 @@ t_rename_parse(const char *restrict pattern)
     ret   = xcalloc(len + 1, sizeof(struct t_token *));
 
     while (t_rename_lex_next_token(L)->kind != T_END) {
-        else {
             assert(L->current->kind == T_TAGKEY || L->current->kind == T_STRING);
             if (count == (len - 1)) {
                 len = len * 2;
                 ret = xrealloc(ret, (len + 1) * sizeof(struct t_token *));
             }
             ret[count++] = L->current;
-        }
     }
     freex(L->current);
     t_lexer_destroy(L);

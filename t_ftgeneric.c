@@ -18,37 +18,42 @@
 
 
 static const char libname[] = "TagLib";
-static bool init_called = false;
+static bool taglib_init_done = false;
 
 
-struct t_ftgeneric_data {
+struct t_generic_data {
 	TagLib_File	*file;
 	TagLib_Tag	*tag;
 };
 
-static void	t_ftgeneric_init(void);
+static void	taglib_init(void);
 
 _t__nonnull(1)
-static void	t_ftgeneric_destroy(struct t_file *restrict file);
+static struct t_file *	t_file_new(const char *restrict path);
+
+t_file_ctor	*t_ftgeneric_new = t_file_new;
 
 _t__nonnull(1)
-static bool	t_ftgeneric_save(struct t_file *restrict file);
+static void	t_file_destroy(struct t_file *restrict file);
 
 _t__nonnull(1)
-static struct t_taglist * t_ftgeneric_get(struct t_file *restrict file,
+static bool	t_file_save(struct t_file *restrict file);
+
+_t__nonnull(1)
+static struct t_taglist * t_file_get(struct t_file *restrict file,
     const char *restrict key);
 
 _t__nonnull(1)
-static bool	t_ftgeneric_clear(struct t_file *restrict file,
+static bool	t_file_clear(struct t_file *restrict file,
     const struct t_taglist *restrict T);
 
 _t__nonnull(1) _t__nonnull(2)
-static bool	t_ftgeneric_add(struct t_file *restrict file,
+static bool	t_file_add(struct t_file *restrict file,
     const struct t_taglist *restrict T);
 
 
 void
-t_ftgeneric_init(void)
+taglib_init(void)
 {
 	char *lcall, *dot;
 
@@ -61,21 +66,21 @@ t_ftgeneric_init(void)
 	}
 
 	taglib_set_string_management_enabled(false);
-	init_called = true;
+	taglib_init_done = true;
 }
 
 
-struct t_file *
-t_ftgeneric_new(const char *restrict path)
+static struct t_file *
+t_file_new(const char *restrict path)
 {
 	TagLib_File	*f;
 	struct t_file *file;
-	struct t_ftgeneric_data data;
+	struct t_generic_data data;
 
 	assert_not_null(path);
 
-	if (!init_called)
-		t_ftgeneric_init();
+	if (!taglib_init_done)
+		taglib_init();
 
 	f = taglib_file_new(path);
 	if (f == NULL || !taglib_file_is_valid(f))
@@ -84,17 +89,15 @@ t_ftgeneric_new(const char *restrict path)
 	data.file = f;
 	data.tag  = taglib_file_tag(f);
 
-	file = t_file_new(path, libname, &data, sizeof(data));
-	T_FILE_FUNC_INIT(file, generic);
-
+	T_FILE_NEW(file, path, data);
 	return (file);
 }
 
 
 static void
-t_ftgeneric_destroy(struct t_file *restrict file)
+t_file_destroy(struct t_file *restrict file)
 {
-	struct t_ftgeneric_data *data;
+	struct t_generic_data *data;
 
 	assert_not_null(file);
 	assert_not_null(file->data);
@@ -107,10 +110,10 @@ t_ftgeneric_destroy(struct t_file *restrict file)
 
 
 static bool
-t_ftgeneric_save(struct t_file *restrict file)
+t_file_save(struct t_file *restrict file)
 {
 	bool ok;
-	struct t_ftgeneric_data *data;
+	struct t_generic_data *data;
 
 	assert_not_null(file);
 	assert_not_null(file->data);
@@ -128,12 +131,12 @@ static const char * _taglibkeys[] = {
 	"album", "artist", "description", "date", "genre", "title", "tracknumber"
 };
 static struct t_taglist *
-t_ftgeneric_get(struct t_file *restrict file, const char *restrict key)
+t_file_get(struct t_file *restrict file, const char *restrict key)
 {
 	int		 i;
 	unsigned int	 uintval;
 	char		*value;
-	struct t_ftgeneric_data *data;
+	struct t_generic_data *data;
 	struct t_taglist *T;
 
 	assert_not_null(file);
@@ -193,10 +196,10 @@ t_ftgeneric_get(struct t_file *restrict file, const char *restrict key)
 
 
 static bool
-t_ftgeneric_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
+t_file_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 {
 	int	i;
-	struct t_ftgeneric_data *data;
+	struct t_generic_data *data;
 
 	assert_not_null(file);
 	assert_not_null(file->data);
@@ -237,10 +240,10 @@ t_ftgeneric_clear(struct t_file *restrict file, const struct t_taglist *restrict
 
 
 static bool
-t_ftgeneric_add(struct t_file *restrict file, const struct t_taglist *restrict T)
+t_file_add(struct t_file *restrict file, const struct t_taglist *restrict T)
 {
 	bool	isstrf;
-	struct t_ftgeneric_data *data;
+	struct t_generic_data *data;
 	struct t_tag *t;
 	void (*strf)(TagLib_Tag *, const char *);
 	void (*uif)(TagLib_Tag *, unsigned int);

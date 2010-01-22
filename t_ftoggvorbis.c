@@ -20,40 +20,44 @@
 static const char libname[] = "libvorbis";
 
 
-struct t_ftoggvorbis_data {
+struct t_oggvorbis_data {
 	struct OggVorbis_File	*vf;
 	struct vorbis_comment	*vc;
 };
 
 
 _t__nonnull(1)
-static void	t_ftoggvorbis_destroy(struct t_file *restrict file);
+static void	t_file_destroy(struct t_file *restrict file);
+
+static struct t_file *	t_file_new(const char *restrict path);
+
+t_file_ctor	*t_ftoggvorbis_new = t_file_new;
 
 _t__nonnull(1)
-static bool	t_ftoggvorbis_save(struct t_file *restrict file);
+static bool	t_file_save(struct t_file *restrict file);
 
 _t__nonnull(1)
-static struct t_taglist * t_ftoggvorbis_get(struct t_file *restrict file,
+static struct t_taglist * t_file_get(struct t_file *restrict file,
     const char *restrict key);
 
 _t__nonnull(1)
-static bool	t_ftoggvorbis_clear(struct t_file *restrict file,
+static bool	t_file_clear(struct t_file *restrict file,
     const struct t_taglist *T);
 
 _t__nonnull(1) _t__nonnull(2)
-static bool	t_ftoggvorbis_add(struct t_file *restrict file,
+static bool	t_file_add(struct t_file *restrict file,
     const struct t_taglist *T);
 
 
-struct t_file *
-t_ftoggvorbis_new(const char *restrict path)
+static struct t_file *
+t_file_new(const char *restrict path)
 {
 	char	*s;
 	int	 i;
 	struct t_file *file;
 	struct OggVorbis_File	*vf;
 	struct vorbis_comment	*vc;
-	struct t_ftoggvorbis_data data;
+	struct t_oggvorbis_data data;
 
 	assert_not_null(path);
 
@@ -72,17 +76,15 @@ t_ftoggvorbis_new(const char *restrict path)
 	data.vf = vf;
 	data.vc = vc;
 
-	file = t_file_new(path, libname, &data, sizeof(data));
-	T_FILE_FUNC_INIT(file, oggvorbis);
-
+	T_FILE_NEW(file, path, data);
 	return (file);
 }
 
 
 static void
-t_ftoggvorbis_destroy(struct t_file *restrict file)
+t_file_destroy(struct t_file *restrict file)
 {
-	struct t_ftoggvorbis_data *data;
+	struct t_oggvorbis_data *data;
 
 	assert_not_null(file);
 	assert_not_null(file->data);
@@ -96,7 +98,7 @@ t_ftoggvorbis_destroy(struct t_file *restrict file)
 
 
 static bool
-t_ftoggvorbis_save(struct t_file *restrict file)
+t_file_save(struct t_file *restrict file)
 {
 	assert_not_null(file);
 	t_error_clear(file);
@@ -108,7 +110,7 @@ t_ftoggvorbis_save(struct t_file *restrict file)
 
 
 static struct t_taglist *
-t_ftoggvorbis_get(struct t_file *restrict file, const char *restrict key)
+t_file_get(struct t_file *restrict file, const char *restrict key)
 {
 	char	*copy;
 	char	*eq;
@@ -116,7 +118,7 @@ t_ftoggvorbis_get(struct t_file *restrict file, const char *restrict key)
 	size_t	keylen;
 	const char *c;
 	struct t_taglist *T;
-	struct t_ftoggvorbis_data *data;
+	struct t_oggvorbis_data *data;
 
 	assert_not_null(file);
 	assert_not_null(file->data);
@@ -151,13 +153,13 @@ t_ftoggvorbis_get(struct t_file *restrict file, const char *restrict key)
 
 
 static bool
-t_ftoggvorbis_clear(struct t_file *restrict file, const struct t_taglist *T)
+t_file_clear(struct t_file *restrict file, const struct t_taglist *T)
 {
 	int	 i;
 	int	 count;
 	char	*c;
 	struct t_tag *t;
-	struct t_ftoggvorbis_data *data;
+	struct t_oggvorbis_data *data;
 
 	assert_not_null(file);
 	assert_not_null(file->data);
@@ -201,12 +203,12 @@ t_ftoggvorbis_clear(struct t_file *restrict file, const struct t_taglist *T)
 
 
 static bool
-t_ftoggvorbis_add(struct t_file *restrict file, const struct t_taglist *T)
+t_file_add(struct t_file *restrict file, const struct t_taglist *T)
 {
 	size_t	 len;
 	char	*tageq;
 	struct t_tag *t;
-	struct t_ftoggvorbis_data *data;
+	struct t_oggvorbis_data *data;
 
 	assert_not_null(T);
 	assert_not_null(file);

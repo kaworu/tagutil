@@ -19,38 +19,43 @@
 static const char libname[] = "libFLAC";
 
 
-struct t_ftflac_data {
+struct t_flac_data {
 	FLAC__Metadata_Chain	*chain;
 	FLAC__StreamMetadata	*vocomments; /* Vorbis Comments */
 };
 
 
 _t__nonnull(1)
-static void	t_ftflac_destroy(struct t_file *restrict file);
+static struct t_file *	t_file_new(const char *restrict path);
+
+t_file_ctor	*t_ftflac_new = t_file_new;
 
 _t__nonnull(1)
-static bool	t_ftflac_save(struct t_file *restrict file);
+static void	t_file_destroy(struct t_file *restrict file);
 
 _t__nonnull(1)
-static struct t_taglist * t_ftflac_get(struct t_file *restrict file,
+static bool	t_file_save(struct t_file *restrict file);
+
+_t__nonnull(1)
+static struct t_taglist * t_file_get(struct t_file *restrict file,
     const char *restrict key);
 
 _t__nonnull(1)
-static bool	t_ftflac_clear(struct t_file *restrict file,
+static bool	t_file_clear(struct t_file *restrict file,
     const struct t_taglist *restrict T);
 
 _t__nonnull(1) _t__nonnull(2)
-static bool	t_ftflac_add(struct t_file *restrict file,
+static bool	t_file_add(struct t_file *restrict file,
      const struct t_taglist *restrict T);
 
 
-struct t_file *
-t_ftflac_new(const char *restrict path)
+static struct t_file *
+t_file_new(const char *restrict path)
 {
 	bool	b;
 	FLAC__Metadata_Iterator	*it;
 	struct t_file		*file;
-	struct t_ftflac_data	 data;
+	struct t_flac_data	 data;
 
 	assert_not_null(path);
 
@@ -83,17 +88,15 @@ t_ftflac_new(const char *restrict path)
 	}
 	FLAC__metadata_iterator_delete(it);
 
-	file = t_file_new(path, libname, &data, sizeof(data));
-	T_FILE_FUNC_INIT(file, flac);
-
+	T_FILE_NEW(file, path, data);
 	return (file);
 }
 
 
 static void
-t_ftflac_destroy(struct t_file *restrict file)
+t_file_destroy(struct t_file *restrict file)
 {
-	struct t_ftflac_data *data;
+	struct t_flac_data *data;
 
 	assert_not_null(file);
 	assert_not_null(file->data);
@@ -107,10 +110,10 @@ t_ftflac_destroy(struct t_file *restrict file)
 
 
 static bool
-t_ftflac_save(struct t_file *restrict file)
+t_file_save(struct t_file *restrict file)
 {
 	bool	ok;
-	struct t_ftflac_data	*data;
+	struct t_flac_data	*data;
 
 	assert_not_null(file);
 	assert_not_null(file->data);
@@ -133,7 +136,7 @@ t_ftflac_save(struct t_file *restrict file)
 
 
 static struct t_taglist *
-t_ftflac_get(struct t_file *restrict file, const char *restrict key)
+t_file_get(struct t_file *restrict file, const char *restrict key)
 {
 	bool	 b;
 	char	*field_name  = NULL;
@@ -141,7 +144,7 @@ t_ftflac_get(struct t_file *restrict file, const char *restrict key)
 	int	 i = 0;
 	uint32_t count;
 	struct t_taglist	*T;
-	struct t_ftflac_data	*data;
+	struct t_flac_data	*data;
 	FLAC__StreamMetadata_VorbisComment_Entry e;
 
 	assert_not_null(file);
@@ -183,11 +186,11 @@ t_ftflac_get(struct t_file *restrict file, const char *restrict key)
 
 
 static bool
-t_ftflac_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
+t_file_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 {
 	bool	b;
 	int	i = 0;
-	struct t_ftflac_data	*data;
+	struct t_flac_data	*data;
 	struct t_tag		*t;
 	struct t_tag		*last;
 
@@ -230,10 +233,10 @@ t_ftflac_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 
 
 static bool
-t_ftflac_add(struct t_file *restrict file, const struct t_taglist *restrict T)
+t_file_add(struct t_file *restrict file, const struct t_taglist *restrict T)
 {
 	bool	b;
-	struct t_ftflac_data *data;
+	struct t_flac_data *data;
 	struct t_tag *t;
 	FLAC__StreamMetadata_VorbisComment_Entry e;
 

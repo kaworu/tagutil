@@ -10,8 +10,7 @@
 
 #if defined(WITH_FLAC)
 
-_t__nonnull(1)
-struct t_file *	t_ftflac_new(const char *restrict path);
+extern t_file_ctor *t_ftflac_new;
 
 #else /* not WITH_FLAC */
 #	define	t_ftflac_new(path)	NULL

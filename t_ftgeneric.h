@@ -11,8 +11,7 @@
 
 #if defined(WITH_TAGLIB)
 
-_t__nonnull(1)
-struct t_file *	t_ftgeneric_new(const char *restrict path);
+extern t_file_ctor *t_ftgeneric_new;
 
 #else /* not WITH_TAGLIB */
 #	define t_ftgeneric_new(path)	NULL

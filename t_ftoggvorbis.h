@@ -10,8 +10,7 @@
 
 #if defined(WITH_OGGVORBIS)
 
-_t__nonnull(1)
-struct t_file *	t_ftoggvorbis_new(const char *restrict path);
+extern t_file_ctor *t_ftoggvorbis_new;
 
 #else /* not WITH_OGGVORBIS */
 #	define	t_ftoggvorbis_new(path)	NULL
