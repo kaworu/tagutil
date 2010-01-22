@@ -99,7 +99,6 @@ t_rename_safe(struct t_file *restrict file, const char *restrict newpath)
 struct t_token **
 t_rename_parse(const char *restrict pattern)
 {
-    bool done;
     struct t_lexer *L;
     struct t_token **ret;
     size_t count, len;
@@ -115,12 +114,7 @@ t_rename_parse(const char *restrict pattern)
     len   = 16;
     ret   = xcalloc(len + 1, sizeof(struct t_token *));
 
-    done = false;
-    while (!done) {
-        if (t_rename_lex_next_token(L)->kind == T_END) {
-            freex(L->current);
-            done = true;
-        }
+    while (t_rename_lex_next_token(L)->kind != T_END) {
         else {
             assert(L->current->kind == T_TAGKEY || L->current->kind == T_STRING);
             if (count == (len - 1)) {
@@ -130,6 +124,7 @@ t_rename_parse(const char *restrict pattern)
             ret[count++] = L->current;
         }
     }
+    freex(L->current);
     t_lexer_destroy(L);
 
     ret[count] = NULL;

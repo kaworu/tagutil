@@ -33,7 +33,7 @@
  * error macros can be used on t_error struct or any struct that define a member:
  *      char *__errmsg; (via the T_ERROR_MSG_MEMBER macro).
  *  on this purpose. You should never access to ->__errmsg but use the macros
- *  defined for this  purpose.
+ *  defined for this purpose.
  *
  *  At any time, __errmsg should either a valid malloc()'d pointer either NULL,
  *  that way we can always pass it to free().
