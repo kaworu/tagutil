@@ -71,15 +71,13 @@ t_file_new(const char *restrict path)
 
 	data.chain = FLAC__metadata_chain_new();
 	if (data.chain == NULL)
-		err(ENOMEM, "t_ftflac_new: FLAC__metadata_chain_new");
-	if (!FLAC__metadata_chain_read(data.chain, path)) {
-		FLAC__metadata_chain_delete(data.chain);
-		return (NULL);
-	}
+		goto error0;
+	if (!FLAC__metadata_chain_read(data.chain, path))
+		goto error1;
 
 	it = FLAC__metadata_iterator_new();
 	if (it == NULL)
-		err(ENOMEM, "t_ftflac_new: FLAC__metadata_iterator_new");
+		goto error1;
 	FLAC__metadata_iterator_init(it, data.chain);
 
 	data.vocomments = NULL;
@@ -91,15 +89,24 @@ t_file_new(const char *restrict path)
 		/* create a new block FLAC__METADATA_TYPE_VORBIS_COMMENT */
 		data.vocomments = FLAC__metadata_object_new(FLAC__METADATA_TYPE_VORBIS_COMMENT);
 		if (data.vocomments == NULL)
-			err(ENOMEM, "t_ftflac_new: FLAC__metadata_object_new");
+			goto error2;
 		b = FLAC__metadata_iterator_insert_block_after(it, data.vocomments);
 		if (!b)
-			err(errno, "t_ftflac_new: FLAC__metadata_iterator_insert_block_after");
+			goto error3;
 	}
 	FLAC__metadata_iterator_delete(it);
 
 	T_FILE_NEW(file, path, data);
 	return (file);
+
+error3:
+	FLAC__metadata_object_delete(data.vocomments);
+error2:
+	FLAC__metadata_iterator_delete(it);
+error1:
+	FLAC__metadata_chain_delete(data.chain);
+error0:
+	return (NULL);
 }
 
 
