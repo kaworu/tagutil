@@ -162,7 +162,7 @@ t_filter_eval_cmp(struct t_file *restrict file,
         ret = t_filter_eval_str_cmp(file, file->path, rhs, f);
         break;
     case T_BACKEND:
-        ret = t_filter_eval_str_cmp(file, file->lib, rhs, f);
+        ret = t_filter_eval_str_cmp(file, file->libid, rhs, f);
         break;
     case T_TAGKEY:
         if (rhs->token->kind == T_TAGKEY) {
@@ -298,7 +298,7 @@ t_filter_eval_match(struct t_file *restrict file,
         if (strast->token->kind == T_FILENAME)
             cs = file->path;
         else
-            cs = file->lib;
+            cs = file->libid;
         ret = t_filter_regexec(r, cs);
         break;
     default:
@@ -431,7 +431,7 @@ t_filter_eval_int_cmp(struct t_file *restrict file,
         if (rhs->token->kind == T_FILENAME)
             cs = file->path;
         else
-            cs = file->lib;
+            cs = file->libid;
         ret = (*f)((double)(i - strtol(cs, NULL, 10)));
         break;
     case T_TAGKEY:
@@ -509,7 +509,7 @@ t_filter_eval_double_cmp(struct t_file *restrict file,
         if (rhs->token->kind == T_FILENAME)
             cs = file->path;
         else
-            cs = file->lib;
+            cs = file->libid;
         ret = (*f)(d - strtod(cs, NULL));
         break;
     case T_TAGKEY:
@@ -587,7 +587,7 @@ t_filter_eval_str_cmp(struct t_file *restrict file,
         if (rhs->token->kind == T_FILENAME)
             cs = file->path;
         else
-            cs = file->lib;
+            cs = file->libid;
         ret = (*f)((double)strcmp(str, cs));
         break;
     case T_TAGKEY:

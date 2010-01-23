@@ -224,7 +224,7 @@ main(int argc, char *argv[])
 
         /* modifiy tag, edit, rename */
         if (bflag)
-            (void)printf("%s: %s\n", file->path, file->lib);
+            (void)printf("%s: %s\n", file->path, file->libid);
         if (pflag)
             tagutil_print(file);
         if (xflag)
@@ -294,7 +294,7 @@ usage(void)
 	(void)fprintf(stderr, "Backend:\n");
 
 	SLIST_FOREACH(b, L, next)
-		(void)fprintf(stderr, "  %10s: %s\n", b->libname, b->desc);
+		(void)fprintf(stderr, "  %10s: %s\n", b->libid, b->desc);
 	(void)fprintf(stderr, "\n");
 	(void)fprintf(stderr, "Options:\n");
 	(void)fprintf(stderr, "  -h              show this help\n");

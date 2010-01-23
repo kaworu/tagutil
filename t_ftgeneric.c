@@ -17,7 +17,7 @@
 #include "t_backend.h"
 
 
-static const char libname[] = "TagLib";
+static const char libid[] = "TagLib";
 static bool taglib_init_done = false;
 
 
@@ -74,8 +74,9 @@ struct t_backend *
 t_generic_backend(void)
 {
 	static struct t_backend b = {
-		.libname	= libname,
-    		.desc		= "multiple file format (flac,ogg,mp3...), can handle only a limited set of tags.",
+		.libid		= libid,
+    		.desc		= "multiple file format (flac,ogg,mp3...), "
+		    "can handle only a limited set of tags.",
 		.ctor		= t_file_new,
 	};
 	return (&b);
@@ -113,6 +114,7 @@ t_file_destroy(struct t_file *restrict file)
 
 	assert_not_null(file);
 	assert_not_null(file->data);
+	assert(file->libid == libid);
 
 	data = file->data;
 	taglib_file_free(data->file);
@@ -129,12 +131,13 @@ t_file_save(struct t_file *restrict file)
 
 	assert_not_null(file);
 	assert_not_null(file->data);
+	assert(file->libid == libid);
 	t_error_clear(file);
 
 	data = file->data;
 	ok = taglib_file_save(data->file);
 	if (!ok)
-		t_error_set(file, "%s error: taglib_file_save", file->lib);
+		t_error_set(file, "%s error: taglib_file_save", file->libid);
 	return (ok);
 }
 
@@ -153,6 +156,7 @@ t_file_get(struct t_file *restrict file, const char *restrict key)
 
 	assert_not_null(file);
 	assert_not_null(file->data);
+	assert(file->libid == libid);
 	t_error_clear(file);
 
 	data = file->data;
@@ -215,6 +219,7 @@ t_file_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 
 	assert_not_null(file);
 	assert_not_null(file->data);
+	assert(file->libid == libid);
 	t_error_clear(file);
 
 	data = file->data;
@@ -260,9 +265,10 @@ t_file_add(struct t_file *restrict file, const struct t_taglist *restrict T)
 	void (*strf)(TagLib_Tag *, const char *);
 	void (*uif)(TagLib_Tag *, unsigned int);
 
-	assert_not_null(T);
 	assert_not_null(file);
 	assert_not_null(file->data);
+	assert(file->libid == libid);
+	assert_not_null(T);
 	t_error_clear(file);
 
 	data = file->data;
@@ -289,7 +295,7 @@ t_file_add(struct t_file *restrict file, const struct t_taglist *restrict T)
 				uif = taglib_tag_set_year;
 			else {
 				t_error_set(file,
-				    "%s backend can't handle `%s' tag", file->lib, t->key);
+				    "%s backend can't handle `%s' tag", file->libid, t->key);
 				return (false);
 			}
 		}

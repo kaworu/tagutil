@@ -17,7 +17,7 @@
 #include "t_backend.h"
 
 
-static const char libname[] = "libvorbis";
+static const char libid[] = "libvorbis";
 
 
 struct t_oggvorbis_data {
@@ -51,8 +51,9 @@ struct t_backend *
 t_oggvorbis_backend(void)
 {
 	static struct t_backend b = {
-		.libname	= libname,
-    		.desc		= "Ogg/Vorbis files format, use `Vorbis comment' metadata tags.",
+		.libid		= libid,
+    		.desc		= "Ogg/Vorbis files format, "
+		    "use `Vorbis comment' metadata tags.",
 		.ctor		= t_file_new,
 	};
 	return (&b);
@@ -98,6 +99,7 @@ t_file_destroy(struct t_file *restrict file)
 
 	assert_not_null(file);
 	assert_not_null(file->data);
+	assert(file->libid == libid);
 
 	data = file->data;
 
@@ -111,10 +113,11 @@ static bool
 t_file_save(struct t_file *restrict file)
 {
 	assert_not_null(file);
+	assert(file->libid == libid);
 	t_error_clear(file);
 
 	/* FIXME */
-	t_error_set(file, "%s: read-only support", file->lib);
+	t_error_set(file, "%s: read-only support", file->libid);
 	return (false);
 }
 
@@ -132,6 +135,7 @@ t_file_get(struct t_file *restrict file, const char *restrict key)
 
 	assert_not_null(file);
 	assert_not_null(file->data);
+	assert(file->libid == libid);
 	t_error_clear(file);
 
 	data = file->data;
@@ -173,6 +177,7 @@ t_file_clear(struct t_file *restrict file, const struct t_taglist *T)
 
 	assert_not_null(file);
 	assert_not_null(file->data);
+	assert(file->libid == libid);
 	t_error_clear(file);
 
 	data = file->data;
@@ -220,9 +225,10 @@ t_file_add(struct t_file *restrict file, const struct t_taglist *T)
 	struct t_tag *t;
 	struct t_oggvorbis_data *data;
 
-	assert_not_null(T);
 	assert_not_null(file);
 	assert_not_null(file->data);
+	assert(file->libid == libid);
+	assert_not_null(T);
 	t_error_clear(file);
 
 	data = file->data;

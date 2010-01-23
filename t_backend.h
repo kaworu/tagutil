@@ -10,7 +10,7 @@
 
 
 struct t_backend {
-	const char	*libname;
+	const char	*libid;
 	const char	*desc;
 	t_file_ctor	*ctor;
 

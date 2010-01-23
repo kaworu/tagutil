@@ -21,7 +21,7 @@
 /* abstract music file, with method members */
 struct t_file {
 	const char	*path;
-	const char	*lib;
+	const char	*libid;
 	void		*data;
 
 	/*
@@ -97,7 +97,7 @@ struct t_file {
 		(file)->path = (char *)(file)->data + sizeof(data);		\
 		(void)memcpy((char *)(file)->data + sizeof(data),		\
 		    path, strlen(path) + 1);					\
-		(file)->lib = libname;						\
+		(file)->libid = libid;						\
 		t_error_init(file);						\
 		(file)->new = t_file_new;					\
 		(file)->save = t_file_save;					\

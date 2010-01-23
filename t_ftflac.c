@@ -16,7 +16,7 @@
 #include "t_backend.h"
 
 
-static const char libname[] = "libFLAC";
+static const char libid[] = "libFLAC";
 
 
 struct t_flac_data {
@@ -51,8 +51,9 @@ struct t_backend *
 t_flac_backend(void)
 {
 	static struct t_backend b = {
-		.libname	= libname,
-		.desc		= "flac files format, use `Vorbis comment' metadata tags.",
+		.libid		= libid,
+		.desc		=
+		    "flac files format, use `Vorbis comment' metadata tags.",
 		.ctor		= t_file_new,
 	};
 	return (&b);
@@ -117,6 +118,7 @@ t_file_destroy(struct t_file *restrict file)
 
 	assert_not_null(file);
 	assert_not_null(file->data);
+	assert(file->libid == libid);
 
 	data = file->data;
 
@@ -134,6 +136,7 @@ t_file_save(struct t_file *restrict file)
 
 	assert_not_null(file);
 	assert_not_null(file->data);
+	assert(file->libid == libid);
 	t_error_clear(file);
 
 	data = file->data;
@@ -166,6 +169,7 @@ t_file_get(struct t_file *restrict file, const char *restrict key)
 
 	assert_not_null(file);
 	assert_not_null(file->data);
+	assert(file->libid == libid);
 	t_error_clear(file);
 
 	data = file->data;
@@ -213,6 +217,7 @@ t_file_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 
 	assert_not_null(file);
 	assert_not_null(file->data);
+	assert(file->libid == libid);
 	t_error_clear(file);
 
 	data = file->data;
@@ -259,6 +264,7 @@ t_file_add(struct t_file *restrict file, const struct t_taglist *restrict T)
 
 	assert_not_null(file);
 	assert_not_null(file->data);
+	assert(file->libid == libid);
 	assert_not_null(T);
 	t_error_clear(file);
 
