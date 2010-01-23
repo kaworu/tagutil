@@ -54,7 +54,6 @@ t_flac_backend(void)
 		.libname	= libname,
 		.desc		= "flac files format, use `Vorbis comment' metadata tags.",
 		.ctor		= t_file_new,
-		.next		= NULL,
 	};
 	return (&b);
 }

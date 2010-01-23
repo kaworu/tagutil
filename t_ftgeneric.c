@@ -77,7 +77,6 @@ t_generic_backend(void)
 		.libname	= libname,
     		.desc		= "multiple file format (flac,ogg,mp3...), can handle only a limited set of tags.",
 		.ctor		= t_file_new,
-		.next		= NULL,
 	};
 	return (&b);
 }

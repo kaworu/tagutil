@@ -54,7 +54,6 @@ t_oggvorbis_backend(void)
 		.libname	= libname,
     		.desc		= "Ogg/Vorbis files format, use `Vorbis comment' metadata tags.",
 		.ctor		= t_file_new,
-		.next		= NULL,
 	};
 	return (&b);
 }

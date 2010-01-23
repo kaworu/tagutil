@@ -48,7 +48,6 @@ t_try_compile(HAS_GETPROGNAME i_can_haz_getprogname.c  compat/getprogname.c)
 t_try_compile(HAS_STRLCPY     i_can_haz_strlcpy.c      compat/strlcpy.c)
 t_try_compile(HAS_STRLCAT     i_can_haz_strlcat.c      compat/strlcat.c)
 t_try_compile(HAS_STRDUP      i_can_haz_strdup.c       compat/strdup.c)
-t_try_compile(HAS_SYS_QUEUE_H i_can_haz_sys_queue_h.c  "")
 
 # make GNU libc happy
 add_definitions(-D_GNU_SOURCE -D_BSD_SOURCE)
@@ -61,6 +60,7 @@ include(FindPkgConfig)
 #
 # this sets up:
 # REQUIRED_LIBRARIES
+# REQUIRED_INCLUDE_DIR
 macro(t_find_library variable library)
     find_library(${variable} ${library})
     if(NOT ${variable})
@@ -70,8 +70,10 @@ endmacro()
 
 # Check for libYAML
 t_find_library(YAML yaml)
+set(YAML_INCLUDE_DIR "/usr/local/include") # FIXME
 
 set(REQUIRED_LIBRARIES ${YAML})
+include_directories(${YAML_INCLUDE_DIR})
 # }}}
 
 # {{{ Optional libraries
