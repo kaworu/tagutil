@@ -14,7 +14,7 @@
 #include "t_config.h"
 #include "t_toolkit.h"
 #include "t_file.h"
-#include "t_ftgeneric.h"
+#include "t_backend.h"
 
 
 static const char libname[] = "TagLib";
@@ -67,6 +67,19 @@ taglib_init(void)
 
 	taglib_set_string_management_enabled(false);
 	taglib_init_done = true;
+}
+
+
+struct t_backend *
+t_generic_backend(void)
+{
+	static struct t_backend b = {
+		.libname	= libname,
+    		.desc		= "multiple file format (flac,ogg,mp3...), can handle only a limited set of tags.",
+		.ctor		= t_file_new,
+		.next		= NULL,
+	};
+	return (&b);
 }
 
 

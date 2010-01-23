@@ -5,16 +5,9 @@
  *
  * tagutil's tag structures/functions.
  */
-#include "t_config.h"
-
-#if defined(HAS_SYS_QUEUE_H)
-#	include <sys/param.h>
-#	include <sys/queue.h>
-#else
-#	include "compat/include/sys/queue.h"
-#endif
 #include <stdbool.h>
 
+#include "t_config.h"
 #include "t_error.h"
 
 

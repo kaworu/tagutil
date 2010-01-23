@@ -53,9 +53,7 @@
 #include "t_toolkit.h"
 #include "t_tag.h"
 #include "t_file.h"
-#include "t_ftflac.h"
-#include "t_ftoggvorbis.h"
-#include "t_ftgeneric.h"
+#include "t_backend.h"
 #include "t_yaml.h"
 #include "t_renamer.h"
 #include "t_lexer.h"
@@ -93,6 +91,8 @@ const char *G_editor = NULL; /* $EDITOR */
 int
 main(int argc, char *argv[])
 {
+	const struct t_backendL *L = t_get_backend();
+	const struct t_backend	*b;
     bool w = false;
     int i, ch, ret;
     char *path, *value, *key;
@@ -204,7 +204,6 @@ main(int argc, char *argv[])
     ret = EXIT_SUCCESS;
     for (i = 0; i < argc; i++) {
         path = argv[i];
-
         if (access(path, (w ? (R_OK | W_OK) : R_OK)) == -1) {
             warn("%s", path);
             ret = EINVAL;
@@ -212,11 +211,11 @@ main(int argc, char *argv[])
         }
 
         file = NULL;
-        file = t_ftflac_new(path);
-        if (file == NULL)
-            file = t_ftoggvorbis_new(path);
-        if (file == NULL)
-            file = t_ftgeneric_new(path);
+	SLIST_FOREACH(b, L, next) {
+		file = (*b->ctor)(path);
+		if (file != NULL)
+			break;
+	}
         if (file == NULL) {
             warnx("`%s' unsupported file format", path);
             ret = EINVAL;
@@ -285,38 +284,34 @@ main(int argc, char *argv[])
 void
 usage(void)
 {
+	const struct t_backendL *L = t_get_backend();
+	const struct t_backend	*b;
 
-    (void)fprintf(stderr, "tagutil v"T_TAGUTIL_VERSION "\n\n");
-    (void)fprintf(stderr, "usage: %s [OPTION]... [FILE]...\n", getprogname());
-    (void)fprintf(stderr, "Modify or display music file's tag.\n");
-    (void)fprintf(stderr, "\n");
-    (void)fprintf(stderr, "Backend:\n");
-#if defined(WITH_FLAC)
-    (void)fprintf(stderr, "  libFLAC:   flac files format, use `Vorbis comment' metadata tags.\n");
-#endif
-#if defined(WITH_OGGVORBIS)
-    (void)fprintf(stderr, "  libvorbis: Ogg/Vorbis files format, use `Vorbis comment' metadata tags.\n");
-#endif
-#if defined(WITH_TAGLIB)
-    (void)fprintf(stderr, "  TagLib:    multiple file format (flac,ogg,mp3...), can handle only a limited set of tags.\n");
-#endif
-    (void)fprintf(stderr, "\n");
-    (void)fprintf(stderr, "Options:\n");
-    (void)fprintf(stderr, "  -h              show this help\n");
-    (void)fprintf(stderr, "  -b FILES        display backend used\n");
-    (void)fprintf(stderr, "  -Y              answer yes to all questions\n");
-    (void)fprintf(stderr, "  -N              answer no  to all questions\n");
-    (void)fprintf(stderr, "  -a TAG=VALUE    add a TAG/VALUE pair\n");
-    (void)fprintf(stderr, "  -c TAG          clear all tag TAG\n");
-    (void)fprintf(stderr, "  -e              show tag and prompt for editing (need $EDITOR environment variable)\n");
-    (void)fprintf(stderr, "  -f PATH         load PATH yaml file in given music files.\n");
-    (void)fprintf(stderr, "  -r [-d] PATTERN rename files with the given PATTERN. you can use keywords in PATTERN:\n");
-    (void)fprintf(stderr, "                  %%tag if tag contains only `_', `-' or alphanum characters. %%{tag} otherwise.\n");
-    (void)fprintf(stderr, "  -s TAG=VALUE    equivalent to -c TAG -a TAG=VALUE\n");
-    (void)fprintf(stderr, "  -x FILTER       print files in matching FILTER\n");
-    (void)fprintf(stderr, "\n");
+	(void)fprintf(stderr, "tagutil v"T_TAGUTIL_VERSION "\n\n");
+	(void)fprintf(stderr, "usage: %s [OPTION]... [FILE]...\n", getprogname());
+	(void)fprintf(stderr, "Modify or display music file's tag.\n");
+	(void)fprintf(stderr, "\n");
+	(void)fprintf(stderr, "Backend:\n");
 
-    exit(EXIT_SUCCESS);
+	SLIST_FOREACH(b, L, next)
+		(void)fprintf(stderr, "  %10s: %s\n", b->libname, b->desc);
+	(void)fprintf(stderr, "\n");
+	(void)fprintf(stderr, "Options:\n");
+	(void)fprintf(stderr, "  -h              show this help\n");
+	(void)fprintf(stderr, "  -b FILES        display backend used\n");
+	(void)fprintf(stderr, "  -Y              answer yes to all questions\n");
+	(void)fprintf(stderr, "  -N              answer no  to all questions\n");
+	(void)fprintf(stderr, "  -a TAG=VALUE    add a TAG/VALUE pair\n");
+	(void)fprintf(stderr, "  -c TAG          clear all tag TAG\n");
+	(void)fprintf(stderr, "  -e              show tag and prompt for editing (need $EDITOR environment variable)\n");
+	(void)fprintf(stderr, "  -f PATH         load PATH yaml file in given music files.\n");
+	(void)fprintf(stderr, "  -r [-d] PATTERN rename files with the given PATTERN. you can use keywords in PATTERN:\n");
+	(void)fprintf(stderr, "                  %%tag if tag contains only `_', `-' or alphanum characters. %%{tag} otherwise.\n");
+	(void)fprintf(stderr, "  -s TAG=VALUE    equivalent to -c TAG -a TAG=VALUE\n");
+	(void)fprintf(stderr, "  -x FILTER       print files in matching FILTER\n");
+	(void)fprintf(stderr, "\n");
+
+	exit(EXIT_SUCCESS);
 }
 
 

@@ -13,7 +13,7 @@
 #include "t_config.h"
 #include "t_toolkit.h"
 #include "t_file.h"
-#include "t_ftflac.h"
+#include "t_backend.h"
 
 
 static const char libname[] = "libFLAC";
@@ -27,8 +27,6 @@ struct t_flac_data {
 
 _t__nonnull(1)
 static struct t_file *	t_file_new(const char *restrict path);
-
-t_file_ctor	*t_ftflac_new = t_file_new;
 
 _t__nonnull(1)
 static void	t_file_destroy(struct t_file *restrict file);
@@ -47,6 +45,19 @@ static bool	t_file_clear(struct t_file *restrict file,
 _t__nonnull(1) _t__nonnull(2)
 static bool	t_file_add(struct t_file *restrict file,
      const struct t_taglist *restrict T);
+
+
+struct t_backend *
+t_flac_backend(void)
+{
+	static struct t_backend b = {
+		.libname	= libname,
+		.desc		= "flac files format, use `Vorbis comment' metadata tags.",
+		.ctor		= t_file_new,
+		.next		= NULL,
+	};
+	return (&b);
+}
 
 
 static struct t_file *

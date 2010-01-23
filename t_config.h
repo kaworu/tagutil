@@ -25,6 +25,7 @@
 		    __attribute__((__format__(__printf__, fmtarg, firstvararg)))
 #endif /* lint */
 
+#include "compat/include/sys/queue.h"
 #if !defined(HAS_GETPROGNAME)
 #	include "compat/include/getprogname.h"
 #endif

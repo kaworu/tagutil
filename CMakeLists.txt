@@ -19,6 +19,7 @@ set(SRCS
     t_lexer.c
     t_parser.c
     t_filter.c
+    t_backend.c
 )
 
 include_directories(

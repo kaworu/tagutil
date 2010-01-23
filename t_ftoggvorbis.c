@@ -14,7 +14,7 @@
 #include "t_toolkit.h"
 #include "t_strbuffer.h"
 #include "t_file.h"
-#include "t_ftoggvorbis.h"
+#include "t_backend.h"
 
 
 static const char libname[] = "libvorbis";
@@ -31,8 +31,6 @@ static void	t_file_destroy(struct t_file *restrict file);
 
 static struct t_file *	t_file_new(const char *restrict path);
 
-t_file_ctor	*t_ftoggvorbis_new = t_file_new;
-
 _t__nonnull(1)
 static bool	t_file_save(struct t_file *restrict file);
 
@@ -47,6 +45,19 @@ static bool	t_file_clear(struct t_file *restrict file,
 _t__nonnull(1) _t__nonnull(2)
 static bool	t_file_add(struct t_file *restrict file,
     const struct t_taglist *T);
+
+
+struct t_backend *
+t_oggvorbis_backend(void)
+{
+	static struct t_backend b = {
+		.libname	= libname,
+    		.desc		= "Ogg/Vorbis files format, use `Vorbis comment' metadata tags.",
+		.ctor		= t_file_new,
+		.next		= NULL,
+	};
+	return (&b);
+}
 
 
 static struct t_file *
