@@ -139,7 +139,7 @@ t_file_save(struct t_file *restrict file)
 }
 
 
-static const char * _taglibkeys[] = {
+static const char * taglibkeys[] = {
 	"album", "artist", "description", "date", "genre", "title", "tracknumber"
 };
 static struct t_taglist *
@@ -158,9 +158,9 @@ t_file_get(struct t_file *restrict file, const char *restrict key)
 	data = file->data;
 	T = t_taglist_new();
 
-	for (i = 0; i < 7; i++) {
+	for (i = 0; i < countof(taglibkeys); i++) {
 		if (key != NULL) {
-			if (strcasecmp(key, _taglibkeys[i]) != 0)
+			if (strcasecmp(key, taglibkeys[i]) != 0)
 				continue;
 		}
 		value = NULL;
@@ -196,7 +196,7 @@ t_file_get(struct t_file *restrict file, const char *restrict key)
 			freex(value);
 
 		if (value != NULL) {
-			t_taglist_insert(T, _taglibkeys[i], value);
+			t_taglist_insert(T, taglibkeys[i], value);
 			freex(value);
 		}
 		if (key != NULL)
@@ -219,8 +219,8 @@ t_file_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 
 	data = file->data;
 
-	for (i = 0; i < 7; i++) {
-		if (T == NULL || t_taglist_filter_count(T, _taglibkeys[i], T_TAG_FIRST)) {
+	for (i = 0; i < countof(taglibkeys); i++) {
+		if (T == NULL || t_taglist_filter_count(T, taglibkeys[i], T_TAG_FIRST)) {
 			switch (i) {
 			case 0:
 				taglib_tag_set_album(data->tag, "");
