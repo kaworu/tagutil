@@ -66,7 +66,7 @@ t_rename_safe(struct t_file *restrict file, const char *restrict newpath)
         }
         if (stat(newdirn, &st) != 0) {
             if (errno == ENOENT)
-                warnx("t_rename_safe: forgot -d?");
+                t_error_set(file, "forgot -d?");
             failed = true;
         }
         else if (!S_ISDIR(st.st_mode)) {

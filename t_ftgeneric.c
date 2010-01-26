@@ -31,8 +31,6 @@ static void	taglib_init(void);
 _t__nonnull(1)
 static struct t_file *	t_file_new(const char *restrict path);
 
-t_file_ctor	*t_ftgeneric_new = t_file_new;
-
 _t__nonnull(1)
 static void	t_file_destroy(struct t_file *restrict file);
 
@@ -135,9 +133,13 @@ t_file_save(struct t_file *restrict file)
 	t_error_clear(file);
 
 	data = file->data;
+	if (!file->dirty)
+		return (true);
 	ok = taglib_file_save(data->file);
 	if (!ok)
 		t_error_set(file, "%s error: taglib_file_save", file->libid);
+	else
+		file->dirty = T_FILE_CLEAN;
 	return (ok);
 }
 
@@ -249,6 +251,7 @@ t_file_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 				taglib_tag_set_track(data->tag, 0);
 				break;
 			}
+			file->dirty++;
 		}
 	}
 
@@ -319,6 +322,7 @@ t_file_add(struct t_file *restrict file, const struct t_taglist *restrict T)
 			}
 			uif(data->tag, (unsigned int)ulongval);
 		}
+		file->dirty++;
 	}
 
 	return (true);

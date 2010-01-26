@@ -116,6 +116,10 @@ t_file_save(struct t_file *restrict file)
 	assert(file->libid == libid);
 	t_error_clear(file);
 
+#if 0
+	if (!file->dirty)
+		return (true);
+#endif
 	/* FIXME */
 	t_error_set(file, "%s: read-only support", file->libid);
 	return (false);
@@ -188,8 +192,10 @@ t_file_clear(struct t_file *restrict file, const struct t_taglist *T)
 				c = data->vc->user_comments[i];
 				if (c != NULL) {
 					if (strncasecmp(t->key, c, t->keylen) == 0 &&
-					    c[t->keylen] == '=')
+					    c[t->keylen] == '=') {
 						freex(data->vc->user_comments[i]);
+					    	file->dirty++;
+					}
 				}
 			}
 		}
@@ -244,6 +250,7 @@ t_file_add(struct t_file *restrict file, const struct t_taglist *T)
 		data->vc->comment_lengths[data->vc->comments] = len;
 		data->vc->user_comments[data->vc->comments]   = tageq;
 		data->vc->comments++;
+		file->dirty++;
 	}
 	/* vorbis_comment_add() set the last comment to NULL, we do the same */
 	data->vc->user_comments[data->vc->comments]   = NULL;

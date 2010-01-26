@@ -140,7 +140,8 @@ t_file_save(struct t_file *restrict file)
 	t_error_clear(file);
 
 	data = file->data;
-
+	if (!file->dirty)
+		return (true);
 	FLAC__metadata_chain_sort_padding(data->chain);
 	ok = FLAC__metadata_chain_write(data->chain,
 	    /* padding */true,
@@ -149,7 +150,8 @@ t_file_save(struct t_file *restrict file)
 		FLAC__Metadata_ChainStatus status;
 		status = FLAC__metadata_chain_status(data->chain);
 		t_error_set(file, "%s", FLAC__Metadata_ChainStatusString[status]);
-	}
+	} else
+		file->dirty = T_FILE_CLEAN;
 
 	return (ok);
 }
@@ -247,7 +249,8 @@ t_file_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 			t_error_set(file, "FLAC__metadata_object_vorbiscomment_delete_comment: %s",
 			    strerror(ENOMEM));
 			return (false);
-		}
+		} else
+			file->dirty++;
 	}
 
 	return (true);
@@ -288,7 +291,8 @@ t_file_add(struct t_file *restrict file, const struct t_taglist *restrict T)
 			} else
 				t_error_set(file, "invalid Vorbis tag entry created with: `%s', `%s'", t->key, t->value);
 			return (false);
-		}
+		} else
+			file->dirty++;
 	}
 
 	return (true);

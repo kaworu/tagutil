@@ -93,13 +93,14 @@ main(int argc, char *argv[])
 {
 	const struct t_backendL *L = t_get_backend();
 	const struct t_backend	*b;
-    bool w = false;
+    	bool	w, ok;
     int i, ch, ret;
     char *path, *value, *key;
     struct t_file *file;
 
     G_editor = getenv("EDITOR");
     errno = 0;
+    w = false;
     /* tagutil has side effect (like modifying file's properties) so if we
         detect an error in options, we err to end the program. */
     while ((ch = getopt(argc, argv, "bedhNYa:c:f:r:s:x:")) != -1) {
@@ -222,44 +223,52 @@ main(int argc, char *argv[])
             continue;
         }
 
+	ok = true;
         /* modifiy tag, edit, rename */
         if (bflag)
             (void)printf("%s: %s\n", file->path, file->libid);
-        if (pflag)
-            tagutil_print(file);
+        if (pflag) {
+		if (!(ok = tagutil_print(file)))
+			goto warn0;
+	}
         if (xflag)
-            tagutil_filter(file, x_arg);
-        if (fflag)
-            tagutil_load(file, f_arg);
+            tagutil_filter(file, x_arg); /* FIXME: error handling? */
+        if (fflag) {
+            if (!(ok = tagutil_load(file, f_arg))) /* FIXME: order? */
+	    	    goto warn0;
+	}
         if (cflag) {
-            if (!file->clear(file, c_arg))
-                warnx("file `%s' not saved: %s", file->path, t_error_msg(file));
-            else if (!file->save(file)) {
-                errx(errno ? errno : -1, "couldn't save file `%s': %s",
-                        path, t_error_msg(file));
-            }
+            if (!(ok = file->clear(file, c_arg)))
+	    	    goto warn0;
         }
         if (sflag) {
-            if (!file->clear(file, s_arg) || !file->add(file, s_arg))
-                warnx("file `%s' not saved: %s", file->path, t_error_msg(file));
-            else if (!file->save(file)) {
-                    errx(errno ? errno : -1, "couldn't save file `%s': %s",
-                            path, t_error_msg(file));
-            }
+            if (!(ok = file->clear(file, s_arg) && file->add(file, s_arg)))
+	    	    goto warn0;
         }
         if (aflag) {
-            if (!file->add(file, a_arg))
-                warnx("file `%s' not saved: %s", file->path, t_error_msg(file));
-            else if (!file->save(file)) {
-                errx(errno ? errno : -1, "couldn't save file `%s': %s",
-                        path, t_error_msg(file));
-            }
+            if (!(ok = file->add(file, a_arg)))
+	    	    goto warn0;
         }
-        if (eflag)
-            tagutil_edit(file);
-        if (rflag)
-            tagutil_rename(file, r_arg);
+        if (eflag) {
+            if (!(ok = tagutil_edit(file)))
+	    	    goto warn0;
+	}
+	/* save before rename */
+	if (file->dirty) {
+            if (!(ok = file->save(file))) {
+                    errx(errno ? errno : -1, "couldn't save file `%s': %s",
+                            path, t_error_msg(file));
+		    /* NOTREACHED */
+            }
+	}
+        if (rflag) {
+            if (!(ok = tagutil_rename(file, r_arg)))
+	    	    goto warn0;
+	}
 
+warn0:
+	if (!ok)
+		warnx("`%s': %s", file->path, t_error_msg(file));
         file->destroy(file);
     }
 
@@ -315,6 +324,7 @@ usage(void)
 }
 
 
+/* FIXME: error handling with stat(2) ? */
 bool
 user_edit(const char *restrict path)
 {
@@ -349,9 +359,10 @@ user_edit(const char *restrict path)
 		execlp(G_editor, /* argv[0] */G_editor, /* argv[1] */path, NULL);
 		err(errno, "execlp");
 		/* NOTREACHED */
+	default:
+		/* parent (tagutil process) */
+		waitpid(edit, &status, 0);
 	}
-	/* parent (tagutil process) */
-	waitpid(edit, &status, 0);
 
         if (stat(path, &s) != 0)
 		return (false);
@@ -367,115 +378,97 @@ user_edit(const char *restrict path)
 bool
 tagutil_print(struct t_file *restrict file)
 {
-    char *yaml;
+    	char	*yaml;
 
-    assert_not_null(file);
+    	assert_not_null(file);
 
-    yaml = t_tags2yaml(file);
-    if (yaml)
-        (void)printf("%s\n", yaml);
-    else
-        warnx("%s", t_error_msg(file));
-
-    freex(yaml);
-    return (true);
+	yaml = t_tags2yaml(file);
+	if (yaml == NULL)
+		return (false);
+	(void)printf("%s\n", yaml);
+	freex(yaml);
+	return (true);
 }
 
 
 bool
 tagutil_load(struct t_file *restrict file, const char *restrict path)
 {
-    FILE *stream;
-    bool ret = true;
-    struct t_taglist *T;
+	bool	ret = true;
+	FILE	*stream;
+	struct t_taglist *T;
 
-    assert_not_null(file);
-    assert_not_null(path);
+	assert_not_null(file);
+	assert_not_null(path);
 
-    if (strcmp(path, "-") == 0)
-        stream = stdin;
-    else
-        stream = xfopen(path, "r");
+	if (strcmp(path, "-") == 0)
+		stream = stdin;
+	else
+		stream = xfopen(path, "r");
 
-    T = t_yaml2tags(file, stream);
-    if (T == NULL) {
-        ret = false;
-        warnx("error while loading `%s': %s", path, t_error_msg(file));
-        warnx("file `%s' not saved.", file->path);
-    }
-    else {
-        if (!file->clear(file, NULL) || !file->add(file, T))
-            warnx("file `%s' not saved: %s", file->path, t_error_msg(file));
-        else if (!file->save(file))
-            err(errno, "can't save file `%s'", file->path);
-        t_taglist_destroy(T);
-    }
-    if (stream != stdin)
-        xfclose(stream);
-
-    return (ret);
+	T = t_yaml2tags(file, stream);
+	if (stream != stdin)
+		xfclose(stream);
+	if (T == NULL)
+		return (false);
+	ret = file->clear(file, NULL) && file->add(file, T) && file->save(file);
+	t_taglist_destroy(T);
+	return (ret);
 }
 
 
 bool
 tagutil_edit(struct t_file *restrict file)
 {
-    FILE *stream;
-    bool ret = true;
-    char *tmp_file, *yaml;
+	bool	ret = true;
+	char	*tmp_file;
+	char	*yaml;
+	FILE	*stream;
 
-    assert_not_null(file);
+	assert_not_null(file);
 
-    yaml = t_tags2yaml(file);
-    if (yaml == NULL) {
-        warnx("%s", t_error_msg(file));
-        return (false);
-    }
+	yaml = t_tags2yaml(file);
+	if (yaml == NULL)
+		return (false);
 
-    (void)printf("%s\n", yaml);
+	(void)printf("%s\n", yaml);
 
-    if (t_yesno("edit this file")) {
-        tmp_file = t_mkstemp("/tmp");
-
-        stream = xfopen(tmp_file, "w");
-        (void)fprintf(stream, "%s", yaml);
-        if (G_editor != NULL && strcmp(G_editor, "vim") == 0)
-            (void)fprintf(stream, "\n# vim:filetype=yaml");
-        xfclose(stream);
-
-        if (!user_edit(tmp_file))
-            ret = false;
-        else
-            ret = tagutil_load(file, tmp_file);
-
-        xunlink(tmp_file);
-        freex(tmp_file);
-    }
-
-    freex(yaml);
-    return (ret);
+	if (t_yesno("edit this file")) {
+		tmp_file = t_mkstemp("/tmp");
+		stream = xfopen(tmp_file, "w");
+		(void)fprintf(stream, "%s", yaml);
+		if (G_editor != NULL && strcmp(G_editor, "vim") == 0)
+			(void)fprintf(stream, "\n# vim:filetype=yaml");
+		xfclose(stream);
+		if (user_edit(tmp_file))
+			ret = tagutil_load(file, tmp_file);
+		xunlink(tmp_file);
+		freex(tmp_file);
+	}
+	freex(yaml);
+	return (ret);
 }
 
 
 bool
 tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
 {
-    char *ext, *result, *dirn, *fname, *question;
+	bool	ret;
+    	char	*ext, *result, *dirn, *fname, *question;
 
     assert_not_null(file);
     assert_not_null(tknary);
+    t_error_clear(file);
 
     ext = strrchr(file->path, '.');
     if (ext == NULL) {
-        warnx("can't find file extension for `%s'", file->path);
+        t_error_set(file, "can't find file extension for `%s'", file->path);
         return (false);
     }
     ext++; /* skip dot */
     fname = t_rename_eval(file, tknary);
-    if (fname == NULL) {
-        warnx("%s", t_error_msg(file));
+    if (fname == NULL)
         return (false);
-    }
 
     /* fname is now OK. store into result the full new path.  */
     dirn = t_dirname(file->path);
@@ -492,15 +485,12 @@ tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
     /* ask user for confirmation and rename if user want to */
     if (strcmp(file->path, result) != 0) {
         (void)xasprintf(&question, "rename `%s' to `%s'", file->path, result);
-        if (t_yesno(question)) {
-            if (!t_rename_safe(file, result))
-                err(errno, "%s", t_error_msg(file));
-        }
+        if (t_yesno(question))
+		ret = t_rename_safe(file, result);
         freex(question);
     }
-
     freex(result);
-    return (true);
+    return (ret);
 }
 
 

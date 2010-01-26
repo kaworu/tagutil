@@ -125,7 +125,7 @@ t_dirname(const char *path)
 	len = endp - path + 1;
 	if (len >= MAXPATHLEN) {
 		errno = ENAMETOOLONG;
-        free(dname);
+        	free(dname);
 		return (NULL);
 	}
 	memcpy(dname, path, len);

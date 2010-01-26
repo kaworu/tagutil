@@ -23,6 +23,8 @@ struct t_file {
 	const char	*path;
 	const char	*libid;
 	void		*data;
+	int		 dirty;
+#define	T_FILE_CLEAN	0
 
 	/*
 	 * constructor.
@@ -98,6 +100,7 @@ struct t_file {
 		(void)memcpy((char *)(file)->data + sizeof(data),		\
 		    path, strlen(path) + 1);					\
 		(file)->libid = libid;						\
+		(file)->dirty = T_FILE_CLEAN;					\
 		t_error_init(file);						\
 		(file)->new = t_file_new;					\
 		(file)->save = t_file_save;					\
