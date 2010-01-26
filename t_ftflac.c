@@ -226,9 +226,9 @@ t_file_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 	if (T != NULL) {
 		if (T->count == 0)
 			return (true);
-		t = t_tagQ_first(T->tags);
+		t = TAILQ_FIRST(T->tags);
 		assert_not_null(t);
-		last = t_tagQ_last(T->tags);
+		last = TAILQ_LAST(T->tags, t_tagQ);
 	}
 	for (;;) {
 		if (T != NULL) {
@@ -237,7 +237,7 @@ t_file_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 				if (t == last)
 					break;
 				else {
-					t = t_tagQ_next(t);
+					t = TAILQ_NEXT(t, next);
 					i = 0;
 					continue;
 				}
@@ -272,7 +272,7 @@ t_file_add(struct t_file *restrict file, const struct t_taglist *restrict T)
 	t_error_clear(file);
 
 	data = file->data;
-	t_tagQ_foreach(t, T->tags) {
+	TAILQ_FOREACH(t, T->tags, next) {
 		b = FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&e, t->key, t->value);
 		if (!b) {
 			if (errno) {

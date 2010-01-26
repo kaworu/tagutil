@@ -15,17 +15,10 @@
 struct t_tag {
     size_t keylen, valuelen;
     const char *key, *value;
-    STAILQ_ENTRY(t_tag) _t__next;
+    TAILQ_ENTRY(t_tag) next;
 };
-STAILQ_HEAD(t_tagQ, t_tag);
+TAILQ_HEAD(t_tagQ, t_tag);
 
-#define t_tagQ_init(x)              STAILQ_INIT(x)
-#define t_tagQ_insert(head, elt)    STAILQ_INSERT_TAIL((head), (elt), _t__next)
-#define t_tagQ_empty(head)          STAILQ_EMPTY(head)
-#define t_tagQ_first(head)          STAILQ_FIRST(head)
-#define t_tagQ_last(head)           STAILQ_LAST((head), t_tag, _t__next)
-#define t_tagQ_next(elt)            STAILQ_NEXT(elt, _t__next)
-#define t_tagQ_foreach(elt, head)   STAILQ_FOREACH((elt), (head), _t__next)
 
 /*
  * a tag list, abstract structure for a music file's tags.

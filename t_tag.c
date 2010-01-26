@@ -23,7 +23,7 @@ t_taglist_new(void)
     ret->childcount = 0;
     ret->parent = NULL;
     t_error_init(ret);
-    t_tagQ_init(ret->tags);
+    TAILQ_INIT(ret->tags);
 
     return (ret);
 }
@@ -53,7 +53,7 @@ t_taglist_insert(struct t_taglist *restrict T,
     t->value = s = (char *)(s + t->keylen + 1);
     assert(strlcpy(s, value, t->valuelen + 1) < (t->valuelen + 1));
 
-    t_tagQ_insert(T->tags, t);
+    TAILQ_INSERT_TAIL(T->tags, t, next);
     T->count++;
 }
 
@@ -71,7 +71,7 @@ t_taglist_filter(const struct t_taglist *restrict T,
 
     ret = NULL;
     len = strlen(key);
-    t_tagQ_foreach(t, T->tags) {
+    TAILQ_FOREACH(t, T->tags, next) {
         if (len == t->keylen && strcasecmp(t->key, key) == 0) {
             if (ret == NULL)
                 ret = t_taglist_new();
@@ -80,7 +80,7 @@ t_taglist_filter(const struct t_taglist *restrict T,
             n->key      = t->key;
             n->valuelen = t->valuelen;
             n->value    = t->value;
-            t_tagQ_insert(ret->tags, n);
+            TAILQ_INSERT_HEAD(ret->tags, n, next);
             ret->count++;
             if (onlyfirst)
                 break;
@@ -113,7 +113,7 @@ t_taglist_filter_count(const struct t_taglist *restrict T,
 
     ret = 0;
     len = strlen(key);
-    t_tagQ_foreach(t, T->tags) {
+    TAILQ_FOREACH(t, T->tags, next) {
         if (len == t->keylen && strcasecmp(t->key, key) == 0) {
             ret++;
             if (onlyfirst)
@@ -139,9 +139,9 @@ t_taglist_join(struct t_taglist *restrict T, const char *restrict j)
 
     jlen = strlen(j);
     sb = t_strbuffer_new();
-    last = t_tagQ_last(T->tags);
+    last = TAILQ_LAST(T->tags, t_tagQ);
 
-    t_tagQ_foreach(t, T->tags) {
+    TAILQ_FOREACH(t, T->tags, next) {
         t_strbuffer_add(sb, t->value, t->valuelen, T_STRBUFFER_NOFREE);
         if (t != last)
             t_strbuffer_add(sb, j, jlen, T_STRBUFFER_NOFREE);
@@ -158,10 +158,10 @@ t_taglist_tag_at(struct t_taglist *restrict T, unsigned int idx)
 
     assert_not_null(T);
 
-    t = t_tagQ_first(T->tags);
+    t = TAILQ_FIRST(T->tags);
     while (t != NULL && idx > 0) {
         idx--;
-        t = t_tagQ_next(t);
+        t = TAILQ_NEXT(t, next);
     }
 
     return (t);
@@ -181,9 +181,9 @@ t_taglist_destroy(struct t_taglist *restrict T)
         T->parent->childcount--;
     }
 
-    t1 = t_tagQ_first(T->tags);
+    t1 = TAILQ_FIRST(T->tags);
     while (t1 != NULL) {
-        t2 = t_tagQ_next(t1);
+        t2 = TAILQ_NEXT(t1, next);
         freex(t1);
         t1 = t2;
     }
