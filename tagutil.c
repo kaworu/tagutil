@@ -91,7 +91,7 @@ const char *G_editor = NULL; /* $EDITOR */
 int
 main(int argc, char *argv[])
 {
-	const struct t_backendL *L = t_get_backend();
+	const struct t_backendQ *bQ = t_get_backend();
 	const struct t_backend	*b;
     	bool	w, ok;
     int i, ch, ret;
@@ -212,7 +212,7 @@ main(int argc, char *argv[])
         }
 
         file = NULL;
-	SLIST_FOREACH(b, L, next) {
+	TAILQ_FOREACH(b, bQ, next) {
 		file = (*b->ctor)(path);
 		if (file != NULL)
 			break;
@@ -293,7 +293,7 @@ warn0:
 void
 usage(void)
 {
-	const struct t_backendL *L = t_get_backend();
+	const struct t_backendQ *bQ = t_get_backend();
 	const struct t_backend	*b;
 
 	(void)fprintf(stderr, "tagutil v"T_TAGUTIL_VERSION "\n\n");
@@ -302,7 +302,7 @@ usage(void)
 	(void)fprintf(stderr, "\n");
 	(void)fprintf(stderr, "Backend:\n");
 
-	SLIST_FOREACH(b, L, next)
+	TAILQ_FOREACH(b, bQ, next)
 		(void)fprintf(stderr, "  %10s: %s\n", b->libid, b->desc);
 	(void)fprintf(stderr, "\n");
 	(void)fprintf(stderr, "Options:\n");

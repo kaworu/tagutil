@@ -14,14 +14,13 @@ struct t_backend {
 	const char	*desc;
 	t_file_ctor	*ctor;
 
-	SLIST_ENTRY(t_backend)	next;
+	TAILQ_ENTRY(t_backend)	next;
 };
-SLIST_HEAD(t_backendL, t_backend);
-
+TAILQ_HEAD(t_backendQ, t_backend);
 
 /*
  * initialize backends if needed and return the list
  */
-const struct t_backendL * t_get_backend(void);
+const struct t_backendQ * t_get_backend(void);
 
 #endif /* not T_BACKEND_H */
