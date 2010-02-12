@@ -3,15 +3,14 @@
  *
  * tagutil actions.
  */
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "t_config.h"
 #include "t_backend.h"
 #include "t_tag.h"
 #include "t_action.h"
 
 #include "t_renamer.h"
+
+#include "t_yaml.h"
 
 #include "t_lexer.h"
 #include "t_parser.h"
@@ -350,36 +349,88 @@ t_action_clear(struct t_action *restrict self, struct t_file *restrict file)
 static bool
 t_action_edit(struct t_action *restrict self, struct t_file *restrict file)
 {
+	bool	retval = true;
+	char	*tmp_file, *yaml, *editor;
+	FILE	*stream;
+	struct t_action	*load;
 
 	assert_not_null(self);
 	assert_not_null(file);
 	assert(self->kind == T_EDIT);
 
-	return (tagutil_edit(file));
+	yaml = t_tags2yaml(file);
+	if (yaml == NULL)
+		return (false);
+
+	(void)printf("%s\n", yaml);
+
+	if (t_yesno("edit this file")) {
+		tmp_file = t_mkstemp("/tmp");
+		stream = xfopen(tmp_file, "w");
+		(void)fprintf(stream, "%s", yaml);
+		editor = getenv("EDITOR");
+		if (editor != NULL && strcmp(editor, "vim") == 0)
+			(void)fprintf(stream, "\n# vim:filetype=yaml");
+		xfclose(stream);
+		if (t_user_edit(tmp_file)) {
+			load = t_action_new(T_LOAD, tmp_file);
+			retval = load->apply(load, file);
+			t_action_destroy(load);
+		}
+		xunlink(tmp_file);
+		freex(tmp_file);
+	}
+	freex(yaml);
+	return (retval);
 }
 
 
 static bool
 t_action_load(struct t_action *restrict self, struct t_file *restrict file)
 {
+	bool	retval = true;
+	FILE	*stream;
+	const char *path;
+	struct t_taglist *T;
 
 	assert_not_null(self);
 	assert_not_null(file);
 	assert(self->kind == T_LOAD);
 
-	return (tagutil_load(file, self->data));
+	path = self->data;
+	if (strcmp(path, "-") == 0)
+		stream = stdin;
+	else
+		stream = xfopen(path, "r");
+
+	T = t_yaml2tags(file, stream);
+	if (stream != stdin)
+		xfclose(stream);
+	if (T == NULL)
+		return (false);
+	retval = file->clear(file, NULL) &&
+	    file->add(file, T) &&
+	    file->save(file);
+	t_taglist_destroy(T);
+	return (retval);
 }
 
 
 static bool
 t_action_print(struct t_action *restrict self, struct t_file *restrict file)
 {
+	char	*yaml;
 
 	assert_not_null(self);
 	assert_not_null(file);
 	assert(self->kind == T_SHOW);
 
-	return (tagutil_print(file));
+	yaml = t_tags2yaml(file);
+	if (yaml == NULL)
+		return (false);
+	(void)printf("%s\n", yaml);
+	freex(yaml);
+	return (true);
 }
 
 
@@ -399,12 +450,50 @@ t_action_showpath(struct t_action *restrict self, struct t_file *restrict file)
 static bool
 t_action_rename(struct t_action *restrict self, struct t_file *restrict file)
 {
+	bool	retval = true;
+	char	*ext, *result, *dirn, *fname, *question;
+	struct t_token **tknv;
 
 	assert_not_null(self);
 	assert_not_null(file);
 	assert(self->kind == T_RENAME);
 
-	return (tagutil_rename(file, self->data));
+	tknv = self->data;
+	t_error_clear(file);
+
+	ext = strrchr(file->path, '.');
+	if (ext == NULL) {
+		t_error_set(file, "can't find file extension for `%s'",
+		    file->path);
+		return (false);
+	}
+	ext++; /* skip dot */
+	fname = t_rename_eval(file, tknv);
+	if (fname == NULL)
+		return (false);
+
+	/* fname is now OK. store into result the full new path.  */
+	dirn = t_dirname(file->path);
+	if (dirn == NULL)
+		err(errno, "dirname");
+	/* add the directory to result if needed */
+	if (strcmp(dirn, ".") != 0)
+		(void)xasprintf(&result, "%s/%s.%s", dirn, fname, ext);
+	else
+		(void)xasprintf(&result, "%s.%s", fname, ext);
+	freex(dirn);
+	freex(fname);
+
+	/* ask user for confirmation and rename if user want to */
+	if (strcmp(file->path, result) != 0) {
+		(void)xasprintf(&question, "rename `%s' to `%s'",
+		    file->path, result);
+		if (t_yesno(question))
+			retval = t_rename_safe(file, result);
+		freex(question);
+	}
+	freex(result);
+	return (retval);
 }
 
 
@@ -420,15 +509,20 @@ t_action_set(struct t_action *restrict self, struct t_file *restrict file)
 }
 
 
+/* FIXME: error handling? */
 static bool
 t_action_filter(struct t_action *restrict self, struct t_file *restrict file)
 {
+	const struct t_ast *ast;
 
 	assert_not_null(self);
 	assert_not_null(file);
 	assert(self->kind == T_FILTER);
+	assert_not_null(file);
+	assert_not_null(ast);
 
-	return (tagutil_filter(file, self->data)); /* FIXME: error handling? */
+	ast = self->data;
+	return (t_filter_eval(file, ast));
 }
 
 

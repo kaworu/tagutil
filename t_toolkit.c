@@ -4,11 +4,17 @@
  * handy functions toolkit for tagutil.
  *
  */
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+
 #include "t_config.h"
 #include "t_toolkit.h"
+#include "t_action.h"
 
 
-extern bool Yflag, Nflag;
 
 bool
 t_yesno(const char *restrict question)
@@ -58,6 +64,58 @@ t_yesno(const char *restrict question)
                 return (true);
         }
     }
+}
+
+
+bool
+t_user_edit(const char *restrict path)
+{
+	pid_t	edit; /* child process */
+	int	status;
+	time_t	before;
+	time_t	after;
+	struct stat s;
+	char	*editor;
+
+	assert_not_null(path);
+
+	editor = getenv("EDITOR");
+	if (editor == NULL)
+		errx(-1, "please, set the $EDITOR environment variable.");
+	/*
+	 * we're actually so cool, that we keep the user waiting if $EDITOR
+	 * start slowly. The slow-editor-detection-algorithm used maybe not
+	 * the best known at the time of writing, but it has shown really good
+	 * results and is pretty short and clear.
+	 */
+	if (strcmp(editor, "emacs") == 0)
+		(void)fprintf(stderr, "Starting %s, please wait...\n", editor);
+
+        if (stat(path, &s) != 0)
+		return (false);
+	before = s.st_mtime;
+	switch (edit = fork()) {
+	case -1:
+		err(errno, "fork");
+		/* NOTREACHED */
+	case 0:
+		/* child (edit process) */
+		execlp(editor, /* argv[0] */editor, /* argv[1] */path, NULL);
+		err(errno, "execlp");
+		/* NOTREACHED */
+	default:
+		/* parent (tagutil process) */
+		waitpid(edit, &status, 0);
+	}
+
+        if (stat(path, &s) != 0)
+		return (false);
+	after = s.st_mtime;
+	if (before == after)
+		/* the file hasn't been modified */
+		return (false);
+
+	return (WIFEXITED(status) && WEXITSTATUS(status) == 0);
 }
 
 

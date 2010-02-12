@@ -8,14 +8,14 @@
  */
 #include </usr/include/assert.h>
 #include <ctype.h>
-#include <errno.h>
 #include <err.h>
+#include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h> /* mkstemp(3) */
+#include <unistd.h>
 
 #include "t_config.h"
 
@@ -107,11 +107,16 @@ static inline char * t_strtolower(char *restrict str);
 bool t_yesno(const char *restrict question);
 
 /*
+ * call "$EDITOR path" (the environment variable $EDITOR must be set).
+ */
+_t__nonnull(1)
+bool t_user_edit(const char *restrict path);
+
+/*
  * reentrant dirname.
  *
  * returned value has to be free()d.
  */
-_t__unused
 char * t_dirname(const char *);
 
 /**********************************************************************/
