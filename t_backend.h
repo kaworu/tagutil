@@ -14,7 +14,7 @@ struct t_backend {
 	const char	*desc;
 	t_file_ctor	*ctor;
 
-	TAILQ_ENTRY(t_backend)	next;
+	TAILQ_ENTRY(t_backend)	entries;
 };
 TAILQ_HEAD(t_backendQ, t_backend);
 

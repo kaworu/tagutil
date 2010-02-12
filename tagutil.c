@@ -83,18 +83,20 @@ main(int argc, char *argv[])
 		errx(EINVAL, "missing file argument.\nrun `%s -h' to see help.",
 		    getprogname());
     	}
-	if (TAILQ_EMPTY(aQ))
-		/* no action given, fallback to default */
-		TAILQ_INSERT_TAIL(aQ, t_action_new(T_SHOW, NULL), next);
+	if (TAILQ_EMPTY(aQ)) {
+	/* no action given, fallback to default */
+		a = t_action_new(T_SHOW, NULL);
+		TAILQ_INSERT_TAIL(aQ, a, entries);
+	}
 
 	/* check if write access is needed */
 	rw = false;
-	TAILQ_FOREACH(a, aQ, next) {
-		if (rw = a->rw)
-			break;
+	TAILQ_FOREACH(a, aQ, entries) {
+		if (rw = a->rw) {
+			a = t_action_new(T_SAVE_IF_DIRTY, NULL);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
+		}
 	}
-	if (rw)
-		TAILQ_INSERT_TAIL(aQ, t_action_new(T_SAVE_IF_DIRTY, NULL), next);
 
 	/*
 	 * main loop, foreach files
@@ -111,7 +113,7 @@ main(int argc, char *argv[])
 
 		/* try every backend in the right order */
 		file = NULL;
-		TAILQ_FOREACH(b, bQ, next) {
+		TAILQ_FOREACH(b, bQ, entries) {
 			file = (*b->ctor)(path);
 			if (file != NULL)
 				break;
@@ -123,7 +125,7 @@ main(int argc, char *argv[])
 		}
 
 		/* apply every action asked to the file */
-		TAILQ_FOREACH(a, aQ, next) {
+		TAILQ_FOREACH(a, aQ, entries) {
 			bool ok = (*a->apply)(a, &file);
 			if (!ok) {
 				warnx("`%s': %s", file->path, t_error_msg(file));

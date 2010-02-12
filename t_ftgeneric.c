@@ -276,7 +276,7 @@ t_file_add(struct t_file *restrict file, const struct t_taglist *restrict T)
 
 	data = file->data;
 
-	TAILQ_FOREACH(t, T->tags, next) {
+	TAILQ_FOREACH(t, T->tags, entries) {
 		/* detect key function to use */
 		isstrf = true;
 		assert_not_null(t->key);

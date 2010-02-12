@@ -49,7 +49,7 @@ usage(void)
 	(void)fprintf(stderr, "\n");
 	(void)fprintf(stderr, "Backend:\n");
 
-	TAILQ_FOREACH(b, bQ, next)
+	TAILQ_FOREACH(b, bQ, entries)
 		(void)fprintf(stderr, "  %10s: %s\n", b->libid, b->desc);
 	(void)fprintf(stderr, "\n");
 	(void)fprintf(stderr, "Options:\n");
@@ -78,6 +78,7 @@ t_actionQ_create(int *argcp, char ***argvp)
 	int 	argc;
 	char 	**argv;
 	char	ch;
+	struct t_action		*a;
 	struct t_actionQ	*aQ;
 
 	assert_not_null(argcp);
@@ -89,56 +90,59 @@ t_actionQ_create(int *argcp, char ***argvp)
 	TAILQ_INIT(aQ);
 
 	while ((ch = getopt(argc, argv, GETOPT_STRING)) != -1) {
-	switch ((char)ch) {
-	case 'a':
-		TAILQ_INSERT_TAIL(aQ, t_action_new(T_ADD, optarg), next);
-		break;
-	case 'b':
-		TAILQ_INSERT_TAIL(aQ, t_action_new(T_SHOWBACKEND, NULL), next);
-		break;
-	case 'c':
-		TAILQ_INSERT_TAIL(aQ, t_action_new(T_CLEAR, optarg), next);
-		break;
-	case 'd':
-		dflag = true;
-		break;
-	case 'e':
-		TAILQ_INSERT_TAIL(aQ, t_action_new(T_EDIT, NULL), next);
-		break;
-	case 'f':
-		TAILQ_INSERT_TAIL(aQ, t_action_new(T_LOAD, optarg), next);
-		break;
-	case 'p':
-		TAILQ_INSERT_TAIL(aQ, t_action_new(T_SHOW, NULL), next);
-		break;
-	case 'P':
-		TAILQ_INSERT_TAIL(aQ, t_action_new(T_SHOWPATH, NULL), next);
-		break;
-	case 'r':
-		TAILQ_INSERT_TAIL(aQ, t_action_new(T_RENAME, optarg), next);
-		break;
-	case 's':
-		TAILQ_INSERT_TAIL(aQ, t_action_new(T_SET, optarg), next);
-		break;
-	case 'x':
-		TAILQ_INSERT_TAIL(aQ, t_action_new(T_FILTER, optarg), next);
-		break;
-	case 'N':
-		if (Yflag)
-		errx(EINVAL, "cannot set both -Y and -N");
-		Nflag = true;
-		break;
-	case 'Y':
-		if (Nflag)
-		errx(EINVAL, "cannot set both -Y and -N");
-		Yflag = true;
-		break;
-	case 'h': /* FALLTHROUGH */
-	case '?': /* FALLTHROUGH */
-	default:
-		usage();
-		/* NOTREACHED */
-	}
+		a = NULL;
+		switch ((char)ch) {
+		case 'a':
+			a = t_action_new(T_ADD, optarg);
+			break;
+		case 'b':
+			a = t_action_new(T_SHOWBACKEND, NULL);
+			break;
+		case 'c':
+			a = t_action_new(T_CLEAR, optarg);
+			break;
+		case 'd':
+			dflag = true;
+			break;
+		case 'e':
+			a = t_action_new(T_EDIT, NULL);
+			break;
+		case 'f':
+			a = t_action_new(T_LOAD, optarg);
+			break;
+		case 'p':
+			a = t_action_new(T_SHOW, NULL);
+			break;
+		case 'P':
+			a = t_action_new(T_SHOWPATH, NULL);
+			break;
+		case 'r':
+			a = t_action_new(T_RENAME, optarg);
+			break;
+		case 's':
+			a = t_action_new(T_SET, optarg);
+			break;
+		case 'x':
+			a = t_action_new(T_FILTER, optarg);
+			break;
+		case 'N':
+			if (Yflag)
+				errx(EINVAL, "cannot set both -Y and -N");
+			Nflag = true;
+			break;
+		case 'Y':
+			if (Nflag)
+				errx(EINVAL, "cannot set both -Y and -N");
+			Yflag = true;
+			break;
+		case 'h': /* FALLTHROUGH */
+		case '?': /* FALLTHROUGH */
+		default:
+			usage();
+			/* NOTREACHED */
+		}
+		if (a != NULL)
+			TAILQ_INSERT_TAIL(aQ, a, entries);
 	}
 
 	*argcp = argc - optind;
@@ -156,7 +160,7 @@ t_actionQ_destroy(struct t_actionQ *restrict aQ)
 
 	victim = TAILQ_FIRST(aQ);
 	while (victim != NULL) {
-		next = TAILQ_NEXT(victim, next);
+		next = TAILQ_NEXT(victim, entries);
 		t_action_destroy(victim);
 		victim = next;
 	}

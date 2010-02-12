@@ -187,7 +187,7 @@ t_file_clear(struct t_file *restrict file, const struct t_taglist *T)
 	data = file->data;
 
 	if (T != NULL) {
-		TAILQ_FOREACH(t, T->tags, next) {
+		TAILQ_FOREACH(t, T->tags, entries) {
 			for (i = 0; i < data->vc->comments; i++) {
 				c = data->vc->user_comments[i];
 				if (c != NULL) {
@@ -244,7 +244,7 @@ t_file_add(struct t_file *restrict file, const struct t_taglist *T)
 	data->vc->comment_lengths =
 	    xrealloc(data->vc->comment_lengths, (data->vc->comments + T->count + 1) * sizeof(*data->vc->comment_lengths));
 
-	TAILQ_FOREACH(t, T->tags, next) {
+	TAILQ_FOREACH(t, T->tags, entries) {
 		/* FIXME: check vorbisness of t->key , utf8 t->value */
 		len = xasprintf(&tageq, "%s=%s", t->key, t->value);
 		data->vc->comment_lengths[data->vc->comments] = len;

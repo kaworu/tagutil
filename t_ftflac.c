@@ -237,7 +237,7 @@ t_file_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 				if (t == last)
 					break;
 				else {
-					t = TAILQ_NEXT(t, next);
+					t = TAILQ_NEXT(t, entries);
 					i = 0;
 					continue;
 				}
@@ -272,7 +272,7 @@ t_file_add(struct t_file *restrict file, const struct t_taglist *restrict T)
 	t_error_clear(file);
 
 	data = file->data;
-	TAILQ_FOREACH(t, T->tags, next) {
+	TAILQ_FOREACH(t, T->tags, entries) {
 		b = FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&e, t->key, t->value);
 		if (!b) {
 			if (errno) {

@@ -25,13 +25,13 @@ t_get_backend(void)
 		char	*env;
 
 #if defined(WITH_TAGLIB)
-		TAILQ_INSERT_HEAD(&bQ, t_generic_backend(), next);
+		TAILQ_INSERT_HEAD(&bQ, t_generic_backend(), entries);
 #endif
 #if defined(WITH_OGGVORBIS)
-		TAILQ_INSERT_HEAD(&bQ, t_oggvorbis_backend(), next);
+		TAILQ_INSERT_HEAD(&bQ, t_oggvorbis_backend(), entries);
 #endif
 #if defined(WITH_FLAC)
-		TAILQ_INSERT_HEAD(&bQ, t_flac_backend(), next);
+		TAILQ_INSERT_HEAD(&bQ, t_flac_backend(), entries);
 #endif
 
 		env = getenv("TAGUTIL_BACKEND");
@@ -64,15 +64,15 @@ t_get_backend(void)
 			for (bp = bv; *bp != NULL; bp++) {
 				struct t_backend *b, *target;
 				target = NULL;
-				TAILQ_FOREACH(b, &bQ, next) {
+				TAILQ_FOREACH(b, &bQ, entries) {
 					if (strcasecmp(b->libid, *bp) == 0) {
 						target = b;
 						break;
 					}
 				}
 				if (target != NULL) {
-					TAILQ_REMOVE(&bQ, target, next);
-					TAILQ_INSERT_HEAD(&bQ, target, next);
+					TAILQ_REMOVE(&bQ, target, entries);
+					TAILQ_INSERT_HEAD(&bQ, target, entries);
 				}
 			}
 			free(bv);

@@ -102,7 +102,7 @@ t_tags2yaml(struct t_file *restrict file)
         t_strbuffer_destroy(sb);
         return (NULL);
     }
-    TAILQ_FOREACH(t, T->tags, next) {
+    TAILQ_FOREACH(t, T->tags, entries) {
         /* Create and emit the MAPPING-START event. */
         if (!yaml_mapping_start_event_initialize(&event, /* anchor */NULL,
                     (yaml_char_t *)YAML_MAP_TAG, /* implicit */1,

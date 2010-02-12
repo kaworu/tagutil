@@ -53,7 +53,7 @@ t_taglist_insert(struct t_taglist *restrict T,
     t->value = s = (char *)(s + t->keylen + 1);
     assert(strlcpy(s, value, t->valuelen + 1) < (t->valuelen + 1));
 
-    TAILQ_INSERT_TAIL(T->tags, t, next);
+    TAILQ_INSERT_TAIL(T->tags, t, entries);
     T->count++;
 }
 
@@ -71,7 +71,7 @@ t_taglist_filter(const struct t_taglist *restrict T,
 
     ret = NULL;
     len = strlen(key);
-    TAILQ_FOREACH(t, T->tags, next) {
+    TAILQ_FOREACH(t, T->tags, entries) {
         if (len == t->keylen && strcasecmp(t->key, key) == 0) {
             if (ret == NULL)
                 ret = t_taglist_new();
@@ -80,7 +80,7 @@ t_taglist_filter(const struct t_taglist *restrict T,
             n->key      = t->key;
             n->valuelen = t->valuelen;
             n->value    = t->value;
-            TAILQ_INSERT_HEAD(ret->tags, n, next);
+            TAILQ_INSERT_HEAD(ret->tags, n, entries);
             ret->count++;
             if (onlyfirst)
                 break;
@@ -113,7 +113,7 @@ t_taglist_filter_count(const struct t_taglist *restrict T,
 
     ret = 0;
     len = strlen(key);
-    TAILQ_FOREACH(t, T->tags, next) {
+    TAILQ_FOREACH(t, T->tags, entries) {
         if (len == t->keylen && strcasecmp(t->key, key) == 0) {
             ret++;
             if (onlyfirst)
@@ -141,7 +141,7 @@ t_taglist_join(struct t_taglist *restrict T, const char *restrict j)
     sb = t_strbuffer_new();
     last = TAILQ_LAST(T->tags, t_tagQ);
 
-    TAILQ_FOREACH(t, T->tags, next) {
+    TAILQ_FOREACH(t, T->tags, entries) {
         t_strbuffer_add(sb, t->value, t->valuelen, T_STRBUFFER_NOFREE);
         if (t != last)
             t_strbuffer_add(sb, j, jlen, T_STRBUFFER_NOFREE);
@@ -161,7 +161,7 @@ t_taglist_tag_at(struct t_taglist *restrict T, unsigned int idx)
     t = TAILQ_FIRST(T->tags);
     while (t != NULL && idx > 0) {
         idx--;
-        t = TAILQ_NEXT(t, next);
+        t = TAILQ_NEXT(t, entries);
     }
 
     return (t);
@@ -183,7 +183,7 @@ t_taglist_destroy(struct t_taglist *restrict T)
 
     t1 = TAILQ_FIRST(T->tags);
     while (t1 != NULL) {
-        t2 = TAILQ_NEXT(t1, next);
+        t2 = TAILQ_NEXT(t1, entries);
         freex(t1);
         t1 = t2;
     }

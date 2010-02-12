@@ -15,7 +15,7 @@
 struct t_tag {
     size_t keylen, valuelen;
     const char *key, *value;
-    TAILQ_ENTRY(t_tag) next;
+    TAILQ_ENTRY(t_tag) entries;
 };
 TAILQ_HEAD(t_tagQ, t_tag);
 

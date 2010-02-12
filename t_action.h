@@ -38,7 +38,7 @@ struct t_action {
 	void	*data;
 	bool	rw; /* true if the action need read and write access */
 	bool (*apply)(struct t_action *restrict self, struct t_file **filep);
-	TAILQ_ENTRY(t_action)	next;
+	TAILQ_ENTRY(t_action)	entries;
 };
 TAILQ_HEAD(t_actionQ, t_action);
 

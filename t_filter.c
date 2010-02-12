@@ -184,7 +184,7 @@ t_filter_eval_cmp(struct t_file *restrict file,
                     break;
                 case T_TOKEN_STAR_OR_MOD:
                     ret = false;
-                    TAILQ_FOREACH(t, T->tags, next) {
+                    TAILQ_FOREACH(t, T->tags, entries) {
                         if (t_filter_eval_str_cmp(file, t->value, rhs, f)) {
                             ret = true;
                             break;
@@ -193,7 +193,7 @@ t_filter_eval_cmp(struct t_file *restrict file,
                     break;
                 case T_TOKEN_STAR_AND_MOD:
                     ret = true;
-                    TAILQ_FOREACH(t, T->tags, next) {
+                    TAILQ_FOREACH(t, T->tags, entries) {
                         if (!t_filter_eval_str_cmp(file, t->value, rhs, f)) {
                             ret = false;
                             break;
@@ -271,7 +271,7 @@ t_filter_eval_match(struct t_file *restrict file,
                 break;
             case T_TOKEN_STAR_OR_MOD:
                 ret = false;
-                TAILQ_FOREACH(t, T->tags, next) {
+                TAILQ_FOREACH(t, T->tags, entries) {
                     if (t_filter_regexec(r, t->value))
                         ret = true;
                         break;
@@ -279,7 +279,7 @@ t_filter_eval_match(struct t_file *restrict file,
                 break;
             case T_TOKEN_STAR_AND_MOD:
                 ret = true;
-                TAILQ_FOREACH(t, T->tags, next) {
+                TAILQ_FOREACH(t, T->tags, entries) {
                     if (!t_filter_regexec(r, t->value))
                         ret = false;
                         break;
@@ -453,7 +453,7 @@ t_filter_eval_int_cmp(struct t_file *restrict file,
                 break;
             case T_TOKEN_STAR_OR_MOD:
                 ret = false;
-                TAILQ_FOREACH(t, T->tags, next) {
+                TAILQ_FOREACH(t, T->tags, entries) {
                     if ((*f)((double)(i - strtol(t->value, NULL, 10)))) {
                         ret = true;
                         break;
@@ -462,7 +462,7 @@ t_filter_eval_int_cmp(struct t_file *restrict file,
                 break;
             case T_TOKEN_STAR_AND_MOD:
                 ret = true;
-                TAILQ_FOREACH(t, T->tags, next) {
+                TAILQ_FOREACH(t, T->tags, entries) {
                     if (!(*f)((double)(i - strtol(t->value, NULL, 10)))) {
                         ret = false;
                         break;
@@ -531,7 +531,7 @@ t_filter_eval_double_cmp(struct t_file *restrict file,
                 break;
             case T_TOKEN_STAR_OR_MOD:
                 ret = false;
-                TAILQ_FOREACH(t, T->tags, next) {
+                TAILQ_FOREACH(t, T->tags, entries) {
                     if ((*f)(d - strtod(t->value, NULL)))
                         ret = true;
                         break;
@@ -539,7 +539,7 @@ t_filter_eval_double_cmp(struct t_file *restrict file,
                 break;
             case T_TOKEN_STAR_AND_MOD:
                 ret = true;
-                TAILQ_FOREACH(t, T->tags, next) {
+                TAILQ_FOREACH(t, T->tags, entries) {
                     if (!(*f)(d - strtod(t->value, NULL))) {
                         ret = false;
                         break;
@@ -608,7 +608,7 @@ t_filter_eval_str_cmp(struct t_file *restrict file,
                 freex(s);
                 break;
             case T_TOKEN_STAR_OR_MOD:
-                TAILQ_FOREACH(t, T->tags, next) {
+                TAILQ_FOREACH(t, T->tags, entries) {
                     if ((*f)((double)strcmp(str, t->value)))
                         ret = true;
                         break;
@@ -616,7 +616,7 @@ t_filter_eval_str_cmp(struct t_file *restrict file,
                 break;
             case T_TOKEN_STAR_AND_MOD:
                 ret = true;
-                TAILQ_FOREACH(t, T->tags, next) {
+                TAILQ_FOREACH(t, T->tags, entries) {
                     if (!(*f)((double)strcmp(str, t->value)))
                         ret = false;
                         break;
