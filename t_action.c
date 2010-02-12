@@ -17,6 +17,8 @@
 #include "t_filter.h"
 
 
+#define	GETOPT_STRING	"dhNY"
+
 bool	dflag = false; /* create directory with rename */
 bool	Nflag = false; /* answer no to all questions */
 bool	Yflag = false; /* answer yes to all questions */
@@ -44,31 +46,70 @@ usage(void)
 	const struct t_backend	*b;
 
 	(void)fprintf(stderr, "tagutil v"T_TAGUTIL_VERSION "\n\n");
-	(void)fprintf(stderr, "usage: %s [OPTION]... [FILE]...\n", getprogname());
+	(void)fprintf(stderr, "usage: %s [OPTION]... [ACTION]... [FILE]...\n",
+	    getprogname());
 	(void)fprintf(stderr, "Modify or display music file's tag.\n");
 	(void)fprintf(stderr, "\n");
-	(void)fprintf(stderr, "Backend:\n");
 
+	(void)fprintf(stderr, "Options:\n");
+	(void)fprintf(stderr, "  -h  show this help\n");
+	(void)fprintf(stderr, "  -d  create directory on rename if needed\n");
+	(void)fprintf(stderr, "  -Y  answer yes to all questions\n");
+	(void)fprintf(stderr, "  -N  answer no  to all questions\n");
+	(void)fprintf(stderr, "\n");
+
+	(void)fprintf(stderr, "Actions:\n");
+	(void)fprintf(stderr, "  backend         print backend used\n");
+	(void)fprintf(stderr, "  add TAG=VALUE   add a TAG=VALUE pair\n");
+	(void)fprintf(stderr, "  clear TAG       clear all tag TAG\n");
+	(void)fprintf(stderr, "  edit            prompt for editing\n");
+	(void)fprintf(stderr, "  load PATH       load PATH yaml tag file\n");
+	(void)fprintf(stderr, "  print (or show) print tags (default action)\n");
+	(void)fprintf(stderr, "  path            print only filename\n");
+	(void)fprintf(stderr, "  set TAG=VALUE   set TAG to VALUE\n");
+	(void)fprintf(stderr, "  filter FILTER   use only files matching "
+	    "FILTER for next(s) action(s)\n");
+	(void)fprintf(stderr, "\n");
+
+	(void)fprintf(stderr, "Backend:\n");
 	TAILQ_FOREACH(b, bQ, entries)
 		(void)fprintf(stderr, "  %10s: %s\n", b->libid, b->desc);
 	(void)fprintf(stderr, "\n");
-	(void)fprintf(stderr, "Options:\n");
-	(void)fprintf(stderr, "  -h              show this help\n");
-	(void)fprintf(stderr, "  -b              print backend used\n");
-	(void)fprintf(stderr, "  -Y              answer yes to all questions\n");
-	(void)fprintf(stderr, "  -N              answer no  to all questions\n");
-	(void)fprintf(stderr, "  -a TAG=VALUE    add a TAG=VALUE pair\n");
-	(void)fprintf(stderr, "  -c TAG          clear all tag TAG\n");
-	(void)fprintf(stderr, "  -e              prompt for editing\n");
-	(void)fprintf(stderr, "  -f PATH         load PATH yaml tag file\n");
-	(void)fprintf(stderr, "  -p              print tags (default action)\n");
-	(void)fprintf(stderr, "  -P              print only filename\n");
-	(void)fprintf(stderr, "  -r [-d] PATTERN rename files with the given PATTERN\n");
-	(void)fprintf(stderr, "  -s TAG=VALUE    set TAG to VALUE\n");
-	(void)fprintf(stderr, "  -x FILTER       use only files matching FILTER for next(s) action(s)\n");
-	(void)fprintf(stderr, "\n");
+
 
 	exit(EXIT_SUCCESS);
+}
+
+
+struct t_action_token {
+	const char		*kstr;
+	enum t_actionkind 	kind;
+	int	argc;
+};
+
+static struct t_action_token t_action_keywords[] = {
+	{ "add",	T_ADD,		1 },
+	{ "backend",	T_SHOWBACKEND,	0 },
+	{ "clear",	T_CLEAR,	1 },
+	{ "edit",	T_EDIT,		0 },
+	{ "filter",	T_FILTER,	1 },
+	{ "load",	T_LOAD,		1 },
+	{ "path",	T_SHOWPATH,	0 },
+	{ "print",	T_SHOW,		0 },
+	{ "rename",	T_RENAME,	1 },
+	{ "set",	T_SET,		1 },
+	{ "show",	T_SHOW,		0 },
+};
+
+static int t_action_token_cmp(const void *k, const void *t)
+{
+	const struct t_action_token *token;
+
+	assert_not_null(k);
+	assert_not_null(t);
+
+	token = t;
+	return (strcmp(k, token->kstr));
 }
 
 
@@ -91,54 +132,8 @@ t_actionQ_create(int *argcp, char ***argvp)
 
 	while ((ch = getopt(argc, argv, GETOPT_STRING)) != -1) {
 		switch ((char)ch) {
-		case 'a':
-			a = t_action_new(T_ADD, optarg);
-			TAILQ_INSERT_TAIL(aQ, a, entries);
-			break;
-		case 'b':
-			a = t_action_new(T_SHOWBACKEND, NULL);
-			TAILQ_INSERT_TAIL(aQ, a, entries);
-			break;
-		case 'c':
-			a = t_action_new(T_CLEAR, optarg);
-			TAILQ_INSERT_TAIL(aQ, a, entries);
-			break;
 		case 'd':
 			dflag = true;
-			break;
-		case 'e':
-			a = t_action_new(T_EDIT, NULL);
-			TAILQ_INSERT_TAIL(aQ, a, entries);
-			break;
-		case 'f':
-			a = t_action_new(T_LOAD, optarg);
-			TAILQ_INSERT_TAIL(aQ, a, entries);
-			break;
-		case 'p':
-			a = t_action_new(T_SHOW, NULL);
-			TAILQ_INSERT_TAIL(aQ, a, entries);
-			break;
-		case 'P':
-			a = t_action_new(T_SHOWPATH, NULL);
-			TAILQ_INSERT_TAIL(aQ, a, entries);
-			break;
-		case 'r':
-			a = t_action_new(T_SAVE_IF_DIRTY, NULL);
-			TAILQ_INSERT_TAIL(aQ, a, entries);
-			a = t_action_new(T_RENAME, optarg);
-			TAILQ_INSERT_TAIL(aQ, a, entries);
-			a = t_action_new(T_RELOAD, NULL);
-			TAILQ_INSERT_TAIL(aQ, a, entries);
-			break;
-		case 's':
-			a = t_action_new(T_SET, optarg);
-			TAILQ_INSERT_TAIL(aQ, a, entries);
-			break;
-		case 'x':
-			a = t_action_new(T_SAVE_IF_DIRTY, NULL);
-			TAILQ_INSERT_TAIL(aQ, a, entries);
-			a = t_action_new(T_FILTER, optarg);
-			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case 'N':
 			if (Yflag)
@@ -157,9 +152,78 @@ t_actionQ_create(int *argcp, char ***argvp)
 			/* NOTREACHED */
 		}
 	}
+	argc -= optind;
+	argv += optind;
 
-	*argcp = argc - optind;
-	*argvp = argv + optind;
+	while (argc > 0) {
+		struct t_action_token *t;
+		t = bsearch(*argv, t_action_keywords, countof(t_action_keywords),
+		    sizeof(*t_action_keywords), t_action_token_cmp);
+		if (t == NULL)
+			break;
+		argc--;
+		argv++;
+		if (argc - t->argc < 0) {
+			warnx("option requires an argument -- %s", t->kstr);
+			usage();
+			/* NOTREACHED */
+		}
+		switch (t->kind) {
+		case T_ADD:
+			a = t_action_new(T_ADD, *argv);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
+			break;
+		case T_CLEAR:
+			a = t_action_new(T_CLEAR, *argv);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
+			break;
+		case T_LOAD:
+			a = t_action_new(T_LOAD, *argv);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
+			break;
+		case T_RENAME:
+			a = t_action_new(T_SAVE_IF_DIRTY, NULL);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
+			a = t_action_new(T_RENAME, *argv);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
+			a = t_action_new(T_RELOAD, NULL);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
+			break;
+		case T_SET:
+			a = t_action_new(T_SET, *argv);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
+			break;
+		case T_FILTER:
+			a = t_action_new(T_SAVE_IF_DIRTY, NULL);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
+			a = t_action_new(T_FILTER, *argv);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
+			break;
+		case T_SHOWBACKEND:
+			a = t_action_new(T_SHOWBACKEND, NULL);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
+			break;
+		case T_EDIT:
+			a = t_action_new(T_EDIT, NULL);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
+			break;
+		case T_SHOW:
+			a = t_action_new(T_SHOW, NULL);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
+			break;
+		case T_SHOWPATH:
+			a = t_action_new(T_SHOWPATH, NULL);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
+			break;
+		default:
+			assert_fail();
+		}
+		argc -= t->argc;
+		argv += t->argc;
+	}
+
+	*argcp = argc;
+	*argvp = argv;
 	return (aQ);
 }
 
@@ -246,7 +310,7 @@ t_action_new(enum t_actionkind kind, char *arg)
 	case T_SET:
 		assert_not_null(arg);
 		T = t_taglist_new();
-		key = optarg;
+		key = arg;
 		value = strchr(key, '=');
 		if (value == NULL)
 			errx(EINVAL, "`%s': invalid -s argument (missing =)", key);
@@ -518,7 +582,6 @@ t_action_filter(struct t_action *restrict self, struct t_file *restrict file)
 	assert_not_null(file);
 	assert(self->kind == T_FILTER);
 	assert_not_null(file);
-	assert_not_null(ast);
 
 	ast = self->data;
 	return (t_filter_eval(file, ast));

@@ -7,6 +7,8 @@ int
 main(void)
 {
 	const char *_ = getprogname();
+	(void)_;
+
 	return (0);
 }
 

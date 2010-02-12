@@ -9,7 +9,6 @@
 #include "t_toolkit.h"
 #include "t_file.h"
 
-#define	GETOPT_STRING	"bedhpNPYa:c:f:r:s:x:"
 
 extern bool	dflag, Nflag, Yflag;	/* -d, -N and -Y */
 
