@@ -268,7 +268,7 @@ t_action_new(enum t_actionkind kind, char *arg)
 		a->apply = t_action_reload;
 		break;
 	case T_SAVE_IF_DIRTY:
-		a->rw    = true;
+		a->rw    = false; /* yes, we lie, we're bad */
 		a->apply = t_action_saveifdirty;
 		break;
 	default:
