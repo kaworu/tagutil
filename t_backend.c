@@ -22,6 +22,8 @@ t_get_backend(void)
 	static struct t_backendQ bQ = TAILQ_HEAD_INITIALIZER(bQ);
 
 	if (TAILQ_EMPTY(&bQ)) {
+		char	*env;
+
 #if defined(WITH_TAGLIB)
 		TAILQ_INSERT_HEAD(&bQ, t_generic_backend(), next);
 #endif
@@ -31,6 +33,51 @@ t_get_backend(void)
 #if defined(WITH_FLAC)
 		TAILQ_INSERT_HEAD(&bQ, t_flac_backend(), next);
 #endif
+
+		env = getenv("TAGUTIL_BACKEND");
+		if (env != NULL) {
+			int	i;
+			char	*s;
+			char	**bv, **bp;
+
+			env = xstrdup(env);
+			s = env;
+			for (i = 0; s != NULL; i++) {
+				s++;
+				s = strchr(s, ',');
+			}
+			i++; /* last NULL element */
+			bv = xcalloc(i, sizeof(char *));
+			bv[--i] = NULL;
+
+			s = env;
+			while (i > 0) {
+				assert_not_null(s);
+				bv[--i] = s;
+				s = strchr(s, ',');
+				if (s != NULL) {
+					*s = '\0';
+					s++;
+				}
+			}
+
+			for (bp = bv; *bp != NULL; bp++) {
+				struct t_backend *b, *target;
+				target = NULL;
+				TAILQ_FOREACH(b, &bQ, next) {
+					if (strcasecmp(b->libid, *bp) == 0) {
+						target = b;
+						break;
+					}
+				}
+				if (target != NULL) {
+					TAILQ_REMOVE(&bQ, target, next);
+					TAILQ_INSERT_HEAD(&bQ, target, next);
+				}
+			}
+			free(bv);
+			free(env);
+		}
 	}
 	return (&bQ);
 }

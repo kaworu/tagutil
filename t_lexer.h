@@ -95,7 +95,7 @@ struct t_lexer {
 /*
  * create a new lexer with given inpute source.
  *
- * returned value has to be free()d.
+ * returned value has to be free()d (see t_lexer_destroy).
  */
 _t__nonnull(1)
 struct t_lexer * t_lexer_new(const char *restrict source);
