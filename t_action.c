@@ -284,6 +284,7 @@ t_action_destroy(struct t_action *a)
 		break;
 	default:
 		/* do nada */
+		break;
 	}
 	free(a);
 }
