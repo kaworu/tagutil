@@ -362,9 +362,8 @@ t_action_edit(struct t_action *restrict self, struct t_file *restrict file)
 	if (yaml == NULL)
 		return (false);
 
-	(void)printf("%s\n", yaml);
-
-	if (t_yesno("edit this file")) {
+	(void)printf("edit ");
+	if (t_yesno(file->path)) {
 		tmp_file = t_mkstemp("/tmp");
 		stream = xfopen(tmp_file, "w");
 		(void)fprintf(stream, "%s", yaml);
