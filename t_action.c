@@ -46,7 +46,7 @@ usage(void)
 	const struct t_backend	*b;
 
 	(void)fprintf(stderr, "tagutil v"T_TAGUTIL_VERSION "\n\n");
-	(void)fprintf(stderr, "usage: %s [OPTION]... [ACTION]... [FILE]...\n",
+	(void)fprintf(stderr, "usage: %s [OPTION]... [ACTION:ARG]... [FILE]...\n",
 	    getprogname());
 	(void)fprintf(stderr, "Modify or display music file's tag.\n");
 	(void)fprintf(stderr, "\n");
@@ -59,23 +59,23 @@ usage(void)
 	(void)fprintf(stderr, "\n");
 
 	(void)fprintf(stderr, "Actions:\n");
-	(void)fprintf(stderr, "  backend         print backend used\n");
-	(void)fprintf(stderr, "  add TAG=VALUE   add a TAG=VALUE pair\n");
-	(void)fprintf(stderr, "  clear TAG       clear all tag TAG\n");
-	(void)fprintf(stderr, "  edit            prompt for editing\n");
-	(void)fprintf(stderr, "  load PATH       load PATH yaml tag file\n");
-	(void)fprintf(stderr, "  print (or show) print tags (default action)\n");
-	(void)fprintf(stderr, "  path            print only filename\n");
-	(void)fprintf(stderr, "  set TAG=VALUE   set TAG to VALUE\n");
-	(void)fprintf(stderr, "  filter FILTER   use only files matching "
+	(void)fprintf(stderr, "  add:TAG=VALUE    add a TAG=VALUE pair\n");
+	(void)fprintf(stderr, "  backend          print backend used\n");
+	(void)fprintf(stderr, "  clear:TAG        clear all tag TAG\n");
+	(void)fprintf(stderr, "  edit             prompt for editing\n");
+	(void)fprintf(stderr, "  filter:FILTER    use only files matching "
 	    "FILTER for next(s) action(s)\n");
+	(void)fprintf(stderr, "  load:PATH        load PATH yaml tag file\n");
+	(void)fprintf(stderr, "  path             print only filename's path\n");
+	(void)fprintf(stderr, "  print (or show)  print tags (default action)\n");
+	(void)fprintf(stderr, "  rename:PATTERN   rename to PATTERN\n");
+	(void)fprintf(stderr, "  set:TAG=VALUE    set TAG to VALUE\n");
 	(void)fprintf(stderr, "\n");
 
 	(void)fprintf(stderr, "Backend:\n");
 	TAILQ_FOREACH(b, bQ, entries)
 		(void)fprintf(stderr, "  %10s: %s\n", b->libid, b->desc);
 	(void)fprintf(stderr, "\n");
-
 
 	exit(EXIT_SUCCESS);
 }
@@ -84,21 +84,21 @@ usage(void)
 struct t_action_token {
 	const char		*kstr;
 	enum t_actionkind 	kind;
-	int	argc;
+	bool	need_arg;
 };
 
 static struct t_action_token t_action_keywords[] = {
-	{ "add",	T_ADD,		1 },
-	{ "backend",	T_SHOWBACKEND,	0 },
-	{ "clear",	T_CLEAR,	1 },
-	{ "edit",	T_EDIT,		0 },
-	{ "filter",	T_FILTER,	1 },
-	{ "load",	T_LOAD,		1 },
-	{ "path",	T_SHOWPATH,	0 },
-	{ "print",	T_SHOW,		0 },
-	{ "rename",	T_RENAME,	1 },
-	{ "set",	T_SET,		1 },
-	{ "show",	T_SHOW,		0 },
+	{ "add",	T_ADD,		true  },
+	{ "backend",	T_SHOWBACKEND,	false },
+	{ "clear",	T_CLEAR,	true  },
+	{ "edit",	T_EDIT,		false },
+	{ "filter",	T_FILTER,	true  },
+	{ "load",	T_LOAD,		true  },
+	{ "path",	T_SHOWPATH,	false },
+	{ "print",	T_SHOW,		false },
+	{ "rename",	T_RENAME,	true  },
+	{ "set",	T_SET,		true  },
+	{ "show",	T_SHOW,		false },
 };
 
 static int t_action_token_cmp(const void *k, const void *t)
@@ -109,7 +109,7 @@ static int t_action_token_cmp(const void *k, const void *t)
 	assert_not_null(t);
 
 	token = t;
-	return (strcmp(k, token->kstr));
+	return (strncmp(k, token->kstr, strlen(token->kstr)));
 }
 
 
@@ -156,47 +156,51 @@ t_actionQ_create(int *argcp, char ***argvp)
 	argv += optind;
 
 	while (argc > 0) {
+		char	*arg;
 		struct t_action_token *t;
+
 		t = bsearch(*argv, t_action_keywords, countof(t_action_keywords),
 		    sizeof(*t_action_keywords), t_action_token_cmp);
 		if (t == NULL)
 			break;
-		argc--;
-		argv++;
-		if (argc - t->argc < 0) {
-			warnx("option requires an argument -- %s", t->kstr);
+		arg = strchr(*argv, ':');
+		if (t->need_arg && arg == NULL) {
+			warnx(EINVAL, "option requires an argument -- %s",
+			    t->kstr);
 			usage();
 			/* NOTREACHED */
 		}
+		arg++; /* skip : */
+
 		switch (t->kind) {
 		case T_ADD:
-			a = t_action_new(T_ADD, *argv);
+			a = t_action_new(T_ADD, arg);
 			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case T_CLEAR:
-			a = t_action_new(T_CLEAR, *argv);
+			a = t_action_new(T_CLEAR, arg);
 			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case T_LOAD:
-			a = t_action_new(T_LOAD, *argv);
+			a = t_action_new(T_LOAD, arg);
 			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case T_RENAME:
 			a = t_action_new(T_SAVE_IF_DIRTY, NULL);
 			TAILQ_INSERT_TAIL(aQ, a, entries);
-			a = t_action_new(T_RENAME, *argv);
+			a = t_action_new(T_RENAME, arg);
 			TAILQ_INSERT_TAIL(aQ, a, entries);
 			a = t_action_new(T_RELOAD, NULL);
 			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case T_SET:
-			a = t_action_new(T_SET, *argv);
+			a = t_action_new(T_SET, arg);
 			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case T_FILTER:
 			a = t_action_new(T_SAVE_IF_DIRTY, NULL);
 			TAILQ_INSERT_TAIL(aQ, a, entries);
-			a = t_action_new(T_FILTER, *argv);
+			a = t_action_new(T_FILTER, arg);
 			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case T_SHOWBACKEND:
@@ -218,8 +222,8 @@ t_actionQ_create(int *argcp, char ***argvp)
 		default:
 			assert_fail();
 		}
-		argc -= t->argc;
-		argv += t->argc;
+		argc--;
+		argv++;
 	}
 
 	*argcp = argc;
