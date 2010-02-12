@@ -24,17 +24,18 @@ bool	Yflag = false; /* answer yes to all questions */
 
 
 /* actions */
-bool	t_action_add(struct t_action *restrict self, struct t_file **filep);
-bool	t_action_backend(struct t_action *restrict self, struct t_file **filep);
-bool	t_action_clear(struct t_action *restrict self, struct t_file **filep);
-bool	t_action_edit(struct t_action *restrict self, struct t_file **filep);
-bool	t_action_load(struct t_action *restrict self, struct t_file **filep);
-bool	t_action_print(struct t_action *restrict self, struct t_file **filep);
-bool	t_action_showpath(struct t_action *restrict self, struct t_file **filep);
-bool	t_action_rename(struct t_action *restrict self, struct t_file **filep);
-bool	t_action_set(struct t_action *restrict self, struct t_file **filep);
-bool	t_action_filter(struct t_action *restrict self, struct t_file **filep);
-bool	t_action_saveifdirty(struct t_action *restrict self, struct t_file **filep);
+static bool	t_action_add(struct t_action *restrict self, struct t_file *restrict file);
+static bool	t_action_backend(struct t_action *restrict self, struct t_file *restrict file);
+static bool	t_action_clear(struct t_action *restrict self, struct t_file *restrict file);
+static bool	t_action_edit(struct t_action *restrict self, struct t_file *restrict file);
+static bool	t_action_load(struct t_action *restrict self, struct t_file *restrict file);
+static bool	t_action_print(struct t_action *restrict self, struct t_file *restrict file);
+static bool	t_action_showpath(struct t_action *restrict self, struct t_file *restrict file);
+static bool	t_action_rename(struct t_action *restrict self, struct t_file *restrict file);
+static bool	t_action_set(struct t_action *restrict self, struct t_file *restrict file);
+static bool	t_action_filter(struct t_action *restrict self, struct t_file *restrict file);
+static bool	t_action_reload(struct t_action *restrict self, struct t_file *restrict file);
+static bool	t_action_saveifdirty(struct t_action *restrict self, struct t_file *restrict file);
 
 
 void
@@ -90,40 +91,55 @@ t_actionQ_create(int *argcp, char ***argvp)
 	TAILQ_INIT(aQ);
 
 	while ((ch = getopt(argc, argv, GETOPT_STRING)) != -1) {
-		a = NULL;
 		switch ((char)ch) {
 		case 'a':
 			a = t_action_new(T_ADD, optarg);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case 'b':
 			a = t_action_new(T_SHOWBACKEND, NULL);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case 'c':
 			a = t_action_new(T_CLEAR, optarg);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case 'd':
 			dflag = true;
 			break;
 		case 'e':
 			a = t_action_new(T_EDIT, NULL);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case 'f':
 			a = t_action_new(T_LOAD, optarg);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case 'p':
 			a = t_action_new(T_SHOW, NULL);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case 'P':
 			a = t_action_new(T_SHOWPATH, NULL);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case 'r':
+			a = t_action_new(T_SAVE_IF_DIRTY, NULL);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
 			a = t_action_new(T_RENAME, optarg);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
+			a = t_action_new(T_RELOAD, NULL);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case 's':
 			a = t_action_new(T_SET, optarg);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case 'x':
+			a = t_action_new(T_SAVE_IF_DIRTY, NULL);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
 			a = t_action_new(T_FILTER, optarg);
+			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case 'N':
 			if (Yflag)
@@ -141,8 +157,6 @@ t_actionQ_create(int *argcp, char ***argvp)
 			usage();
 			/* NOTREACHED */
 		}
-		if (a != NULL)
-			TAILQ_INSERT_TAIL(aQ, a, entries);
 	}
 
 	*argcp = argc - optind;
@@ -223,7 +237,6 @@ t_action_new(enum t_actionkind kind, char *arg)
 		a->apply = t_action_showpath;
 		break;
 	case T_RENAME:
-		/* FIXME: add a T_SAVE_IF_DIRTY before and T_RELOAD after */
 		assert_not_null(arg);
 		if (t_strempty(arg))
 			errx(EINVAL, "empty rename pattern");
@@ -249,8 +262,11 @@ t_action_new(enum t_actionkind kind, char *arg)
 		assert_not_null(arg);
 		a->data  = t_parse_filter(t_lexer_new(arg));
 		a->rw    = false;
-		/* FIXME: add a T_SAVE_IF_DIRTY before ~ */
 		a->apply = t_action_filter;
+		break;
+	case T_RELOAD:
+		a->rw    = false;
+		a->apply = t_action_reload;
 		break;
 	case T_SAVE_IF_DIRTY:
 		a->rw    = true;
@@ -294,177 +310,158 @@ t_action_destroy(struct t_action *a)
 }
 
 
-bool
-t_action_add(struct t_action *restrict self, struct t_file **filep)
+static bool
+t_action_add(struct t_action *restrict self, struct t_file *restrict file)
 {
-	struct t_file *file;
 
 	assert_not_null(self);
-	assert_not_null(filep);
-	assert_not_null(*filep);
+	assert_not_null(file);
 	assert(self->kind == T_ADD);
-
-	file = *filep;
 
 	return (file->add(file, self->data));
 }
 
 
-bool
-t_action_backend(struct t_action *restrict self, struct t_file **filep)
+static bool
+t_action_backend(struct t_action *restrict self, struct t_file *restrict file)
 {
-	struct t_file *file;
 
 	assert_not_null(self);
-	assert_not_null(filep);
-	assert_not_null(*filep);
+	assert_not_null(file);
 	assert(self->kind == T_SHOWBACKEND);
-
-	file = *filep;
 
 	(void)printf("%s: %s\n", file->path, file->libid);
 	return (true);
 }
 
 
-bool
-t_action_clear(struct t_action *restrict self, struct t_file **filep)
+static bool
+t_action_clear(struct t_action *restrict self, struct t_file *restrict file)
 {
-	struct t_file *file;
 
 	assert_not_null(self);
-	assert_not_null(filep);
-	assert_not_null(*filep);
+	assert_not_null(file);
 	assert(self->kind == T_CLEAR);
-
-	file = *filep;
 
 	return (file->clear(file, self->data));
 }
 
 
-bool
-t_action_edit(struct t_action *restrict self, struct t_file **filep)
+static bool
+t_action_edit(struct t_action *restrict self, struct t_file *restrict file)
 {
-	struct t_file *file;
 
 	assert_not_null(self);
-	assert_not_null(filep);
-	assert_not_null(*filep);
+	assert_not_null(file);
 	assert(self->kind == T_EDIT);
-
-	file = *filep;
 
 	return (tagutil_edit(file));
 }
 
 
-bool
-t_action_load(struct t_action *restrict self, struct t_file **filep)
+static bool
+t_action_load(struct t_action *restrict self, struct t_file *restrict file)
 {
-	struct t_file *file;
 
 	assert_not_null(self);
-	assert_not_null(filep);
-	assert_not_null(*filep);
+	assert_not_null(file);
 	assert(self->kind == T_LOAD);
-
-	file = *filep;
 
 	return (tagutil_load(file, self->data));
 }
 
 
-bool
-t_action_print(struct t_action *restrict self, struct t_file **filep)
+static bool
+t_action_print(struct t_action *restrict self, struct t_file *restrict file)
 {
-	struct t_file *file;
 
 	assert_not_null(self);
-	assert_not_null(filep);
-	assert_not_null(*filep);
+	assert_not_null(file);
 	assert(self->kind == T_SHOW);
-
-	file = *filep;
 
 	return (tagutil_print(file));
 }
 
 
-bool
-t_action_showpath(struct t_action *restrict self, struct t_file **filep)
+static bool
+t_action_showpath(struct t_action *restrict self, struct t_file *restrict file)
 {
-	struct t_file *file;
 
 	assert_not_null(self);
-	assert_not_null(filep);
-	assert_not_null(*filep);
+	assert_not_null(file);
 	assert(self->kind == T_SHOWPATH);
-
-	file = *filep;
 
 	(void)printf("%s\n", file->path);
 	return (true);
 }
 
 
-bool
-t_action_rename(struct t_action *restrict self, struct t_file **filep)
+static bool
+t_action_rename(struct t_action *restrict self, struct t_file *restrict file)
 {
-	struct t_file *file;
 
 	assert_not_null(self);
-	assert_not_null(filep);
-	assert_not_null(*filep);
+	assert_not_null(file);
 	assert(self->kind == T_RENAME);
-
-	file = *filep;
 
 	return (tagutil_rename(file, self->data));
 }
 
 
-bool
-t_action_set(struct t_action *restrict self, struct t_file **filep)
+static bool
+t_action_set(struct t_action *restrict self, struct t_file *restrict file)
 {
-	struct t_file *file;
 
 	assert_not_null(self);
-	assert_not_null(filep);
-	assert_not_null(*filep);
+	assert_not_null(file);
 	assert(self->kind == T_SET);
 
-	file = *filep;
 	return (file->clear(file, self->data) && file->add(file, self->data));
 }
 
 
-bool
-t_action_filter(struct t_action *restrict self, struct t_file **filep)
+static bool
+t_action_filter(struct t_action *restrict self, struct t_file *restrict file)
 {
-	struct t_file *file;
 
 	assert_not_null(self);
-	assert_not_null(filep);
-	assert_not_null(*filep);
+	assert_not_null(file);
 	assert(self->kind == T_FILTER);
-
-	file = *filep;
 
 	return (tagutil_filter(file, self->data)); /* FIXME: error handling? */
 }
 
 
-bool
-t_action_saveifdirty(struct t_action *restrict self, struct t_file **filep)
+static bool
+t_action_reload(struct t_action *restrict self, struct t_file *restrict file)
 {
-	struct t_file *file;
+	struct t_file	tmp;
+	struct t_file	*neo;
 
 	assert_not_null(self);
-	assert_not_null(filep);
-	assert_not_null(*filep);
+	assert_not_null(file);
+	assert(self->kind == T_RELOAD);
+	assert(!file->dirty);
+
+	neo = file->new(file->path);
+	/* switch */
+	memcpy(&tmp, file, sizeof(struct t_file));
+	memcpy(file, neo,  sizeof(struct t_file));
+	memcpy(neo,  &tmp, sizeof(struct t_file));
+	neo->destroy(neo);
+	return (true);
+}
+
+
+
+
+static bool
+t_action_saveifdirty(struct t_action *restrict self, struct t_file *restrict file)
+{
+
+	assert_not_null(self);
+	assert_not_null(file);
 	assert(self->kind == T_SAVE_IF_DIRTY);
 
-	file = *filep;
 	return (!file->dirty || file->save(file));
 }

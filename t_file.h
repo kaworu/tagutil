@@ -20,11 +20,10 @@
 
 /* abstract music file, with method members */
 struct t_file {
-	const char	*path;
+	char		*path;
 	const char	*libid;
 	void		*data;
-	int		 dirty;
-#define	T_FILE_CLEAN	0
+	bool		 dirty;
 
 	/*
 	 * constructor.
@@ -92,15 +91,13 @@ struct t_file {
  */
 #define T_FILE_NEW(file, path, data)						\
 	do {									\
-		(file) = xmalloc(sizeof(*(file)) + sizeof(data) +		\
-		    strlen(path) + 1);						\
-		(file)->data = (void *)((file) + 1);				\
+		(file) = xmalloc(sizeof(struct t_file));			\
+		(file)->data = xmalloc(sizeof(data));				\
+		(file)->path = xmalloc(strlen(path) + 1);			\
 		(void)memcpy((file)->data, &data, sizeof(data));		\
-		(file)->path = (char *)(file)->data + sizeof(data);		\
-		(void)memcpy((char *)(file)->data + sizeof(data),		\
-		    path, strlen(path) + 1);					\
+		(void)memcpy((file)->path, path, strlen(path) + 1);		\
 		(file)->libid = libid;						\
-		(file)->dirty = T_FILE_CLEAN;					\
+		(file)->dirty = false;						\
 		t_error_init(file);						\
 		(file)->new = t_file_new;					\
 		(file)->save = t_file_save;					\
@@ -112,8 +109,22 @@ struct t_file {
 
 
 /*
+ * t_file generic dtor
+ */
+#define T_FILE_DESTROY(file)		\
+	do {				\
+		assert_not_null(file);	\
+		t_error_clear(file);	\
+		free((file)->data);	\
+		free((file)->path);	\
+		freex(file);		\
+	} while (/*CONSTCOND*/0);
+
+
+/*
  * t_file ctor type
  */
 typedef struct t_file * t_file_ctor(const char *restrict path);
+
 
 #endif /* not T_FILE_H */

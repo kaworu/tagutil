@@ -126,7 +126,7 @@ main(int argc, char *argv[])
 
 		/* apply every action asked to the file */
 		TAILQ_FOREACH(a, aQ, entries) {
-			bool ok = (*a->apply)(a, &file);
+			bool ok = (*a->apply)(a, file);
 			if (!ok) {
 				warnx("`%s': %s", file->path, t_error_msg(file));
 				break;
@@ -270,7 +270,7 @@ tagutil_edit(struct t_file *restrict file)
 bool
 tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
 {
-	bool	retval;
+	bool	retval = true;
     	char	*ext, *result, *dirn, *fname, *question;
 
     assert_not_null(file);

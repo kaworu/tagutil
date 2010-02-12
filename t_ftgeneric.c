@@ -116,8 +116,7 @@ t_file_destroy(struct t_file *restrict file)
 
 	data = file->data;
 	taglib_file_free(data->file);
-	t_error_clear(file);
-	freex(file);
+	T_FILE_DESTROY(file);
 }
 
 
@@ -139,7 +138,7 @@ t_file_save(struct t_file *restrict file)
 	if (!ok)
 		t_error_set(file, "%s error: taglib_file_save", file->libid);
 	else
-		file->dirty = T_FILE_CLEAN;
+		file->dirty = false;
 	return (ok);
 }
 

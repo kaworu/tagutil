@@ -92,6 +92,8 @@ t_rename_safe(struct t_file *restrict file, const char *restrict newpath)
         return (false);
     }
 
+    free(file->path);
+    file->path = xstrdup(newpath);
     return (true);
 }
 

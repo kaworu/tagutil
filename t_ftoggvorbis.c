@@ -104,8 +104,8 @@ t_file_destroy(struct t_file *restrict file)
 	data = file->data;
 
 	ov_clear(data->vf);
-	freex(data->vf);
-	freex(file);
+	free(data->vf);
+	T_FILE_DESTROY(file);
 }
 
 

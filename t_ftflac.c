@@ -123,8 +123,7 @@ t_file_destroy(struct t_file *restrict file)
 	data = file->data;
 
 	FLAC__metadata_chain_delete(data->chain);
-	t_error_clear(file);
-	freex(file);
+	T_FILE_DESTROY(file);
 }
 
 
@@ -151,7 +150,7 @@ t_file_save(struct t_file *restrict file)
 		status = FLAC__metadata_chain_status(data->chain);
 		t_error_set(file, "%s", FLAC__Metadata_ChainStatusString[status]);
 	} else
-		file->dirty = T_FILE_CLEAN;
+		file->dirty = false;
 
 	return (ok);
 }

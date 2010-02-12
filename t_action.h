@@ -37,7 +37,8 @@ struct t_action {
 	enum t_actionkind kind;
 	void	*data;
 	bool	rw; /* true if the action need read and write access */
-	bool (*apply)(struct t_action *restrict self, struct t_file **filep);
+	bool (*apply)(struct t_action *restrict self,
+	    struct t_file *restrict file);
 	TAILQ_ENTRY(t_action)	entries;
 };
 TAILQ_HEAD(t_actionQ, t_action);
