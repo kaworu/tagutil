@@ -11,13 +11,6 @@
 #include "t_parser.h"
 
 
-/*
- * show usage and exit.
- */
-_t__dead2
-void usage(void);
-
-
 /* TAG FUNCTIONS */
 
 /*

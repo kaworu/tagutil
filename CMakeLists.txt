@@ -21,6 +21,7 @@ set(SRCS
     t_parser.c
     t_filter.c
     t_backend.c
+    t_action.c
 )
 
 include_directories(

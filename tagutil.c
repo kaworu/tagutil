@@ -54,35 +54,10 @@
 #include "t_tag.h"
 #include "t_file.h"
 #include "t_backend.h"
+#include "t_action.h"
 #include "t_yaml.h"
-#include "t_renamer.h"
-#include "t_lexer.h"
-#include "t_parser.h"
-#include "t_filter.h"
 #include "tagutil.h"
 
-
-bool aflag = false; /* add tag */
-bool bflag = false; /* show backend */
-bool cflag = false; /* clear tag */
-bool dflag = false; /* create directory with rename */
-bool eflag = false; /* edit */
-bool fflag = false; /* load file */
-bool Nflag = false; /* answer no to all questions */
-bool pflag = false; /* display tags action */
-bool rflag = false; /* rename */
-bool sflag = false; /* set tags */
-bool xflag = false; /* filter */
-bool Yflag = false; /* answer yes to all questions */
-
-char *f_arg = NULL; /* file */
-struct t_token **r_arg = NULL; /* rename pattern (compiled) */
-struct t_ast *x_arg = NULL; /* filter code */
-struct t_taglist *a_arg = NULL; /* key=val tags (add) */
-struct t_taglist *c_arg = NULL; /* key=val tags (clear) */
-struct t_taglist *s_arg = NULL; /* key=val tags (set) */
-
-const char *G_editor = NULL; /* $EDITOR */
 
 /*
  * get action with getopt(3) and then apply it to all files given in argument.
@@ -91,236 +66,74 @@ const char *G_editor = NULL; /* $EDITOR */
 int
 main(int argc, char *argv[])
 {
-	const struct t_backendQ *bQ = t_get_backend();
+    	int	i, retval;
+	bool	rw; /* read and write access needed */
+    	char	*path;
+    	struct t_file		*file;
 	const struct t_backend	*b;
-    	bool	w, ok;
-    int i, ch, ret;
-    char *path, *value, *key;
-    struct t_file *file;
+	const struct t_backendQ	*bQ;
+	struct t_action		*a;
+	struct t_actionQ	*aQ;
 
-    G_editor = getenv("EDITOR");
-    errno = 0;
-    w = false;
-    /* tagutil has side effect (like modifying file's properties) so if we
-        detect an error in options, we err to end the program. */
-    while ((ch = getopt(argc, argv, "bedhNYa:c:f:r:s:x:")) != -1) {
-        switch ((char)ch) {
-        case 'a':
-	    w = true;
-            aflag = true;
-            if (a_arg == NULL)
-                a_arg = t_taglist_new();
-            key = optarg;
-            value = strchr(key, '=');
-            if (value == NULL)
-                errx(EINVAL, "`%s': invalid -a argument (no equal)", key);
-            *value = '\0';
-            value += 1;
-            t_taglist_insert(a_arg, key, value);
-            break;
-        case 'b':
-            bflag = true;
-            break;
-        case 'c':
-	    w = true;
-            cflag = true;
-            if (c_arg == NULL)
-                c_arg = t_taglist_new();
-            t_taglist_insert(c_arg, optarg, "");
-            break;
-        case 'e':
-	    w = true;
-            eflag = true;
-            break;
-        case 'f':
-            fflag = true;
-            f_arg = optarg;
-            break;
-        case 'r':
-	    w = true;
-            if (rflag)
-                errx(EINVAL, "-r option set twice");
-            rflag = true;
-            if (t_strempty(optarg))
-                errx(EINVAL, "empty rename pattern");
-            r_arg = t_rename_parse(optarg);
-            break;
-        case 'x':
-            if (xflag)
-                errx(EINVAL, "-x option set twice");
-            xflag = true;
-            x_arg = t_parse_filter(t_lexer_new(optarg));
-            break;
-        case 's':
-	    w = true;
-            sflag = true;
-            if (s_arg == NULL)
-                s_arg = t_taglist_new();
-            key = optarg;
-            value = strchr(key, '=');
-            if (value == NULL)
-                errx(EINVAL, "`%s': invalid -s argument (no equal)", key);
-            *value = '\0';
-            value += 1;
-            t_taglist_insert(s_arg, key, value);
-            break;
-        case 'd':
-            dflag = true;
-            break;
-        case 'N':
-            if (Yflag)
-                errx(EINVAL, "cannot set both -Y and -N");
-            Nflag = true;
-            break;
-        case 'Y':
-            if (Nflag)
-                errx(EINVAL, "cannot set both -Y and -N");
-            Yflag = true;
-            break;
-        case 'h': /* FALLTHROUGH */
-        case '?': /* FALLTHROUGH */
-        default:
-            usage();
-            /* NOTREACHED */
-        }
-    }
-    argc -= optind;
-    argv += optind;
+	errno = 0;
+	bQ = t_get_backend();
+	aQ = t_actionQ_create(&argc, &argv);
 
-    if (argc == 0) {
-        errx(EINVAL, "missing file argument.\nrun `%s -h' to see help.",
-                getprogname());
-    }
-    if (dflag && !rflag)
-        errx(EINVAL, "-d is only valid with -r");
-    i  = ((aflag || bflag || sflag || cflag || eflag || rflag) ? 1 : 0);
-    i += (xflag ? 1 : 0);
-    i += (fflag ? 1 : 0);
-    if (i > 1)
-        errx(EINVAL, "-x and/or -f option must be used alone");
-    if (!aflag && !bflag && !xflag && !fflag && !rflag && !sflag && !eflag && !cflag)
-    /* no action given, fallback to default */
-        pflag = true;
+	if (argc == 0) {
+		errx(EINVAL, "missing file argument.\nrun `%s -h' to see help.",
+		    getprogname());
+    	}
+	if (TAILQ_EMPTY(aQ))
+		/* no action given, fallback to default */
+		TAILQ_INSERT_TAIL(aQ, t_action_new(T_SHOW, NULL), next);
 
-    ret = EXIT_SUCCESS;
-    for (i = 0; i < argc; i++) {
-        path = argv[i];
-        if (access(path, (w ? (R_OK | W_OK) : R_OK)) == -1) {
-            warn("%s", path);
-            ret = EINVAL;
-            continue;
-        }
-
-        file = NULL;
-	TAILQ_FOREACH(b, bQ, next) {
-		file = (*b->ctor)(path);
-		if (file != NULL)
+	/* check if write access is needed */
+	rw = false;
+	TAILQ_FOREACH(a, aQ, next) {
+		if (rw = a->rw)
 			break;
 	}
-        if (file == NULL) {
-            warnx("`%s' unsupported file format", path);
-            ret = EINVAL;
-            continue;
-        }
+	if (rw)
+		TAILQ_INSERT_TAIL(aQ, t_action_new(T_SAVE_IF_DIRTY, NULL), next);
 
-	ok = true;
-        /* modifiy tag, edit, rename */
-        if (bflag)
-            (void)printf("%s: %s\n", file->path, file->libid);
-        if (pflag) {
-		if (!(ok = tagutil_print(file)))
-			goto warn0;
+	/*
+	 * main loop, foreach files
+	 */
+	retval = EXIT_SUCCESS;
+	for (i = 0; i < argc; i++) {
+		/* check file path and access */
+		path = argv[i];
+		if (access(path, (rw ? (R_OK | W_OK) : R_OK)) == -1) {
+			warn("%s", path);
+			retval = EINVAL;
+			continue;
+		}
+
+		/* try every backend in the right order */
+		file = NULL;
+		TAILQ_FOREACH(b, bQ, next) {
+			file = (*b->ctor)(path);
+			if (file != NULL)
+				break;
+		}
+		if (file == NULL) {
+			warnx("`%s' unsupported file format", path);
+			retval = EINVAL;
+			continue;
+		}
+
+		/* apply every action asked to the file */
+		TAILQ_FOREACH(a, aQ, next) {
+			bool ok = (*a->apply)(a, &file);
+			if (!ok) {
+				warnx("`%s': %s", file->path, t_error_msg(file));
+				break;
+			}
+		}
+        	file->destroy(file);
 	}
-        if (xflag)
-            tagutil_filter(file, x_arg); /* FIXME: error handling? */
-        if (fflag) {
-            if (!(ok = tagutil_load(file, f_arg))) /* FIXME: order? */
-	    	    goto warn0;
-	}
-        if (cflag) {
-            if (!(ok = file->clear(file, c_arg)))
-	    	    goto warn0;
-        }
-        if (sflag) {
-            if (!(ok = file->clear(file, s_arg) && file->add(file, s_arg)))
-	    	    goto warn0;
-        }
-        if (aflag) {
-            if (!(ok = file->add(file, a_arg)))
-	    	    goto warn0;
-        }
-        if (eflag) {
-            if (!(ok = tagutil_edit(file)))
-	    	    goto warn0;
-	}
-	/* save before rename */
-	if (file->dirty) {
-            if (!(ok = file->save(file))) {
-                    errx(errno ? errno : -1, "couldn't save file `%s': %s",
-                            path, t_error_msg(file));
-		    /* NOTREACHED */
-            }
-	}
-        if (rflag) {
-            if (!(ok = tagutil_rename(file, r_arg)))
-	    	    goto warn0;
-	}
-
-warn0:
-	if (!ok)
-		warnx("`%s': %s", file->path, t_error_msg(file));
-        file->destroy(file);
-    }
-
-    if (xflag)
-        t_ast_destroy(x_arg);
-    if (sflag)
-        t_taglist_destroy(s_arg);
-    if (aflag)
-        t_taglist_destroy(a_arg);
-    if (cflag)
-        t_taglist_destroy(c_arg);
-    if (rflag) {
-        for (i = 0; r_arg[i]; i++)
-            freex(r_arg[i]);
-        freex(r_arg);
-    }
-
-    return (ret);
-}
-
-
-void
-usage(void)
-{
-	const struct t_backendQ *bQ = t_get_backend();
-	const struct t_backend	*b;
-
-	(void)fprintf(stderr, "tagutil v"T_TAGUTIL_VERSION "\n\n");
-	(void)fprintf(stderr, "usage: %s [OPTION]... [FILE]...\n", getprogname());
-	(void)fprintf(stderr, "Modify or display music file's tag.\n");
-	(void)fprintf(stderr, "\n");
-	(void)fprintf(stderr, "Backend:\n");
-
-	TAILQ_FOREACH(b, bQ, next)
-		(void)fprintf(stderr, "  %10s: %s\n", b->libid, b->desc);
-	(void)fprintf(stderr, "\n");
-	(void)fprintf(stderr, "Options:\n");
-	(void)fprintf(stderr, "  -h              show this help\n");
-	(void)fprintf(stderr, "  -b FILES        display backend used\n");
-	(void)fprintf(stderr, "  -Y              answer yes to all questions\n");
-	(void)fprintf(stderr, "  -N              answer no  to all questions\n");
-	(void)fprintf(stderr, "  -a TAG=VALUE    add a TAG/VALUE pair\n");
-	(void)fprintf(stderr, "  -c TAG          clear all tag TAG\n");
-	(void)fprintf(stderr, "  -e              show tag and prompt for editing (need $EDITOR environment variable)\n");
-	(void)fprintf(stderr, "  -f PATH         load PATH yaml file in given music files.\n");
-	(void)fprintf(stderr, "  -r [-d] PATTERN rename files with the given PATTERN. you can use keywords in PATTERN:\n");
-	(void)fprintf(stderr, "                  %%tag if tag contains only `_', `-' or alphanum characters. %%{tag} otherwise.\n");
-	(void)fprintf(stderr, "  -s TAG=VALUE    equivalent to -c TAG -a TAG=VALUE\n");
-	(void)fprintf(stderr, "  -x FILTER       print files in matching FILTER\n");
-	(void)fprintf(stderr, "\n");
-
-	exit(EXIT_SUCCESS);
+	t_actionQ_destroy(aQ);
+	return (retval);
 }
 
 
@@ -333,10 +146,12 @@ user_edit(const char *restrict path)
 	time_t	before;
 	time_t	after;
 	struct stat s;
+	char	*editor;
 
 	assert_not_null(path);
 
-	if (G_editor == NULL)
+	editor = getenv("EDITOR");
+	if (editor == NULL)
 		errx(-1, "please, set the $EDITOR environment variable.");
 	/*
 	 * we're actually so cool, that we keep the user waiting if $EDITOR
@@ -344,8 +159,8 @@ user_edit(const char *restrict path)
 	 * the best known at the time of writing, but it has shown really good
 	 * results and is pretty short and clear.
 	 */
-	if (strcmp(G_editor, "emacs") == 0)
-		(void)fprintf(stderr, "Starting %s, please wait...\n", G_editor);
+	if (strcmp(editor, "emacs") == 0)
+		(void)fprintf(stderr, "Starting %s, please wait...\n", editor);
 
         if (stat(path, &s) != 0)
 		return (false);
@@ -356,7 +171,7 @@ user_edit(const char *restrict path)
 		/* NOTREACHED */
 	case 0:
 		/* child (edit process) */
-		execlp(G_editor, /* argv[0] */G_editor, /* argv[1] */path, NULL);
+		execlp(editor, /* argv[0] */editor, /* argv[1] */path, NULL);
 		err(errno, "execlp");
 		/* NOTREACHED */
 	default:
@@ -394,7 +209,7 @@ tagutil_print(struct t_file *restrict file)
 bool
 tagutil_load(struct t_file *restrict file, const char *restrict path)
 {
-	bool	ret = true;
+	bool	retval = true;
 	FILE	*stream;
 	struct t_taglist *T;
 
@@ -411,18 +226,17 @@ tagutil_load(struct t_file *restrict file, const char *restrict path)
 		xfclose(stream);
 	if (T == NULL)
 		return (false);
-	ret = file->clear(file, NULL) && file->add(file, T) && file->save(file);
+	retval = file->clear(file, NULL) && file->add(file, T) && file->save(file);
 	t_taglist_destroy(T);
-	return (ret);
+	return (retval);
 }
 
 
 bool
 tagutil_edit(struct t_file *restrict file)
 {
-	bool	ret = true;
-	char	*tmp_file;
-	char	*yaml;
+	bool	retval = true;
+	char	*tmp_file, *yaml, *editor;
 	FILE	*stream;
 
 	assert_not_null(file);
@@ -437,23 +251,24 @@ tagutil_edit(struct t_file *restrict file)
 		tmp_file = t_mkstemp("/tmp");
 		stream = xfopen(tmp_file, "w");
 		(void)fprintf(stream, "%s", yaml);
-		if (G_editor != NULL && strcmp(G_editor, "vim") == 0)
+		editor = getenv("EDITOR");
+		if (editor != NULL && strcmp(editor, "vim") == 0)
 			(void)fprintf(stream, "\n# vim:filetype=yaml");
 		xfclose(stream);
 		if (user_edit(tmp_file))
-			ret = tagutil_load(file, tmp_file);
+			retval = tagutil_load(file, tmp_file);
 		xunlink(tmp_file);
 		freex(tmp_file);
 	}
 	freex(yaml);
-	return (ret);
+	return (retval);
 }
 
 
 bool
 tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
 {
-	bool	ret;
+	bool	retval;
     	char	*ext, *result, *dirn, *fname, *question;
 
     assert_not_null(file);
@@ -486,11 +301,11 @@ tagutil_rename(struct t_file *restrict file, struct t_token **restrict tknary)
     if (strcmp(file->path, result) != 0) {
         (void)xasprintf(&question, "rename `%s' to `%s'", file->path, result);
         if (t_yesno(question))
-		ret = t_rename_safe(file, result);
+		retval = t_rename_safe(file, result);
         freex(question);
     }
     freex(result);
-    return (ret);
+    return (retval);
 }
 
 
@@ -498,16 +313,16 @@ bool
 tagutil_filter(struct t_file *restrict file,
         const struct t_ast *restrict ast)
 {
-    bool ret;
+    bool retval;
 
     assert_not_null(file);
     assert_not_null(ast);
 
-    ret = t_filter_eval(file, ast);
+    retval = t_filter_eval(file, ast);
 
-    if (ret)
+    if (retval)
         (void)printf("%s\n", file->path);
 
-    return (ret);
+    return (retval);
 }
 
