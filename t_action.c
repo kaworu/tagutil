@@ -165,8 +165,7 @@ t_actionQ_create(int *argcp, char ***argvp)
 			break;
 		arg = strchr(*argv, ':');
 		if (t->need_arg && arg == NULL) {
-			warnx(EINVAL, "option requires an argument -- %s",
-			    t->kstr);
+			warnx("option requires an argument -- %s", t->kstr);
 			usage();
 			/* NOTREACHED */
 		}
