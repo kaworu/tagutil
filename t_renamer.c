@@ -21,7 +21,6 @@
 #include "t_renamer.h"
 
 
-extern bool dflag;
 
 /*
  * TODO
@@ -37,6 +36,7 @@ static int build(char *path, mode_t omode);
 bool
 t_rename_safe(struct t_file *restrict file, const char *restrict newpath)
 {
+    extern bool dflag;
     bool failed = false;
     struct stat st;
     char *olddirn, *newdirn;

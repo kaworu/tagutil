@@ -19,6 +19,7 @@
 bool
 t_yesno(const char *restrict question)
 {
+	extern bool Yflag, Nflag;
     char *endl;
     char buffer[5]; /* strlen("yes\n\0") == 5 */
 

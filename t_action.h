@@ -9,39 +9,38 @@
 #include "t_toolkit.h"
 #include "t_file.h"
 
-
-extern bool	dflag, Nflag, Yflag;	/* -d, -N and -Y */
-
-
+/* type of action that can be performed */
 enum t_actionkind {
 	/* user options */
-	T_ADD,		/* -a TAG=VALUE	add tag */
-	T_SHOWBACKEND,	/* -b		show backend */
-	T_CLEAR,	/* -c TAG	clear tag */
-	T_EDIT,		/* -e		edit */
-	T_LOAD,		/* -f PATH	load file */
-	T_SHOW,		/* -p		display tags */
-	T_SHOWPATH,	/* -P		display only names */
-	T_RENAME,	/* -r PATTERN	rename files */
-	T_SET,		/* -s TAG=VALUE	set tags */
-	T_FILTER,	/* -x FILTER	filter */
-
+	T_ACTION_ADD,		/* add:TAG=VALUE	add tag */
+	T_ACTION_SHOWBACKEND,	/* backend		show backend */
+	T_ACTION_CLEAR,	/* clear:TAG		clear tag */
+	T_ACTION_EDIT,		/* edit			edit with $EDITOR */
+	T_ACTION_LOAD,		/* load:PATH		load file */
+	T_ACTION_SHOW,		/* print		display tags */
+	T_ACTION_SHOWPATH,	/* path			display only file path */
+	T_ACTION_RENAME,	/* rename:PATTERN	rename files */
+	T_ACTION_SET,		/* set:TAG=VALUE	set tags */
+	T_ACTION_FILTER,	/* filter:FILTER	filter */
 	/* internal */
-	T_RELOAD,
-	T_SAVE_IF_DIRTY,
+	T_ACTION_RELOAD,
+	T_ACTION_SAVE_IF_DIRTY,
 };
 
 
+/* type of action that can be performed */
+enum t_actionkind;
+
+/* one action to do. */
 struct t_action {
 	enum t_actionkind kind;
-	void	*data;
-	bool	rw; /* true if the action need read and write access */
-	bool (*apply)(struct t_action *restrict self,
-	    struct t_file *restrict file);
+	void	*data; /* argument of the action */
+	bool	write; /* true if the action need write access */
+	bool (*apply)(struct t_action *self,
+	    struct t_file *file);
 	TAILQ_ENTRY(t_action)	entries;
 };
 TAILQ_HEAD(t_actionQ, t_action);
-
 
 /*
  * show usage and exit.
@@ -53,18 +52,7 @@ void usage(void);
  * TODO
  */
 _t__nonnull(1) _t__nonnull(2)
-struct t_actionQ *	t_actionQ_create(int *argcp, char ***argvp);
-
-/*
- * TODO
- */
-struct t_action *	t_action_new(enum t_actionkind kind, char *arg);
-
-/*
- * TODO
- */
-_t__nonnull(1)
-void	t_action_destroy(struct t_action *a);
+struct t_actionQ *	t_actionQ_create(int *argcp, char ***argvp, bool *write);
 
 /*
  * TODO
@@ -72,4 +60,3 @@ void	t_action_destroy(struct t_action *a);
 _t__nonnull(1)
 void	t_actionQ_destroy(struct t_actionQ *restrict aQ);
 #endif /* not T_ACTION_H */
-

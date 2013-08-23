@@ -38,4 +38,5 @@
 #if !defined(HAS_STRDUP)
 #	include "compat/include/strdup.h"
 #endif
+
 #endif /* not T_CONFIG_H */
