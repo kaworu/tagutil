@@ -26,25 +26,25 @@ struct t_flac_data {
 
 
 _t__nonnull(1)
-static struct t_file *	t_file_new(const char *restrict path);
+static struct t_file *	t_file_new(const char *path);
 
 _t__nonnull(1)
-static void	t_file_destroy(struct t_file *restrict file);
+static void	t_file_destroy(struct t_file *file);
 
 _t__nonnull(1)
-static bool	t_file_save(struct t_file *restrict file);
+static bool	t_file_save(struct t_file *file);
 
 _t__nonnull(1)
-static struct t_taglist * t_file_get(struct t_file *restrict file,
-    const char *restrict key);
+static struct t_taglist * t_file_get(struct t_file *file,
+    const char *key);
 
 _t__nonnull(1)
-static bool	t_file_clear(struct t_file *restrict file,
-    const struct t_taglist *restrict T);
+static bool	t_file_clear(struct t_file *file,
+    const struct t_taglist *T);
 
 _t__nonnull(1) _t__nonnull(2)
-static bool	t_file_add(struct t_file *restrict file,
-     const struct t_taglist *restrict T);
+static bool	t_file_add(struct t_file *file,
+     const struct t_taglist *T);
 
 
 struct t_backend *
@@ -61,7 +61,7 @@ t_flac_backend(void)
 
 
 static struct t_file *
-t_file_new(const char *restrict path)
+t_file_new(const char *path)
 {
 	bool	b;
 	FLAC__Metadata_Iterator	*it;
@@ -112,7 +112,7 @@ error0:
 
 
 static void
-t_file_destroy(struct t_file *restrict file)
+t_file_destroy(struct t_file *file)
 {
 	struct t_flac_data *data;
 
@@ -128,7 +128,7 @@ t_file_destroy(struct t_file *restrict file)
 
 
 static bool
-t_file_save(struct t_file *restrict file)
+t_file_save(struct t_file *file)
 {
 	bool	ok;
 	struct t_flac_data	*data;
@@ -157,7 +157,7 @@ t_file_save(struct t_file *restrict file)
 
 
 static struct t_taglist *
-t_file_get(struct t_file *restrict file, const char *restrict key)
+t_file_get(struct t_file *file, const char *key)
 {
 	bool	 b;
 	char	*field_name  = NULL;
@@ -208,7 +208,7 @@ t_file_get(struct t_file *restrict file, const char *restrict key)
 
 
 static bool
-t_file_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
+t_file_clear(struct t_file *file, const struct t_taglist *T)
 {
 	bool	b;
 	int	i = 0;
@@ -257,7 +257,7 @@ t_file_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 
 
 static bool
-t_file_add(struct t_file *restrict file, const struct t_taglist *restrict T)
+t_file_add(struct t_file *file, const struct t_taglist *T)
 {
 	bool	b;
 	struct t_flac_data *data;

@@ -55,7 +55,7 @@ t_error_new(void);
  */
 _t__unused _t__nonnull(1)
 static inline void
-t_error_destroy(struct t_error *restrict e);
+t_error_destroy(struct t_error *e);
 
 
 static inline struct t_error *
@@ -71,7 +71,7 @@ t_error_new(void)
 
 
 static inline void
-t_error_destroy(struct t_error *restrict e)
+t_error_destroy(struct t_error *e)
 {
 
 	assert_not_null(e);

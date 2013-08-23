@@ -55,21 +55,21 @@ static inline void * xrealloc(void *ptr, size_t size);
 /* FILE FUNCTIONS */
 
 _t__unused _t__nonnull(1) _t__nonnull(2)
-static inline FILE * xfopen(const char *restrict path, const char *restrict mode);
+static inline FILE * xfopen(const char *path, const char *mode);
 
 _t__unused _t__nonnull(1)
-static inline void xfclose(FILE *restrict stream);
+static inline void xfclose(FILE *stream);
 
 _t__unused _t__nonnull(1)
-static inline void xunlink(const char *restrict path);
+static inline void xunlink(const char *path);
 
 /* BASIC STRING OPERATIONS */
 
 _t__unused _t__nonnull(1)
-static inline bool t_strempty(const char *restrict str);
+static inline bool t_strempty(const char *str);
 
 _t__unused _t__nonnull(1)
-static inline char * xstrdup(const char *restrict src);
+static inline char * xstrdup(const char *src);
 
 _t__unused _t__printflike(2, 3)
 static inline int xasprintf(char **ret, const char *fmt, ...);
@@ -78,13 +78,13 @@ static inline int xasprintf(char **ret, const char *fmt, ...);
  * upperize a given string.
  */
 _t__unused _t__nonnull(1)
-static inline char * t_strtoupper(char *restrict str);
+static inline char * t_strtoupper(char *str);
 
 /*
  * lowerize a given string.
  */
 _t__unused _t__nonnull(1)
-static inline char * t_strtolower(char *restrict str);
+static inline char * t_strtolower(char *str);
 
 
 /* OTHER */
@@ -95,13 +95,13 @@ static inline char * t_strtolower(char *restrict str);
  * true if the response match y|yes, false if it match n|no.
  * Honor Yflag and Nflag.
  */
-bool t_yesno(const char *restrict question);
+bool t_yesno(const char *question);
 
 /*
  * call "$EDITOR path" (the environment variable $EDITOR must be set).
  */
 _t__nonnull(1)
-bool t_user_edit(const char *restrict path);
+bool t_user_edit(const char *path);
 
 /*
  * reentrant dirname.
@@ -171,7 +171,7 @@ xrealloc(void *old_ptr, size_t new_size)
 
 
 static inline FILE *
-xfopen(const char *restrict path, const char *restrict mode)
+xfopen(const char *path, const char *mode)
 {
     FILE *stream;
 
@@ -188,7 +188,7 @@ xfopen(const char *restrict path, const char *restrict mode)
 
 
 static inline void
-xfclose(FILE *restrict stream)
+xfclose(FILE *stream)
 {
 
     assert_not_null(stream);
@@ -199,7 +199,7 @@ xfclose(FILE *restrict stream)
 
 
 static inline void
-xunlink(const char *restrict path)
+xunlink(const char *path)
 {
     assert_not_null(path);
 
@@ -209,7 +209,7 @@ xunlink(const char *restrict path)
 
 
 static inline bool
-t_strempty(const char *restrict str)
+t_strempty(const char *str)
 {
 
     assert_not_null(str);
@@ -219,7 +219,7 @@ t_strempty(const char *restrict str)
 
 
 static inline char *
-xstrdup(const char *restrict src)
+xstrdup(const char *src)
 {
     char *ret;
 
@@ -249,7 +249,7 @@ xasprintf(char **ret, const char *fmt, ...)
 
 
 static inline char *
-t_strtoupper(char *restrict str)
+t_strtoupper(char *str)
 {
     size_t len, i;
 
@@ -264,7 +264,7 @@ t_strtoupper(char *restrict str)
 
 
 static inline char *
-t_strtolower(char *restrict str)
+t_strtolower(char *str)
 {
     size_t len, i;
 

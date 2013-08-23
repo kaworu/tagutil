@@ -44,8 +44,8 @@ struct t_taglist * t_taglist_new(void);
  * insert a new key/value in given list.
  */
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-void t_taglist_insert(struct t_taglist *restrict T,
-        const char *restrict key, const char *restrict value);
+void t_taglist_insert(struct t_taglist *T,
+        const char *key, const char *value);
 
 #define T_TAG_FIRST true
 #define T_TAG_ALL   false
@@ -61,8 +61,8 @@ void t_taglist_insert(struct t_taglist *restrict T,
  * return a new list if found at least one matching tag, or NULL otherwise.
  */
 _t__nonnull(1) _t__nonnull(2)
-struct t_taglist * t_taglist_filter(const struct t_taglist *restrict T,
-        const char *restrict key, bool onlyfirst);
+struct t_taglist * t_taglist_filter(const struct t_taglist *T,
+        const char *key, bool onlyfirst);
 
 /*
  * count the number of tag matching key.
@@ -71,14 +71,14 @@ struct t_taglist * t_taglist_filter(const struct t_taglist *restrict T,
  * (then, returning one), or return 0.
  */
 _t__nonnull(1) _t__nonnull(2)
-unsigned int t_taglist_filter_count(const struct t_taglist *restrict T,
-        const char *restrict key, bool onlyfirst);
+unsigned int t_taglist_filter_count(const struct t_taglist *T,
+        const char *key, bool onlyfirst);
 
 /*
  * return the tag at index idx, or NULL if idx > T->count.
  */
 _t__nonnull(1)
-struct t_tag * t_taglist_tag_at(struct t_taglist *restrict T,
+struct t_tag * t_taglist_tag_at(struct t_taglist *T,
         unsigned int idx);
 
 /*
@@ -88,7 +88,7 @@ struct t_tag * t_taglist_tag_at(struct t_taglist *restrict T,
  * returned value has to be free()d.
  */
 _t__nonnull(1)
-char * t_taglist_join(struct t_taglist *restrict T, const char *restrict j);
+char * t_taglist_join(struct t_taglist *T, const char *j);
 
 /*
  * free the t_taglist struct and all the t_tag (0 indexed).

@@ -16,7 +16,7 @@
 
 
 struct t_lexer *
-t_lexer_new(const char *restrict source)
+t_lexer_new(const char *source)
 {
     char *s;
     size_t len;
@@ -39,7 +39,7 @@ t_lexer_new(const char *restrict source)
 
 
 void
-t_lexer_destroy(struct t_lexer *restrict L)
+t_lexer_destroy(struct t_lexer *L)
 {
 
     assert_not_null(L);
@@ -49,7 +49,7 @@ t_lexer_destroy(struct t_lexer *restrict L)
 
 
 char
-t_lexc(struct t_lexer *restrict L)
+t_lexc(struct t_lexer *L)
 {
 
     assert_not_null(L);
@@ -68,7 +68,7 @@ t_lexc(struct t_lexer *restrict L)
 
 
 char
-t_lexc_move(struct t_lexer *restrict L, int delta)
+t_lexc_move(struct t_lexer *L, int delta)
 {
 
     assert_not_null(L);
@@ -78,7 +78,7 @@ t_lexc_move(struct t_lexer *restrict L, int delta)
 
 
 char
-t_lexc_move_to(struct t_lexer *restrict L, int to)
+t_lexc_move_to(struct t_lexer *L, int to)
 {
 
     assert_not_null(L);
@@ -94,7 +94,7 @@ t_lexc_move_to(struct t_lexer *restrict L, int to)
 
 
 void
-t_lex_number(struct t_lexer *restrict L, struct t_token *restrict t)
+t_lex_number(struct t_lexer *L, struct t_token *t)
 {
     char *num, *endptr; /* new buffer pointers */
     const char *start, *end; /* source pointers */
@@ -177,7 +177,7 @@ t_lex_number(struct t_lexer *restrict L, struct t_token *restrict t)
 
 
 void
-t_lex_strlit_or_regex(struct t_lexer *restrict L, struct t_token **tptr)
+t_lex_strlit_or_regex(struct t_lexer *L, struct t_token **tptr)
 {
     struct t_token *t;
     char limit;
@@ -281,7 +281,7 @@ regopt_error:
 
 
 void
-t_lex_tagkey(struct t_lexer *restrict L, struct t_token **tptr,
+t_lex_tagkey(struct t_lexer *L, struct t_token **tptr,
         bool allow_star_modifier)
 {
     int copyend;
@@ -360,7 +360,7 @@ t_lex_tagkey(struct t_lexer *restrict L, struct t_token **tptr,
 
 
 void
-t_lex_tagidx(struct t_lexer *restrict L, struct t_token *restrict t,
+t_lex_tagidx(struct t_lexer *L, struct t_token *t,
         bool allow_star_modifier)
 {
     int start;
@@ -404,7 +404,7 @@ t_lex_tagidx(struct t_lexer *restrict L, struct t_token *restrict t,
 
 
 struct t_token *
-t_lex_next_token(struct t_lexer *restrict L)
+t_lex_next_token(struct t_lexer *L)
 {
     struct t_token *t;
     /* used for keywords detection */
@@ -591,8 +591,8 @@ t_lex_next_token(struct t_lexer *restrict L)
 
 
 void
-t_lex_error0(const struct t_lexer *restrict L, int start, int end,
-        const char *restrict fmt, va_list args)
+t_lex_error0(const struct t_lexer *L, int start, int end,
+        const char *fmt, va_list args)
 {
     char c;
 
@@ -610,8 +610,8 @@ t_lex_error0(const struct t_lexer *restrict L, int start, int end,
 }
 
 void
-t_lex_error(const struct t_lexer *restrict L, int start, int end,
-        const char *restrict fmt, ...)
+t_lex_error(const struct t_lexer *L, int start, int end,
+        const char *fmt, ...)
 {
     va_list args;
 
@@ -629,7 +629,7 @@ t_lex_error(const struct t_lexer *restrict L, int start, int end,
 
 #if 0
 bool
-t_lex_token_debug(struct t_token *restrict t) {
+t_lex_token_debug(struct t_token *t) {
     bool the_end = false;
 
     if (t) {

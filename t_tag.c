@@ -30,8 +30,8 @@ t_taglist_new(void)
 
 
 void
-t_taglist_insert(struct t_taglist *restrict T,
-        const char *restrict key, const char *restrict value)
+t_taglist_insert(struct t_taglist *T,
+        const char *key, const char *value)
 {
     size_t klen, vlen;
     struct t_tag *t;
@@ -59,8 +59,8 @@ t_taglist_insert(struct t_taglist *restrict T,
 
 
 struct t_taglist *
-t_taglist_filter(const struct t_taglist *restrict T,
-        const char *restrict key, bool onlyfirst)
+t_taglist_filter(const struct t_taglist *T,
+        const char *key, bool onlyfirst)
 {
     size_t len;
     struct t_taglist *ret;
@@ -101,8 +101,8 @@ t_taglist_filter(const struct t_taglist *restrict T,
 
 
 unsigned int
-t_taglist_filter_count(const struct t_taglist *restrict T,
-        const char *restrict key, bool onlyfirst)
+t_taglist_filter_count(const struct t_taglist *T,
+        const char *key, bool onlyfirst)
 {
     size_t len;
     unsigned int ret;
@@ -126,7 +126,7 @@ t_taglist_filter_count(const struct t_taglist *restrict T,
 
 
 char *
-t_taglist_join(struct t_taglist *restrict T, const char *restrict j)
+t_taglist_join(struct t_taglist *T, const char *j)
 {
     size_t jlen;
     struct t_strbuffer *sb;
@@ -152,7 +152,7 @@ t_taglist_join(struct t_taglist *restrict T, const char *restrict j)
 
 
 struct t_tag *
-t_taglist_tag_at(struct t_taglist *restrict T, unsigned int idx)
+t_taglist_tag_at(struct t_taglist *T, unsigned int idx)
 {
     struct t_tag *t;
 
@@ -169,7 +169,7 @@ t_taglist_tag_at(struct t_taglist *restrict T, unsigned int idx)
 
 
 void
-t_taglist_destroy(struct t_taglist *restrict T)
+t_taglist_destroy(struct t_taglist *T)
 {
     struct t_tag *t1, *t2;
 

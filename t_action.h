@@ -57,5 +57,5 @@ struct t_actionQ *	t_actionQ_create(int *argcp, char ***argvp, bool *write);
  * destroy (free memory) of an action queue.
  */
 _t__nonnull(1)
-void	t_actionQ_destroy(struct t_actionQ *restrict aQ);
+void	t_actionQ_destroy(struct t_actionQ *aQ);
 #endif /* not T_ACTION_H */

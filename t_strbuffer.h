@@ -40,7 +40,7 @@ static inline struct t_strbuffer * t_strbuffer_new(void);
  * to s before destroying the buffer.
  */
 _t__unused _t__nonnull(1) _t__nonnull(2)
-static inline void t_strbuffer_add(struct t_strbuffer *restrict sb,
+static inline void t_strbuffer_add(struct t_strbuffer *sb,
         const char *s, size_t len, bool mine);
 #define T_STRBUFFER_FREE true
 #define T_STRBUFFER_NOFREE false
@@ -51,13 +51,13 @@ static inline void t_strbuffer_add(struct t_strbuffer *restrict sb,
  * returned value has to be free()d.
  */
 _t__unused _t__nonnull(1)
-static inline char * t_strbuffer_get(struct t_strbuffer *restrict sb);
+static inline char * t_strbuffer_get(struct t_strbuffer *sb);
 
 /*
  * free the given t_strbuffer.
  */
 _t__unused _t__nonnull(1)
-static inline void t_strbuffer_destroy(struct t_strbuffer *restrict sb);
+static inline void t_strbuffer_destroy(struct t_strbuffer *sb);
 
 
 static inline struct t_strbuffer *
@@ -79,7 +79,7 @@ t_strbuffer_new(void)
 
 
 static inline void
-t_strbuffer_add(struct t_strbuffer *restrict sb, const char *s,
+t_strbuffer_add(struct t_strbuffer *sb, const char *s,
         size_t len, bool mine)
 {
     assert_not_null(sb);
@@ -102,7 +102,7 @@ t_strbuffer_add(struct t_strbuffer *restrict sb, const char *s,
 
 
 static inline char *
-t_strbuffer_get(struct t_strbuffer *restrict sb)
+t_strbuffer_get(struct t_strbuffer *sb)
 {
     char *ret, *now;
     int i;
@@ -122,7 +122,7 @@ t_strbuffer_get(struct t_strbuffer *restrict sb)
 
 
 static inline void
-t_strbuffer_destroy(struct t_strbuffer *restrict sb)
+t_strbuffer_destroy(struct t_strbuffer *sb)
 {
     int i;
 

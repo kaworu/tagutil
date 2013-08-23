@@ -15,31 +15,31 @@
 
 
 _t__nonnull(2)
-static struct t_ast * t_ast_new(struct t_ast *restrict lhs,
-        struct t_token *restrict t, struct t_ast *restrict rhs);
+static struct t_ast * t_ast_new(struct t_ast *lhs,
+        struct t_token *t, struct t_ast *rhs);
 
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
 _t__dead2 _t__printflike(4, 5)
-void parse_error(const struct t_lexer *restrict L,
-        const struct t_token *restrict start,
-        const struct t_token *restrict end,
+void parse_error(const struct t_lexer *L,
+        const struct t_token *start,
+        const struct t_token *end,
         const char *fmt, ...);
 
 /* private t_parse_filter helpers. */
 _t__nonnull(1)
-static struct t_ast * t_parse_condition(struct t_lexer *restrict L);
+static struct t_ast * t_parse_condition(struct t_lexer *L);
 
 /*
  * Condition ::= <Condition> '||' <Condition>
  */
 _t__nonnull(1)
-static struct t_ast * t_parse_or(struct t_lexer *restrict L);
+static struct t_ast * t_parse_or(struct t_lexer *L);
 
 /*
  * Condition ::= <Condition> '&&' <Condition>
  */
 _t__nonnull(1)
-static struct t_ast * t_parse_and(struct t_lexer *restrict L);
+static struct t_ast * t_parse_and(struct t_lexer *L);
 
 /*
  * choose between:
@@ -51,19 +51,19 @@ static struct t_ast * t_parse_and(struct t_lexer *restrict L);
  *    Condition ::= <REGEX> ( '=~' | '!~' ) <Value>
  */
 _t__nonnull(1)
-static struct t_ast * t_parse_simple(struct t_lexer *restrict L);
+static struct t_ast * t_parse_simple(struct t_lexer *L);
 
 /*
  * 1) Condition ::= '!' '(' <Condition> ')'
  */
 _t__nonnull(1)
-static struct t_ast * t_parse_not(struct t_lexer *restrict L);
+static struct t_ast * t_parse_not(struct t_lexer *L);
 
 /*
  * 2) Condition ::= '(' <Condition> ')'
  */
 _t__nonnull(1)
-static struct t_ast * t_parse_nestedcond(struct t_lexer *restrict L);
+static struct t_ast * t_parse_nestedcond(struct t_lexer *L);
 
 /*
  * 3) Condition ::= <Value> ( '==' | '<' | '<=' | '>' | '>=' | '!=' ) <Value>
@@ -72,12 +72,12 @@ static struct t_ast * t_parse_nestedcond(struct t_lexer *restrict L);
  */
 _t__nonnull(1)
 static struct t_ast *
-parse_cmp_or_match_or_value(struct t_lexer *restrict L);
+parse_cmp_or_match_or_value(struct t_lexer *L);
 
 
 static struct t_ast *
-t_ast_new(struct t_ast *restrict lhs, struct t_token *restrict t,
-        struct t_ast *restrict rhs)
+t_ast_new(struct t_ast *lhs, struct t_token *t,
+        struct t_ast *rhs)
 {
     struct t_ast *ret;
 
@@ -96,7 +96,7 @@ t_ast_new(struct t_ast *restrict lhs, struct t_token *restrict t,
 
 
 void
-t_ast_destroy(struct t_ast *restrict victim)
+t_ast_destroy(struct t_ast *victim)
 {
 
     if (victim != NULL) {
@@ -111,7 +111,7 @@ t_ast_destroy(struct t_ast *restrict victim)
 
 
 struct t_ast *
-t_parse_filter(struct t_lexer *restrict L)
+t_parse_filter(struct t_lexer *L)
 {
     struct t_ast *ret;
     struct t_token *t;
@@ -143,7 +143,7 @@ t_parse_filter(struct t_lexer *restrict L)
 
 
 static struct t_ast *
-t_parse_condition(struct t_lexer *restrict L)
+t_parse_condition(struct t_lexer *L)
 {
 
     assert_not_null(L);
@@ -153,7 +153,7 @@ t_parse_condition(struct t_lexer *restrict L)
 
 
 static struct t_ast *
-t_parse_or(struct t_lexer *restrict L)
+t_parse_or(struct t_lexer *L)
 {
     struct t_token *or;
     struct t_ast *ret;
@@ -172,7 +172,7 @@ t_parse_or(struct t_lexer *restrict L)
 
 
 struct t_ast *
-t_parse_and(struct t_lexer *restrict L)
+t_parse_and(struct t_lexer *L)
 {
     struct t_token *and;
     struct t_ast *ret;
@@ -191,7 +191,7 @@ t_parse_and(struct t_lexer *restrict L)
 
 
 static struct t_ast *
-t_parse_simple(struct t_lexer *restrict L)
+t_parse_simple(struct t_lexer *L)
 {
     struct t_token *t;
     struct t_ast *ret;
@@ -227,7 +227,7 @@ t_parse_simple(struct t_lexer *restrict L)
 
 
 static struct t_ast *
-t_parse_not(struct t_lexer *restrict L)
+t_parse_not(struct t_lexer *L)
 {
     struct t_token *not;
     struct t_ast *cond, *ret;
@@ -247,7 +247,7 @@ t_parse_not(struct t_lexer *restrict L)
 
 
 static struct t_ast *
-t_parse_nestedcond(struct t_lexer *restrict L)
+t_parse_nestedcond(struct t_lexer *L)
 {
     struct t_token *oparen, *cparen;
     struct t_ast *ret;
@@ -286,7 +286,7 @@ t_parse_nestedcond(struct t_lexer *restrict L)
  *    Condition ::= <REGEX> ( '=~' | '!~' ) <Value>
  */
 static struct t_ast *
-parse_cmp_or_match_or_value(struct t_lexer *restrict L)
+parse_cmp_or_match_or_value(struct t_lexer *L)
 {
     struct t_token *lhstok, *optok, *rhstok;
 
@@ -379,8 +379,8 @@ parse_cmp_or_match_or_value(struct t_lexer *restrict L)
 
 
 void
-parse_error(const struct t_lexer *restrict L,
-        const struct t_token *restrict startt, const struct t_token *restrict endt,
+parse_error(const struct t_lexer *L,
+        const struct t_token *startt, const struct t_token *endt,
         const char *fmt, ...)
 {
     va_list args;
@@ -401,7 +401,7 @@ parse_error(const struct t_lexer *restrict L,
 
 #if 0
 void
-t_ast_debug(struct t_ast *restrict AST)
+t_ast_debug(struct t_ast *AST)
 {
 
     if (AST == NULL)

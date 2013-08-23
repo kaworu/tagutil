@@ -11,7 +11,7 @@
 #include "t_puid.h"
 
 char *
-puid_create(const struct audio_data *restrict ad)
+puid_create(const struct audio_data *ad)
 {
     const char *fprint;
     char *ret;

@@ -50,7 +50,7 @@ t_yaml_whdl(void *data, unsigned char *buffer, size_t size)
 
 
 char *
-t_tags2yaml(struct t_file *restrict file)
+t_tags2yaml(struct t_file *file)
 {
     yaml_emitter_t emitter;
     yaml_event_t event;
@@ -181,8 +181,8 @@ emitter_error:
  *  STREAM-END
  */
 struct t_yaml_fsm;
-typedef void t_yaml_parse_func(struct t_yaml_fsm *restrict FSM,
-        const yaml_event_t *restrict e);
+typedef void t_yaml_parse_func(struct t_yaml_fsm *FSM,
+        const yaml_event_t *e);
 
 t_yaml_parse_func t_yaml_parse_stream_start;
 
@@ -196,7 +196,7 @@ struct t_yaml_fsm {
 };
 
 struct t_taglist *
-t_yaml2tags(struct t_file *restrict file, FILE *restrict stream)
+t_yaml2tags(struct t_file *file, FILE *stream)
 {
     struct t_yaml_fsm FSM;
     yaml_parser_t parser;
@@ -322,8 +322,8 @@ t_yaml_parse_func t_yaml_parse_nop;
 
 
 void
-t_yaml_parse_stream_start(struct t_yaml_fsm *restrict FSM,
-    const yaml_event_t *restrict e)
+t_yaml_parse_stream_start(struct t_yaml_fsm *FSM,
+    const yaml_event_t *e)
 {
 
     assert_not_null(FSM);
@@ -345,8 +345,8 @@ t_yaml_parse_stream_start(struct t_yaml_fsm *restrict FSM,
 
 
 void
-t_yaml_parse_document_start(struct t_yaml_fsm *restrict FSM,
-    const yaml_event_t *restrict e)
+t_yaml_parse_document_start(struct t_yaml_fsm *FSM,
+    const yaml_event_t *e)
 {
 
     assert_not_null(FSM);
@@ -373,8 +373,8 @@ t_yaml_parse_document_start(struct t_yaml_fsm *restrict FSM,
 
 
 void
-t_yaml_parse_sequence_start(struct t_yaml_fsm *restrict FSM,
-    const yaml_event_t *restrict e)
+t_yaml_parse_sequence_start(struct t_yaml_fsm *FSM,
+    const yaml_event_t *e)
 {
 
     assert_not_null(FSM);
@@ -400,8 +400,8 @@ t_yaml_parse_sequence_start(struct t_yaml_fsm *restrict FSM,
 
 
 void
-t_yaml_parse_mapping_start(struct t_yaml_fsm *restrict FSM,
-    const yaml_event_t *restrict e)
+t_yaml_parse_mapping_start(struct t_yaml_fsm *FSM,
+    const yaml_event_t *e)
 {
 
     assert_not_null(FSM);
@@ -427,8 +427,8 @@ t_yaml_parse_mapping_start(struct t_yaml_fsm *restrict FSM,
 
 
 void
-t_yaml_parse_scalar_key(struct t_yaml_fsm *restrict FSM,
-    const yaml_event_t *restrict e)
+t_yaml_parse_scalar_key(struct t_yaml_fsm *FSM,
+    const yaml_event_t *e)
 {
 
     assert_not_null(FSM);
@@ -450,8 +450,8 @@ t_yaml_parse_scalar_key(struct t_yaml_fsm *restrict FSM,
 
 
 void
-t_yaml_parse_scalar_value(struct t_yaml_fsm *restrict FSM,
-    const yaml_event_t *restrict e)
+t_yaml_parse_scalar_value(struct t_yaml_fsm *FSM,
+    const yaml_event_t *e)
 {
     char *value;
 
@@ -477,8 +477,8 @@ t_yaml_parse_scalar_value(struct t_yaml_fsm *restrict FSM,
 
 
 void
-t_yaml_parse_mapping_end(struct t_yaml_fsm *restrict FSM,
-    const yaml_event_t *restrict e)
+t_yaml_parse_mapping_end(struct t_yaml_fsm *FSM,
+    const yaml_event_t *e)
 {
 
     assert_not_null(FSM);
@@ -497,8 +497,8 @@ t_yaml_parse_mapping_end(struct t_yaml_fsm *restrict FSM,
 
 
 void
-t_yaml_parse_document_end(struct t_yaml_fsm *restrict FSM,
-    const yaml_event_t *restrict e)
+t_yaml_parse_document_end(struct t_yaml_fsm *FSM,
+    const yaml_event_t *e)
 {
 
     assert_not_null(FSM);
@@ -517,8 +517,8 @@ t_yaml_parse_document_end(struct t_yaml_fsm *restrict FSM,
 
 
 void
-t_yaml_parse_stream_end(struct t_yaml_fsm *restrict FSM,
-    const yaml_event_t *restrict e)
+t_yaml_parse_stream_end(struct t_yaml_fsm *FSM,
+    const yaml_event_t *e)
 {
 
     assert_not_null(FSM);
@@ -540,8 +540,8 @@ t_yaml_parse_stream_end(struct t_yaml_fsm *restrict FSM,
 
 
 void
-t_yaml_parse_nop(_t__unused struct t_yaml_fsm *restrict FSM,
-    _t__unused const yaml_event_t *restrict e)
+t_yaml_parse_nop(_t__unused struct t_yaml_fsm *FSM,
+    _t__unused const yaml_event_t *e)
 {
 
     assert_fail();

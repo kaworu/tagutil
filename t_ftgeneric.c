@@ -29,25 +29,25 @@ struct t_generic_data {
 static void	taglib_init(void);
 
 _t__nonnull(1)
-static struct t_file *	t_file_new(const char *restrict path);
+static struct t_file *	t_file_new(const char *path);
 
 _t__nonnull(1)
-static void	t_file_destroy(struct t_file *restrict file);
+static void	t_file_destroy(struct t_file *file);
 
 _t__nonnull(1)
-static bool	t_file_save(struct t_file *restrict file);
+static bool	t_file_save(struct t_file *file);
 
 _t__nonnull(1)
-static struct t_taglist * t_file_get(struct t_file *restrict file,
-    const char *restrict key);
+static struct t_taglist * t_file_get(struct t_file *file,
+    const char *key);
 
 _t__nonnull(1)
-static bool	t_file_clear(struct t_file *restrict file,
-    const struct t_taglist *restrict T);
+static bool	t_file_clear(struct t_file *file,
+    const struct t_taglist *T);
 
 _t__nonnull(1) _t__nonnull(2)
-static bool	t_file_add(struct t_file *restrict file,
-    const struct t_taglist *restrict T);
+static bool	t_file_add(struct t_file *file,
+    const struct t_taglist *T);
 
 
 void
@@ -81,7 +81,7 @@ t_generic_backend(void)
 
 
 static struct t_file *
-t_file_new(const char *restrict path)
+t_file_new(const char *path)
 {
 	TagLib_File	*f;
 	struct t_file *file;
@@ -105,7 +105,7 @@ t_file_new(const char *restrict path)
 
 
 static void
-t_file_destroy(struct t_file *restrict file)
+t_file_destroy(struct t_file *file)
 {
 	struct t_generic_data *data;
 
@@ -120,7 +120,7 @@ t_file_destroy(struct t_file *restrict file)
 
 
 static bool
-t_file_save(struct t_file *restrict file)
+t_file_save(struct t_file *file)
 {
 	bool ok;
 	struct t_generic_data *data;
@@ -146,7 +146,7 @@ static const char * taglibkeys[] = {
 	"album", "artist", "description", "date", "genre", "title", "tracknumber"
 };
 static struct t_taglist *
-t_file_get(struct t_file *restrict file, const char *restrict key)
+t_file_get(struct t_file *file, const char *key)
 {
 	int		 i;
 	unsigned int	 uintval;
@@ -212,7 +212,7 @@ t_file_get(struct t_file *restrict file, const char *restrict key)
 
 
 static bool
-t_file_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
+t_file_clear(struct t_file *file, const struct t_taglist *T)
 {
 	int	i;
 	struct t_generic_data *data;
@@ -258,7 +258,7 @@ t_file_clear(struct t_file *restrict file, const struct t_taglist *restrict T)
 
 
 static bool
-t_file_add(struct t_file *restrict file, const struct t_taglist *restrict T)
+t_file_add(struct t_file *file, const struct t_taglist *T)
 {
 	bool	isstrf;
 	struct t_generic_data *data;

@@ -26,7 +26,7 @@
  * TODO
  */
 _t__nonnull(1)
-struct t_token * t_rename_lex_next_token(struct t_lexer *restrict L);
+struct t_token * t_rename_lex_next_token(struct t_lexer *L);
 
 /* taken from mkdir(3) */
 _t__nonnull(1)
@@ -34,7 +34,7 @@ static int build(char *path, mode_t omode);
 
 
 bool
-t_rename_safe(struct t_file *restrict file, const char *restrict newpath)
+t_rename_safe(struct t_file *file, const char *newpath)
 {
     extern bool dflag;
     bool failed = false;
@@ -99,7 +99,7 @@ t_rename_safe(struct t_file *restrict file, const char *restrict newpath)
 
 
 struct t_token **
-t_rename_parse(const char *restrict pattern)
+t_rename_parse(const char *pattern)
 {
     struct t_lexer *L;
     struct t_token **ret;
@@ -133,7 +133,7 @@ t_rename_parse(const char *restrict pattern)
 
 
 struct t_token *
-t_rename_lex_next_token(struct t_lexer *restrict L)
+t_rename_lex_next_token(struct t_lexer *L)
 {
     int skip, i;
     bool done;
@@ -209,7 +209,7 @@ t_rename_lex_next_token(struct t_lexer *restrict L)
 
 
 char *
-t_rename_eval(struct t_file *restrict file, struct t_token **restrict ts)
+t_rename_eval(struct t_file *file, struct t_token **ts)
 {
     const struct t_token *tkn;
     struct t_strbuffer *sb;

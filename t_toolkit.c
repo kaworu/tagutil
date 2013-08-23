@@ -17,7 +17,7 @@
 
 
 bool
-t_yesno(const char *restrict question)
+t_yesno(const char *question)
 {
 	extern bool Yflag, Nflag;
     char *endl;
@@ -69,7 +69,7 @@ t_yesno(const char *restrict question)
 
 
 bool
-t_user_edit(const char *restrict path)
+t_user_edit(const char *path)
 {
 	pid_t	edit; /* child process */
 	int	status;

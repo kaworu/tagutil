@@ -18,7 +18,7 @@
  * return true if file match the filter, false otherwise.
  */
 _t__nonnull(1) _t__nonnull(2)
-bool t_filter_eval(struct t_file *restrict file,
-	const struct t_ast *restrict filter);
+bool t_filter_eval(struct t_file *file,
+	const struct t_ast *filter);
 
 #endif /* not T_INTERPRETER_H */

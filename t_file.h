@@ -31,7 +31,7 @@ struct t_file {
 	 * return NULL if it couldn't create the struct.
 	 * returned value has to be free()d (use file->destroy(file)).
 	 */
-	struct t_file * (*new)(const char *restrict path);
+	struct t_file * (*new)(const char *path);
 
 	/*
 	 * write the file.
@@ -40,12 +40,12 @@ struct t_file {
 	 * On success t_error_msg(file) is NULL, otherwise it contains an error
 	 * message.
 	 */
-	bool (*save)(struct t_file *restrict file);
+	bool (*save)(struct t_file *file);
 
 	/*
 	 * free the struct
 	 */
-	void (*destroy)(struct t_file *restrict file);
+	void (*destroy)(struct t_file *file);
 
 	/*
 	 * return a the values of the tag key.
@@ -58,8 +58,8 @@ struct t_file {
 	 *
 	 * returned value has to be free()d (use t_taglist_destroy()).
 	 */
-	struct t_taglist * (*get)(struct t_file *restrict file,
-	    const char *restrict key);
+	struct t_taglist * (*get)(struct t_file *file,
+	    const char *key);
 
 	/*
 	 * clear the given key tag (all values).
@@ -69,8 +69,8 @@ struct t_file {
 	 * On success true is returned, otherwise false is returned and
 	 * t_error_msg(file) contains an error message.
 	 */
-	bool (*clear)(struct t_file *restrict file,
-	    const struct t_taglist *restrict T);
+	bool (*clear)(struct t_file *file,
+	    const struct t_taglist *T);
 
 	/*
 	 * add the tags of given t_taglist in file.
@@ -78,8 +78,8 @@ struct t_file {
 	 * On success true is returned, otherwise false is returned and
 	 * t_error_msg(file) contains an error message.
 	 */
-	bool (*add)(struct t_file *restrict file,
-	    const struct t_taglist *restrict T);
+	bool (*add)(struct t_file *file,
+	    const struct t_taglist *T);
 
 
 	T_ERROR_MSG_MEMBER;
@@ -124,7 +124,7 @@ struct t_file {
 /*
  * t_file ctor type
  */
-typedef struct t_file * t_file_ctor(const char *restrict path);
+typedef struct t_file * t_file_ctor(const char *path);
 
 
 #endif /* not T_FILE_H */

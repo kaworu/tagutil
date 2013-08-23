@@ -16,7 +16,7 @@
 
 /* write size bytes to buf readed from fd */
 _t__nonnull(2)
-static inline int readBytes(int fd, unsigned char *restrict buf,
+static inline int readBytes(int fd, unsigned char *buf,
         unsigned int size);
 
 
@@ -132,7 +132,7 @@ wav_load(const char *path, struct audio_data *ad)
 
 /* ~ copy/paste from libofa's example/wavefile.cpp */
 static inline int
-readBytes(int fd, unsigned char *restrict buf, unsigned int size)
+readBytes(int fd, unsigned char *buf, unsigned int size)
 {
     unsigned int ct, x;
     int n;

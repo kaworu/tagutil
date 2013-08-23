@@ -9,5 +9,5 @@
 
 
 _t__nonnull(1)
-char * puid_create(const struct audio_data *restrict ad);
+char * puid_create(const struct audio_data *ad);
 #endif /* not T_PUID_H */

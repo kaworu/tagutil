@@ -41,41 +41,41 @@ t_cmp_func * t_invert(t_cmp_func *f);
  * eval a comparison between lhs and rhs.
  */
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3) _t__nonnull(4)
-static bool t_filter_eval_cmp(struct t_file *restrict file,
-        const struct t_ast *restrict lhs, const struct t_ast *restrict rhs,
+static bool t_filter_eval_cmp(struct t_file *file,
+        const struct t_ast *lhs, const struct t_ast *rhs,
         t_cmp_func *f);
 
 _t__nonnull(1) _t__nonnull(3) _t__nonnull(4)
-static bool t_filter_eval_int_cmp(struct t_file *restrict file,
-        int i, const struct t_ast *restrict rhs, t_cmp_func *f);
+static bool t_filter_eval_int_cmp(struct t_file *file,
+        int i, const struct t_ast *rhs, t_cmp_func *f);
 
 _t__nonnull(1) _t__nonnull(3) _t__nonnull(4)
-static bool t_filter_eval_double_cmp(struct t_file *restrict file,
-        double d, const struct t_ast *restrict rhs, t_cmp_func *f);
+static bool t_filter_eval_double_cmp(struct t_file *file,
+        double d, const struct t_ast *rhs, t_cmp_func *f);
 
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3) _t__nonnull(4)
-static bool t_filter_eval_str_cmp(struct t_file *restrict file,
-        const char *restrict str, const struct t_ast *restrict rhs,
+static bool t_filter_eval_str_cmp(struct t_file *file,
+        const char *str, const struct t_ast *rhs,
         t_cmp_func *f);
 
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-static bool t_filter_eval_undef_cmp(struct t_file *restrict file,
-        const struct t_ast *restrict rhs, t_cmp_func *f);
+static bool t_filter_eval_undef_cmp(struct t_file *file,
+        const struct t_ast *rhs, t_cmp_func *f);
 
 /*
  * eval a regex match.
  */
 _t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-static bool t_filter_eval_match(struct t_file *restrict file,
-        const struct t_ast *restrict lhs, const struct t_ast *restrict rhs);
+static bool t_filter_eval_match(struct t_file *file,
+        const struct t_ast *lhs, const struct t_ast *rhs);
 
 _t__nonnull(1) _t__nonnull(2)
 static inline bool t_filter_regexec(const regex_t *r, const char *s);
 
 
 bool
-t_filter_eval(struct t_file *restrict file,
-        const struct t_ast *restrict filter)
+t_filter_eval(struct t_file *file,
+        const struct t_ast *filter)
 {
     t_cmp_func *f;
     bool ret;
@@ -132,8 +132,8 @@ t_filter_eval(struct t_file *restrict file,
 
 
 static bool
-t_filter_eval_cmp(struct t_file *restrict file,
-        const struct t_ast *restrict lhs, const struct t_ast *restrict rhs,
+t_filter_eval_cmp(struct t_file *file,
+        const struct t_ast *lhs, const struct t_ast *rhs,
         t_cmp_func *f)
 {
     bool ret = false;
@@ -226,8 +226,8 @@ t_filter_eval_cmp(struct t_file *restrict file,
 
 
 static bool
-t_filter_eval_match(struct t_file *restrict file,
-        const struct t_ast *restrict lhs, const struct t_ast *restrict rhs)
+t_filter_eval_match(struct t_file *file,
+        const struct t_ast *lhs, const struct t_ast *rhs)
 {
     const regex_t *r;
     bool ret = false;
@@ -413,8 +413,8 @@ t_invert(t_cmp_func *f)
 
 
 static bool
-t_filter_eval_int_cmp(struct t_file *restrict file,
-        int i, const struct t_ast *restrict rhs, t_cmp_func *f)
+t_filter_eval_int_cmp(struct t_file *file,
+        int i, const struct t_ast *rhs, t_cmp_func *f)
 {
     const char *cs;
     bool ret = false;
@@ -491,8 +491,8 @@ t_filter_eval_int_cmp(struct t_file *restrict file,
 
 
 static bool
-t_filter_eval_double_cmp(struct t_file *restrict file,
-        double d, const struct t_ast *restrict rhs, t_cmp_func *f)
+t_filter_eval_double_cmp(struct t_file *file,
+        double d, const struct t_ast *rhs, t_cmp_func *f)
 {
     const char *cs;
     bool ret = false;
@@ -568,8 +568,8 @@ t_filter_eval_double_cmp(struct t_file *restrict file,
 
 
 static bool
-t_filter_eval_str_cmp(struct t_file *restrict file,
-        const char *restrict str, const struct t_ast *restrict rhs,
+t_filter_eval_str_cmp(struct t_file *file,
+        const char *str, const struct t_ast *rhs,
         t_cmp_func *f)
 {
     const char *cs;
@@ -644,8 +644,8 @@ t_filter_eval_str_cmp(struct t_file *restrict file,
 
 
 static bool
-t_filter_eval_undef_cmp(struct t_file *restrict file,
-        const struct t_ast *restrict rhs, t_cmp_func *f)
+t_filter_eval_undef_cmp(struct t_file *file,
+        const struct t_ast *rhs, t_cmp_func *f)
 {
     double def = 0;
     struct t_taglist *T = NULL;
