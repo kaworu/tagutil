@@ -39,7 +39,7 @@ static struct t_action_token t_action_keywords[] = {
 };
 
 
-/* actions */
+/* action methods */
 static bool	t_action_add(struct t_action *self, struct t_file *file);
 static bool	t_action_backend(struct t_action *self, struct t_file *file);
 static bool	t_action_clear(struct t_action *self, struct t_file *file);
@@ -72,7 +72,7 @@ static void	t_action_destroy(struct t_action *a);
 void
 usage(void)
 {
-	const struct t_backendQ *bQ = t_get_backend();
+	const struct t_backendQ *bQ = t_all_backends();
 	const struct t_backend	*b;
 
 	(void)fprintf(stderr, "tagutil v"T_TAGUTIL_VERSION "\n\n");
@@ -194,7 +194,7 @@ t_actionQ_create(int *argcp, char ***argvp, bool *writep)
 	}
 
 	if (TAILQ_EMPTY(aQ)) {
-		/* no action given, fallback to default */
+		/* no action given, fallback to default which is show */
 		a = t_action_new(T_ACTION_SHOW, NULL);
 		TAILQ_INSERT_TAIL(aQ, a, entries);
 	}
@@ -204,12 +204,11 @@ t_actionQ_create(int *argcp, char ***argvp, bool *writep)
 		a = t_action_new(T_ACTION_SAVE_IF_DIRTY, NULL);
 		TAILQ_INSERT_TAIL(aQ, a, entries);
 	}
-
-	*argcp = argc;
-	*argvp = argv;
 	if (writep != NULL)
 		*writep = write;
 
+	*argcp = argc;
+	*argvp = argv;
 	return (aQ);
 }
 
@@ -255,7 +254,6 @@ t_action_new(enum t_actionkind kind, char *arg)
 		a->apply = t_action_add;
 		break;
 	case T_ACTION_SHOWBACKEND:
-		a->write = false;
 		a->apply = t_action_backend;
 		break;
 	case T_ACTION_CLEAR:
@@ -277,11 +275,9 @@ t_action_new(enum t_actionkind kind, char *arg)
 		a->apply = t_action_load;
 		break;
 	case T_ACTION_SHOW:
-		a->write = false;
 		a->apply = t_action_print;
 		break;
 	case T_ACTION_SHOWPATH:
-		a->write = false;
 		a->apply = t_action_showpath;
 		break;
 	case T_ACTION_RENAME:
@@ -308,15 +304,13 @@ t_action_new(enum t_actionkind kind, char *arg)
 	case T_ACTION_FILTER:
 		assert_not_null(arg);
 		a->data  = t_parse_filter(t_lexer_new(arg));
-		a->write = false;
 		a->apply = t_action_filter;
 		break;
 	case T_ACTION_RELOAD:
-		a->write = false;
 		a->apply = t_action_reload;
 		break;
 	case T_ACTION_SAVE_IF_DIRTY:
-		a->write = false; /* yes, we lie, we're bad */
+		a->write = false; /* writting is not needed after a T_ACTION_SAVE_IF_DIRTY */
 		a->apply = t_action_saveifdirty;
 		break;
 	default:
@@ -398,7 +392,7 @@ static bool
 t_action_edit(struct t_action *self, struct t_file *file)
 {
 	bool	retval = true;
-	char	*tmp_file, *yaml, *editor;
+	char	*tmp_file, *yaml;
 	FILE	*stream;
 	struct t_action	*load;
 
@@ -410,14 +404,14 @@ t_action_edit(struct t_action *self, struct t_file *file)
 	if (yaml == NULL)
 		return (false);
 
+	/* FIXME: just yesno(question); */
 	(void)printf("edit ");
 	if (t_yesno(file->path)) {
-		tmp_file = t_mkstemp("/tmp");
+    		(void)xasprintf(&tmp_file, "/tmp/%s-XXXXXX.yml", getprogname());
+		if (mkstemp(tmp_file) == -1)
+			err(errno, "mkstemp");
 		stream = xfopen(tmp_file, "w");
 		(void)fprintf(stream, "%s", yaml);
-		editor = getenv("EDITOR");
-		if (editor != NULL && strcmp(editor, "vim") == 0)
-			(void)fprintf(stream, "\n# vim:filetype=yaml");
 		xfclose(stream);
 		if (t_user_edit(tmp_file)) {
 			load = t_action_new(T_ACTION_LOAD, tmp_file);
@@ -588,11 +582,10 @@ t_action_reload(struct t_action *self, struct t_file *file)
 	memcpy(&tmp, file, sizeof(struct t_file));
 	memcpy(file, neo,  sizeof(struct t_file));
 	memcpy(neo,  &tmp, sizeof(struct t_file));
+	/* now neo is in fact the "old" one */
 	neo->destroy(neo);
 	return (true);
 }
-
-
 
 
 static bool

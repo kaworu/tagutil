@@ -9,6 +9,7 @@
 #include "t_toolkit.h"
 #include "t_file.h"
 
+
 /* type of action that can be performed */
 enum t_actionkind {
 	/* user options */
@@ -27,10 +28,6 @@ enum t_actionkind {
 	T_ACTION_SAVE_IF_DIRTY,
 };
 
-
-/* type of action that can be performed */
-enum t_actionkind;
-
 /* one action to do. */
 struct t_action {
 	enum t_actionkind kind;
@@ -40,6 +37,7 @@ struct t_action {
 	    struct t_file *file);
 	TAILQ_ENTRY(t_action)	entries;
 };
+/* action queue head */
 TAILQ_HEAD(t_actionQ, t_action);
 
 /*
@@ -49,13 +47,14 @@ _t__dead2
 void usage(void);
 
 /*
- * TODO
+ * Create a queue of action based on argc/argv. if not NULL, write will be set
+ * to true if any action actually need write access.
  */
 _t__nonnull(1) _t__nonnull(2)
 struct t_actionQ *	t_actionQ_create(int *argcp, char ***argvp, bool *write);
 
 /*
- * TODO
+ * destroy (free memory) of an action queue.
  */
 _t__nonnull(1)
 void	t_actionQ_destroy(struct t_actionQ *restrict aQ);

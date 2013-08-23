@@ -63,15 +63,6 @@ static inline void xfclose(FILE *restrict stream);
 _t__unused _t__nonnull(1)
 static inline void xunlink(const char *restrict path);
 
-/*
- * create a temporary file in $TMPDIR. if $TMPDIR is not set, /tmp is
- * used. return the full path to the temp file created.
- *
- * returned value has to be free()d.
- */
-_t__unused _t__nonnull(1)
-static inline char * t_mkstemp(const char *restrict dir);
-
 /* BASIC STRING OPERATIONS */
 
 _t__unused _t__nonnull(1)
@@ -214,22 +205,6 @@ xunlink(const char *restrict path)
 
     if (unlink(path) != 0)
         err(errno, "unlink");
-}
-
-
-static inline char *
-t_mkstemp(const char *restrict dir)
-{
-    char *f;
-
-    assert_not_null(dir);
-
-    (void)xasprintf(&f, "%s/%s-XXXXXX", dir, getprogname());
-
-    if (mkstemp(f) == -1)
-        err(errno, "mkstemp(\"%s\")", f);
-
-    return (f);
 }
 
 

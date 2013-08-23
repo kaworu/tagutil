@@ -21,6 +21,6 @@ TAILQ_HEAD(t_backendQ, t_backend);
 /*
  * initialize backends if needed and return the list
  */
-const struct t_backendQ * t_get_backend(void);
+const struct t_backendQ * t_all_backends(void);
 
 #endif /* not T_BACKEND_H */

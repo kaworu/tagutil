@@ -76,7 +76,7 @@ main(int argc, char *argv[])
 	/*
 	 * main loop, foreach files
 	 */
-	bQ = t_get_backend();
+	bQ = t_all_backends();
 	retval = EXIT_SUCCESS;
 	for (i = 0; i < argc; i++) {
 		/* check file path and access */

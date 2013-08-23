@@ -6,3 +6,6 @@ easy-to-script interface and ease of use for human :)
 ## INSTALL
 
 Hum, for now you will have to read the INSTALL file.
+
+## Concepts
+- No config file
