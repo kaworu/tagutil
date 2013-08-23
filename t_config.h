@@ -10,7 +10,6 @@
  */
 #if defined(lint)
 #	define	inline
-#	define	restrict
 #	define	_t__weak
 #	define	_t__unused
 #	define	_t__dead2
