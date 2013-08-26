@@ -18,7 +18,7 @@
 
 
 struct t_action_token {
-	const char		*kstr;
+	const char		*word;
 	enum t_actionkind 	kind;
 	bool	need_arg;
 };
@@ -111,15 +111,27 @@ usage(void)
 }
 
 
-static int t_action_token_cmp(const void *k, const void *t)
+static int t_action_token_cmp(const void *_str, const void *_token)
 {
+	const char	*str;
+	size_t		tlen, slen;
+	int		cmp;
 	const struct t_action_token *token;
 
-	assert_not_null(k);
-	assert_not_null(t);
+	assert_not_null(_str);
+	assert_not_null(_token);
 
-	token = t;
-	return (strncmp(k, token->kstr, strlen(token->kstr)));
+	token = _token;
+	str   = _str;
+	slen = strlen(str);
+	tlen = strlen(token->word);
+	cmp = strncmp(str, token->word, tlen);
+
+	/* we accept either slen == tlen or a finishing `:' */
+	if (cmp == 0 && slen > tlen && str[tlen] != ':')
+		cmp = str[tlen] - '\0';
+
+	return (cmp);
 }
 
 
@@ -153,7 +165,7 @@ t_actionQ_create(int *argcp, char ***argvp, bool *writep)
 		if (t->need_arg) {
 			arg = strchr(*argv, ':');
 			if (arg == NULL) {
-				warnx("option requires an argument -- %s", t->kstr);
+				warnx("option requires an argument -- %s", t->word);
 				usage();
 				/* NOTREACHED */
 			}
@@ -246,7 +258,7 @@ t_action_new(enum t_actionkind kind, char *arg)
 		key = arg;
 		value = strchr(key, '=');
 		if (value == NULL)
-			errx(EINVAL, "`%s': invalid -a argument (missing =)", key);
+			errx(EINVAL, "`%s': invalid `add' argument: `=' is missing.", key);
 		value += 1;
 		t_taglist_insert(T, key, value);
 		a->data  = T;
@@ -294,7 +306,7 @@ t_action_new(enum t_actionkind kind, char *arg)
 		key = arg;
 		value = strchr(key, '=');
 		if (value == NULL)
-			errx(EINVAL, "`%s': invalid -s argument (missing =)", key);
+			errx(EINVAL, "`%s': invalid `set' argument, `=' is missing. ", key);
 		value += 1;
 		t_taglist_insert(T, key, value);
 		a->data  = T;
