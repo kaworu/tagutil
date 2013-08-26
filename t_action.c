@@ -504,7 +504,8 @@ static bool
 t_action_rename(struct t_action *self, struct t_file *file)
 {
 	bool	retval = true;
-	char	*ext, *result, *dirn, *fname, *question;
+	char	*ext, *result, *fname, *question;
+	const char	*dirn;
 	struct t_token **tknv;
 
 	assert_not_null(self);
@@ -534,7 +535,6 @@ t_action_rename(struct t_action *self, struct t_file *file)
 		(void)xasprintf(&result, "%s/%s.%s", dirn, fname, ext);
 	else
 		(void)xasprintf(&result, "%s.%s", fname, ext);
-	freex(dirn);
 	freex(fname);
 
 	/* ask user for confirmation and rename if user want to */

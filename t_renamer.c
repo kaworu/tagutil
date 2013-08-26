@@ -36,65 +36,65 @@ static int build(char *path, mode_t omode);
 bool
 t_rename_safe(struct t_file *file, const char *newpath)
 {
-    extern bool dflag;
-    bool failed = false;
-    struct stat st;
-    char *olddirn, *newdirn;
+	extern bool dflag;
+	bool failed = false;
+	struct stat st;
+	const char *odir, *ndir;
 
-    assert_not_null(file);
-    assert_not_null(file->path);
-    assert_not_null(newpath);
+	assert_not_null(file);
+	assert_not_null(file->path);
+	assert_not_null(newpath);
 
-    olddirn = t_dirname(file->path);
-    if (olddirn == NULL) {
-        t_error_set(file, "%s", file->path);
-        return (false);
-    }
-    newdirn = t_dirname(newpath);
-    if (newdirn == NULL) {
-        t_error_set(file, "%s", newpath);
-        freex(olddirn);
-        return (false);
-    }
+	odir = t_dirname(file->path);
+	if (odir == NULL) {
+		t_error_set(file, "%s", file->path);
+		return (false);
+	}
+	ndir = t_dirname(newpath);
+	if (ndir == NULL) {
+		t_error_set(file, "%s", newpath);
+		return (false);
+	}
 
-    if (strcmp(olddirn, newdirn) != 0) {
-    /* srcdir != destdir, we need to check if destdir is OK */
-        if (dflag) {
-        /* we are asked to actually create the directory */
-            if (build(newdirn, S_IRWXU | S_IRWXG | S_IRWXO) == 0)
-                failed = true;
-        }
-        if (stat(newdirn, &st) != 0) {
-            if (errno == ENOENT)
-                t_error_set(file, "forgot -d?");
-            failed = true;
-        }
-        else if (!S_ISDIR(st.st_mode)) {
-            errno = ENOTDIR;
-            failed = true;
-        }
-    }
-    if (failed)
-        t_error_set(file, "%s", newdirn);
-    freex(olddirn);
-    freex(newdirn);
-    if (failed)
-        return (false);
+	if (strcmp(odir, ndir) != 0) {
+		/* srcdir != destdir, we need to check if destdir is OK */
+		if (dflag) { /* we are asked to create the directory */
+			char	*d;
 
-    if (stat(newpath, &st) == 0) {
-        errno = EEXIST;
-        t_error_set(file, "%s", newpath);
-        return (false);
-    }
+			d = strdup(ndir);
+			if (d == NULL)
+				err(ENOMEM, "strdup");
+			(void)build(d, S_IRWXU | S_IRWXG | S_IRWXO);
+			free(d);
+		}
+		if (stat(ndir, &st) != 0) {
+			if (errno == ENOENT)
+				t_error_set(file, "forgot -d?");
+			failed = true;
+		} else if (!S_ISDIR(st.st_mode)) {
+			errno  = ENOTDIR;
+			failed = true;
+		}
+	}
+	if (failed) {
+		t_error_set(file, "%s", ndir);
+		return (false);
+	}
 
-    if (rename(file->path, newpath) == -1) {
-        t_error_set(file, "rename");
-        return (false);
-    }
+	if (stat(newpath, &st) == 0) {
+		errno = EEXIST;
+		t_error_set(file, "%s", newpath);
+		return (false);
+	}
 
-    free(file->path);
-    file->path = xstrdup(newpath);
-    return (true);
+	if (rename(file->path, newpath) == -1) {
+		t_error_set(file, "rename");
+		return (false);
+	}
+
+	free(file->path);
+	file->path = xstrdup(newpath);
+	return (true);
 }
 
 
@@ -360,7 +360,7 @@ build(char *path, mode_t omode)
 		if (mkdir(path, last ? omode : S_IRWXU | S_IRWXG | S_IRWXO) < 0) {
 			if (errno == EEXIST || errno == EISDIR) {
 				if (stat(path, &sb) < 0) {
-					warn("rename_build: %s", path);
+					warn("build: %s", path);
 					retval = 0;
 					break;
 				} else if (!S_ISDIR(sb.st_mode)) {

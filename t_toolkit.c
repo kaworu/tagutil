@@ -140,16 +140,17 @@ t_user_edit(const char *path)
 #include <sys/param.h>
 
 /*
- * OpenBSD's dirname modified to return a malloc()d pointer (or NULL).
+ * OpenBSD's dirname.
+ *
+ * The standard signature use (char *) as argument, which imply that the routine
+ * might modify it.
  */
 char *
 t_dirname(const char *path)
 {
+	static char dname[MAXPATHLEN];
 	size_t len;
 	const char *endp;
-    char *dname;
-
-    dname = xmalloc(MAXPATHLEN);
 
 	/* Empty or NULL string gets treated as "." */
 	if (path == NULL || *path == '\0') {
@@ -182,7 +183,6 @@ t_dirname(const char *path)
 	len = endp - path + 1;
 	if (len >= MAXPATHLEN) {
 		errno = ENAMETOOLONG;
-        	free(dname);
 		return (NULL);
 	}
 	memcpy(dname, path, len);
