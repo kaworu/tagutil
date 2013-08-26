@@ -195,9 +195,10 @@ t_file_get(struct t_file *file, const char *key)
 				(void)xasprintf(&value, "%02u", uintval);
 			break;
 		}
-		if (value && t_strempty(value))
+		if (value != NULL && value[0] != '\0') {
 			/* clean value, when TagLib return "" we return NULL */
 			freex(value);
+		}
 
 		if (value != NULL) {
 			t_taglist_insert(T, taglibkeys[i], value);

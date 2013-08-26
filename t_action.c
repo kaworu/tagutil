@@ -294,7 +294,7 @@ t_action_new(enum t_actionkind kind, char *arg)
 		break;
 	case T_ACTION_RENAME:
 		assert_not_null(arg);
-		if (t_strempty(arg))
+		if (arg[0] == '\0')
 			errx(EINVAL, "empty rename pattern");
 		a->data  = t_rename_parse(arg);
 		a->write = true;
@@ -422,15 +422,18 @@ t_action_edit(struct t_action *self, struct t_file *file)
     		(void)xasprintf(&tmp_file, "/tmp/%s-XXXXXX.yml", getprogname());
 		if (mkstemp(tmp_file) == -1)
 			err(errno, "mkstemp");
-		stream = xfopen(tmp_file, "w");
+		stream = fopen(tmp_file, "w");
+		if (stream == NULL)
+			err(errno, "fopen %s", tmp_file);
 		(void)fprintf(stream, "%s", yaml);
-		xfclose(stream);
+		if (fclose(stream) != 0)
+			err(errno, "fclose %s", tmp_file);
 		if (t_user_edit(tmp_file)) {
 			load = t_action_new(T_ACTION_LOAD, tmp_file);
 			retval = load->apply(load, file);
 			t_action_destroy(load);
 		}
-		xunlink(tmp_file);
+		(void)unlink(tmp_file);
 		freex(tmp_file);
 	}
 	freex(yaml);
@@ -453,12 +456,15 @@ t_action_load(struct t_action *self, struct t_file *file)
 	path = self->data;
 	if (strcmp(path, "-") == 0)
 		stream = stdin;
-	else
-		stream = xfopen(path, "r");
+	else {
+		stream = fopen(path, "r");
+		if (stream == NULL)
+			err(errno, "fopen %s", path);
+	}
 
 	T = t_yaml2tags(file, stream);
 	if (stream != stdin)
-		xfclose(stream);
+		(void)fclose(stream);
 	if (T == NULL)
 		return (false);
 	retval = file->clear(file, NULL) &&

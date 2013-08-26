@@ -23,22 +23,11 @@
 /* compute the length of a fixed size array */
 #define countof(ary) (sizeof(ary) / sizeof((ary)[0]))
 
-/* No Operation */
-#define NOP (void)0
-
 /* some handy assert macros */
 #define assert_not_null(x) assert((x) != NULL)
 #define assert_null(x) assert((x) == NULL)
 #define assert_fail() abort()
 
-/* taken from FreeBSD's <sys/cdefs.h> */
-#define	T_CONCAT1(x,y)  x ## y
-#define	T_CONCAT(x,y)   T_CONCAT1(x,y)
-#define	T_STRING(x)     #x /* stringify without expanding x */
-#define	T_XSTRING(x)    T_STRING(x)	/* expand x, then stringify */
-
-
-/* MEMORY FUNCTIONS */
 
 _t__unused
 static inline void * xmalloc(size_t size);
@@ -51,22 +40,6 @@ static inline void * xrealloc(void *ptr, size_t size);
 
 #define freex(p) do { free(p); (p) = NULL; } while (/*CONSTCOND*/0)
 
-
-/* FILE FUNCTIONS */
-
-_t__unused _t__nonnull(1) _t__nonnull(2)
-static inline FILE * xfopen(const char *path, const char *mode);
-
-_t__unused _t__nonnull(1)
-static inline void xfclose(FILE *stream);
-
-_t__unused _t__nonnull(1)
-static inline void xunlink(const char *path);
-
-/* BASIC STRING OPERATIONS */
-
-_t__unused _t__nonnull(1)
-static inline bool t_strempty(const char *str);
 
 _t__unused _t__nonnull(1)
 static inline char * xstrdup(const char *src);
@@ -133,7 +106,7 @@ xmalloc(size_t size)
 
 
 #if !defined(EDOOFUS)
-#define	EDOOFUS		42		/* Programming error */
+#define	EDOOFUS		88		/* Programming error */
 #endif
 static inline void *
 xcalloc(size_t nmemb, size_t size)
@@ -170,54 +143,6 @@ xrealloc(void *old_ptr, size_t new_size)
 }
 
 
-static inline FILE *
-xfopen(const char *path, const char *mode)
-{
-    FILE *stream;
-
-    assert_not_null(path);
-    assert_not_null(mode);
-
-    stream = fopen(path, mode);
-
-    if (stream == NULL)
-        err(errno, "can't open file `%s'", path);
-
-    return (stream);
-}
-
-
-static inline void
-xfclose(FILE *stream)
-{
-
-    assert_not_null(stream);
-
-    if (fclose(stream) != 0)
-        err(errno, "fclose");
-}
-
-
-static inline void
-xunlink(const char *path)
-{
-    assert_not_null(path);
-
-    if (unlink(path) != 0)
-        err(errno, "unlink");
-}
-
-
-static inline bool
-t_strempty(const char *str)
-{
-
-    assert_not_null(str);
-
-    return (*str == '\0');
-}
-
-
 static inline char *
 xstrdup(const char *src)
 {
@@ -251,30 +176,26 @@ xasprintf(char **ret, const char *fmt, ...)
 static inline char *
 t_strtoupper(char *str)
 {
-    size_t len, i;
+	char *s;
 
-    assert_not_null(str);
+	assert_not_null(str);
 
-    len = strlen(str);
-    for (i = 0; i < len; i++)
-        str[i] = toupper(str[i]);
-
-    return (str);
+	for (s = str; *s != '\0'; s++)
+		*s = toupper(*s);
+	return (str);
 }
 
 
 static inline char *
 t_strtolower(char *str)
 {
-    size_t len, i;
+	char *s;
 
-    assert_not_null(str);
+	assert_not_null(str);
 
-    len = strlen(str);
-    for (i = 0; i < len; i++)
-        str[i] = tolower(str[i]);
-
-    return (str);
+	for (s = str; *s != '\0'; s++)
+		*s = tolower(*s);
+	return (str);
 }
 
 #endif /* not T_TOOLKIT_H */
