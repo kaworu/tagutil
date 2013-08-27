@@ -13,7 +13,6 @@
 #include "yaml.h"
 
 #include "t_config.h"
-#include "t_strbuffer.h"
 #include "t_toolkit.h"
 #include "t_file.h"
 #include "t_yaml.h"
@@ -25,147 +24,145 @@
 yaml_write_handler_t t_yaml_whdl;
 
 int
-t_yaml_whdl(void *data, unsigned char *buffer, size_t size)
+t_yaml_whdl(void *sb, unsigned char *buffer, size_t size)
 {
-    bool error = false;
-    struct t_strbuffer *sb;
+	bool error = false;
 
-    assert_not_null(data);
-    assert_not_null(buffer);
+	assert_not_null(sb);
+	assert_not_null(buffer);
 
-    if (data == NULL || buffer == NULL)
-        error = true;
-    else {
-        sb = data;
-        char *s = xcalloc(size + 1, sizeof(char));
-        memcpy(s, buffer, size);
-        t_strbuffer_add(sb, s, size, T_STRBUFFER_FREE);
-    }
+	if (sb == NULL || buffer == NULL)
+		error = true;
+	else
+		sbuf_bcat(sb, buffer, size);
 
-    if (error)
-        return (0);
-    else
-        return (1);
+	return (error ? 0 : 1);
 }
 
 
 char *
 t_tags2yaml(struct t_file *file)
 {
-    yaml_emitter_t emitter;
-    yaml_event_t event;
-    struct t_strbuffer *sb;
-    char *head;
-    size_t headlen;
-    struct t_taglist *T;
-    struct t_tag *t;
+	yaml_emitter_t emitter;
+	yaml_event_t event;
+	struct sbuf *sb;
+	char *s;
+	struct t_taglist *T;
+	struct t_tag *t;
 
-    assert_not_null(file);
+	assert_not_null(file);
 
-    headlen = xasprintf(&head, "# %s\n", file->path);
-    sb = t_strbuffer_new();
-    t_strbuffer_add(sb, head, headlen, T_STRBUFFER_FREE);
+	/* create a comment header with the filename */
+	(void)xasprintf(&s, "# %s\n", file->path);
+	sb = sbuf_new_auto();
+	sbuf_cpy(sb, s);
+	freex(s);
 
-    /* Create the Emitter object. */
-    if (!yaml_emitter_initialize(&emitter))
-        goto emitter_error;
+	/* Create the Emitter object. */
+	if (!yaml_emitter_initialize(&emitter))
+		goto emitter_error;
 
-    yaml_emitter_set_output(&emitter, t_yaml_whdl, sb);
-    yaml_emitter_set_unicode(&emitter, 1);
+	yaml_emitter_set_output(&emitter, t_yaml_whdl, sb);
+	yaml_emitter_set_unicode(&emitter, 1);
 
-    /* Create and emit the STREAM-START event. */
-    if (!yaml_stream_start_event_initialize(&event, YAML_UTF8_ENCODING))
-        goto event_error;
-    if (!yaml_emitter_emit(&emitter, &event))
-        goto emitter_error;
+	/* Create and emit the STREAM-START event. */
+	if (!yaml_stream_start_event_initialize(&event, YAML_UTF8_ENCODING))
+		goto event_error;
+	if (!yaml_emitter_emit(&emitter, &event))
+		goto emitter_error;
 
-    /* Create and emit the DOCUMENT-START event. */
-    if (!yaml_document_start_event_initialize(&event,
-                /* version directive */NULL,
-                /* tag_directives_start */NULL,
-                /* tag_directives_end */NULL,
-                /* implicit */0))
-        goto event_error;
-    if (!yaml_emitter_emit(&emitter, &event))
-        goto emitter_error;
+	/* Create and emit the DOCUMENT-START event. */
+	if (!yaml_document_start_event_initialize(&event,
+	    /* version directive */NULL,
+	    /* tag_directives_start */NULL,
+	    /* tag_directives_end */NULL,
+	    /* implicit */0))
+		goto event_error;
+	if (!yaml_emitter_emit(&emitter, &event))
+		goto emitter_error;
 
-    /* Create and emit the SEQUENCE-START event. */
-    if (!yaml_sequence_start_event_initialize(&event, /* anchor */NULL,
-                (yaml_char_t *)YAML_SEQ_TAG, /* implicit */1,
-                YAML_BLOCK_MAPPING_STYLE))
-        goto event_error;
-    if (!yaml_emitter_emit(&emitter, &event))
-        goto emitter_error;
+	/* Create and emit the SEQUENCE-START event. */
+	if (!yaml_sequence_start_event_initialize(&event, /* anchor */NULL,
+	    (yaml_char_t *)YAML_SEQ_TAG, /* implicit */1,
+	    YAML_BLOCK_MAPPING_STYLE))
+		goto event_error;
+	if (!yaml_emitter_emit(&emitter, &event))
+		goto emitter_error;
 
-    T = file->get(file, NULL);
-    if (T == NULL) {
-        t_strbuffer_destroy(sb);
-        return (NULL);
-    }
-    TAILQ_FOREACH(t, T->tags, entries) {
-        /* Create and emit the MAPPING-START event. */
-        if (!yaml_mapping_start_event_initialize(&event, /* anchor */NULL,
-                    (yaml_char_t *)YAML_MAP_TAG, /* implicit */1,
-                    YAML_BLOCK_MAPPING_STYLE))
-            goto event_error;
-        if (!yaml_emitter_emit(&emitter, &event))
-            goto emitter_error;
+	T = file->get(file, NULL);
+	if (T == NULL) {
+		sbuf_delete(sb);
+		return (NULL);
+	}
+	TAILQ_FOREACH(t, T->tags, entries) {
+		/* Create and emit the MAPPING-START event. */
+		if (!yaml_mapping_start_event_initialize(&event, /* anchor */NULL,
+		    (yaml_char_t *)YAML_MAP_TAG, /* implicit */1,
+		    YAML_BLOCK_MAPPING_STYLE))
+			goto event_error;
+		if (!yaml_emitter_emit(&emitter, &event))
+			goto emitter_error;
 
-        /* create and emit the SCALAR event for the key */
-        if (!yaml_scalar_event_initialize(&event, /* anchor */NULL,
-                    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->key,
-                    t->keylen, /* plain_implicit */1, /* quoted_implicit */1,
-                    YAML_PLAIN_SCALAR_STYLE))
-            goto event_error;
-        if (!yaml_emitter_emit(&emitter, &event))
-            goto emitter_error;
+		/* create and emit the SCALAR event for the key */
+		if (!yaml_scalar_event_initialize(&event, /* anchor */NULL,
+		    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->key,
+		    t->keylen, /* plain_implicit */1, /* quoted_implicit */1,
+		    YAML_PLAIN_SCALAR_STYLE))
+			goto event_error;
+		if (!yaml_emitter_emit(&emitter, &event))
+			goto emitter_error;
 
-        /* create and emit the SCALAR event for the value */
-        if (!yaml_scalar_event_initialize(&event, /* anchor */NULL,
-                    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->value,
-                    t->valuelen, /* plain_implicit */1, /* quoted_implicit */1,
-                    YAML_PLAIN_SCALAR_STYLE))
-            goto event_error;
-        if (!yaml_emitter_emit(&emitter, &event))
-            goto emitter_error;
+		/* create and emit the SCALAR event for the value */
+		if (!yaml_scalar_event_initialize(&event, /* anchor */NULL,
+		    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->value,
+		    t->valuelen, /* plain_implicit */1, /* quoted_implicit */1,
+		    YAML_PLAIN_SCALAR_STYLE))
+			goto event_error;
+		if (!yaml_emitter_emit(&emitter, &event))
+			goto emitter_error;
 
-        /* Create and emit the MAPPING-END event. */
-        if (!yaml_mapping_end_event_initialize(&event))
-            goto event_error;
-        if (!yaml_emitter_emit(&emitter, &event))
-            goto emitter_error;
-    }
-    t_taglist_destroy(T);
+		/* Create and emit the MAPPING-END event. */
+		if (!yaml_mapping_end_event_initialize(&event))
+			goto event_error;
+		if (!yaml_emitter_emit(&emitter, &event))
+			goto emitter_error;
+	}
+	t_taglist_destroy(T);
 
-    /* Create and emit the SEQUENCE-END event. */
-    if (!yaml_sequence_end_event_initialize(&event))
-        goto event_error;
-    if (!yaml_emitter_emit(&emitter, &event))
-        goto emitter_error;
+	/* Create and emit the SEQUENCE-END event. */
+	if (!yaml_sequence_end_event_initialize(&event))
+		goto event_error;
+	if (!yaml_emitter_emit(&emitter, &event))
+		goto emitter_error;
 
-    /* Create and emit the DOCUMENT-END event. */
-    if (!yaml_document_end_event_initialize(&event, /* implicit */1))
-        goto event_error;
-    if (!yaml_emitter_emit(&emitter, &event))
-        goto emitter_error;
+	/* Create and emit the DOCUMENT-END event. */
+	if (!yaml_document_end_event_initialize(&event, /* implicit */1))
+		goto event_error;
+	if (!yaml_emitter_emit(&emitter, &event))
+		goto emitter_error;
 
-    /* Create and emit the STREAM-END event. */
-    if (!yaml_stream_end_event_initialize(&event))
-        goto event_error;
-    if (!yaml_emitter_emit(&emitter, &event))
-        goto emitter_error;
+	/* Create and emit the STREAM-END event. */
+	if (!yaml_stream_end_event_initialize(&event))
+		goto event_error;
+	if (!yaml_emitter_emit(&emitter, &event))
+		goto emitter_error;
 
-    /* Destroy the Emitter object. */
-    yaml_emitter_delete(&emitter);
-    yaml_event_delete(&event);
+	/* Destroy the Emitter object. */
+	yaml_emitter_delete(&emitter);
+	yaml_event_delete(&event);
 
-    return (t_strbuffer_get(sb));
+	if (sbuf_finish(sb) == -1)
+		err(errno, "sbuf_finish");
+	s = xstrdup(sbuf_data(sb));
+	sbuf_delete(sb);
+
+	return (s);
 
 event_error:
-    err(errno = ENOMEM, "t_tags2yaml: can't init event");
-    /* NOTREACHED */
+	err(errno = ENOMEM, "t_tags2yaml: can't init event");
+	/* NOTREACHED */
 emitter_error:
-    errx(-1, "t_tags2yaml: emit error");
+	errx(-1, "t_tags2yaml: emit error");
 }
 
 

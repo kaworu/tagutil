@@ -8,7 +8,6 @@
 #include "t_config.h"
 #include "t_toolkit.h"
 #include "t_error.h"
-#include "t_strbuffer.h"
 #include "t_tag.h"
 
 
@@ -128,26 +127,29 @@ t_taglist_filter_count(const struct t_taglist *T,
 char *
 t_taglist_join(struct t_taglist *T, const char *j)
 {
-    size_t jlen;
-    struct t_strbuffer *sb;
-    struct t_tag *t, *last;
+	struct sbuf *sb;
+	struct t_tag *t, *last;
+	char *retval;
 
-    assert_not_null(T);
+	assert_not_null(T);
 
-    if (T->count == 0)
-        return (xcalloc(1, sizeof(char)));
+	if (T->count == 0)
+		return (xcalloc(1, sizeof(char)));
 
-    jlen = strlen(j);
-    sb = t_strbuffer_new();
-    last = TAILQ_LAST(T->tags, t_tagQ);
+	sb = sbuf_new_auto();
+	last = TAILQ_LAST(T->tags, t_tagQ);
 
-    TAILQ_FOREACH(t, T->tags, entries) {
-        t_strbuffer_add(sb, t->value, t->valuelen, T_STRBUFFER_NOFREE);
-        if (t != last)
-            t_strbuffer_add(sb, j, jlen, T_STRBUFFER_NOFREE);
-    }
+	TAILQ_FOREACH(t, T->tags, entries) {
+		sbuf_cat(sb, t->value);
+		if (t != last)
+			sbuf_cat(sb, j);
+	}
 
-    return (t_strbuffer_get(sb));
+	if (sbuf_finish(sb) == -1)
+		err(errno, "sbuf_finish");
+	retval = xstrdup(sbuf_data(sb));
+	sbuf_delete(sb);
+	return (retval);
 }
 
 

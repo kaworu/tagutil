@@ -12,7 +12,6 @@
 
 #include "t_config.h"
 #include "t_toolkit.h"
-#include "t_strbuffer.h"
 #include "t_file.h"
 #include "t_backend.h"
 

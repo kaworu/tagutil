@@ -16,7 +16,6 @@
 
 #include "t_config.h"
 #include "t_toolkit.h"
-#include "t_strbuffer.h"
 #include "t_lexer.h"
 #include "t_renamer.h"
 
@@ -212,72 +211,75 @@ t_rename_lex_next_token(struct t_lexer *L)
 char *
 t_rename_eval(struct t_file *file, struct t_token **ts)
 {
-    const struct t_token *tkn;
-    struct t_strbuffer *sb;
-    struct t_taglist *T;
-    struct t_tag *t;
-    char *ret, *s, *slash;
-    size_t len;
+	const struct t_token *tkn;
+	struct sbuf *sb;
+	struct t_taglist *T;
+	struct t_tag *t;
+	char *ret, *s, *slash;
+	size_t len;
 
-    assert_not_null(ts);
-    assert_not_null(file);
-    t_error_clear(file);
+	assert_not_null(ts);
+	assert_not_null(file);
+	t_error_clear(file);
 
-    sb = t_strbuffer_new();
-    tkn = *ts;
-    while (tkn != NULL) {
-        s = NULL;
-        if (tkn->kind == T_TAGKEY) {
-            T = file->get(file, tkn->value.str);
-            if (T == NULL) {
-                t_strbuffer_destroy(sb);
-                return (NULL);
-            }
-            else if (T->count > 0) {
-            /* tag exist */
-                if (tkn->tidx == T_TOKEN_STAR) {
-                /* user ask for *all* tag values */
-                    s = t_taglist_join(T, " - ");
-                    len = strlen(s);
-                }
-                else {
-                /* requested one tag */
-                    t = t_taglist_tag_at(T, tkn->tidx);
-                    if (t != NULL) {
-                        s = xstrdup(t->value);
-                        len = t->valuelen;
-                    }
-                }
-            }
-            t_taglist_destroy(T);
-            if (s != NULL) {
-            /* check for slash in tag value */
-                slash = strchr(s, '/');
-                if (slash) {
-                    warnx("rename_eval: `%s': tag `%s' has / in value, "
-                            "replacing by `-'", file->path, tkn->value.str);
-                    do {
-                        *slash = '-';
-                        slash = strchr(slash, '/');
-                    } while (slash);
-                }
-            }
-        }
-        if (s != NULL)
-            t_strbuffer_add(sb, s, len, T_STRBUFFER_FREE);
-        else
-            t_strbuffer_add(sb, tkn->value.str, tkn->slen, T_STRBUFFER_NOFREE);
-        /* go to next token */
-        ts += 1;
-        tkn = *ts;
-    }
+	sb = sbuf_new_auto();
+	tkn = *ts;
+	while (tkn != NULL) {
+		s = NULL;
+		if (tkn->kind == T_TAGKEY) {
+			T = file->get(file, tkn->value.str);
+			if (T == NULL) {
+				sbuf_delete(sb);
+				return (NULL);
+			} else if (T->count > 0) {
+				/* tag exist */
+				if (tkn->tidx == T_TOKEN_STAR) {
+					/* user ask for *all* tag values */
+					s = t_taglist_join(T, " - ");
+					len = strlen(s);
+				} else {
+					/* requested one tag */
+					t = t_taglist_tag_at(T, tkn->tidx);
+					if (t != NULL) {
+						s = xstrdup(t->value);
+						len = t->valuelen;
+					}
+				}
+			}
+			t_taglist_destroy(T);
+			if (s != NULL) {
+				/* check for slash in tag value */
+				slash = strchr(s, '/');
+				if (slash != NULL) {
+					warnx("rename_eval: `%s': tag `%s' has / in value, "
+							"replacing by `-'", file->path, tkn->value.str);
+					do {
+						*slash = '-';
+						slash = strchr(slash, '/');
+					} while (slash != NULL);
+				}
+			}
+		}
+		if (s != NULL) {
+			(void)sbuf_cat(sb, s);
+			freex(s);
+		} else
+			(void)sbuf_cat(sb, tkn->value.str);
+		/* go to next token */
+		ts += 1;
+		tkn = *ts;
+	}
 
-    ret = NULL;
-    if (sb->len > MAXPATHLEN)
-        t_error_set(file, "t_rename_eval result is too long (>MAXPATHLEN)");
-    else
-        ret = t_strbuffer_get(sb);
-    return (ret);
+	ret = NULL;
+	if (sbuf_len(sb) > MAXPATHLEN)
+		t_error_set(file, "t_rename_eval result is too long (>MAXPATHLEN)");
+	else {
+		if (sbuf_finish(sb) == -1)
+			err(errno, "sbuf_finish");
+		ret = xstrdup(sbuf_data(sb));
+		sbuf_delete(sb);
+	}
+	return (ret);
 }
 
 
