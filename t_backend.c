@@ -40,7 +40,7 @@ t_all_backends(void)
 			char	*start, *cur, *next;
 			struct t_backend	*b, *target;
 
-			cur = next = start = xstrdup(env);
+			next = start = xstrdup(env);
 			while (next != NULL) {
 				next = strrchr(start, ',');
 				if (next == NULL)

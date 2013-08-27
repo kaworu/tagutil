@@ -188,6 +188,7 @@ t_rename_lex_next_token(struct t_lexer *L)
         t->value.str = (char *)(t + 1);
         t_lexc_move_to(L, t->start);
         i = 0;
+	/* FIXME: use sbuf(9), t_strbuff, avoid two loops, realloc etc. */
         while (L->cindex <= t->end) {
             if (L->c == '\\') {
                 if (t_lexc(L) != '%') {

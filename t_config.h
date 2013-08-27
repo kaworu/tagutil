@@ -37,5 +37,12 @@
 #if !defined(HAS_STRDUP)
 #	include "compat/include/strdup.h"
 #endif
+#if !defined(HAS_SBUF)
+#	include <sys/types.h>
+#	include "compat/include/sys/sbuf.h"
+#else
+#	include <sys/types.h>
+#	include <sys/sbuf.h>
+#endif
 
 #endif /* not T_CONFIG_H */

@@ -77,9 +77,7 @@ _t__nonnull(1)
 bool t_user_edit(const char *path);
 
 /*
- * reentrant dirname.
- *
- * returned value has to be free()d.
+ * dirname() routine that does not modify its argument.
  */
 char * t_dirname(const char *);
 
