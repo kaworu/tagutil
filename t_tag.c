@@ -137,12 +137,14 @@ t_taglist_join(struct t_taglist *T, const char *j)
 		return (xcalloc(1, sizeof(char)));
 
 	sb = sbuf_new_auto();
+	if (sb == NULL)
+		err(errno, "sbuf_new");
 	last = TAILQ_LAST(T->tags, t_tagQ);
 
 	TAILQ_FOREACH(t, T->tags, entries) {
-		sbuf_cat(sb, t->value);
+		(void)sbuf_cat(sb, t->value);
 		if (t != last)
-			sbuf_cat(sb, j);
+			(void)sbuf_cat(sb, j);
 	}
 
 	if (sbuf_finish(sb) == -1)

@@ -134,77 +134,69 @@ t_rename_parse(const char *pattern)
 struct t_token *
 t_rename_lex_next_token(struct t_lexer *L)
 {
-    int skip, i;
-    bool done;
-    struct t_token *t;
-    assert_not_null(L);
-    t = xcalloc(1, sizeof(struct t_token));
+	bool done;
+	struct t_token *t;
+	struct sbuf *sb;
 
-    /* check for T_START */
-    if (L->cindex == -1) {
-        (void)t_lexc(L);
-        t->kind  = T_START;
+	assert_not_null(L);
+
+	t = xcalloc(1, sizeof(struct t_token));
+
+	/* check for T_START */
+	if (L->cindex == -1) {
+		(void)t_lexc(L);
+		t->kind  = T_START;
 		t->str   = "START";
-        L->current = t;
-        return (L->current);
-    }
+		L->current = t;
+		return (L->current);
+	}
 
-    skip = 0;
-    t->start = L->cindex;
-    switch (L->c) {
-    case '\0':
-        t->kind = T_END;
-        t->str  = "END";
-        t->end  = L->cindex;
-        break;
-    case '%':
-        t_lex_tagkey(L, &t, !T_LEXER_ALLOW_STAR_MOD);
-        break;
-    default:
+	t->start = L->cindex;
+	switch (L->c) {
+	case '\0':
+		t->kind = T_END;
+		t->str  = "END";
+		t->end  = L->cindex;
+		break;
+	case '%':
+		t_lex_tagkey(L, &t, !T_LEXER_ALLOW_STAR_MOD);
+		break;
+	default:
 		t->kind = T_STRING;
 		t->str  = "STRING";
-        done = false;
-        while (!done) {
-            switch (L->c) {
-            case '%': /* FALLTHROUGH */
-            case '\0':
-                done = true;
-                break;
-            case '\\':
-                if (t_lexc(L) == '%') {
-                    skip++;
-                    (void)t_lexc(L);
-                }
-                break;
-            default:
-                (void)t_lexc(L);
-            }
-        }
-        t->end = L->cindex - 1;
-        assert(t->end >= t->start);
-        t->slen = t->end - t->start + 1 - skip;
-        t = xrealloc(t, sizeof(struct t_token) + t->slen + 1);
-        t->value.str = (char *)(t + 1);
-        t_lexc_move_to(L, t->start);
-        i = 0;
-	/* FIXME: use sbuf(9), t_strbuff, avoid two loops, realloc etc. */
-        while (L->cindex <= t->end) {
-            if (L->c == '\\') {
-                if (t_lexc(L) != '%') {
-                    /* rewind */
-                    t_lexc_move(L, -1);
-                    assert(L->c == '\\');
-                }
-            }
-            t->value.str[i++] = L->c;
-            (void)t_lexc(L);
-        }
-        t->value.str[i] = '\0';
-        assert(strlen(t->value.str) == t->slen);
-    }
+		sb = sbuf_new_auto();
+		if (sb == NULL)
+			err(errno, "sbuf_new");
+		done = false;
+		while (!done) {
+			switch (L->c) {
+			case '%': /* FALLTHROUGH */
+			case '\0':
+				done = true;
+				break;
+			case '\\':
+				if (t_lexc(L) != '%')
+					(void)sbuf_putc(sb, '\\');
+				/* FALLTHROUGH */
+			default:
+				(void)sbuf_putc(sb, L->c);
+				(void)t_lexc(L);
+			}
+		}
+		t->end = L->cindex - 1;
+		assert(t->end >= t->start);
+		if (sbuf_finish(sb) == -1)
+			err(errno, "sbuf_finish");
+		t->slen = sbuf_len(sb);
+		t = xrealloc(t, sizeof(struct t_token) + t->slen + 1);
+		t->value.str = (char *)(t + 1);
+		assert(strlcpy(t->value.str, sbuf_data(sb), t->slen + 1) == t->slen);
+		assert(strlen(t->value.str) == t->slen);
+		sbuf_delete(sb);
+	}
 
-    L->current = t;
-    return (L->current);
+	L->current = t;
+	return (L->current);
 }
 
 
@@ -223,6 +215,8 @@ t_rename_eval(struct t_file *file, struct t_token **ts)
 	t_error_clear(file);
 
 	sb = sbuf_new_auto();
+	if (sb == NULL)
+		err(errno, "sbuf_new");
 	tkn = *ts;
 	while (tkn != NULL) {
 		s = NULL;

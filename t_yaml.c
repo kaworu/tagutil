@@ -34,7 +34,7 @@ t_yaml_whdl(void *sb, unsigned char *buffer, size_t size)
 	if (sb == NULL || buffer == NULL)
 		error = true;
 	else
-		sbuf_bcat(sb, buffer, size);
+		(void)sbuf_bcat(sb, buffer, size);
 
 	return (error ? 0 : 1);
 }
@@ -55,7 +55,9 @@ t_tags2yaml(struct t_file *file)
 	/* create a comment header with the filename */
 	(void)xasprintf(&s, "# %s\n", file->path);
 	sb = sbuf_new_auto();
-	sbuf_cpy(sb, s);
+	if (sb == NULL)
+		err(errno, "sbuf_new");
+	(void)sbuf_cpy(sb, s);
 	freex(s);
 
 	/* Create the Emitter object. */
