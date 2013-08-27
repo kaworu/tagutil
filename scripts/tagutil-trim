@@ -22,7 +22,7 @@ ARGV.each do |arg|
       end
     end
 
-    Open3.popen3('tagutil', '-f', '-', arg) do |pstdin, pstdout, pstderr|
+    Open3.popen3('tagutil', 'load:-', arg) do |pstdin, pstdout, pstderr|
       pstdin << stripped.to_yaml
       pstdin.close
       STDERR.puts($e) unless ($e = pstderr.read).strip.empty?
