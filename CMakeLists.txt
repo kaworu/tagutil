@@ -38,10 +38,12 @@ macro(t_try_compile variable test_file compat_file)
     try_compile(${variable}
         ${CMAKE_BINARY_DIR}
         ${CMAKE_SOURCE_DIR}/build-tests/${test_file}
+        CMAKE_FLAGS "-DLINK_LIBRARIES=-lsbuf"
     )
     if(${variable})
         add_definitions(-D${variable})
     else()
+        message(STATUS ${compat_file} " needed")
         set(SRCS ${SRCS} ${compat_file})
     endif()
 endmacro()
@@ -50,6 +52,7 @@ t_try_compile(HAS_GETPROGNAME i_can_haz_getprogname.c  compat/getprogname.c)
 t_try_compile(HAS_STRLCPY     i_can_haz_strlcpy.c      compat/strlcpy.c)
 t_try_compile(HAS_STRLCAT     i_can_haz_strlcat.c      compat/strlcat.c)
 t_try_compile(HAS_STRDUP      i_can_haz_strdup.c       compat/strdup.c)
+t_try_compile(HAS_SBUF        i_can_haz_sbuf.c         compat/subr_sbuf.c)
 
 # make GNU libc happy
 add_definitions(-D_GNU_SOURCE -D_BSD_SOURCE)
@@ -63,19 +66,19 @@ include(FindPkgConfig)
 # this sets up:
 # REQUIRED_LIBRARIES
 # REQUIRED_INCLUDE_DIR
-macro(t_find_library variable library)
-    find_library(${variable} ${library})
-    if(NOT ${variable})
-        message(FATAL_ERROR ${library} " library not found.")
-    endif()
-endmacro()
+pkg_check_modules(YAML yaml-0.1)
+if(YAML_FOUND)
+    set(REQUIRED_LIBRARIES ${REQUIRED_LIBRARIES} ${YAML_LDFLAGS})
+    set(REQUIRED_INCLUDE_DIR ${REQUIRED_INCLUDE_DIR} ${YAML_INCLUDE_DIRS})
+else()
+    message(FATAL_ERROR "libyaml not found.")
+endif()
 
-# Check for libYAML
-t_find_library(YAML yaml)
-set(YAML_INCLUDE_DIR "/usr/local/include") # FIXME
+if (HAS_SBUF)
+    set(REQUIRED_LIBRARIES ${REQUIRED_LIBRARIES} "-lsbuf")
+endif()
 
-set(REQUIRED_LIBRARIES ${YAML})
-include_directories(${YAML_INCLUDE_DIR})
+include_directories(${REQUIRED_INCLUDE_DIR})
 # }}}
 
 # {{{ Optional libraries

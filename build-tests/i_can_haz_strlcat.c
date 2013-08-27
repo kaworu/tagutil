@@ -16,4 +16,3 @@ main(void)
 	/* check? */
 	return (0);
 }
-
