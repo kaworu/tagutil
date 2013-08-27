@@ -31,7 +31,16 @@
 #ifndef _SYS_SBUF_H_
 #define	_SYS_SBUF_H_
 
+/* HACK */
+/*
 #include <sys/_types.h>
+*/
+#define	__BEGIN_DECLS
+#define	__END_DECLS
+#define	__printflike(fmtarg, firstvarg) _t__printflike(fmtarg, firstvarg)
+#include <stdarg.h>
+#define	__va_list va_list
+/* /HACK */
 
 struct sbuf;
 typedef int (sbuf_drain_func)(void *, const char *, int);

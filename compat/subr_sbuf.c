@@ -27,7 +27,9 @@
  */
 
 #include <sys/cdefs.h>
+/*
 __FBSDID("$FreeBSD: release/9.1.0/sys/kern/subr_sbuf.c 224999 2011-08-19 08:29:10Z rwatson $");
+*/
 
 #include <sys/param.h>
 
@@ -48,7 +50,14 @@ __FBSDID("$FreeBSD: release/9.1.0/sys/kern/subr_sbuf.c 224999 2011-08-19 08:29:1
 #include <string.h>
 #endif /* _KERNEL */
 
+/* HACK */
+/*
 #include <sys/sbuf.h>
+*/
+#include "t_config.h"
+#include "include/sys/sbuf.h"
+#define	roundup2(x, y)	(((x)+((y)-1))&(~((y)-1))) /* if y is powers of two */
+/* /HACK */
 
 #ifdef _KERNEL
 static MALLOC_DEFINE(M_SBUF, "sbuf", "string buffers");
