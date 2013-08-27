@@ -404,9 +404,9 @@ static bool
 t_action_edit(struct t_action *self, struct t_file *file)
 {
 	bool	retval = true;
-	char	*tmp_file, *yaml;
+	char	*tmp_file, *yaml, *question;
 	FILE	*stream;
-	struct t_action	*load;
+	struct t_action *load;
 
 	assert_not_null(self);
 	assert_not_null(file);
@@ -416,11 +416,10 @@ t_action_edit(struct t_action *self, struct t_file *file)
 	if (yaml == NULL)
 		return (false);
 
-	/* FIXME: just yesno(question); */
-	(void)printf("edit ");
-	if (t_yesno(file->path)) {
-    		(void)xasprintf(&tmp_file, "/tmp/%s-XXXXXX.yml", getprogname());
-		if (mkstemp(tmp_file) == -1)
+	(void)xasprintf(&question, "edit %s", file->path);
+	if (t_yesno(question)) {
+		(void)xasprintf(&tmp_file, "/tmp/%s-XXXXXX.yml", getprogname());
+		if (mkstemps(tmp_file, 4) == -1)
 			err(errno, "mkstemp");
 		stream = fopen(tmp_file, "w");
 		if (stream == NULL)
@@ -436,7 +435,9 @@ t_action_edit(struct t_action *self, struct t_file *file)
 		(void)unlink(tmp_file);
 		freex(tmp_file);
 	}
-	freex(yaml);
+
+	free(question);
+	free(yaml);
 	return (retval);
 }
 
