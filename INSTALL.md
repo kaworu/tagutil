@@ -10,8 +10,8 @@
 ## Optionals Dependencies:
 
 Optionals dependencies are detected by cmake. If you want to override the
-detection you can define WITHOUT_<DEP> to avoid tagutil to link against
-DEP.
+detection you can define `WITHOUT_$LIB` to avoid tagutil to link against
+`$LIB`.
 
 - FLAC: libFLAC
     If you want the flac files to be handled by libFLAC.
@@ -26,7 +26,7 @@ DEP.
 
 ## Building:
 
-type `make', it'll create the build/ directory and call cmake and make to
+type `make`, it'll create the build/ directory and call cmake and make to
 configure and build tagutil. Or if you want to gives some arguments to
 cmake do (for example):
 ```
@@ -37,5 +37,5 @@ make
 
 ## Install:
 
-build tagutil, then `cd build && make install'. You might need root access
-to call `make install'.
+build tagutil, then `cd build && make install`. You might need root access
+to call `make install`.
