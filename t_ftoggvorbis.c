@@ -74,10 +74,10 @@ t_file_new(const char *path)
 	vf = xmalloc(sizeof(struct OggVorbis_File));
 	s = xstrdup(path);
 	i = ov_fopen(s, vf);
-	freex(s);
+	free(s);
 	if (i != 0) {
 		/* XXX: check OV_EFAULT or OV_EREAD? */
-		freex(vf);
+		free(vf);
 		return (NULL);
 	}
 	/* FIXME */
@@ -115,13 +115,12 @@ t_file_save(struct t_file *file)
 	assert(file->libid == libid);
 	t_error_clear(file);
 
-#if 0
-	if (!file->dirty)
-		return (true);
-#endif
 	/* FIXME */
 	t_error_set(file, "%s: read-only support", file->libid);
 	return (false);
+
+	if (!file->dirty)
+		return (true);
 }
 
 
@@ -156,13 +155,13 @@ t_file_get(struct t_file *file, const char *key)
 		eq = strchr(copy, '=');
 		if (eq == NULL) {
 			t_error_set(file, "`%s' seems corrupted", file->path);
-			freex(copy);
+			free(copy);
 			t_taglist_destroy(T);
 			return (NULL);
 		}
 		*eq = '\0';
 		t_taglist_insert(T, copy, eq + 1);
-		freex(copy);
+		free(copy);
 	}
 
 	return (T);
@@ -192,7 +191,8 @@ t_file_clear(struct t_file *file, const struct t_taglist *T)
 				if (c != NULL) {
 					if (strncasecmp(t->key, c, t->keylen) == 0 &&
 					    c[t->keylen] == '=') {
-						freex(data->vc->user_comments[i]);
+						free(data->vc->user_comments[i]);
+						data->vc->user_comments[i] = NULL;
 					    	file->dirty++;
 					}
 				}
@@ -208,16 +208,17 @@ t_file_clear(struct t_file *file, const struct t_taglist *T)
 				count++;
 			}
 		}
-		data->vc->comments = count;
-		data->vc->user_comments =
-		    xrealloc(data->vc->user_comments, (data->vc->comments + 1) * sizeof(*data->vc->user_comments));
-		data->vc->comment_lengths =
-		    xrealloc(data->vc->comment_lengths, (data->vc->comments + 1) * sizeof(*data->vc->comment_lengths));
-		/* vorbis_comment_add() set the last comment to NULL, we do the same */
-		data->vc->user_comments[data->vc->comments]   = NULL;
-		data->vc->comment_lengths[data->vc->comments] = 0;
 	} else
-		vorbis_comment_clear(data->vc);
+		count = 0;
+
+	data->vc->comments = count;
+	data->vc->user_comments =
+	    xrealloc(data->vc->user_comments, (data->vc->comments + 1) * sizeof(*data->vc->user_comments));
+	data->vc->comment_lengths =
+	    xrealloc(data->vc->comment_lengths, (data->vc->comments + 1) * sizeof(*data->vc->comment_lengths));
+	/* vorbis_comment_add() set the last comment to NULL, we do the same */
+	data->vc->user_comments[data->vc->comments]   = NULL;
+	data->vc->comment_lengths[data->vc->comments] = 0;
 	return (true);
 }
 
