@@ -45,6 +45,110 @@ _t__nonnull(1) _t__nonnull(2)
 static bool	t_file_add(struct t_file *file,
     const struct t_taglist *T);
 
+static void	fucking_save_it(const char *ipath, struct vorbis_comment *vc, const char *opath);
+
+void
+fucking_save_it(const char *ipath, struct vorbis_comment *vc, const char *opath)
+{
+	FILE *ofp, *ifp;
+	char *buf;
+	ogg_stream_state ios, oos;
+	ogg_sync_state oy;
+	ogg_page iog, oog;
+	ogg_packet op, my_vc_packet, *target;
+	vorbis_comment unused_ovc;
+	vorbis_info vi;
+	int npacket = 0, done = 0;
+	ogg_int64_t granpos = 0;
+	int prevW = 0, needflush = 0, needout = 1;
+
+	/* create the packet holding our vorbis_comment */
+	assert(vorbis_commentheader_out(vc, &my_vc_packet) == 0); /* 0 on success, OV_EIMPL on error */
+
+	/* open files & stuff */
+	vorbis_info_init(&vi);
+	(void)ogg_sync_init(&oy); /* always return 0 */
+	assert(ifp = fopen(ipath, "r"));
+	assert(ofp = fopen(opath, "w"));
+
+	/* main loop: read the input file into buf in order to sync pages out */
+	while (!done) {
+		size_t s;
+		switch (ogg_sync_pageout(&oy, &iog)) {
+		case 0:  /* more data needed or an internal error occurred. */
+		case -1: /* stream has not yet captured sync (bytes were skipped). */
+			if (feof(ifp))
+				done = 1;
+			else {
+				assert(buf = ogg_sync_buffer(&oy, BUFSIZ));
+				assert((s = fread(buf, sizeof(char), BUFSIZ, ifp)) != -1);
+				assert(ogg_sync_wrote(&oy, s) != -1); /* 0 on success, -1 on error (overflow) */
+			}
+			break;
+		case 1: /* a page was synced and returned. */
+			if (npacket == 0) {
+				/* init both input and output streams with the serialno of the first page */
+				assert(ogg_stream_init(&ios, ogg_page_serialno(&iog)) != -1); /* 0 on success, -1 on error */
+				assert(ogg_stream_init(&oos, ogg_page_serialno(&iog)) != -1); /* 0 on success, -1 on error */
+			}
+			/* page in the page into the input stream, in order to fetch its packets */
+			assert(ogg_stream_pagein(&ios, &iog) != -1); /* 0 on success, -1 on error */
+			while (ogg_stream_packetout(&ios, &op) == 1) {
+
+				/* the second packet is the commentheader packet, we replace it with my_vc_packet */
+				target = (++npacket == 2 ? &my_vc_packet : &op);
+
+				/* insert the target packet into the output stream */
+				if (npacket <= 3) {
+					/* the three first packet are used to fill the vorbis info (used to compute granule) */
+					vorbis_synthesis_headerin(&vi, &unused_ovc, &op);
+					needflush = 1; /* flush is needed after the three first packet */
+				} else {
+					/* granule computation (don't ask) */
+					int bs = vorbis_packet_blocksize(&vi, &op);
+					s = (bs + prevW) / 4;
+					if (prevW == 0)
+						s = 0;
+					prevW = bs;
+					granpos += s;
+
+					/* write a page if needed */
+					while ((needflush && ogg_stream_flush(&oos, &oog)) ||
+					    (needout && ogg_stream_pageout(&oos, &oog))) {
+						assert(fwrite(oog.header, sizeof(unsigned char), oog.header_len, ofp) == oog.header_len);
+						assert(fwrite(oog.body,   sizeof(unsigned char), oog.body_len,   ofp) == oog.body_len);
+					}
+
+					/* flush / out / granpos hack, idk the logic i just saw it in vcedit.c */
+					needflush = needout = 0;
+					if (op.granulepos == -1) {
+						op.granulepos = granpos;
+					} else if (granpos > op.granulepos) {
+						granpos = op.granulepos;
+						needflush = 1;
+					} else
+						needout = 1;
+				}
+				assert(ogg_stream_packetin(&oos, target) == 0); /* 0 on success, -1 on error */
+			}
+		}
+	}
+	oos.e_o_s = 1;
+	/* forces remaining packets into a page and write it in the output file */
+	if (ogg_stream_flush(&oos, &oog)) {
+		assert(fwrite(oog.header, sizeof(unsigned char), oog.header_len, ofp) == oog.header_len);
+		assert(fwrite(oog.body,   sizeof(unsigned char), oog.body_len,   ofp) == oog.body_len);
+	}
+	assert(fclose(ofp) == 0);
+	(void)fclose(ifp);
+	ogg_packet_clear(&my_vc_packet);
+	vorbis_comment_clear(&unused_ovc);
+	vorbis_info_clear(&vi);
+	ogg_sync_clear(&oy);
+	ogg_stream_clear(&ios);
+	ogg_stream_clear(&oos);
+}
+
 
 struct t_backend *
 t_oggvorbis_backend(void)
