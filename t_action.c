@@ -245,7 +245,7 @@ t_actionQ_destroy(struct t_actionQ *aQ)
 static struct t_action *
 t_action_new(enum t_actionkind kind, char *arg)
 {
-	char		*key, *value;
+	char		*key, *value, *eq;
 	struct t_action		*a;
 	struct t_taglist	*T;
 
@@ -256,10 +256,11 @@ t_action_new(enum t_actionkind kind, char *arg)
 		assert_not_null(arg);
 		T = t_taglist_new();
 		key = arg;
-		value = strchr(key, '=');
-		if (value == NULL)
+		eq = strchr(key, '=');
+		if (eq == NULL)
 			errx(EINVAL, "`%s': invalid `add' argument: `=' is missing.", key);
-		value += 1;
+		*eq = '\0';
+		value = eq + 1;
 		t_taglist_insert(T, key, value);
 		a->data  = T;
 		a->write = true;
@@ -304,10 +305,11 @@ t_action_new(enum t_actionkind kind, char *arg)
 		assert_not_null(arg);
 		T = t_taglist_new();
 		key = arg;
-		value = strchr(key, '=');
-		if (value == NULL)
-			errx(EINVAL, "`%s': invalid `set' argument, `=' is missing. ", key);
-		value += 1;
+		eq = strchr(key, '=');
+		if (eq == NULL)
+			errx(EINVAL, "`%s': invalid `set' argument: `=' is missing.", key);
+		*eq = '\0';
+		value = eq + 1;
 		t_taglist_insert(T, key, value);
 		a->data  = T;
 		a->write = true;
