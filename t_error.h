@@ -26,7 +26,7 @@
 
 /* reset the error message. free it if needed, set to NULL */
 #define	t_error_clear(o) \
-    do { freex(t_error_msg(o)); } while (/*CONSTCOND*/0)
+    do { free(t_error_msg(o)); t_error_init(o); } while (/*CONSTCOND*/0)
 
 
 /*

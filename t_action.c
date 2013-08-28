@@ -194,6 +194,7 @@ t_actionQ_create(int *argcp, char ***argvp, bool *writep)
 			TAILQ_INSERT_TAIL(aQ, a, entries);
 			a = t_action_new(T_ACTION_RENAME, arg);
 			TAILQ_INSERT_TAIL(aQ, a, entries);
+			write = (write || a->write);
 			a = t_action_new(T_ACTION_RELOAD, NULL);
 			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;

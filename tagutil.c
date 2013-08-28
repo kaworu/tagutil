@@ -104,7 +104,7 @@ main(int argc, char *argv[])
 		TAILQ_FOREACH(a, aQ, entries) {
 			bool ok = (*a->apply)(a, file);
 			if (!ok)
-				/* FIXME: warnx("`%s': %s", file->path, t_error_msg(file));*/
+				warnx("%s: %s", file->path, t_error_msg(file));
 				break;
 		}
         	file->destroy(file);
