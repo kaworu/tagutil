@@ -175,23 +175,25 @@ t_taglist_tag_at(struct t_taglist *T, unsigned int idx)
 void
 t_taglist_destroy(struct t_taglist *T)
 {
-    struct t_tag *t1, *t2;
+	struct t_tag *t1, *t2;
 
-    assert_not_null(T);
-    assert(T->childcount == 0);
+	if (T == NULL)
+		return;
 
-    if (T->parent != NULL) {
-        assert(T->parent->childcount > 0);
-        T->parent->childcount--;
-    }
+	assert(T->childcount == 0);
 
-    t1 = TAILQ_FIRST(T->tags);
-    while (t1 != NULL) {
-        t2 = TAILQ_NEXT(t1, entries);
-        freex(t1);
-        t1 = t2;
-    }
-    t_error_clear(T);
-    freex(T);
+	if (T->parent != NULL) {
+		assert(T->parent->childcount > 0);
+		T->parent->childcount--;
+	}
+
+	t1 = TAILQ_FIRST(T->tags);
+	while (t1 != NULL) {
+		t2 = TAILQ_NEXT(t1, entries);
+		freex(t1);
+		t1 = t2;
+	}
+	t_error_clear(T);
+	freex(T);
 }
 

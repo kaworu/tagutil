@@ -271,8 +271,12 @@ t_action_new(enum t_actionkind kind, char *arg)
 		break;
 	case T_ACTION_CLEAR:
 		assert_not_null(arg);
-		T = t_taglist_new();
-		t_taglist_insert(T, arg, "");
+		if (arg[0] == '\0')
+			T = NULL;
+		else {
+			T = t_taglist_new();
+			t_taglist_insert(T, arg, "");
+		}
 		a->data  = T;
 		a->write = true;
 		a->apply = t_action_clear;
