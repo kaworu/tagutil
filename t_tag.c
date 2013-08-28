@@ -47,10 +47,10 @@ t_taglist_insert(struct t_taglist *T,
     t->keylen = klen;
     t->valuelen = vlen;
     t->key = s = (char *)(t + 1);
-    assert(strlcpy(s, key, t->keylen + 1) < (t->keylen + 1));
+    assert(strlcpy(s, key, t->keylen + 1) == t->keylen);
     t_strtolower(s);
     t->value = s = (char *)(s + t->keylen + 1);
-    assert(strlcpy(s, value, t->valuelen + 1) < (t->valuelen + 1));
+    assert(strlcpy(s, value, t->valuelen + 1) == t->valuelen);
 
     TAILQ_INSERT_TAIL(T->tags, t, entries);
     T->count++;
