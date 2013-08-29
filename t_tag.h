@@ -70,6 +70,7 @@ int	t_taglist_insert(struct t_taglist *T, const char *key,
 /*
  * return the tag at given index, or NULL.
  */
+_t__deprecated
 struct t_tag	*t_taglist_tag_at(const struct t_taglist *T, unsigned int index);
 
 /*
