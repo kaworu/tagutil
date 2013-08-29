@@ -86,7 +86,7 @@ t_tags2yaml(struct t_file *file)
 	/* Create and emit the SEQUENCE-START event. */
 	if (!yaml_sequence_start_event_initialize(&event, /* anchor */NULL,
 	    (yaml_char_t *)YAML_SEQ_TAG, /* implicit */1,
-	    YAML_BLOCK_MAPPING_STYLE))
+	    YAML_BLOCK_SEQUENCE_STYLE))
 		goto event_error;
 	if (!yaml_emitter_emit(&emitter, &event))
 		goto emitter_error;

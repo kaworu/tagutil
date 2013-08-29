@@ -178,7 +178,8 @@ t_filter_eval_cmp(struct t_file *file,
                 char *s;
                 switch (lhs->token->tidx_mod) {
                 case T_TOKEN_STAR_NO_MOD:
-                    s = t_taglist_join(T, " - ");
+                    if ((s = t_taglist_join(T, " - ")) == NULL)
+		    	    err(ENOMEM, "malloc");
                     ret = t_filter_eval_str_cmp(file, s, rhs, f);
                     freex(s);
                     break;
@@ -264,7 +265,8 @@ t_filter_eval_match(struct t_file *file,
             char *s;
             switch (strast->token->tidx_mod) {
             case T_TOKEN_STAR_NO_MOD:
-                s = t_taglist_join(T, " - ");
+                if ((s = t_taglist_join(T, " - ")) == NULL)
+			err(ENOMEM, "malloc");
                 ret = t_filter_regexec(r, s);
                 freex(s);
                 break;
@@ -445,7 +447,8 @@ t_filter_eval_int_cmp(struct t_file *file,
             char *s;
             switch (rhs->token->tidx_mod) {
             case T_TOKEN_STAR_NO_MOD:
-                s = t_taglist_join(T, " - ");
+                if ((s = t_taglist_join(T, " - ")) == NULL)
+			err(ENOMEM, "malloc");
                 ret = (*f)((double)(i - strtol(s, NULL, 10)));
                 freex(s);
                 break;
@@ -522,7 +525,8 @@ t_filter_eval_double_cmp(struct t_file *file,
             char *s;
             switch (rhs->token->tidx_mod) {
             case T_TOKEN_STAR_NO_MOD:
-                s = t_taglist_join(T, " - ");
+                if ((s = t_taglist_join(T, " - ")) == NULL)
+			err(ENOMEM, "malloc");
                 ret = (*f)(d - strtod(s, NULL));
                 freex(s);
                 break;
@@ -599,7 +603,8 @@ t_filter_eval_str_cmp(struct t_file *file,
             char *s;
             switch (rhs->token->tidx_mod) {
             case T_TOKEN_STAR_NO_MOD:
-                s = t_taglist_join(T, " - ");
+                if ((s = t_taglist_join(T, " - ")) == NULL)
+			err(ENOMEM, "malloc");
                 ret = (*f)((double)strcmp(str, s));
                 freex(s);
                 break;

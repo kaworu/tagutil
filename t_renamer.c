@@ -229,7 +229,8 @@ t_rename_eval(struct t_file *file, struct t_token **ts)
 				/* tag exist */
 				if (tkn->tidx == T_TOKEN_STAR) {
 					/* user ask for *all* tag values */
-					s = t_taglist_join(T, " - ");
+					if ((s = t_taglist_join(T, " - ")) == NULL)
+						err(ENOMEM, "malloc");
 					len = strlen(s);
 				} else {
 					/* requested one tag */

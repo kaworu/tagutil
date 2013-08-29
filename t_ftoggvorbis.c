@@ -7,7 +7,9 @@
 #include <string.h>
 
 /* Vorbis headers */
+#define	OV_EXCLUDE_STATIC_CALLBACKS	1
 #include "vorbis/vorbisfile.h"
+#undef	OV_EXCLUDE_STATIC_CALLBACKS
 #include "vorbis/codec.h"
 
 #include "t_config.h"
@@ -134,7 +136,7 @@ t_file_save(struct t_file *file)
 	char *buf, *tmp;
 	size_t s;
 	ogg_int64_t granpos = 0;
-	int i, npacket = 0, prevW = 0;
+	int npacket = 0, prevW = 0;
 	enum {
 		BUILDING_VC_PACKET, SETUP, START_READING, STREAMS_INITIALIZED,
 		READING_HEADERS, READING_DATA, READING_DATA_NEED_FLUSH,
@@ -374,7 +376,6 @@ static bool
 t_file_clear(struct t_file *file, const struct t_taglist *T)
 {
 	int	 i;
-	int	 count;
 	char	*c, *copy, *eq;
 	struct t_taglist *backup;
 	struct t_tag *t;
@@ -426,8 +427,6 @@ t_file_clear(struct t_file *file, const struct t_taglist *T)
 static bool
 t_file_add(struct t_file *file, const struct t_taglist *T)
 {
-	size_t	 len;
-	char	*tageq;
 	struct t_tag *t;
 	struct t_oggvorbis_data *data;
 

@@ -68,21 +68,29 @@ int	t_taglist_insert(struct t_taglist *T, const char *key,
 	    const char *val);
 
 /*
- * return the tag at index idx, or NULL.
+ * return the tag at given index, or NULL.
  */
-struct t_tag	*t_taglist_tag_at(const struct t_taglist *T, unsigned int idx);
+struct t_tag	*t_taglist_tag_at(const struct t_taglist *T, unsigned int index);
 
 /*
- * join all the tag in T with j.
- * if j is NULL, it has the same effect as "".
+ * join all the tag values in T with the given glue.
  *
- * returned value has to be free()d.
+ * @param T
+ *   The taglist containing all the tag to join.
+ *
+ * @param glue
+ *   inserted between each tag value.
+ *
+ * @return
+ *   NULL on error and a (char *) that should be passed to free(3) after use.
  */
-char * t_taglist_join(struct t_taglist *T, const char *j);
+char	*t_taglist_join(const struct t_taglist *T, const char *glue);
 
 /*
- * free the t_taglist struct and all the t_tag (0 indexed).
+ * free the t_taglist and all its tags.
+ *
+ * A t_taglist should not be used after a call to t_taglist_delete().
  */
-void t_taglist_delete(struct t_taglist *T);
+void	t_taglist_delete(struct t_taglist *T);
 
 #endif /* not T_TAG_H */
