@@ -427,7 +427,7 @@ t_action_edit(struct t_action *self, struct t_file *file)
 	if (t_yesno(question)) {
 		(void)xasprintf(&tmp_file, "/tmp/%s-XXXXXX.yml", getprogname());
 		if (mkstemps(tmp_file, 4) == -1)
-			err(errno, "mkstemp");
+			err(errno, "mkstemps");
 		stream = fopen(tmp_file, "w");
 		if (stream == NULL)
 			err(errno, "fopen %s", tmp_file);
