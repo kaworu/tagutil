@@ -109,14 +109,13 @@ t_file_destroy(struct t_file *file)
 
 
 static int
-fwrite_to_fp_sbuf_drain_func(void *fp, const char *data, int len)
+fwrite_drain_func(void *fp, const char *data, int len)
 {
 	size_t s;
 
 	if (fp == NULL)
 		return (-1);
 	s = fwrite(data, 1, len, fp);
-	(void)printf("wrote %zu\n", s);
 	return (s == 0 ? -1 : s);
 }
 
@@ -128,21 +127,21 @@ t_file_save(struct t_file *file)
 	ogg_page iog, oog;
 	vorbis_info vi;
 	ogg_packet op, my_vc_packet, *target;
-	vorbis_comment unused_ovc;
+	vorbis_comment vc;
 	struct t_oggvorbis_data *data;
 	struct sbuf *sb = NULL;
 	FILE *rfp = NULL, *wfp = NULL;
-	char *buf;
+	char *buf, *tmp;
 	size_t s;
 	ogg_int64_t granpos = 0;
-	int npacket = 0, prevW = 0;
+	int i, npacket = 0, prevW = 0;
 	enum {
 		BUILDING_VC_PACKET, SETUP, START_READING, STREAMS_INITIALIZED,
 		READING_HEADERS, READING_DATA, READING_DATA_NEED_FLUSH,
-		READING_DATA_NEED_PAGEOUT, E_O_S, WRITTING, DONE_SUCCESS,
+		READING_DATA_NEED_PAGEOUT, E_O_S, WRITE_FINISH, RENAMING,
+		DONE_SUCCESS,
 	} state;
 
-	(void)printf("t_file_save now\n");
 	assert_not_null(file);
 	assert_not_null(file->data);
 	assert(file->libid == libid);
@@ -161,18 +160,24 @@ t_file_save(struct t_file *file)
 
 	state = BUILDING_VC_PACKET;
 	/* create the packet holding our vorbis_comment */
-	if (vorbis_commentheader_out(data->vc, &my_vc_packet) == OV_EIMPL); /* 0 on success, OV_EIMPL on error */
+	if (vorbis_commentheader_out(data->vc, &my_vc_packet) != 0)
 		goto cleanup;
+	vorbis_comment_init(&vc);
 
 	state = SETUP;
 	/* open files & stuff */
 	if ((rfp = fopen(file->path, "r")) == NULL)
 		goto cleanup;
-	if ((wfp = fopen(file->path, "w")) == NULL)
+	if ((sb = sbuf_new(NULL, NULL, BUFSIZ + 1, SBUF_FIXEDLEN)) == NULL)
 		goto cleanup;
-	if ((sb = sbuf_new_auto()) == NULL)
+	/* open wfp */
+	if (xasprintf(&tmp, "%s/.__%s_XXXXXX", t_dirname(file->path), getprogname()) < 0)
 		goto cleanup;
-	sbuf_set_drain(sb, fwrite_to_fp_sbuf_drain_func, wfp);
+	if (mkstemps(tmp, 0) == -1)
+		goto cleanup;
+	if ((wfp = fopen(tmp, "w")) == NULL)
+		goto cleanup;
+	sbuf_set_drain(sb, fwrite_drain_func, wfp);
 	vorbis_info_init(&vi);
 	(void)ogg_sync_init(&oy); /* always return 0 */
 
@@ -218,7 +223,7 @@ t_file_save(struct t_file *file)
 				/* insert the target packet into the output stream */
 				if (npacket <= 3) {
 					/* the three first packet are used to fill the vorbis info (used to compute granule) */
-					if (vorbis_synthesis_headerin(&vi, &unused_ovc, &op) != 0)
+					if (vorbis_synthesis_headerin(&vi, &vc, &op) != 0)
 						goto cleanup;
 					/* force a flush after the third ogg_packet */
 					state = (npacket == 3 ? READING_DATA_NEED_FLUSH : READING_HEADERS);
@@ -256,56 +261,63 @@ t_file_save(struct t_file *file)
 		(void)sbuf_bcat(sb, oog.header, oog.header_len);
 		(void)sbuf_bcat(sb, oog.body, oog.body_len);
 	}
-
-	state = WRITTING;
-	/* write to the storage */
 	(void)fclose(rfp);
 	rfp = NULL;
-	(void)printf("sbuf_finish now\n");
+
+	state = WRITE_FINISH;
 	if (sbuf_finish(sb) == -1)
 		goto cleanup;
 	if (fclose(wfp) != 0)
 		goto cleanup;
 	wfp = NULL;
+
+	state = RENAMING;
+	if (rename(tmp, file->path) == -1)
+		goto cleanup;
+
 	state = DONE_SUCCESS;
 
 cleanup:
 	switch (state) {
 	case DONE_SUCCESS: /* FALLTHROUGH */
-	case WRITTING:
+	case RENAMING:
 		if (state != DONE_SUCCESS && t_error_msg(file) == NULL)
-			t_error_set(file, "error while writting file (could be corrupted now)");
+			t_error_set(file, "error while renaming temporary file");
+		/* FALLTHROUGH */
+	case WRITE_FINISH: /* FALLTHROUGH */
 	case READING_HEADERS: /* FALLTHROUGH */
 	case READING_DATA: /* FALLTHROUGH */
 	case READING_DATA_NEED_FLUSH: /* FALLTHROUGH */
 	case READING_DATA_NEED_PAGEOUT: /* FALLTHROUGH */
-	case E_O_S:
-		vorbis_comment_clear(&unused_ovc);
-		/* FALLTHROUGH */
+	case E_O_S: /* FALLTHROUGH */
 	case STREAMS_INITIALIZED:
 		ogg_stream_clear(&ios);
 		ogg_stream_clear(&oos);
 		/* FALLTHROUGH */
 	case START_READING:
+		if (state != DONE_SUCCESS && t_error_msg(file) == NULL)
+			t_error_set(file, "error while reading or writting to temporary file");
 		ogg_sync_clear(&oy);
 		vorbis_info_clear(&vi);
 		/* FALLTHROUGH */
-		if (state != DONE_SUCCESS && t_error_msg(file) == NULL)
-			t_error_set(file, "error while reading");
 	case SETUP:
-		if (rfp != NULL)
-			(void)fclose(rfp);
-		if (wfp != NULL)
-			(void)fclose(wfp);
-		if (sb != NULL)
-			sbuf_delete(sb);
-		ogg_packet_clear(&my_vc_packet);
-		/* FALLTHROUGH */
 		if (state != DONE_SUCCESS && t_error_msg(file) == NULL)
 			t_error_set(file, "error while opening");
+		if (wfp != NULL) {
+			(void)fclose(wfp);
+			(void)unlink(tmp);
+		}
+		free(tmp);
+		if (sb != NULL)
+			sbuf_delete(sb);
+		if (rfp != NULL)
+			(void)fclose(rfp);
+		ogg_packet_clear(&my_vc_packet);
+		/* FALLTHROUGH */
 	case BUILDING_VC_PACKET:
 		if (state != DONE_SUCCESS && t_error_msg(file) == NULL)
 			t_error_set(file, "error while creating vorbis comment ogg_packet");
+		vorbis_comment_clear(&vc);
 	}
 
 	return (state == DONE_SUCCESS);
@@ -381,8 +393,7 @@ t_file_clear(struct t_file *file, const struct t_taglist *T)
 		for (i = 0; i < data->vc->comments; i++) {
 			c = data->vc->user_comments[i];
 			TAILQ_FOREACH(t, T->tags, entries) {
-				if (strncasecmp(t->key, c, t->keylen) == 0 &&
-				    c[t->keylen] == '=') {
+				if (!(strncasecmp(t->key, c, t->keylen) == 0 && c[t->keylen] == '=')) {
 					copy = xstrdup(c);
 					eq = strchr(copy, '=');
 					if (eq == NULL) {
@@ -399,6 +410,7 @@ t_file_clear(struct t_file *file, const struct t_taglist *T)
 		}
 	}
 
+	vorbis_comment_clear(data->vc);
 	vorbis_comment_init(data->vc);
 	t_file_add(file, backup);
 	t_taglist_destroy(backup);
