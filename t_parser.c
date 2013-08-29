@@ -103,7 +103,7 @@ t_ast_destroy(struct t_ast *victim)
         t_ast_destroy(victim->lhs);
         t_ast_destroy(victim->rhs);
         if (victim->token->kind == T_REGEX)
-            regfree(&victim->token->value.regex);
+            regfree(&victim->token->val.regex);
         freex(victim->token);
         freex(victim);
     }

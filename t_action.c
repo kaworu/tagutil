@@ -246,7 +246,7 @@ t_actionQ_destroy(struct t_actionQ *aQ)
 static struct t_action *
 t_action_new(enum t_actionkind kind, char *arg)
 {
-	char		*key, *value, *eq;
+	char		*key, *val, *eq;
 	struct t_action		*a;
 	struct t_taglist	*T;
 
@@ -255,14 +255,16 @@ t_action_new(enum t_actionkind kind, char *arg)
 	switch (a->kind) {
 	case T_ACTION_ADD:
 		assert_not_null(arg);
-		T = t_taglist_new();
+		if ((T = t_taglist_new()) == NULL)
+			err(ENOMEM, "malloc");
 		key = arg;
 		eq = strchr(key, '=');
 		if (eq == NULL)
 			errx(EINVAL, "`%s': invalid `add' argument: `=' is missing.", key);
 		*eq = '\0';
-		value = eq + 1;
-		t_taglist_insert(T, key, value);
+		val = eq + 1;
+		if (t_taglist_insert(T, key, val) == -1)
+			err(ENOMEM, "malloc");
 		a->data  = T;
 		a->write = true;
 		a->apply = t_action_add;
@@ -275,8 +277,10 @@ t_action_new(enum t_actionkind kind, char *arg)
 		if (arg[0] == '\0')
 			T = NULL;
 		else {
-			T = t_taglist_new();
-			t_taglist_insert(T, arg, "");
+			if ((T = t_taglist_new()) == NULL)
+				err(ENOMEM, "malloc");
+			if ((t_taglist_insert(T, arg, "")) == -1)
+				err(ENOMEM, "malloc");
 		}
 		a->data  = T;
 		a->write = true;
@@ -308,14 +312,16 @@ t_action_new(enum t_actionkind kind, char *arg)
 		break;
 	case T_ACTION_SET:
 		assert_not_null(arg);
-		T = t_taglist_new();
+		if ((T = t_taglist_new()) == NULL)
+			err(ENOMEM, "malloc");
 		key = arg;
 		eq = strchr(key, '=');
 		if (eq == NULL)
 			errx(EINVAL, "`%s': invalid `set' argument: `=' is missing.", key);
 		*eq = '\0';
-		value = eq + 1;
-		t_taglist_insert(T, key, value);
+		val = eq + 1;
+		if ((t_taglist_insert(T, key, val)) == -1)
+			err(ENOMEM, "malloc");
 		a->data  = T;
 		a->write = true;
 		a->apply = t_action_set;
@@ -351,7 +357,7 @@ t_action_destroy(struct t_action *a)
 	case T_ACTION_ADD:	/* FALLTHROUGH */
 	case T_ACTION_CLEAR:	/* FALLTHROUGH */
 	case T_ACTION_SET:
-		t_taglist_destroy(a->data);
+		t_taglist_delete(a->data);
 		break;
 	case T_ACTION_RENAME:
 		tknv = a->data;
@@ -478,7 +484,7 @@ t_action_load(struct t_action *self, struct t_file *file)
 	retval = file->clear(file, NULL) &&
 	    file->add(file, T) &&
 	    file->save(file);
-	t_taglist_destroy(T);
+	t_taglist_delete(T);
 	return (retval);
 }
 

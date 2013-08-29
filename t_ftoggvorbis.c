@@ -330,7 +330,7 @@ t_file_get(struct t_file *file, const char *key)
 	char	*copy;
 	char	*eq;
 	int	 i;
-	size_t	keylen;
+	size_t	klen;
 	const char *c;
 	struct t_taglist *T;
 	struct t_oggvorbis_data *data;
@@ -341,14 +341,15 @@ t_file_get(struct t_file *file, const char *key)
 	t_error_clear(file);
 
 	data = file->data;
-	T = t_taglist_new();
+	if ((T = t_taglist_new()) == NULL)
+		err(ENOMEM, "malloc");
 	if (key != NULL)
-		keylen = strlen(key);
+		klen = strlen(key);
 
 	for (i = 0; i < data->vc->comments; i++) {
 		c = data->vc->user_comments[i];
 		if (key != NULL) {
-			if (strncasecmp(key, c, keylen) != 0 || c[keylen] != '=')
+			if (strncasecmp(key, c, klen) != 0 || c[klen] != '=')
 				continue;
 		}
 		copy = xstrdup(c);
@@ -356,11 +357,12 @@ t_file_get(struct t_file *file, const char *key)
 		if (eq == NULL) {
 			t_error_set(file, "ogg/vorbis header seems corrupted");
 			free(copy);
-			t_taglist_destroy(T);
+			t_taglist_delete(T);
 			return (NULL);
 		}
 		*eq = '\0';
-		t_taglist_insert(T, copy, eq + 1);
+		if ((t_taglist_insert(T, copy, eq + 1)) == -1)
+			err(ENOMEM, "malloc");
 		free(copy);
 	}
 
@@ -387,23 +389,25 @@ t_file_clear(struct t_file *file, const struct t_taglist *T)
 
 	/* this is overkill, but libvorbis doesn't expose routine to remove
 	  comments. */
-	backup = t_taglist_new();
+	if ((backup = t_taglist_new()) == NULL)
+		err(ENOMEM, "malloc");
 	if (T != NULL) {
 		/* do a backup of the tags we want to keep */
 		for (i = 0; i < data->vc->comments; i++) {
 			c = data->vc->user_comments[i];
 			TAILQ_FOREACH(t, T->tags, entries) {
-				if (!(strncasecmp(t->key, c, t->keylen) == 0 && c[t->keylen] == '=')) {
+				if (!(strncasecmp(t->key, c, t->klen) == 0 && c[t->klen] == '=')) {
 					copy = xstrdup(c);
 					eq = strchr(copy, '=');
 					if (eq == NULL) {
 						t_error_set(file, "ogg/vorbis header seems corrupted");
 						free(copy);
-						t_taglist_destroy(backup);
+						t_taglist_delete(backup);
 						return (NULL);
 					}
 					*eq = '\0';
-					t_taglist_insert(backup, copy, eq + 1);
+					if ((t_taglist_insert(backup, copy, eq + 1)) == -1)
+						err(ENOMEM, "malloc");
 					free(copy);
 				}
 			}
@@ -413,7 +417,7 @@ t_file_clear(struct t_file *file, const struct t_taglist *T)
 	vorbis_comment_clear(data->vc);
 	vorbis_comment_init(data->vc);
 	t_file_add(file, backup);
-	t_taglist_destroy(backup);
+	t_taglist_delete(backup);
 
 	return (true);
 }
@@ -436,7 +440,7 @@ t_file_add(struct t_file *file, const struct t_taglist *T)
 	data = file->data;
 
 	TAILQ_FOREACH(t, T->tags, entries) {
-		vorbis_comment_add_tag(data->vc, t->key, t->value);
+		vorbis_comment_add_tag(data->vc, t->key, t->val);
 		file->dirty++;
 	}
 

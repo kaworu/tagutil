@@ -147,13 +147,13 @@ t_filter_eval_cmp(struct t_file *file,
 
     switch (lhs->token->kind) {
     case T_INT:
-        ret = t_filter_eval_int_cmp(file, lhs->token->value.integer, rhs, f);
+        ret = t_filter_eval_int_cmp(file, lhs->token->val.integer, rhs, f);
         break;
     case T_DOUBLE:
-        ret = t_filter_eval_double_cmp(file, lhs->token->value.dbl, rhs, f);
+        ret = t_filter_eval_double_cmp(file, lhs->token->val.dbl, rhs, f);
         break;
     case T_STRING:
-        ret = t_filter_eval_str_cmp(file, lhs->token->value.str, rhs, f);
+        ret = t_filter_eval_str_cmp(file, lhs->token->val.str, rhs, f);
         break;
     case T_UNDEF:
         ret = t_filter_eval_undef_cmp(file, rhs, f);
@@ -166,7 +166,7 @@ t_filter_eval_cmp(struct t_file *file,
         break;
     case T_TAGKEY:
         if (rhs->token->kind == T_TAGKEY) {
-            T = file->get(file, lhs->token->value.str);
+            T = file->get(file, lhs->token->val.str);
             if (T == NULL) {
                 warnx("t_filter: `%s': %s",
                         file->path, t_error_msg(file));
@@ -185,7 +185,7 @@ t_filter_eval_cmp(struct t_file *file,
                 case T_TOKEN_STAR_OR_MOD:
                     ret = false;
                     TAILQ_FOREACH(t, T->tags, entries) {
-                        if (t_filter_eval_str_cmp(file, t->value, rhs, f)) {
+                        if (t_filter_eval_str_cmp(file, t->val, rhs, f)) {
                             ret = true;
                             break;
                         }
@@ -194,7 +194,7 @@ t_filter_eval_cmp(struct t_file *file,
                 case T_TOKEN_STAR_AND_MOD:
                     ret = true;
                     TAILQ_FOREACH(t, T->tags, entries) {
-                        if (!t_filter_eval_str_cmp(file, t->value, rhs, f)) {
+                        if (!t_filter_eval_str_cmp(file, t->val, rhs, f)) {
                             ret = false;
                             break;
                         }
@@ -205,7 +205,7 @@ t_filter_eval_cmp(struct t_file *file,
             else {
                 t = t_taglist_tag_at(T, lhs->token->tidx);
                 if (t != NULL)
-                    ret = t_filter_eval_str_cmp(file, t->value, rhs, f);
+                    ret = t_filter_eval_str_cmp(file, t->val, rhs, f);
             }
         }
         else
@@ -219,8 +219,7 @@ t_filter_eval_cmp(struct t_file *file,
         /* NOTREACHED */
     }
 
-    if (T)
-        t_taglist_destroy(T);
+    t_taglist_delete(T);
     return (ret);
 }
 
@@ -250,10 +249,10 @@ t_filter_eval_match(struct t_file *file,
     }
     assert(regast->token->kind == T_REGEX);
 
-    r = &regast->token->value.regex;
+    r = &regast->token->val.regex;
     switch (strast->token->kind) {
     case T_TAGKEY:
-        T = file->get(file, strast->token->value.str);
+        T = file->get(file, strast->token->val.str);
         if (T == NULL) {
             warnx("t_filter: `%s': %s",
                     file->path, t_error_msg(file));
@@ -272,7 +271,7 @@ t_filter_eval_match(struct t_file *file,
             case T_TOKEN_STAR_OR_MOD:
                 ret = false;
                 TAILQ_FOREACH(t, T->tags, entries) {
-                    if (t_filter_regexec(r, t->value))
+                    if (t_filter_regexec(r, t->val))
                         ret = true;
                         break;
                     }
@@ -280,7 +279,7 @@ t_filter_eval_match(struct t_file *file,
             case T_TOKEN_STAR_AND_MOD:
                 ret = true;
                 TAILQ_FOREACH(t, T->tags, entries) {
-                    if (!t_filter_regexec(r, t->value))
+                    if (!t_filter_regexec(r, t->val))
                         ret = false;
                         break;
                     }
@@ -290,7 +289,7 @@ t_filter_eval_match(struct t_file *file,
         else {
             t = t_taglist_tag_at(T, strast->token->tidx);
             if (t != NULL)
-                ret = t_filter_regexec(r, t->value);
+                ret = t_filter_regexec(r, t->val);
         }
         break;
     case T_BACKEND: /* FALLTHROUGH */
@@ -308,8 +307,7 @@ t_filter_eval_match(struct t_file *file,
         /* NOTREACHED */
     }
 
-    if (T)
-        t_taglist_destroy(T);
+    t_taglist_delete(T);
     return (ret);
 }
 
@@ -435,7 +433,7 @@ t_filter_eval_int_cmp(struct t_file *file,
         ret = (*f)((double)(i - strtol(cs, NULL, 10)));
         break;
     case T_TAGKEY:
-        T = file->get(file, rhs->token->value.str);
+        T = file->get(file, rhs->token->val.str);
         if (T == NULL) {
             warnx("t_filter: `%s': %s",
                     file->path, t_error_msg(file));
@@ -454,7 +452,7 @@ t_filter_eval_int_cmp(struct t_file *file,
             case T_TOKEN_STAR_OR_MOD:
                 ret = false;
                 TAILQ_FOREACH(t, T->tags, entries) {
-                    if ((*f)((double)(i - strtol(t->value, NULL, 10)))) {
+                    if ((*f)((double)(i - strtol(t->val, NULL, 10)))) {
                         ret = true;
                         break;
                     }
@@ -463,7 +461,7 @@ t_filter_eval_int_cmp(struct t_file *file,
             case T_TOKEN_STAR_AND_MOD:
                 ret = true;
                 TAILQ_FOREACH(t, T->tags, entries) {
-                    if (!(*f)((double)(i - strtol(t->value, NULL, 10)))) {
+                    if (!(*f)((double)(i - strtol(t->val, NULL, 10)))) {
                         ret = false;
                         break;
                     }
@@ -474,7 +472,7 @@ t_filter_eval_int_cmp(struct t_file *file,
         else {
             t = t_taglist_tag_at(T, rhs->token->tidx);
             if (t != NULL)
-                ret = (*f)((double)(i - strtol(t->value, NULL, 10)));
+                ret = (*f)((double)(i - strtol(t->val, NULL, 10)));
         }
         break;
     default:
@@ -484,8 +482,7 @@ t_filter_eval_int_cmp(struct t_file *file,
         /* NOTREACHED */
     }
 
-    if (T)
-        t_taglist_destroy(T);
+    t_taglist_delete(T);
     return (ret);
 }
 
@@ -513,7 +510,7 @@ t_filter_eval_double_cmp(struct t_file *file,
         ret = (*f)(d - strtod(cs, NULL));
         break;
     case T_TAGKEY:
-        T = file->get(file, rhs->token->value.str);
+        T = file->get(file, rhs->token->val.str);
         if (T == NULL) {
             warnx("t_filter: `%s': %s",
                     file->path, t_error_msg(file));
@@ -532,7 +529,7 @@ t_filter_eval_double_cmp(struct t_file *file,
             case T_TOKEN_STAR_OR_MOD:
                 ret = false;
                 TAILQ_FOREACH(t, T->tags, entries) {
-                    if ((*f)(d - strtod(t->value, NULL)))
+                    if ((*f)(d - strtod(t->val, NULL)))
                         ret = true;
                         break;
                     }
@@ -540,7 +537,7 @@ t_filter_eval_double_cmp(struct t_file *file,
             case T_TOKEN_STAR_AND_MOD:
                 ret = true;
                 TAILQ_FOREACH(t, T->tags, entries) {
-                    if (!(*f)(d - strtod(t->value, NULL))) {
+                    if (!(*f)(d - strtod(t->val, NULL))) {
                         ret = false;
                         break;
                     }
@@ -551,7 +548,7 @@ t_filter_eval_double_cmp(struct t_file *file,
         else {
             t = t_taglist_tag_at(T, rhs->token->tidx);
             if (t != NULL)
-                ret = (*f)(d - strtod(t->value, NULL));
+                ret = (*f)(d - strtod(t->val, NULL));
         }
         break;
     default:
@@ -561,8 +558,7 @@ t_filter_eval_double_cmp(struct t_file *file,
         /* NOTREACHED */
     }
 
-    if (T)
-        t_taglist_destroy(T);
+    t_taglist_delete(T);
     return (ret);
 }
 
@@ -591,7 +587,7 @@ t_filter_eval_str_cmp(struct t_file *file,
         ret = (*f)((double)strcmp(str, cs));
         break;
     case T_TAGKEY:
-        T = file->get(file, rhs->token->value.str);
+        T = file->get(file, rhs->token->val.str);
         if (T == NULL) {
             warnx("t_filter: `%s': %s",
                     file->path, t_error_msg(file));
@@ -609,7 +605,7 @@ t_filter_eval_str_cmp(struct t_file *file,
                 break;
             case T_TOKEN_STAR_OR_MOD:
                 TAILQ_FOREACH(t, T->tags, entries) {
-                    if ((*f)((double)strcmp(str, t->value)))
+                    if ((*f)((double)strcmp(str, t->val)))
                         ret = true;
                         break;
                     }
@@ -617,7 +613,7 @@ t_filter_eval_str_cmp(struct t_file *file,
             case T_TOKEN_STAR_AND_MOD:
                 ret = true;
                 TAILQ_FOREACH(t, T->tags, entries) {
-                    if (!(*f)((double)strcmp(str, t->value)))
+                    if (!(*f)((double)strcmp(str, t->val)))
                         ret = false;
                         break;
                     }
@@ -627,7 +623,7 @@ t_filter_eval_str_cmp(struct t_file *file,
         else {
             t = t_taglist_tag_at(T, rhs->token->tidx);
             if (t != NULL)
-                ret = (*f)((double)strcmp(str, t->value));
+                ret = (*f)((double)strcmp(str, t->val));
         }
         break;
     default:
@@ -637,8 +633,7 @@ t_filter_eval_str_cmp(struct t_file *file,
         /* NOTREACHED */
     }
 
-    if (T)
-        t_taglist_destroy(T);
+    t_taglist_delete(T);
     return (ret);
 }
 
@@ -656,7 +651,7 @@ t_filter_eval_undef_cmp(struct t_file *file,
 
     switch (rhs->token->kind) {
     case T_TAGKEY:
-        T = file->get(file, rhs->token->value.str);
+        T = file->get(file, rhs->token->val.str);
         if (T == NULL) {
             warnx("t_filter: `%s': %s",
                     file->path, t_error_msg(file));
@@ -674,8 +669,7 @@ t_filter_eval_undef_cmp(struct t_file *file,
         /* NOTREACHED */
     }
 
-    if (T != NULL)
-        t_taglist_destroy(T);
+    t_taglist_delete(T);
     return ((*f)(def));
 }
 

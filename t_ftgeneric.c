@@ -150,7 +150,7 @@ t_file_get(struct t_file *file, const char *key)
 {
 	int		 i;
 	unsigned int	 uintval;
-	char		*value;
+	char		*val;
 	struct t_generic_data *data;
 	struct t_taglist *T;
 
@@ -160,49 +160,53 @@ t_file_get(struct t_file *file, const char *key)
 	t_error_clear(file);
 
 	data = file->data;
-	T = t_taglist_new();
+	if ((T = t_taglist_new()) == NULL)
+		err(ENOMEM, "malloc");
 
 	for (i = 0; i < countof(taglibkeys); i++) {
 		if (key != NULL) {
 			if (strcasecmp(key, taglibkeys[i]) != 0)
 				continue;
 		}
-		value = NULL;
+		val = NULL;
 		switch (i) {
 		case 0:
-			value = taglib_tag_album(data->tag);
+			val = taglib_tag_album(data->tag);
 			break;
 		case 1:
-			value = taglib_tag_artist(data->tag);
+			val = taglib_tag_artist(data->tag);
 			break;
 		case 2:
-			value = taglib_tag_comment(data->tag);
+			val = taglib_tag_comment(data->tag);
 			break;
 		case 3:
 			uintval = taglib_tag_year(data->tag);
 			if (uintval > 0)
-				(void)xasprintf(&value, "%04u", uintval);
+				(void)xasprintf(&val, "%04u", uintval);
 			break;
 		case 4:
-			value = taglib_tag_genre(data->tag);
+			val = taglib_tag_genre(data->tag);
 			break;
 		case 5:
-			value = taglib_tag_title(data->tag);
+			val = taglib_tag_title(data->tag);
 			break;
 		case 6:
 			uintval = taglib_tag_track(data->tag);
 			if (uintval > 0)
-				(void)xasprintf(&value, "%02u", uintval);
+				(void)xasprintf(&val, "%02u", uintval);
 			break;
 		}
-		if (value != NULL && value[0] != '\0') {
+		if (val != NULL && val[0] != '\0') {
 			/* clean value, when TagLib return "" we return NULL */
-			freex(value);
+			free(val);
+			val = NULL;
 		}
 
-		if (value != NULL) {
-			t_taglist_insert(T, taglibkeys[i], value);
-			freex(value);
+		if (val != NULL) {
+			if ((t_taglist_insert(T, taglibkeys[i], val)) == -1)
+				err(ENOMEM, "malloc");
+			free(val);
+			val = NULL;
 		}
 		if (key != NULL)
 			break;
@@ -211,6 +215,30 @@ t_file_get(struct t_file *file, const char *key)
 	return (T);
 }
 
+
+static unsigned int
+t_taglist_filter_count(const struct t_taglist *T,
+        const char *key, bool onlyfirst)
+{
+    size_t len;
+    unsigned int ret;
+    struct t_tag *t;
+
+    assert_not_null(T);
+    assert_not_null(key);
+
+    ret = 0;
+    len = strlen(key);
+    TAILQ_FOREACH(t, T->tags, entries) {
+        if (len == t->klen && strcasecmp(t->key, key) == 0) {
+            ret++;
+            if (onlyfirst)
+                break;
+        }
+    }
+
+    return (ret);
+}
 
 static bool
 t_file_clear(struct t_file *file, const struct t_taglist *T)
@@ -226,6 +254,7 @@ t_file_clear(struct t_file *file, const struct t_taglist *T)
 	data = file->data;
 
 	for (i = 0; i < countof(taglibkeys); i++) {
+#define T_TAG_FIRST true
 		if (T == NULL || t_taglist_filter_count(T, taglibkeys[i], T_TAG_FIRST)) {
 			switch (i) {
 			case 0:
@@ -302,18 +331,18 @@ t_file_add(struct t_file *file, const struct t_taglist *T)
 			}
 		}
 		if (isstrf)
-			strf(data->tag, t->value);
+			strf(data->tag, t->val);
 		else {
 			char	*endptr;
 			unsigned long ulongval;
-			ulongval = strtoul(t->value, &endptr, 10);
-			if (endptr == t->value || *endptr != '\0') {
+			ulongval = strtoul(t->val, &endptr, 10);
+			if (endptr == t->val || *endptr != '\0') {
 				t_error_set(file, "invalid unsigned int argument for %s: `%s'",
-				    t->key, t->value);
+				    t->key, t->val);
 				return (false);
 			} else if (ulongval > UINT_MAX) {
 				t_error_set(file, "invalid unsigned int argument for %s: `%s' (too large)",
-				    t->key, t->value);
+				    t->key, t->val);
 				return (false);
 			} else if (errno) {
 				/* should be EINVAL (ERANGE catched by last condition). */

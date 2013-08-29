@@ -189,9 +189,9 @@ t_rename_lex_next_token(struct t_lexer *L)
 			err(errno, "sbuf_finish");
 		t->slen = sbuf_len(sb);
 		t = xrealloc(t, sizeof(struct t_token) + t->slen + 1);
-		t->value.str = (char *)(t + 1);
-		assert(strlcpy(t->value.str, sbuf_data(sb), t->slen + 1) == t->slen);
-		assert(strlen(t->value.str) == t->slen);
+		t->val.str = (char *)(t + 1);
+		assert(strlcpy(t->val.str, sbuf_data(sb), t->slen + 1) == t->slen);
+		assert(strlen(t->val.str) == t->slen);
 		sbuf_delete(sb);
 	}
 
@@ -221,7 +221,7 @@ t_rename_eval(struct t_file *file, struct t_token **ts)
 	while (tkn != NULL) {
 		s = NULL;
 		if (tkn->kind == T_TAGKEY) {
-			T = file->get(file, tkn->value.str);
+			T = file->get(file, tkn->val.str);
 			if (T == NULL) {
 				sbuf_delete(sb);
 				return (NULL);
@@ -235,18 +235,18 @@ t_rename_eval(struct t_file *file, struct t_token **ts)
 					/* requested one tag */
 					t = t_taglist_tag_at(T, tkn->tidx);
 					if (t != NULL) {
-						s = xstrdup(t->value);
-						len = t->valuelen;
+						s = xstrdup(t->val);
+						len = t->vlen;
 					}
 				}
 			}
-			t_taglist_destroy(T);
+			t_taglist_delete(T);
 			if (s != NULL) {
 				/* check for slash in tag value */
 				slash = strchr(s, '/');
 				if (slash != NULL) {
 					warnx("rename_eval: `%s': tag `%s' has / in value, "
-							"replacing by `-'", file->path, tkn->value.str);
+							"replacing by `-'", file->path, tkn->val.str);
 					do {
 						*slash = '-';
 						slash = strchr(slash, '/');
@@ -258,7 +258,7 @@ t_rename_eval(struct t_file *file, struct t_token **ts)
 			(void)sbuf_cat(sb, s);
 			freex(s);
 		} else
-			(void)sbuf_cat(sb, tkn->value.str);
+			(void)sbuf_cat(sb, tkn->val.str);
 		/* go to next token */
 		ts += 1;
 		tkn = *ts;

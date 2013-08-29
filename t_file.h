@@ -56,7 +56,7 @@ struct t_file {
 	 * On error, NULL is returned and t_error_msg(file) contains an error
 	 * message, otherwise t_error_msg(file) is NULL.
 	 *
-	 * returned value has to be free()d (use t_taglist_destroy()).
+	 * returned value has to be free()d (use t_taglist_delete()).
 	 */
 	struct t_taglist * (*get)(struct t_file *file,
 	    const char *key);

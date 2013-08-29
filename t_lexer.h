@@ -76,7 +76,7 @@ struct t_token {
         double dbl;    /* T_DOUBLE */
         char *str;     /* T_STRING or T_TAGKEY  */
         regex_t regex; /* T_REGEX */
-    } value;
+    } val;
     size_t slen; /* > 0 if T_STRING or T_TAGKEY */
     int tidx; /* tag index if T_TAGKEY and has_tidx (-1 is star (wildchar)) */
     enum t_star_mod tidx_mod; /* star modifier if T_TAGKEY and tidx == T_TOKEN_STAR,
