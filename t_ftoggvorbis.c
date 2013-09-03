@@ -252,7 +252,8 @@ t_file_save(struct t_file *file)
 					} else
 						state = READING_DATA_NEED_PAGEOUT;
 				}
-				assert(ogg_stream_packetin(&oos, target) == 0); /* 0 on success, -1 on error */
+				if (ogg_stream_packetin(&oos, target) == -1)
+					goto cleanup;
 			}
 		}
 	}
@@ -287,11 +288,11 @@ cleanup:
 			t_error_set(file, "error while renaming temporary file");
 		/* FALLTHROUGH */
 	case WRITE_FINISH: /* FALLTHROUGH */
-	case READING_HEADERS: /* FALLTHROUGH */
-	case READING_DATA: /* FALLTHROUGH */
-	case READING_DATA_NEED_FLUSH: /* FALLTHROUGH */
-	case READING_DATA_NEED_PAGEOUT: /* FALLTHROUGH */
 	case E_O_S: /* FALLTHROUGH */
+	case READING_DATA_NEED_PAGEOUT: /* FALLTHROUGH */
+	case READING_DATA_NEED_FLUSH: /* FALLTHROUGH */
+	case READING_DATA: /* FALLTHROUGH */
+	case READING_HEADERS: /* FALLTHROUGH */
 	case STREAMS_INITIALIZED:
 		ogg_stream_clear(&ios);
 		ogg_stream_clear(&oos);
@@ -305,10 +306,10 @@ cleanup:
 	case SETUP:
 		if (state != DONE_SUCCESS && t_error_msg(file) == NULL)
 			t_error_set(file, "error while opening");
-		if (wfp != NULL) {
+		if (wfp != NULL)
 			(void)fclose(wfp);
+		if (eaccess(tmp, R_OK) != -1)
 			(void)unlink(tmp);
-		}
 		free(tmp);
 		if (sb != NULL)
 			sbuf_delete(sb);
