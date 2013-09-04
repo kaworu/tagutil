@@ -53,6 +53,17 @@ struct t_taglist {
 struct t_taglist	*t_taglist_new(void);
 
 /*
+ * create a deep copy of a taglist.
+ *
+ * The returned should be passed to t_taglist_delete() after use.
+ *
+ * @return
+ *   a t_taglist pointer on success, NULL and set errno on error (malloc(3)
+ *   failed).
+ */
+struct t_taglist	*t_taglist_clone(const struct t_taglist *tags);
+
+/*
  * insert a tag in a tag list.
  *
  * @param key
@@ -70,7 +81,6 @@ int	t_taglist_insert(struct t_taglist *T, const char *key,
 /*
  * return the tag at given index, or NULL.
  */
-t__deprecated
 struct t_tag	*t_taglist_tag_at(const struct t_taglist *T, unsigned int index);
 
 /*

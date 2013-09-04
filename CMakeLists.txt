@@ -15,6 +15,7 @@ set(SRCS
     tagutil.c
     t_toolkit.c
     t_tag.c
+    t_tune.c
     t_yaml.c
     t_renamer.c
     t_lexer.c

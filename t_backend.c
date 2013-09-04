@@ -24,7 +24,6 @@ t_all_backends(void)
 	if (TAILQ_EMPTY(&bQ)) {
 		char	*env;
 
-#define	MAX_BACKEND	3
 #if defined(WITH_TAGLIB)
 		TAILQ_INSERT_HEAD(&bQ, t_generic_backend(), entries);
 #endif
@@ -37,10 +36,10 @@ t_all_backends(void)
 
 		env = getenv("TAGUTIL_BACKEND");
 		if (env != NULL) {
-			char	*start, *cur, *next;
-			struct t_backend	*b, *target;
+			char *start, *cur, *next;
+			struct t_backend *b, *target;
 
-			next = start = xstrdup(env);
+			next = start = strdup(env);
 			while (next != NULL) {
 				next = strrchr(start, ',');
 				if (next == NULL)
