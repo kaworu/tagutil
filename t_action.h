@@ -43,7 +43,7 @@ TAILQ_HEAD(t_actionQ, t_action);
 /*
  * show usage and exit.
  */
-_t__dead2
+t__dead2
 void usage(void);
 
 /*

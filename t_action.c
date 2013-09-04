@@ -62,7 +62,6 @@ static struct t_action	*t_action_new(enum t_actionkind kind, char *arg);
 /*
  * delete an action.
  */
-_t__nonnull(1)
 static void	t_action_delete(struct t_action *a);
 
 
@@ -111,18 +110,18 @@ usage(void)
 }
 
 
-static int t_action_token_cmp(const void *_str, const void *_token)
+static int t_action_token_cmp(const void *vstr, const void *vtoken)
 {
 	const char	*str;
 	size_t		tlen, slen;
 	int		cmp;
 	const struct t_action_token *token;
 
-	assert_not_null(_str);
-	assert_not_null(_token);
+	assert_not_null(vstr);
+	assert_not_null(vtoken);
 
-	token = _token;
-	str   = _str;
+	token = vtoken;
+	str   = vstr;
 	slen = strlen(str);
 	tlen = strlen(token->word);
 	cmp = strncmp(str, token->word, tlen);

@@ -15,7 +15,6 @@
 
 
 /* write size bytes to buf readed from fd */
-_t__nonnull(2)
 static inline int readBytes(int fd, unsigned char *buf,
         unsigned int size);
 

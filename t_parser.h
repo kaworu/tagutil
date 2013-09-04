@@ -43,7 +43,7 @@ struct t_ast {
 /*
  * free given ast recursivly (victim can be NULL).
  */
-void t_ast_destroy(struct t_ast *victim);
+void	t_ast_destroy(struct t_ast *victim);
 
 /*
  * parse the filter with the given lexer.
@@ -51,7 +51,6 @@ void t_ast_destroy(struct t_ast *victim);
  *
  * returned value has to be free()d (use t_ast_destroy).
  */
-_t__nonnull(1)
-struct t_ast * t_parse_filter(struct t_lexer *L);
+struct t_ast	*t_parse_filter(struct t_lexer *L);
 
 #endif /* not T_PARSER_H */

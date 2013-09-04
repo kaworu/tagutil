@@ -8,11 +8,11 @@
 #include "t_backend.h"
 
 
-_t__weak
+t__weak
 struct t_backend *t_flac_backend(void);
-_t__weak
+t__weak
 struct t_backend *t_oggvorbis_backend(void);
-_t__weak
+t__weak
 struct t_backend *t_generic_backend(void);
 
 

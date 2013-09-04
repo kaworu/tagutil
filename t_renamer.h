@@ -22,7 +22,6 @@
  *
  * return value and all its elements has to be free()d.
  */
-_t__nonnull(1)
 struct t_token ** t_rename_parse(const char *pattern);
 
 /*
@@ -33,7 +32,6 @@ struct t_token ** t_rename_parse(const char *pattern);
  *
  * returned value has to be free()d.
  */
-_t__nonnull(1) _t__nonnull(2)
 char * t_rename_eval(struct t_file *file, struct t_token **ts);
 
 /*
@@ -42,7 +40,6 @@ char * t_rename_eval(struct t_file *file, struct t_token **ts);
  * return false on error and set t_error_msg(e) if not NULL and errno.
  * return true otherwise.
  */
-_t__nonnull(1) _t__nonnull(2)
 bool t_rename_safe(struct t_file *file, const char *newpath);
 
 #endif /* not T_RENAMER_H */

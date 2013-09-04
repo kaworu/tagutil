@@ -14,31 +14,26 @@
 #include "t_parser.h"
 
 
-_t__nonnull(2)
 static struct t_ast * t_ast_new(struct t_ast *lhs,
         struct t_token *t, struct t_ast *rhs);
 
-_t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-_t__dead2 _t__printflike(4, 5)
+t__dead2 t__printflike(4, 5)
 void parse_error(const struct t_lexer *L,
         const struct t_token *start,
         const struct t_token *end,
         const char *fmt, ...);
 
 /* private t_parse_filter helpers. */
-_t__nonnull(1)
 static struct t_ast * t_parse_condition(struct t_lexer *L);
 
 /*
  * Condition ::= <Condition> '||' <Condition>
  */
-_t__nonnull(1)
 static struct t_ast * t_parse_or(struct t_lexer *L);
 
 /*
  * Condition ::= <Condition> '&&' <Condition>
  */
-_t__nonnull(1)
 static struct t_ast * t_parse_and(struct t_lexer *L);
 
 /*
@@ -50,19 +45,16 @@ static struct t_ast * t_parse_and(struct t_lexer *L);
  *    Condition ::= <Value> ( '=~' | '!~' ) <REGEX>
  *    Condition ::= <REGEX> ( '=~' | '!~' ) <Value>
  */
-_t__nonnull(1)
 static struct t_ast * t_parse_simple(struct t_lexer *L);
 
 /*
  * 1) Condition ::= '!' '(' <Condition> ')'
  */
-_t__nonnull(1)
 static struct t_ast * t_parse_not(struct t_lexer *L);
 
 /*
  * 2) Condition ::= '(' <Condition> ')'
  */
-_t__nonnull(1)
 static struct t_ast * t_parse_nestedcond(struct t_lexer *L);
 
 /*
@@ -70,7 +62,6 @@ static struct t_ast * t_parse_nestedcond(struct t_lexer *L);
  *    Condition ::= <Value> ( '=~' | '!~' ) <REGEX>
  *    Condition ::= <REGEX> ( '=~' | '!~' ) <Value>
  */
-_t__nonnull(1)
 static struct t_ast *
 parse_cmp_or_match_or_value(struct t_lexer *L);
 

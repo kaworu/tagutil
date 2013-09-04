@@ -24,11 +24,9 @@
 /*
  * TODO
  */
-_t__nonnull(1)
 struct t_token * t_rename_lex_next_token(struct t_lexer *L);
 
 /* taken from mkdir(3) */
-_t__nonnull(1)
 static int build(char *path, mode_t omode);
 
 

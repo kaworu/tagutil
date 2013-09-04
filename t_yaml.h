@@ -16,7 +16,6 @@
  *
  * returned value has to be free()d.
  */
-_t__nonnull(1)
 char * t_tags2yaml(struct t_file *file);
 
 
@@ -28,7 +27,6 @@ char * t_tags2yaml(struct t_file *file);
  *
  * returned value has to be free()d (see t_taglist_delete()).
  */
-_t__nonnull(1) _t__nonnull(2)
 struct t_taglist * t_yaml2tags(struct t_file *file,
         FILE *stream);
 

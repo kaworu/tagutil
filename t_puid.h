@@ -8,6 +8,5 @@
 #include "t_config.h"
 
 
-_t__nonnull(1)
 char * puid_create(const struct audio_data *ad);
 #endif /* not T_PUID_H */

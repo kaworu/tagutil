@@ -12,10 +12,10 @@
 /* error handling macros */
 
 /* used for any struct that need to behave like a t_error */
-#define	T_ERROR_MSG_MEMBER	char *__errmsg
+#define	T_ERROR_MSG_MEMBER	char *t__errmsg
 
 /* error message getter */
-#define	t_error_msg(o)	((o)->__errmsg)
+#define	t_error_msg(o)	((o)->t__errmsg)
 
 /* initializer */
 #define	t_error_init(o)	do { t_error_msg(o) = NULL; } while (/*CONSTCOND*/0)
@@ -31,11 +31,11 @@
 
 /*
  * error macros can be used on t_error struct or any struct that define a member:
- *      char *__errmsg; (via the T_ERROR_MSG_MEMBER macro).
- *  on this purpose. You should never access to ->__errmsg but use the macros
+ *      char *t__errmsg; (via the T_ERROR_MSG_MEMBER macro).
+ *  on this purpose. You should never access to ->t__errmsg but use the macros
  *  defined for this purpose.
  *
- *  At any time, __errmsg should either a valid malloc()'d pointer either NULL,
+ *  At any time, t__errmsg should either a valid malloc()'d pointer either NULL,
  *  that way we can always pass it to free().
  */
 struct t_error {
@@ -46,16 +46,13 @@ struct t_error {
 /*
  * create a t_error struct.
  */
-_t__unused
-static inline struct t_error *
-t_error_new(void);
+t__unused
+static inline struct t_error	*t_error_new(void);
 
 /*
  * free a t_error struct.
  */
-_t__unused _t__nonnull(1)
-static inline void
-t_error_destroy(struct t_error *e);
+t__unused static inline void	t_error_delete(struct t_error *e);
 
 
 static inline struct t_error *
@@ -63,15 +60,16 @@ t_error_new(void)
 {
 	struct t_error *e;
 
-	e = xmalloc(sizeof(struct t_error));
-	t_error_init(e);
+	e = malloc(sizeof(struct t_error));
+	if (e != NULL)
+		t_error_init(e);
 
 	return (e);
 }
 
 
 static inline void
-t_error_destroy(struct t_error *e)
+t_error_delete(struct t_error *e)
 {
 
 	assert_not_null(e);

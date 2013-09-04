@@ -34,42 +34,33 @@ static t_cmp_func t_cmp_ge;
  * return the invert function (if you switch rhs and lhs, you might need to
  * change the operator).
  */
-_t__nonnull(1)
 t_cmp_func * t_invert(t_cmp_func *f);
 
 /*
  * eval a comparison between lhs and rhs.
  */
-_t__nonnull(1) _t__nonnull(2) _t__nonnull(3) _t__nonnull(4)
-static bool t_filter_eval_cmp(struct t_file *file,
-        const struct t_ast *lhs, const struct t_ast *rhs,
-        t_cmp_func *f);
+static bool	t_filter_eval_cmp(struct t_file *file, const struct t_ast *lhs,
+    const struct t_ast *rhs, t_cmp_func *f);
 
-_t__nonnull(1) _t__nonnull(3) _t__nonnull(4)
 static bool t_filter_eval_int_cmp(struct t_file *file,
         int i, const struct t_ast *rhs, t_cmp_func *f);
 
-_t__nonnull(1) _t__nonnull(3) _t__nonnull(4)
 static bool t_filter_eval_double_cmp(struct t_file *file,
         double d, const struct t_ast *rhs, t_cmp_func *f);
 
-_t__nonnull(1) _t__nonnull(2) _t__nonnull(3) _t__nonnull(4)
 static bool t_filter_eval_str_cmp(struct t_file *file,
         const char *str, const struct t_ast *rhs,
         t_cmp_func *f);
 
-_t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
 static bool t_filter_eval_undef_cmp(struct t_file *file,
         const struct t_ast *rhs, t_cmp_func *f);
 
 /*
  * eval a regex match.
  */
-_t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
 static bool t_filter_eval_match(struct t_file *file,
         const struct t_ast *lhs, const struct t_ast *rhs);
 
-_t__nonnull(1) _t__nonnull(2)
 static inline bool t_filter_regexec(const regex_t *r, const char *s);
 
 

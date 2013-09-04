@@ -10,20 +10,18 @@
  */
 #if defined(lint)
 #	define	inline
-#	define	_t__weak
-#	define	_t__unused
-#	define	_t__dead2
-#	define	_t__nonnull(x)
-#	define	_t__deprecated
-#	define	_t__printflike(fmtarg, firstvarg)
+#	define	t__weak
+#	define	t__unused
+#	define	t__dead2
+#	define	t__deprecated
+#	define	t__printflike(fmtarg, firstvarg)
 #else
-#	define	_t__weak	__attribute__((__weak__))
-#	define	_t__unused	__attribute__((__unused__))
-#	define	_t__dead2	__attribute__((__noreturn__))
-#	define	_t__nonnull(x)	__attribute__((__nonnull__(x)))
-#	define	_t__deprecated	__attribute__((deprecated))
-#	define	_t__printflike(fmtarg, firstvararg) \
-		    __attribute__((__format__(__printf__, fmtarg, firstvararg)))
+#	define	t__weak		__attribute__((__weak__))
+#	define	t__unused	__attribute__((__unused__))
+#	define	t__dead2	__attribute__((__noreturn__))
+#	define	t__deprecated	__attribute__((__deprecated__))
+#	define	t__printflike(fmtarg, firstvararg) \
+	    __attribute__((__format__(__printf__, fmtarg, firstvararg)))
 #endif /* lint */
 
 #include "compat/include/sys/queue.h"

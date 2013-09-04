@@ -29,34 +29,34 @@
 #define assert_fail() abort()
 
 
-_t__unused
+t__unused
 static inline void * xmalloc(size_t size);
 
-_t__unused
+t__unused
 static inline void * xcalloc(size_t nmemb, size_t size);
 
-_t__unused
+t__unused
 static inline void * xrealloc(void *ptr, size_t size);
 
 #define freex(p) do { free(p); (p) = NULL; } while (/*CONSTCOND*/0)
 
 
-_t__unused _t__nonnull(1)
+t__unused
 static inline char * xstrdup(const char *src);
 
-_t__unused _t__printflike(2, 3)
+t__unused t__printflike(2, 3)
 static inline int xasprintf(char **ret, const char *fmt, ...);
 
 /*
  * upperize a given string.
  */
-_t__unused _t__nonnull(1)
+t__unused
 static inline char * t_strtoupper(char *str);
 
 /*
  * lowerize a given string.
  */
-_t__unused _t__nonnull(1)
+t__unused
 static inline char * t_strtolower(char *str);
 
 
@@ -73,7 +73,6 @@ bool t_yesno(const char *question);
 /*
  * call "$EDITOR path" (the environment variable $EDITOR must be set).
  */
-_t__nonnull(1)
 bool t_user_edit(const char *path);
 
 /*

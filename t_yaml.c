@@ -538,8 +538,8 @@ t_yaml_parse_stream_end(struct t_yaml_fsm *FSM,
 
 
 void
-t_yaml_parse_nop(_t__unused struct t_yaml_fsm *FSM,
-    _t__unused const yaml_event_t *e)
+t_yaml_parse_nop(t__unused struct t_yaml_fsm *FSM,
+    t__unused const yaml_event_t *e)
 {
 
     assert_fail();
