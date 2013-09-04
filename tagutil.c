@@ -66,7 +66,7 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	aQ = t_actionQ_create(&argc, &argv, &write);
+	aQ = t_actionQ_new(&argc, &argv, &write);
 
 	if (argc == 0) {
 		errx(EINVAL, "missing file argument.\nrun `%s -h' to see help.",
@@ -109,6 +109,6 @@ main(int argc, char *argv[])
 		}
         	file->destroy(file);
 	}
-	t_actionQ_destroy(aQ);
+	t_actionQ_delete(aQ);
 	return (retval);
 }

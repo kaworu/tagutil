@@ -47,15 +47,25 @@ _t__dead2
 void usage(void);
 
 /*
- * Create a queue of action based on argc/argv. if not NULL, write will be set
- * to true if any action actually need write access.
+ * Create a queue of action based on argc/argv.
+ *
+ * @param argcp
+ *   A pointer to argc.
+ *
+ * @param argvp
+ *   A pointer to argv.if not NULL, write will be set
+ *
+ * @param writep
+ *   If not null, the pointer is set to true if any action actually need write
+ *   access.
+ *
+ * @return
+ *   A new t_actionQ that resulted from argc/argv parsing.
  */
-_t__nonnull(1) _t__nonnull(2)
-struct t_actionQ *	t_actionQ_create(int *argcp, char ***argvp, bool *write);
+struct t_actionQ	*t_actionQ_new(int *argcp, char ***argvp, bool *writep);
 
 /*
  * destroy (free memory) of an action queue.
  */
-_t__nonnull(1)
-void	t_actionQ_destroy(struct t_actionQ *aQ);
+void	t_actionQ_delete(struct t_actionQ *aQ);
 #endif /* not T_ACTION_H */

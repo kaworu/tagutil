@@ -55,15 +55,15 @@ static bool	t_action_saveifdirty(struct t_action *self, struct t_file *file);
 
 
 /*
- * create a single action.
+ * create an action.
  */
-static struct t_action *	t_action_new(enum t_actionkind kind, char *arg);
+static struct t_action	*t_action_new(enum t_actionkind kind, char *arg);
 
 /*
- * destroy a single action.
+ * delete an action.
  */
 _t__nonnull(1)
-static void	t_action_destroy(struct t_action *a);
+static void	t_action_delete(struct t_action *a);
 
 
 /*
@@ -136,7 +136,7 @@ static int t_action_token_cmp(const void *_str, const void *_token)
 
 
 struct t_actionQ *
-t_actionQ_create(int *argcp, char ***argvp, bool *writep)
+t_actionQ_new(int *argcp, char ***argvp, bool *writep)
 {
 	bool	write = false; /* at least one action want to write */
 	int 	argc;
@@ -227,7 +227,7 @@ t_actionQ_create(int *argcp, char ***argvp, bool *writep)
 
 
 void
-t_actionQ_destroy(struct t_actionQ *aQ)
+t_actionQ_delete(struct t_actionQ *aQ)
 {
 	struct t_action	*victim, *next;
 
@@ -236,7 +236,7 @@ t_actionQ_destroy(struct t_actionQ *aQ)
 	victim = TAILQ_FIRST(aQ);
 	while (victim != NULL) {
 		next = TAILQ_NEXT(victim, entries);
-		t_action_destroy(victim);
+		t_action_delete(victim);
 		victim = next;
 	}
 	free(aQ);
@@ -340,7 +340,7 @@ t_action_new(enum t_actionkind kind, char *arg)
 
 
 static void
-t_action_destroy(struct t_action *a)
+t_action_delete(struct t_action *a)
 {
 	int	i;
 	struct token	**tknv;
@@ -437,7 +437,7 @@ t_action_edit(struct t_action *self, struct t_file *file)
 		if (t_user_edit(tmp_file)) {
 			load = t_action_new(T_ACTION_LOAD, tmp_file);
 			retval = load->apply(load, file);
-			t_action_destroy(load);
+			t_action_delete(load);
 		}
 		(void)unlink(tmp_file);
 		freex(tmp_file);
