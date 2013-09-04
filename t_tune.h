@@ -46,7 +46,7 @@ int t_tune_init(struct t_tune *tune, const char *path);
  * @return
  *   A complete and ordered t_taglist on success, NULL on error.
  */
-struct t_taglist	*t_tune_tags(struct t_tune *tune);
+const struct t_taglist	*t_tune_tags(struct t_tune *tune);
 
 /*
  * set the tags for a tune.

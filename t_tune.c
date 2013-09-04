@@ -52,7 +52,7 @@ t_tune_init(struct t_tune *tune, const char *path)
 	return (-1);
 }
 
-struct t_taglist *
+const struct t_taglist *
 t_tune_tags(struct t_tune *tune)
 {
 
@@ -62,15 +62,16 @@ t_tune_tags(struct t_tune *tune)
 	if (tune->tlist == NULL)
 		tune->tlist = tune->backend->read(tune);
 
-	return (t_taglist_clone(tune->tlist));
+	return (tune->tlist);
 }
 
 int
 t_tune_set_tags(struct t_tune *tune, const struct t_taglist *tlist)
 {
 	assert_not_null(tune);
-	assert_not_null(tune->backend); /* this is not really needed, but we ensure a safe initialization */
 	assert_not_null(tlist);
+	/* this is not really needed, but we ensure a safe initialization */
+	assert_not_null(tune->backend);
 
 	t_taglist_delete(tune->tlist);
 	tune->tlist = t_taglist_clone(tlist);
