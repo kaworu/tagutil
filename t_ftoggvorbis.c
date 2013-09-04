@@ -128,7 +128,7 @@ t_file_save(struct t_file *file)
 	struct t_oggvorbis_data *data;
 	struct sbuf *sb = NULL;
 	FILE *rfp = NULL, *wfp = NULL;
-	char *buf, *tmp;
+	char *buf, *tmp = NULL;
 	size_t s;
 	ogg_int64_t granpos = 0;
 	int npacket = 0, prevW = 0;
@@ -303,7 +303,7 @@ cleanup:
 			t_error_set(file, "error while opening");
 		if (wfp != NULL)
 			(void)fclose(wfp);
-		if (eaccess(tmp, R_OK) != -1)
+		if (tmp != NULL && eaccess(tmp, R_OK) != -1)
 			(void)unlink(tmp);
 		free(tmp);
 		if (sb != NULL)

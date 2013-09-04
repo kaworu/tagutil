@@ -206,7 +206,6 @@ t_rename_eval(struct t_file *file, struct t_token **ts)
 	struct t_taglist *T;
 	struct t_tag *t;
 	char *ret, *s, *slash;
-	size_t len;
 
 	assert_not_null(ts);
 	assert_not_null(file);
@@ -229,14 +228,11 @@ t_rename_eval(struct t_file *file, struct t_token **ts)
 					/* user ask for *all* tag values */
 					if ((s = t_taglist_join(T, " - ")) == NULL)
 						err(ENOMEM, "malloc");
-					len = strlen(s);
 				} else {
 					/* requested one tag */
 					t = t_taglist_tag_at(T, tkn->tidx);
-					if (t != NULL) {
+					if (t != NULL)
 						s = xstrdup(t->val);
-						len = t->vlen;
-					}
 				}
 			}
 			t_taglist_delete(T);
