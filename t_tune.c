@@ -43,7 +43,7 @@ t_tune_init(struct t_tune *tune, const char *path)
 
 	bQ = t_all_backends();
 	TAILQ_FOREACH(b, bQ, entries) {
-		if (b->init(tune) == 0)
+		if (b->init != NULL && b->init(tune) == 0)
 			return (0);
 	}
 

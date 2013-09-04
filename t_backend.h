@@ -41,7 +41,7 @@ struct t_backend {
 	 * @return
 	 *   return -1 on error, 0 on success.
 	 */
-	int (*write)(struct t_tune *tune, const struct t_taglist *tags);
+	int (*write)(struct t_tune *tune, const struct t_taglist *tlist);
 
 	/*
 	 * free internal data.

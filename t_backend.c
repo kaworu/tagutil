@@ -11,6 +11,8 @@
 t__weak
 struct t_backend *t_flac_backend(void);
 t__weak
+struct t_backend *t_tune_flac_backend(void);
+t__weak
 struct t_backend *t_oggvorbis_backend(void);
 t__weak
 struct t_backend *t_generic_backend(void);
@@ -32,6 +34,7 @@ t_all_backends(void)
 #endif
 #if defined(WITH_FLAC)
 		TAILQ_INSERT_HEAD(&bQ, t_flac_backend(), entries);
+		TAILQ_INSERT_HEAD(&bQ, t_tune_flac_backend(), entries);
 #endif
 
 		env = getenv("TAGUTIL_BACKEND");
