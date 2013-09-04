@@ -86,7 +86,7 @@ t_tags2yaml(struct t_file *file)
 	/* Create and emit the SEQUENCE-START event. */
 	if (!yaml_sequence_start_event_initialize(&event, /* anchor */NULL,
 	    (yaml_char_t *)YAML_SEQ_TAG, /* implicit */1,
-	    YAML_BLOCK_MAPPING_STYLE))
+	    YAML_BLOCK_SEQUENCE_STYLE))
 		goto event_error;
 	if (!yaml_emitter_emit(&emitter, &event))
 		goto emitter_error;
@@ -108,7 +108,7 @@ t_tags2yaml(struct t_file *file)
 		/* create and emit the SCALAR event for the key */
 		if (!yaml_scalar_event_initialize(&event, /* anchor */NULL,
 		    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->key,
-		    t->keylen, /* plain_implicit */1, /* quoted_implicit */1,
+		    t->klen, /* plain_implicit */1, /* quoted_implicit */1,
 		    YAML_PLAIN_SCALAR_STYLE))
 			goto event_error;
 		if (!yaml_emitter_emit(&emitter, &event))
@@ -116,8 +116,8 @@ t_tags2yaml(struct t_file *file)
 
 		/* create and emit the SCALAR event for the value */
 		if (!yaml_scalar_event_initialize(&event, /* anchor */NULL,
-		    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->value,
-		    t->valuelen, /* plain_implicit */1, /* quoted_implicit */1,
+		    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->val,
+		    t->vlen, /* plain_implicit */1, /* quoted_implicit */1,
 		    YAML_PLAIN_SCALAR_STYLE))
 			goto event_error;
 		if (!yaml_emitter_emit(&emitter, &event))
@@ -129,7 +129,7 @@ t_tags2yaml(struct t_file *file)
 		if (!yaml_emitter_emit(&emitter, &event))
 			goto emitter_error;
 	}
-	t_taglist_destroy(T);
+	t_taglist_delete(T);
 
 	/* Create and emit the SEQUENCE-END event. */
 	if (!yaml_sequence_end_event_initialize(&event))
@@ -286,8 +286,7 @@ cleanup:
     yaml_parser_delete(&parser);
     t_error_clear(&FSM);
     freex(FSM.parsed_key);
-    if (FSM.T)
-        t_taglist_destroy(FSM.T);
+    t_taglist_delete(FSM.T);
     return (NULL);
 }
 
@@ -321,25 +320,25 @@ t_yaml_parse_func t_yaml_parse_nop;
 
 
 void
-t_yaml_parse_stream_start(struct t_yaml_fsm *FSM,
-    const yaml_event_t *e)
+t_yaml_parse_stream_start(struct t_yaml_fsm *FSM, const yaml_event_t *e)
 {
 
-    assert_not_null(FSM);
-    assert_not_null(e);
+	assert_not_null(FSM);
+	assert_not_null(e);
 
-    if (e->type == YAML_STREAM_START_EVENT) {
-        FSM->T = t_taglist_new();
-        FSM->handle = t_yaml_parse_document_start;
-        FSM->hungry = true;
-    }
-    else {
-        t_error_set(FSM, "expected %s, got %s",
-                t_yaml_event_str[YAML_STREAM_START_EVENT],
-                t_yaml_event_str[e->type]);
-        FSM->hungry = false;
-        FSM->handle = t_yaml_parse_nop;
-    }
+	if (e->type == YAML_STREAM_START_EVENT) {
+		if ((FSM->T = t_taglist_new()) == NULL)
+			err(ENOMEM, "malloc");
+		FSM->handle = t_yaml_parse_document_start;
+		FSM->hungry = true;
+	}
+	else {
+		t_error_set(FSM, "expected %s, got %s",
+				t_yaml_event_str[YAML_STREAM_START_EVENT],
+				t_yaml_event_str[e->type]);
+		FSM->hungry = false;
+		FSM->handle = t_yaml_parse_nop;
+	}
 }
 
 
@@ -452,26 +451,26 @@ void
 t_yaml_parse_scalar_value(struct t_yaml_fsm *FSM,
     const yaml_event_t *e)
 {
-    char *value;
+	char *val;
 
-    assert_not_null(FSM);
-    assert_not_null(e);
+	assert_not_null(FSM);
+	assert_not_null(e);
 
-    if (e->type == YAML_SCALAR_EVENT) {
-        value = xcalloc(e->data.scalar.length + 1, sizeof(char));
-        (void)memcpy(value, e->data.scalar.value, e->data.scalar.length);
-        t_taglist_insert(FSM->T, FSM->parsed_key, value);
-        freex(FSM->parsed_key);
-        freex(value);
-        FSM->handle = t_yaml_parse_mapping_end;
-    }
-    else {
-        t_error_set(FSM, "expected %s (value), got %s",
-                t_yaml_event_str[YAML_SCALAR_EVENT],
-                t_yaml_event_str[e->type]);
-        FSM->hungry = false;
-        FSM->handle = t_yaml_parse_nop;
-    }
+	if (e->type == YAML_SCALAR_EVENT) {
+		val = xcalloc(e->data.scalar.length + 1, sizeof(char));
+		(void)memcpy(val, e->data.scalar.value, e->data.scalar.length);
+		if ((t_taglist_insert(FSM->T, FSM->parsed_key, val)) == -1)
+			err(ENOMEM, "malloc");
+		freex(FSM->parsed_key);
+		freex(val);
+		FSM->handle = t_yaml_parse_mapping_end;
+	} else {
+		t_error_set(FSM, "expected %s (value), got %s",
+		    t_yaml_event_str[YAML_SCALAR_EVENT],
+		    t_yaml_event_str[e->type]);
+		FSM->hungry = false;
+		FSM->handle = t_yaml_parse_nop;
+	}
 }
 
 

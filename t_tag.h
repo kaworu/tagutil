@@ -11,89 +11,87 @@
 #include "t_error.h"
 
 
-/* tag key/values */
+/*
+ * a tag.
+ *
+ * a key / value pair, element of a list (implemented as TAILQ).
+ */
 struct t_tag {
-    size_t keylen, valuelen;
-    const char *key, *value;
-    TAILQ_ENTRY(t_tag) entries;
+	size_t		klen;
+	size_t		vlen;
+	const char	*key;
+	const char	*val;
+	TAILQ_ENTRY(t_tag)	entries;
 };
 TAILQ_HEAD(t_tagQ, t_tag);
 
 
 /*
- * a tag list, abstract structure for a music file's tags.
- * t_error macros can (and should) be used on this structure.
+ * a list of tags.
+ *
+ * abstract structure for a music file's tags. t_error macros can (and should)
+ * be used on this structure.
  */
 struct t_taglist {
-    size_t count;
-    struct t_tagQ *tags;
+	size_t		count;
+	struct t_tagQ	*tags;
 
-    T_ERROR_MSG_MEMBER;
-    unsigned int childcount;
-    struct t_taglist *parent;
+	T_ERROR_MSG_MEMBER;
 };
 
 
 /*
  * create a new t_taglist.
- * returned value has to be free()d (see t_taglist_destroy()).
- */
-struct t_taglist * t_taglist_new(void);
-
-/*
- * insert a new key/value in given list.
- */
-_t__nonnull(1) _t__nonnull(2) _t__nonnull(3)
-void t_taglist_insert(struct t_taglist *T,
-        const char *key, const char *value);
-
-#define T_TAG_FIRST true
-#define T_TAG_ALL   false
-/*
- * find all t_tag in list matching given key.
  *
- * if onlyfirst is true, the returned list has only one element, the first
- * t_tag matching key.
+ * The returned t_taglist is empty and should be passed to t_taglist_delete()
+ * after use.
  *
- * Be aware that the returned value is not a complete copy, it becomes a child
- * of T and *must* be freed via t_taglist_destroy before its parent.
- *
- * return a new list if found at least one matching tag, or NULL otherwise.
+ * @return
+ *   a t_taglist pointer on success, NULL and set errno on error (malloc(3)
+ *   failed).
  */
-_t__nonnull(1) _t__nonnull(2)
-struct t_taglist * t_taglist_filter(const struct t_taglist *T,
-        const char *key, bool onlyfirst);
+struct t_taglist	*t_taglist_new(void);
 
 /*
- * count the number of tag matching key.
+ * insert a tag in a tag list.
  *
- * if onlyone is true, the function return as soon as it found a matching key
- * (then, returning one), or return 0.
- */
-_t__nonnull(1) _t__nonnull(2)
-unsigned int t_taglist_filter_count(const struct t_taglist *T,
-        const char *key, bool onlyfirst);
-
-/*
- * return the tag at index idx, or NULL if idx > T->count.
- */
-_t__nonnull(1)
-struct t_tag * t_taglist_tag_at(struct t_taglist *T,
-        unsigned int idx);
-
-/*
- * join all the tag in T with j.
- * if j is NULL, it has the same effect as "".
+ * @param key
+ *   The tag's key
  *
- * returned value has to be free()d.
+ * @param val
+ *   The tag's value
+ *
+ * @return
+ *   0 on success, -1 and set errno on error (malloc(3) failed).
  */
-_t__nonnull(1)
-char * t_taglist_join(struct t_taglist *T, const char *j);
+int	t_taglist_insert(struct t_taglist *T, const char *key,
+	    const char *val);
 
 /*
- * free the t_taglist struct and all the t_tag (0 indexed).
+ * return the tag at given index, or NULL.
  */
-_t__nonnull(1)
-void t_taglist_destroy(struct t_taglist *T);
+_t__deprecated
+struct t_tag	*t_taglist_tag_at(const struct t_taglist *T, unsigned int index);
+
+/*
+ * join all the tag values in T with the given glue.
+ *
+ * @param T
+ *   The taglist containing all the tag to join.
+ *
+ * @param glue
+ *   inserted between each tag value.
+ *
+ * @return
+ *   NULL on error and a (char *) that should be passed to free(3) after use.
+ */
+char	*t_taglist_join(const struct t_taglist *T, const char *glue);
+
+/*
+ * free the t_taglist and all its tags.
+ *
+ * A t_taglist should not be used after a call to t_taglist_delete().
+ */
+void	t_taglist_delete(struct t_taglist *T);
 
 #endif /* not T_TAG_H */

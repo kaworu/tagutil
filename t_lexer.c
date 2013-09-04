@@ -112,7 +112,7 @@ t_lex_number(struct t_lexer *L, struct t_token *t)
     /* int 0 */
         t->kind = T_INT;
         t->str = "INT";
-        t->value.integer = 0;
+        t->val.integer = 0;
     }
     else {
         isfp = false;
@@ -145,7 +145,7 @@ t_lex_number(struct t_lexer *L, struct t_token *t)
                         (doubleval == HUGE_VAL ? "too large" : "too small"));
                 /* NOTREACHED */
             }
-            t->value.dbl = doubleval;
+            t->val.dbl = doubleval;
         }
         else {
             long longval;
@@ -168,7 +168,7 @@ t_lex_number(struct t_lexer *L, struct t_token *t)
             /* should be EINVAL (ERANGE catched by last condition). */
                 assert_fail();
             }
-            t->value.integer = (int)longval;
+            t->val.integer = (int)longval;
         }
         freex(num);
     }
@@ -216,7 +216,7 @@ t_lex_strlit_or_regex(struct t_lexer *L, struct t_token **tptr)
     t->slen  = t->end - t->start - skip - 1;
     t = xrealloc(t, sizeof(struct t_token) + t->slen + 1);
     *tptr = t;
-    t->value.str = (char *)(t + 1);
+    t->val.str = (char *)(t + 1);
     t_lexc_move_to(L, t->start);
     i = 0;
     while (t_lexc(L) != limit) {
@@ -227,10 +227,10 @@ t_lex_strlit_or_regex(struct t_lexer *L, struct t_token **tptr)
                 assert(L->c == '\\');
             }
         }
-        t->value.str[i++] = L->c;
+        t->val.str[i++] = L->c;
     }
-    t->value.str[i] = '\0';
-    assert(strlen(t->value.str) == t->slen);
+    t->val.str[i] = '\0';
+    assert(strlen(t->val.str) == t->slen);
 
     /* skip limit */
     (void)t_lexc(L);
@@ -263,15 +263,15 @@ regopt_error:
             (void)t_lexc(L);
         }
         t->end = L->cindex - 1;
-        s = t->value.str;
-        error = regcomp(&t->value.regex, s,
+        s = t->val.str;
+        error = regcomp(&t->val.regex, s,
                 REG_NOSUB | REG_EXTENDED  |
                 (iflag ? REG_ICASE   : 0) |
                 (mflag ? REG_NEWLINE : 0) );
 
         if (error != 0) {
             errbuf = xcalloc(BUFSIZ, sizeof(char));
-            (void)regerror(error, &t->value.regex, errbuf, BUFSIZ);
+            (void)regerror(error, &t->val.regex, errbuf, BUFSIZ);
             t_lex_error(L, t->start, t->end,
                     "can't compile REGEX /%s/: %s", s, errbuf);
             /* NOTREACHED */
@@ -318,7 +318,7 @@ t_lex_tagkey(struct t_lexer *L, struct t_token **tptr,
         t->slen = copyend - t->start - 2 - skip;
         t = xrealloc(t, sizeof(struct t_token) + t->slen + 1);
         *tptr = t;
-        t->value.str = (char *)(t + 1);
+        t->val.str = (char *)(t + 1);
         t_lexc_move_to(L, t->start + 2); /* move on first tagkeychar */
         i = 0;
         while (L->cindex < copyend) {
@@ -329,11 +329,11 @@ t_lex_tagkey(struct t_lexer *L, struct t_token **tptr,
                     assert(L->c == '\\');
                 }
             }
-            t->value.str[i++] = L->c;
+            t->val.str[i++] = L->c;
             (void)t_lexc(L);
         }
-        t->value.str[i] = '\0';
-        assert(strlen(t->value.str) == t->slen);
+        t->val.str[i] = '\0';
+        assert(strlen(t->val.str) == t->slen);
         t_lexc_move_to(L, t->end + 1);
     }
     else {
@@ -352,9 +352,9 @@ t_lex_tagkey(struct t_lexer *L, struct t_token **tptr,
         t->slen = copyend - t->start;
         t = xrealloc(t, sizeof(struct t_token) + t->slen + 1);
         *tptr = t;
-        t->value.str = (char *)(t + 1);
-        memcpy(t->value.str, L->source + t->start + 1, t->slen);
-        t->value.str[t->slen] = '\0';
+        t->val.str = (char *)(t + 1);
+        memcpy(t->val.str, L->source + t->start + 1, t->slen);
+        t->val.str[t->slen] = '\0';
     }
 }
 
@@ -637,16 +637,16 @@ t_lex_token_debug(struct t_token *t) {
 
         switch (t->kind) {
             case T_INT:
-                (void)printf("(%d)", t->value.integer);
+                (void)printf("(%d)", t->val.integer);
                 break;
             case T_DOUBLE:
-                (void)printf("(%lf)", t->value.dbl);
+                (void)printf("(%lf)", t->val.dbl);
                 break;
             case T_STRING:
-                (void)printf("(%s)", t->value.str);
+                (void)printf("(%s)", t->val.str);
                 break;
             case T_TAGKEY:
-                (void)printf("(%s@", t->value.str);
+                (void)printf("(%s@", t->val.str);
                 if (t->tidx == T_TOKEN_STAR) {
                     (void)printf("*");
                     switch (t->tidx_mod) {

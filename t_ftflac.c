@@ -174,7 +174,8 @@ t_file_get(struct t_file *file, const char *key)
 	t_error_clear(file);
 
 	data = file->data;
-	T = t_taglist_new();
+	if ((T = t_taglist_new()) == NULL)
+		err(ENOMEM, "malloc");
 	count = data->vocomments->data.vorbis_comment.num_comments;
 
 	for (;;) {
@@ -191,14 +192,15 @@ t_file_get(struct t_file *file, const char *key)
 				    strerror(errno));
 			} else
 				t_error_set(file, "`%s' seems corrupted", file->path);
-			t_taglist_destroy(T);
+			t_taglist_delete(T);
 			freex(field_name);
 			freex(field_value);
 			return (NULL);
 		}
 		if (key != NULL)
 			assert(strcasecmp(field_name, key) == 0);
-		t_taglist_insert(T, t_strtolower(field_name), field_value);
+		if ((t_taglist_insert(T, t_strtolower(field_name), field_value)) == -1)
+			err(ENOMEM, "malloc");
 		freex(field_name);
 		freex(field_value);
 	}
@@ -272,13 +274,13 @@ t_file_add(struct t_file *file, const struct t_taglist *T)
 
 	data = file->data;
 	TAILQ_FOREACH(t, T->tags, entries) {
-		b = FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&e, t->key, t->value);
+		b = FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&e, t->key, t->val);
 		if (!b) {
 			if (errno) {
 				t_error_set(file, "FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair: %s",
 				    strerror(errno));
 			} else
-				t_error_set(file, "invalid Vorbis tag pair: `%s', `%s'", t->key, t->value);
+				t_error_set(file, "invalid Vorbis tag pair: `%s', `%s'", t->key, t->val);
 			return (false);
 		}
 		b = FLAC__metadata_object_vorbiscomment_append_comment(data->vocomments, e, /* copy */false);
@@ -288,7 +290,7 @@ t_file_add(struct t_file *file, const struct t_taglist *T)
 				t_error_set(file, "FLAC__metadata_object_vorbiscomment_append_comment: %s",
 				    strerror(errno));
 			} else
-				t_error_set(file, "invalid Vorbis tag entry created with: `%s', `%s'", t->key, t->value);
+				t_error_set(file, "invalid Vorbis tag entry created with: `%s', `%s'", t->key, t->val);
 			return (false);
 		} else
 			file->dirty++;
