@@ -37,7 +37,7 @@
 */
 #define	__BEGIN_DECLS
 #define	__END_DECLS
-#define	__printflike(fmtarg, firstvarg) _t__printflike(fmtarg, firstvarg)
+#define	__printflike(fmtarg, firstvarg) t__printflike(fmtarg, firstvarg)
 #include <stdarg.h>
 #define	__va_list va_list
 /* /HACK */
