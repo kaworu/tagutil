@@ -41,24 +41,29 @@ t_yaml_whdl(void *sb, unsigned char *buffer, size_t size)
 
 
 char *
-t_tags2yaml(struct t_file *file)
+t_tags2yaml(const struct t_taglist *tlist, const char *path)
 {
 	yaml_emitter_t emitter;
 	yaml_event_t event;
 	struct sbuf *sb;
+	const struct t_tag *t;
 	char *s;
-	struct t_taglist *T;
-	struct t_tag *t;
 
-	assert_not_null(file);
+	assert_not_null(tlist);
 
-	/* create a comment header with the filename */
-	(void)xasprintf(&s, "# %s\n", file->path);
 	sb = sbuf_new_auto();
 	if (sb == NULL)
-		err(errno, "sbuf_new");
-	(void)sbuf_cpy(sb, s);
-	freex(s);
+		return (NULL);
+
+	if (path != NULL) {
+		/* create a comment header with the filename */
+		if (asprintf(&s, "# %s\n", path) < 0) {
+			sbuf_delete(sb);
+			return (NULL);
+		}
+		(void)sbuf_cpy(sb, s);
+		free(s);
+	}
 
 	/* Create the Emitter object. */
 	if (!yaml_emitter_initialize(&emitter))
@@ -91,12 +96,7 @@ t_tags2yaml(struct t_file *file)
 	if (!yaml_emitter_emit(&emitter, &event))
 		goto emitter_error;
 
-	T = file->get(file, NULL);
-	if (T == NULL) {
-		sbuf_delete(sb);
-		return (NULL);
-	}
-	TAILQ_FOREACH(t, T->tags, entries) {
+	TAILQ_FOREACH(t, tlist->tags, entries) {
 		/* Create and emit the MAPPING-START event. */
 		if (!yaml_mapping_start_event_initialize(&event, /* anchor */NULL,
 		    (yaml_char_t *)YAML_MAP_TAG, /* implicit */1,
@@ -129,7 +129,6 @@ t_tags2yaml(struct t_file *file)
 		if (!yaml_emitter_emit(&emitter, &event))
 			goto emitter_error;
 	}
-	t_taglist_delete(T);
 
 	/* Create and emit the SEQUENCE-END event. */
 	if (!yaml_sequence_end_event_initialize(&event))
@@ -155,7 +154,7 @@ t_tags2yaml(struct t_file *file)
 
 	if (sbuf_finish(sb) == -1)
 		err(errno, "sbuf_finish");
-	s = xstrdup(sbuf_data(sb));
+	s = strdup(sbuf_data(sb));
 	sbuf_delete(sb);
 
 	return (s);

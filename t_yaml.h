@@ -12,11 +12,19 @@
 #include "t_file.h"
 
 /*
- * return a yaml formated string with all the given file's tags.
+ * return a yaml formated string with all the given tags.
  *
- * returned value has to be free()d.
+ * @param tlist
+ *   The t_taglist to translate, cannot be NULL.
+ *
+ * @param path
+ *   if not NULL, a YAML comment with the filename will be inserted before data.
+ *
+ * @return
+ *   a string containing YAML data that must be passed to free(3) after use. On
+ *   error, NULL is returned.
  */
-char * t_tags2yaml(struct t_file *file);
+char *	t_tags2yaml(const struct t_taglist *tlist, const char *path);
 
 
 /*
@@ -27,7 +35,6 @@ char * t_tags2yaml(struct t_file *file);
  *
  * returned value has to be free()d (see t_taglist_delete()).
  */
-struct t_taglist * t_yaml2tags(struct t_file *file,
-        FILE *stream);
+struct t_taglist * t_yaml2tags(struct t_file *file, FILE *stream);
 
 #endif /* not T_YAML_H */

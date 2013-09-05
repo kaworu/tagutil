@@ -419,12 +419,17 @@ t_action_edit(struct t_action *self, struct t_file *file)
 	char	*tmp_file, *yaml, *question;
 	FILE	*stream;
 	struct t_action *load;
+	struct t_taglist *tlist;
 
 	assert_not_null(self);
 	assert_not_null(file);
 	assert(self->kind == T_ACTION_EDIT);
 
-	yaml = t_tags2yaml(file);
+	tlist = file->get(file, NULL);
+	if (tlist == NULL)
+		return (false);
+	yaml = t_tags2yaml(tlist, file->path);
+	t_taglist_delete(tlist);
 	if (yaml == NULL)
 		return (false);
 
@@ -492,12 +497,17 @@ static bool
 t_action_print(struct t_action *self, struct t_file *file)
 {
 	char	*yaml;
+	struct t_taglist *tlist;
 
 	assert_not_null(self);
 	assert_not_null(file);
 	assert(self->kind == T_ACTION_SHOW);
 
-	yaml = t_tags2yaml(file);
+	tlist = file->get(file, NULL);
+	if (tlist == NULL)
+		return (false);
+	yaml = t_tags2yaml(tlist, file->path);
+	t_taglist_delete(tlist);
 	if (yaml == NULL)
 		return (false);
 	(void)printf("%s\n", yaml);
