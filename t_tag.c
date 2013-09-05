@@ -27,6 +27,27 @@ t_taglist_new(void)
 	return (ret);
 }
 
+struct t_taglist *
+t_taglist_clone(const struct t_taglist *tlist)
+{
+	struct t_taglist *clone;
+	struct t_tag *t;
+
+	if (tlist == NULL)
+		return (NULL);
+
+	clone = t_taglist_new();
+	if (clone == NULL)
+		return (NULL);
+	TAILQ_FOREACH(t, tlist->tags, entries) {
+		if (t_taglist_insert(clone, t->key, t->val) == -1) {
+			t_taglist_delete(clone);
+			return (NULL);
+		}
+	}
+
+	return (clone);
+}
 
 int
 t_taglist_insert(struct t_taglist *T, const char *key, const char *val)

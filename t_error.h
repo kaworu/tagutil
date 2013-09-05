@@ -52,7 +52,8 @@ static inline struct t_error	*t_error_new(void);
 /*
  * free a t_error struct.
  */
-t__unused static inline void	t_error_delete(struct t_error *e);
+t__unused
+static inline void	t_error_delete(struct t_error *e);
 
 
 static inline struct t_error *

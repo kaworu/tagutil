@@ -15,6 +15,7 @@ set(SRCS
     tagutil.c
     t_toolkit.c
     t_tag.c
+    t_tune.c
     t_yaml.c
     t_renamer.c
     t_lexer.c
@@ -102,7 +103,7 @@ if(NOT DEFINED WITHOUT_FLAC)
     pkg_check_modules(FLAC flac)
     if(FLAC_FOUND)
         add_definitions(-DWITH_FLAC)
-        set(SRCS ${SRCS} t_ftflac.c)
+        set(SRCS ${SRCS} t_ftflac.c t_tune_ftflac.c)
         set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${FLAC_LDFLAGS})
         set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${FLAC_INCLUDE_DIRS})
     else()
