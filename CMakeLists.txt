@@ -23,6 +23,7 @@ set(SRCS
     t_filter.c
     t_backend.c
     t_action.c
+    t_file_compat.c
 )
 
 include_directories(
@@ -103,7 +104,7 @@ if(NOT DEFINED WITHOUT_FLAC)
     pkg_check_modules(FLAC flac)
     if(FLAC_FOUND)
         add_definitions(-DWITH_FLAC)
-        set(SRCS ${SRCS} t_ftflac.c t_tune_ftflac.c)
+        set(SRCS ${SRCS} t_ftflac.c)
         set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${FLAC_LDFLAGS})
         set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${FLAC_INCLUDE_DIRS})
     else()

@@ -43,8 +43,14 @@ t_tune_init(struct t_tune *tune, const char *path)
 
 	bQ = t_all_backends();
 	TAILQ_FOREACH(b, bQ, entries) {
-		if (b->init != NULL && b->init(tune) == 0)
-			return (0);
+		if (b->init != NULL) {
+			void *o = b->init(tune->path);
+			if (o != NULL) {
+				tune->backend = b;
+				tune->opaque  = o;
+				return (0);
+			}
+		}
 	}
 
 	free(tune->path);
@@ -60,7 +66,7 @@ t_tune_tags(struct t_tune *tune)
 	assert_not_null(tune->backend);
 
 	if (tune->tlist == NULL)
-		tune->tlist = tune->backend->read(tune);
+		tune->tlist = tune->backend->read(tune->opaque);
 
 	return (tune->tlist);
 }
@@ -70,34 +76,32 @@ t_tune_set_tags(struct t_tune *tune, const struct t_taglist *tlist)
 {
 	assert_not_null(tune);
 	assert_not_null(tlist);
-	/* this is not really needed, but we ensure a safe initialization */
+	/* this is not really needed because we would return -1, but we ensure a safe initialization */
 	assert_not_null(tune->backend);
-
-	if (tune->tlist == tlist)
-		return (0);
+	assert(tune->tlist != tlist);
 
 	t_taglist_delete(tune->tlist);
 	tune->tlist = t_taglist_clone(tlist);
-	tune->dirty++;
+	if (tune->tlist == NULL)
+		return (-1);
 
-	return (tune->tlist == NULL ? -1 : 0);
+	tune->dirty++;
+	return (0);
 }
 
 int
 t_tune_save(struct t_tune *tune)
 {
-	int ret = 0;
 
 	assert_not_null(tune);
 	assert_not_null(tune->backend);
 
 	if (tune->dirty) {
-		ret = tune->backend->write(tune, tune->tlist);
-		if (ret == 0) /* success */
+		if (tune->backend->write(tune->opaque, tune->tlist) == 0) /* success */
 			tune->dirty = 0;
 	}
 
-	return (ret);
+	return (tune->dirty ? -1 : 0);
 }
 
 void
@@ -109,7 +113,7 @@ t_tune_clear(struct t_tune *tune)
 	/* tune is either initialized with both path and backend set, or it's
 	 uninitialized */
 	if (tune->backend != NULL)
-		tune->backend->clear(tune);
+		tune->backend->clear(tune->opaque);
 	t_taglist_delete(tune->tlist);
 	free(tune->path);
 	bzero(tune, sizeof(struct t_tune));

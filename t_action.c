@@ -570,8 +570,9 @@ t_action_rename(struct t_action *self, struct t_file *file)
 	if (strcmp(file->path, result) != 0) {
 		(void)xasprintf(&question, "rename `%s' to `%s'",
 		    file->path, result);
-		if (t_yesno(question))
+		if (t_yesno(question)) {
 			retval = t_rename_safe(file, result);
+		}
 		freex(question);
 	}
 	freex(result);

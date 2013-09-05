@@ -26,17 +26,16 @@ yaml_write_handler_t t_yaml_whdl;
 int
 t_yaml_whdl(void *sb, unsigned char *buffer, size_t size)
 {
-	bool error = false;
 
 	assert_not_null(sb);
 	assert_not_null(buffer);
 
 	if (sb == NULL || buffer == NULL)
-		error = true;
+		return (0); /* error */
 	else
 		(void)sbuf_bcat(sb, buffer, size);
-
-	return (error ? 0 : 1);
+	
+	return (1); /* success */
 }
 
 
@@ -168,7 +167,7 @@ emitter_error:
 
 
 /*
- * Our parser FSM. we only handle our YAML subset:
+ * Our parser FSM. we only handle this YAML subset:
  *
  *  STREAM-START
  *      (DOCUMENT-START
@@ -179,8 +178,7 @@ emitter_error:
  *  STREAM-END
  */
 struct t_yaml_fsm;
-typedef void t_yaml_parse_func(struct t_yaml_fsm *FSM,
-        const yaml_event_t *e);
+typedef void t_yaml_parse_func(struct t_yaml_fsm *FSM, const yaml_event_t *e);
 
 t_yaml_parse_func t_yaml_parse_stream_start;
 

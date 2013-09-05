@@ -14,7 +14,6 @@
 #include "t_config.h"
 #include "t_toolkit.h"
 #include "t_file.h"
-#include "t_backend.h"
 #include "t_action.h"
 
 
@@ -34,8 +33,6 @@ main(int argc, char *argv[])
     	int	i, retval;
 	bool	write; /* write access needed */
     	struct t_file		*file;
-	const struct t_backend	*b;
-	const struct t_backendQ	*bQ;
 	struct t_action		*a;
 	struct t_actionQ	*aQ;
 
@@ -71,12 +68,11 @@ main(int argc, char *argv[])
 	if (argc == 0) {
 		errx(EINVAL, "missing file argument.\nrun `%s -h' to see help.",
 		    getprogname());
-    	}
+	}
 
 	/*
 	 * main loop, foreach files
 	 */
-	bQ = t_all_backends();
 	retval = EXIT_SUCCESS;
 	for (i = 0; i < argc; i++) {
 		/* check file path and access */
@@ -87,13 +83,8 @@ main(int argc, char *argv[])
 			continue;
 		}
 
-		/* try every backend in the right order */
-		file = NULL;
-		TAILQ_FOREACH(b, bQ, entries) {
-			file = (*b->ctor)(path);
-			if (file != NULL)
-				break;
-		}
+#include "t_file_compat.h"
+		file = t_file_new(path);
 		if (file == NULL) {
 			warnx("`%s' unsupported file format", path);
 			retval = EINVAL;

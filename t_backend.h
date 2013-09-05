@@ -17,7 +17,7 @@ struct t_backend {
 	struct t_file * (*ctor)(const char *path) t__deprecated;
 
 	/*
-	 * tune initialization.
+	 * tune internal data (opaque) initialization.
 	 *
 	 * This routine can be used to detect if a backend can handle a
 	 * particular file.
@@ -25,7 +25,7 @@ struct t_backend {
 	 * @return
 	 *   0 on success and tune is initialized, -1 otherwise.
 	 */
-	int  (*init)(struct t_tune *tune);
+	void *	(*init)(const char *path);
 
 	/*
 	 * Read all the tags from the storage.
@@ -33,7 +33,7 @@ struct t_backend {
 	 * @return
 	 *   a complete and ordered t_taglist or NULL on error.
 	 */
-	struct t_taglist * (*read)(struct t_tune *tune);
+	struct t_taglist *	(*read)(void *opaque);
 
 	/*
 	 * write the file.
@@ -41,12 +41,12 @@ struct t_backend {
 	 * @return
 	 *   return -1 on error, 0 on success.
 	 */
-	int (*write)(struct t_tune *tune, const struct t_taglist *tlist);
+	int	(*write)(void *opaque, const struct t_taglist *tlist);
 
 	/*
 	 * free internal data.
 	 */
-	void (*clear)(struct t_tune *tune);
+	void	(*clear)(void *opaque);
 
 	TAILQ_ENTRY(t_backend)	entries;
 };
