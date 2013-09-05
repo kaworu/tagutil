@@ -73,6 +73,9 @@ t_tune_set_tags(struct t_tune *tune, const struct t_taglist *tlist)
 	/* this is not really needed, but we ensure a safe initialization */
 	assert_not_null(tune->backend);
 
+	if (tune->tlist == tlist)
+		return (0);
+
 	t_taglist_delete(tune->tlist);
 	tune->tlist = t_taglist_clone(tlist);
 	tune->dirty++;

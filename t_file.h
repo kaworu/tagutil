@@ -89,12 +89,12 @@ struct t_file {
 /*
  * t_file ctor helper.
  */
-#define T_FILE_NEW(file, path, data)						\
+#define T_FILE_NEW(file, path, data_)						\
 	do {									\
 		(file) = xmalloc(sizeof(struct t_file));			\
-		(file)->data = xmalloc(sizeof(data));				\
+		(file)->data = xmalloc(sizeof(data_));				\
 		(file)->path = xmalloc(strlen(path) + 1);			\
-		(void)memcpy((file)->data, &data, sizeof(data));		\
+		(void)memcpy((file)->data, &data_, sizeof(data_));		\
 		(void)memcpy((file)->path, path, strlen(path) + 1);		\
 		(file)->libid = libid;						\
 		(file)->dirty = false;						\

@@ -24,11 +24,37 @@ struct t_flac_data {
 };
 
 
+struct t_backend *	 t_tune_flac_backend(void);
 static int		 t_ftflac_init(struct t_tune *tune);
 static struct t_taglist	*t_ftflac_read(struct t_tune *tune);
 static int		 t_ftflac_write(struct t_tune *tune, const struct t_taglist *tlist);
 static void		 t_ftflac_clear(struct t_tune *tune);
 
+/* t_file stuff */
+#include "t_file.h"
+static struct t_file	*t_file_new(const char *path) t__deprecated;
+static void		 t_file_destroy(struct t_file *file) t__deprecated;
+static bool		 t_file_save(struct t_file *file) t__deprecated;
+static struct t_taglist	*t_file_get(struct t_file *file, const char *key) t__deprecated;
+static bool		 t_file_clear(struct t_file *file, const struct t_taglist *T) t__deprecated;
+static bool		 t_file_add(struct t_file *file, const struct t_taglist *T) t__deprecated;
+
+
+struct t_backend *
+t_tune_flac_backend(void)
+{
+	static struct t_backend b = {
+		.libid		= libid,
+		.desc		=
+		    "Wrapper to t_tune flac files format, use `Vorbis comment' metadata tags.",
+		.init		= t_ftflac_init,
+		.read		= t_ftflac_read,
+		.write		= t_ftflac_write,
+		.clear		= t_ftflac_clear,
+	};
+	b.ctor = t_file_new;
+	return (&b);
+}
 
 static int
 t_ftflac_init(struct t_tune *tune)
@@ -139,9 +165,10 @@ t_ftflac_write(struct t_tune *tune, const struct t_taglist *tlist)
 	data = tune->opaque;
 
 	/* clear all the tags */
-	while (data->vocomments->data.vorbis_comment.num_comments == 0) {
+	while (data->vocomments->data.vorbis_comment.num_comments != 0) {
 		if (!FLAC__metadata_object_vorbiscomment_delete_comment(data->vocomments, 0))
 			return (-1);
+	}
 
 	/* load the tlist */
 	TAILQ_FOREACH(t, tlist->tags, entries) {
@@ -171,24 +198,20 @@ t_ftflac_clear(struct t_tune *tune)
 	assert(tune->backend->libid == libid);
 
 	data = tune->opaque;
-	FLAC__metadata_object_delete(data->vocomments);
 	FLAC__metadata_chain_delete(data->chain);
+	free(tune->opaque);
+	tune->opaque = NULL;
 }
 
 
-#include "t_file.h"
-static struct t_file	*t_file_new(const char *path) t__deprecated;
-static void		 t_file_destroy(struct t_file *file) t__deprecated;
-static bool		 t_file_save(struct t_file *file) t__deprecated;
-static struct t_taglist	*t_file_get(struct t_file *file, const char *key) t__deprecated;
-static bool		 t_file_clear(struct t_file *file, const struct t_taglist *T) t__deprecated;
-static bool		 t_file_add(struct t_file *file, const struct t_taglist *T) t__deprecated;
+/* t_file stuff */
 
 
 static struct t_file *
-t_tune_wrapper_file_new(const char *path)
+t_file_new(const char *path)
 {
 	struct t_tune tune;
+	struct t_file *file;
 
 	assert_not_null(path);
 
@@ -199,25 +222,6 @@ t_tune_wrapper_file_new(const char *path)
 
 	return (file);
 }
-
-
-
-struct t_backend *
-t_tune_flac_backend(void)
-{
-	static struct t_backend b = {
-		.libid		= libid,
-		.desc		=
-		    "Wrapper to t_tune flac files format, use `Vorbis comment' metadata tags.",
-		.init		= t_ftflac_init,
-		.read		= t_ftflac_read,
-		.write		= t_ftflac_write,
-		.clear		= t_ftflac_clear,
-	};
-	b.ctor = t_tune_wrapper_file_new;
-	return (&b);
-}
-
 
 
 static void
@@ -253,14 +257,102 @@ t_file_save(struct t_file *file)
 
 static struct t_taglist *
 t_file_get(struct t_file *file, const char *key)
-{ }
+{
+	struct t_tune *tune;
+	const struct t_tag *t;
+	const struct t_taglist *tlist;
+	struct t_taglist *ret;
 
+	assert_not_null(file);
+
+	tune  = file->data;
+	tlist = t_tune_tags(tune);
+	if (key == NULL)
+		return (t_taglist_clone(tlist));
+	if (tlist == NULL)
+		return (NULL);
+	if ((ret = t_taglist_new()) == NULL)
+		return (NULL);
+	TAILQ_FOREACH(t, tlist->tags, entries) {
+		if (strcasecmp(t->key, key) == 0) {
+			char *k = strdup(t->key);
+			if (k == NULL || t_taglist_insert(ret, t_strtolower(k), t->val) == -1) {
+				t_taglist_delete(ret);
+				return (NULL);
+			}
+			free(k);
+		}
+	}
+	return (ret);
+}
 
 static bool
 t_file_clear(struct t_file *file, const struct t_taglist *T)
-{ }
+{
+	struct t_tune *tune;
+	const struct t_tag *t, *rt;
+	const struct t_taglist *tlist;
+	struct t_taglist *ret;
 
+	assert_not_null(file);
+
+	tune = file->data;
+	ret = t_taglist_new();
+	if (ret == NULL)
+		return (false);
+
+	if (T != NULL) {
+		tlist = t_tune_tags(tune);
+		if (tlist == NULL) {
+			t_taglist_delete(ret);
+			return (false);
+		}
+		TAILQ_FOREACH(t, tlist->tags, entries) {
+			int skip = 0;
+			TAILQ_FOREACH(rt, T->tags, entries) {
+				if (strcasecmp(t->key, rt->key) == 0) {
+					skip = 1;
+					break;
+				}
+			}
+			char *k = strdup(t->key);
+			if (k == NULL || (!skip && t_taglist_insert(ret, t_strtolower(k), t->val) == -1)) {
+				t_taglist_delete(ret);
+				return (false);
+			}
+			free(k);
+		}
+	}
+	t_tune_set_tags(tune, ret);
+	t_taglist_delete(ret);
+	return (true);
+}
 
 static bool
 t_file_add(struct t_file *file, const struct t_taglist *T)
-{ }
+{
+	struct t_tune *tune;
+	const struct t_tag *t;
+	struct t_taglist *ret;
+
+	assert_not_null(file);
+
+	tune = file->data;
+
+	if (T == NULL || T->count == 0)
+		return (true);
+
+	ret = t_taglist_clone(t_tune_tags(tune));
+	if (ret == NULL)
+		return (false);
+
+	TAILQ_FOREACH(t, T->tags, entries) {
+		if (t_taglist_insert(ret, t->key, t->val) == -1) {
+			t_taglist_delete(ret);
+			return (false);
+		}
+	}
+	t_tune_set_tags(tune, ret);
+	t_taglist_delete(ret);
+	return (true);
+}
