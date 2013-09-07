@@ -346,7 +346,7 @@ cleanup:
 	 * XXX: at the moment, we ignore the error message
 	 */
 	t_error_clear(&e);
-	return (state == DONE_SUCCESS);
+	return (state == DONE_SUCCESS ? 0 : -1);
 }
 
 static void
