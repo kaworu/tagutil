@@ -1,11 +1,11 @@
 /*
  * t_ftoggvorbis.c
  *
- * Ogg/Vorbis backend, using libvorbis and libvorbisfile
+ * Ogg/Vorbis backend, using libogg, libvorbis and libvorbisfile
  */
-#include <stdbool.h>
-#include <string.h>
 
+/* Ogg headers */
+#include "ogg/ogg.h"
 /* Vorbis headers */
 #define	OV_EXCLUDE_STATIC_CALLBACKS	1
 #include "vorbis/vorbisfile.h"
@@ -13,111 +13,116 @@
 #include "vorbis/codec.h"
 
 #include "t_config.h"
-#include "t_toolkit.h"
-#include "t_file.h"
 #include "t_backend.h"
+#include "t_error.h"
 
 
 static const char libid[] = "libvorbis";
 
 
-struct t_oggvorbis_data {
-	struct OggVorbis_File	*vf;
-	struct vorbis_comment	*vc;
+struct t_ftoggvorbis_data {
+	const char		*libid; /* pointer to libid */
+	const char		*path; /* this is needed for t_ftoggvorbis_write() */
+	struct OggVorbis_File	 vf;
 };
 
 
-static void	t_file_destroy(struct t_file *file);
+struct t_backend	*t_ftoggvorbis_backend(void);
 
-static struct t_file *	t_file_new(const char *path);
+static void 		*t_ftoggvorbis_init(const char *path);
+static struct t_taglist	*t_ftoggvorbis_read(void *opaque);
+static int		 t_ftoggvorbis_write(void *opaque, const struct t_taglist *tlist);
+static void		 t_ftoggvorbis_clear(void *opaque);
 
-static bool	t_file_save(struct t_file *file);
-
-static struct t_taglist * t_file_get(struct t_file *file,
-    const char *key);
-
-static bool	t_file_clear(struct t_file *file,
-    const struct t_taglist *T);
-
-static bool	t_file_add(struct t_file *file,
-    const struct t_taglist *T);
+/* helper for t_ftoggvorbis_write() */
+static int		 fwrite_drain_func(void *fp, const char *data, int len);
 
 
 struct t_backend *
-t_oggvorbis_backend(void)
+t_ftoggvorbis_backend(void)
 {
 	static struct t_backend b = {
 		.libid		= libid,
-    		.desc		= "Ogg/Vorbis files format, "
+		.desc		= "Ogg/Vorbis files format, "
 		    "use `Vorbis comment' metadata tags.",
-		.ctor		= t_file_new,
+		.init		= t_ftoggvorbis_init,
+		.read		= t_ftoggvorbis_read,
+		.write		= t_ftoggvorbis_write,
+		.clear		= t_ftoggvorbis_clear,
 	};
 	return (&b);
 }
 
-
-static struct t_file *
-t_file_new(const char *path)
+static void *
+t_ftoggvorbis_init(const char *path)
 {
-	int	 i;
-	struct t_file *file;
-	struct OggVorbis_File	*vf;
-	struct vorbis_comment	*vc;
-	struct t_oggvorbis_data data;
+	size_t plen;
+	char *p;
+	struct t_ftoggvorbis_data *data;
 
 	assert_not_null(path);
 
-	vf = xmalloc(sizeof(struct OggVorbis_File));
-	i = ov_fopen(path, vf);
-	if (i != 0) {
+	plen = strlen(path);
+	data = malloc(sizeof(struct t_ftoggvorbis_data) + plen + 1);
+	if (data == NULL)
+		return (NULL);
+	data->libid = libid;
+	data->path = p = (char *)(data + 1);
+	assert(strlcpy(p, path, plen + 1) == plen);
+	bzero(&data->vf, sizeof(struct OggVorbis_File));
+
+	if (ov_fopen(data->path, &data->vf) != 0) {
 		/* XXX: check OV_EFAULT or OV_EREAD? */
-		free(vf);
-		return (NULL);
-	}
-	vc = ov_comment(vf, -1);
-	if (vc == NULL) {
-		free(vf);
+		free(data);
 		return (NULL);
 	}
 
-	data.vf = vf;
-	data.vc = vc;
-
-	T_FILE_NEW(file, path, data);
-	return (file);
+	return (data);
 }
 
-
-static void
-t_file_destroy(struct t_file *file)
+static struct t_taglist *
+t_ftoggvorbis_read(void *opaque)
 {
-	struct t_oggvorbis_data *data;
+	struct t_taglist *tlist;
+	struct t_ftoggvorbis_data *data;
+	struct vorbis_comment *vc;
+	int i;
 
-	assert_not_null(file);
-	assert_not_null(file->data);
-	assert(file->libid == libid);
+	assert_not_null(opaque);
+	data = opaque;
+	assert(data->libid == libid);
 
-	data = file->data;
+	vc = ov_comment(&data->vf, -1);
+	if (vc == NULL)
+		return (NULL);
 
-	ov_clear(data->vf);
-	free(data->vf);
-	T_FILE_DESTROY(file);
+	tlist = t_taglist_new();
+	if (tlist == NULL)
+		return (NULL);
+
+	for (i = 0; i < vc->comments; i++) {
+		int r;
+		char *c  = vc->user_comments[i];
+		char *eq = strchr(c, '=');
+
+		if (eq == NULL) {
+			warnx("invalid vorbis comment: %s", c);
+			continue;
+		}
+		*eq = '\0';
+		r = t_taglist_insert(tlist, c, eq + 1);
+		*eq = '=';
+		if (r == -1) {
+			t_taglist_delete(tlist);
+			return (NULL);
+		}
+	}
+
+	return (tlist);
 }
-
 
 static int
-fwrite_drain_func(void *fp, const char *data, int len)
-{
-	size_t s;
-
-	if (fp == NULL)
-		return (-1);
-	s = fwrite(data, 1, len, fp);
-	return (s == 0 ? -1 : s);
-}
-
-static bool
-t_file_save(struct t_file *file)
+t_ftoggvorbis_write(void *opaque, const struct t_taglist *tlist)
 {
 	ogg_sync_state oy;
 	ogg_stream_state ios, oos;
@@ -125,7 +130,9 @@ t_file_save(struct t_file *file)
 	vorbis_info vi;
 	ogg_packet op, my_vc_packet, *target;
 	vorbis_comment vc;
-	struct t_oggvorbis_data *data;
+	struct t_ftoggvorbis_data *data;
+	const struct t_tag *t;
+	struct t_error e;
 	struct sbuf *sb = NULL;
 	FILE *rfp = NULL, *wfp = NULL;
 	char *buf, *tmp = NULL;
@@ -139,36 +146,35 @@ t_file_save(struct t_file *file)
 		DONE_SUCCESS,
 	} state;
 
-	assert_not_null(file);
-	assert_not_null(file->data);
-	assert(file->libid == libid);
-	t_error_clear(file);
-
-	if (!file->dirty)
-		return (true);
-	data = file->data;
+	assert_not_null(opaque);
+	data = opaque;
+	assert(data->libid == libid);
 
 	/*
 	 * The following is quite complicated. In order to modify the file's
 	 * tag, we have to rewrite the entire file. The Ogg container is divided
 	 * into "pages" and "packets" and the algorithm is to replace the SECOND
-	 * packet (which contains vorbis_comment) and copy ALL THE OTHERS.
+	 * ogg packet (which contains vorbis comments) and copy ALL THE OTHERS.
 	 */
 
 	state = BUILDING_VC_PACKET;
+	vorbis_comment_init(&vc);
+	TAILQ_FOREACH(t, tlist->tags, entries)
+		vorbis_comment_add_tag(&vc, t->key, t->val);
 	/* create the packet holding our vorbis_comment */
-	if (vorbis_commentheader_out(data->vc, &my_vc_packet) != 0)
+	if (vorbis_commentheader_out(&vc, &my_vc_packet) != 0)
 		goto cleanup;
+	vorbis_comment_clear(&vc);
 	vorbis_comment_init(&vc);
 
 	state = SETUP;
 	/* open files & stuff */
-	if ((rfp = fopen(file->path, "r")) == NULL)
+	if ((rfp = fopen(data->path, "r")) == NULL)
 		goto cleanup;
 	if ((sb = sbuf_new(NULL, NULL, BUFSIZ + 1, SBUF_FIXEDLEN)) == NULL)
 		goto cleanup;
-	/* open wfp */
-	if (xasprintf(&tmp, "%s/.__%s_XXXXXX", t_dirname(file->path), getprogname()) < 0)
+	/* open the write file pointer */
+	if (xasprintf(&tmp, "%s/.__%s_XXXXXX", t_dirname(data->path), getprogname()) < 0)
 		goto cleanup;
 	if (mkstemps(tmp, 0) == -1)
 		goto cleanup;
@@ -199,7 +205,10 @@ t_file_save(struct t_file *file)
 			break;
 		case 1: /* a page was synced and returned. */
 			if (npacket == 0) {
-				/* init both input and output streams with the serialno of the first page */
+				/*
+				 * init both input and output streams with the
+				 * serialno of the first page
+				 */
 				if (ogg_stream_init(&ios, ogg_page_serialno(&iog)) == -1)
 					goto cleanup;
 				if (ogg_stream_init(&oos, ogg_page_serialno(&iog)) == -1) {
@@ -209,17 +218,27 @@ t_file_save(struct t_file *file)
 				state = STREAMS_INITIALIZED;
 			}
 
-			/* page in into the input stream, in order to fetch ogg_packet from the page */
+			/*
+			 * page in into the input stream, in order to fetch
+			 * ogg_packet from the page
+			 */
 			if (ogg_stream_pagein(&ios, &iog) == -1)
 				goto cleanup;
 
 			while (ogg_stream_packetout(&ios, &op) == 1) {
-				/* the second packet is the commentheader packet, we replace it with my_vc_packet */
+				/*
+				 * the second packet is the commentheader
+				 * packet, we replace it with my_vc_packet
+				 */
 				target = (++npacket == 2 ? &my_vc_packet : &op);
 
 				/* insert the target packet into the output stream */
 				if (npacket <= 3) {
-					/* the three first packet are used to fill the vorbis info (used to compute granule) */
+					/*
+					 * the three first packet are used to
+					 * fill the vorbis info (used later for
+					 * granule computation)
+					 */
 					if (vorbis_synthesis_headerin(&vi, &vc, &op) != 0)
 						goto cleanup;
 					/* force a flush after the third ogg_packet */
@@ -231,13 +250,18 @@ t_file_save(struct t_file *file)
 					prevW    = bs;
 
 					/* save a page in the buffer a page if needed */
-					while ((state == READING_DATA_NEED_FLUSH && ogg_stream_flush(&oos, &oog)) ||
+					while (
+					    (state == READING_DATA_NEED_FLUSH && ogg_stream_flush(&oos, &oog)) ||
 					    (state == READING_DATA_NEED_PAGEOUT && ogg_stream_pageout(&oos, &oog))) {
 						(void)sbuf_bcat(sb, oog.header, oog.header_len);
 						(void)sbuf_bcat(sb, oog.body, oog.body_len);
 					}
 
-					/* flush / out / granpos hack, idk the logic i just saw it in vcedit.c */
+					/*
+					 * force a flush or a pageout,  granpos
+					 * hack, idk the logic i just saw it in
+					 * vcedit.c
+					 */
 					state = READING_DATA;
 					if (op.granulepos == -1) {
 						op.granulepos = granpos;
@@ -270,17 +294,18 @@ t_file_save(struct t_file *file)
 	wfp = NULL;
 
 	state = RENAMING;
-	if (rename(tmp, file->path) == -1)
+	if (rename(tmp, data->path) == -1)
 		goto cleanup;
 
 	state = DONE_SUCCESS;
 
 cleanup:
+	t_error_init(&e);
 	switch (state) {
 	case DONE_SUCCESS: /* FALLTHROUGH */
 	case RENAMING:
-		if (state != DONE_SUCCESS && t_error_msg(file) == NULL)
-			t_error_set(file, "error while renaming temporary file");
+		if (state != DONE_SUCCESS && t_error_msg(&e) == NULL)
+			t_error_set(&e, "error while renaming temporary file");
 		/* FALLTHROUGH */
 	case WRITE_FINISH: /* FALLTHROUGH */
 	case E_O_S: /* FALLTHROUGH */
@@ -293,14 +318,14 @@ cleanup:
 		ogg_stream_clear(&oos);
 		/* FALLTHROUGH */
 	case START_READING:
-		if (state != DONE_SUCCESS && t_error_msg(file) == NULL)
-			t_error_set(file, "error while reading or writting to temporary file");
+		if (state != DONE_SUCCESS && t_error_msg(&e) == NULL)
+			t_error_set(&e, "error while reading or writting to temporary file");
 		ogg_sync_clear(&oy);
 		vorbis_info_clear(&vi);
 		/* FALLTHROUGH */
 	case SETUP:
-		if (state != DONE_SUCCESS && t_error_msg(file) == NULL)
-			t_error_set(file, "error while opening");
+		if (state != DONE_SUCCESS && t_error_msg(&e) == NULL)
+			t_error_set(&e, "error while opening");
 		if (wfp != NULL)
 			(void)fclose(wfp);
 		if (tmp != NULL && eaccess(tmp, R_OK) != -1)
@@ -313,131 +338,39 @@ cleanup:
 		ogg_packet_clear(&my_vc_packet);
 		/* FALLTHROUGH */
 	case BUILDING_VC_PACKET:
-		if (state != DONE_SUCCESS && t_error_msg(file) == NULL)
-			t_error_set(file, "error while creating vorbis comment ogg_packet");
+		if (state != DONE_SUCCESS && t_error_msg(&e) == NULL)
+			t_error_set(&e, "error while creating vorbis comment ogg_packet");
 		vorbis_comment_clear(&vc);
 	}
 
+	/*
+	 * XXX: at the moment, we ignore the error message
+	 */
+	t_error_clear(&e);
 	return (state == DONE_SUCCESS);
 }
 
-
-static struct t_taglist *
-t_file_get(struct t_file *file, const char *key)
+static void
+t_ftoggvorbis_clear(void *opaque)
 {
-	char	*copy;
-	char	*eq;
-	int	 i;
-	size_t	klen;
-	const char *c;
-	struct t_taglist *T;
-	struct t_oggvorbis_data *data;
+	struct t_ftoggvorbis_data *data;
 
-	assert_not_null(file);
-	assert_not_null(file->data);
-	assert(file->libid == libid);
-	t_error_clear(file);
+	assert_not_null(opaque);
+	data = opaque;
+	assert(data->libid == libid);
 
-	data = file->data;
-	if ((T = t_taglist_new()) == NULL)
-		err(ENOMEM, "malloc");
-	if (key != NULL)
-		klen = strlen(key);
-
-	for (i = 0; i < data->vc->comments; i++) {
-		c = data->vc->user_comments[i];
-		if (key != NULL) {
-			if (strncasecmp(key, c, klen) != 0 || c[klen] != '=')
-				continue;
-		}
-		copy = xstrdup(c);
-		eq = strchr(copy, '=');
-		if (eq == NULL) {
-			t_error_set(file, "ogg/vorbis header seems corrupted");
-			free(copy);
-			t_taglist_delete(T);
-			return (NULL);
-		}
-		*eq = '\0';
-		if ((t_taglist_insert(T, copy, eq + 1)) == -1)
-			err(ENOMEM, "malloc");
-		free(copy);
-	}
-
-	return (T);
+	ov_clear(&data->vf);
+	free(data);
 }
 
 
-static bool
-t_file_clear(struct t_file *file, const struct t_taglist *T)
+static int
+fwrite_drain_func(void *fp, const char *data, int len)
 {
-	int	 i;
-	char	*c, *copy, *eq;
-	struct t_taglist *backup;
-	struct t_tag *t;
-	struct t_oggvorbis_data *data;
+	size_t s;
 
-	assert_not_null(file);
-	assert_not_null(file->data);
-	assert(file->libid == libid);
-	t_error_clear(file);
-
-	data = file->data;
-
-	/* this is overkill, but libvorbis doesn't expose routine to remove
-	  comments. */
-	if ((backup = t_taglist_new()) == NULL)
-		err(ENOMEM, "malloc");
-	if (T != NULL) {
-		/* do a backup of the tags we want to keep */
-		for (i = 0; i < data->vc->comments; i++) {
-			c = data->vc->user_comments[i];
-			TAILQ_FOREACH(t, T->tags, entries) {
-				if (!(strncasecmp(t->key, c, t->klen) == 0 && c[t->klen] == '=')) {
-					copy = xstrdup(c);
-					eq = strchr(copy, '=');
-					if (eq == NULL) {
-						t_error_set(file, "ogg/vorbis header seems corrupted");
-						free(copy);
-						t_taglist_delete(backup);
-						return (NULL);
-					}
-					*eq = '\0';
-					if ((t_taglist_insert(backup, copy, eq + 1)) == -1)
-						err(ENOMEM, "malloc");
-					free(copy);
-				}
-			}
-		}
-	}
-
-	vorbis_comment_clear(data->vc);
-	vorbis_comment_init(data->vc);
-	t_file_add(file, backup);
-	t_taglist_delete(backup);
-
-	return (true);
-}
-
-
-static bool
-t_file_add(struct t_file *file, const struct t_taglist *T)
-{
-	struct t_tag *t;
-	struct t_oggvorbis_data *data;
-
-	assert_not_null(file);
-	assert_not_null(file->data);
-	assert(file->libid == libid);
-	assert_not_null(T);
-	t_error_clear(file);
-
-	data = file->data;
-
-	TAILQ_FOREACH(t, T->tags, entries) {
-		vorbis_comment_add_tag(data->vc, t->key, t->val);
-		file->dirty++;
-	}
-
-	return (true);
+	if (fp == NULL)
+		return (-1);
+	s = fwrite(data, 1, len, fp);
+	return (s == 0 ? -1 : s);
 }

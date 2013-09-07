@@ -9,11 +9,9 @@
 
 
 t__weak
-struct t_backend *t_flac_backend(void);
-t__weak
 struct t_backend *t_ftflac_backend(void);
 t__weak
-struct t_backend *t_oggvorbis_backend(void);
+struct t_backend *t_ftoggvorbis_backend(void);
 t__weak
 struct t_backend *t_generic_backend(void);
 
@@ -30,7 +28,7 @@ t_all_backends(void)
 		TAILQ_INSERT_HEAD(&bQ, t_generic_backend(), entries);
 #endif
 #if defined(WITH_OGGVORBIS)
-		TAILQ_INSERT_HEAD(&bQ, t_oggvorbis_backend(), entries);
+		TAILQ_INSERT_HEAD(&bQ, t_ftoggvorbis_backend(), entries);
 #endif
 #if defined(WITH_FLAC)
 		TAILQ_INSERT_HEAD(&bQ, t_ftflac_backend(), entries);
