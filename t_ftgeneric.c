@@ -28,17 +28,6 @@ static struct t_taglist	*t_ftgeneric_read(void *opaque);
 static int		 t_ftgeneric_write(void *opaque, const struct t_taglist *tlist);
 static void		 t_ftgeneric_clear(void *opaque);
 
-static struct {
-	const char *key,
-} taglibkeys[] = {
-	"album",
-	"artist",
-	"date",
-	"description",
-	"genre",
-	"title",
-	"tracknumber",
-};
 
 struct t_backend *
 t_ftgeneric_backend(void)
@@ -81,7 +70,7 @@ t_ftgeneric_init(const char *path)
 
 	assert_not_null(path);
 
-	data = calloc(1, sizeof(struct t_ftflac_data));
+	data = calloc(1, sizeof(struct t_ftgeneric_data));
 	if (data == NULL)
 		return (NULL);
 	data->libid = libid;
@@ -133,7 +122,7 @@ t_ftgeneric_read(void *opaque)
 
 	uintval = taglib_tag_year(data->tag);
 	if (uintval > 0 && uintval < 10000) {
-		if (sprintf(&buf, "%04u", uintval) < 0)
+		if (sprintf(buf, "%04u", uintval) < 0)
 			goto error;
 		if (t_taglist_insert(tlist, "year", buf) == -1)
 			goto error;
@@ -147,7 +136,7 @@ t_ftgeneric_read(void *opaque)
 
 	uintval = taglib_tag_track(data->tag);
 	if (uintval > 0 && uintval < 10000) {
-		if (sprintf(&buf, "%02u", uintval) < 0)
+		if (sprintf(buf, "%02u", uintval) < 0)
 			goto error;
 		if (t_taglist_insert(tlist, "track", buf) == -1)
 			goto error;
@@ -165,6 +154,7 @@ t_ftgeneric_read(void *opaque)
 	taglib_free(val);
 	val = NULL;
 
+	return (tlist);
 error:
 	if (val != NULL)
 		taglib_free(val);
@@ -196,7 +186,7 @@ t_ftgeneric_write(void *opaque, const struct t_taglist *tlist)
 	/* load the tlist */
 	TAILQ_FOREACH(t, tlist->tags, entries) {
 		if (strcmp(t->key, "title") == 0)
-			taglib_tag_set_title(data->tag, t->val)
+			taglib_tag_set_title(data->tag, t->val);
 		else if (strcmp(t->key, "artist") == 0)
 			taglib_tag_set_artist(data->tag, t->val);
 		else if (strcmp(t->key, "year") == 0) {
@@ -205,7 +195,7 @@ t_ftgeneric_write(void *opaque, const struct t_taglist *tlist)
 				warnx("invalid unsigned int argument for %s: %s",
 				    t->key, t->val);
 			} else if (ulongval > UINT_MAX) {
-				warnx(file, "invalid unsigned int argument for %s: %s (too large)",
+				warnx("invalid unsigned int argument for %s: %s (too large)",
 				    t->key, t->val);
 			} else if (errno) {
 				/* should be EINVAL (ERANGE catched by last condition). */
@@ -220,7 +210,7 @@ t_ftgeneric_write(void *opaque, const struct t_taglist *tlist)
 				warnx("invalid unsigned int argument for %s: %s",
 				    t->key, t->val);
 			} else if (ulongval > UINT_MAX) {
-				warnx(file, "invalid unsigned int argument for %s: %s (too large)",
+				warnx("invalid unsigned int argument for %s: %s (too large)",
 				    t->key, t->val);
 			} else if (errno) {
 				/* should be EINVAL (ERANGE catched by last condition). */
