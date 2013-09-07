@@ -14,8 +14,6 @@ struct t_backend {
 	const char	*libid;
 	const char	*desc;
 
-	struct t_file * (*ctor)(const char *path) t__deprecated;
-
 	/*
 	 * tune internal data (opaque) initialization.
 	 *

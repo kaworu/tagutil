@@ -121,10 +121,4 @@ struct t_file {
 	} while (/*CONSTCOND*/0);
 
 
-/*
- * t_file ctor type
- */
-typedef struct t_file * t_file_ctor(const char *path);
-
-
 #endif /* not T_FILE_H */
