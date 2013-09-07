@@ -32,14 +32,13 @@ static struct t_taglist	*t_ftflac_read(void *opaque);
 static int		 t_ftflac_write(void *opaque, const struct t_taglist *tlist);
 static void		 t_ftflac_clear(void *opaque);
 
-
 struct t_backend *
 t_ftflac_backend(void)
 {
 	static struct t_backend b = {
 		.libid		= libid,
 		.desc		=
-		    "flac files format, use `Vorbis comment' metadata tags.",
+		    "Free Lossless Audio Codec (FLAC) files format",
 		.init		= t_ftflac_init,
 		.read		= t_ftflac_read,
 		.write		= t_ftflac_write,

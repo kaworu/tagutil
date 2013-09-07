@@ -43,8 +43,7 @@ t_ftoggvorbis_backend(void)
 {
 	static struct t_backend b = {
 		.libid		= libid,
-		.desc		= "Ogg/Vorbis files format, "
-		    "use `Vorbis comment' metadata tags.",
+		.desc		= "Ogg/Vorbis files format",
 		.init		= t_ftoggvorbis_init,
 		.read		= t_ftoggvorbis_read,
 		.write		= t_ftoggvorbis_write,

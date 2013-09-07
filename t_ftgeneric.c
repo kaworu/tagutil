@@ -67,7 +67,7 @@ t_generic_backend(void)
 {
 	static struct t_backend b = {
 		.libid		= libid,
-    		.desc		= "multiple file format (flac,ogg,mp3...)",
+		.desc		= "various file format (flac,ogg,mp3...)",
 		.ctor		= t_file_new,
 	};
 	return (&b);
