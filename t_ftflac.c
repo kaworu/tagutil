@@ -6,8 +6,6 @@
  * XXX: error handling could be better since libFLAC has a very good API. For
  * now it's mostly silent.
  */
-#include <stdbool.h>
-#include <string.h>
 
 /* libFLAC headers */
 #include "FLAC/metadata.h"
@@ -15,7 +13,6 @@
 
 #include "t_config.h"
 #include "t_backend.h"
-#include "t_file_compat.h"
 
 
 static const char libid[] = "libFLAC";
@@ -48,7 +45,6 @@ t_ftflac_backend(void)
 		.write		= t_ftflac_write,
 		.clear		= t_ftflac_clear,
 	};
-	b.ctor = t_file_new;
 	return (&b);
 }
 
