@@ -21,9 +21,6 @@ t_all_backends(void)
 	static struct t_backendQ bQ = TAILQ_HEAD_INITIALIZER(bQ);
 
 	if (!initialized) {
-		struct t_backend *b, *b_temp;
-		char	*env;
-
 		/* add each available backend (order matter) */
 		if (t_ftflac_backend != NULL)
 			TAILQ_INSERT_TAIL(&bQ, t_ftflac_backend(), entries);
