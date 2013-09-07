@@ -19,11 +19,14 @@ struct t_backend *t_generic_backend(void);
 const struct t_backendQ *
 t_all_backends(void)
 {
+	static int initialized = 0;
 	static struct t_backendQ bQ = TAILQ_HEAD_INITIALIZER(bQ);
 
-	if (TAILQ_EMPTY(&bQ)) {
+	if (!initialized) {
+		struct t_backend *b, *b_temp;
 		char	*env;
 
+		/* add each available backend */
 #if defined(WITH_TAGLIB)
 		TAILQ_INSERT_HEAD(&bQ, t_generic_backend(), entries);
 #endif
@@ -33,11 +36,11 @@ t_all_backends(void)
 #if defined(WITH_FLAC)
 		TAILQ_INSERT_HEAD(&bQ, t_ftflac_backend(), entries);
 #endif
-
+		/* change backend priority if requested by the env */
 		env = getenv("TAGUTIL_BACKEND");
 		if (env != NULL) {
 			char *start, *cur, *next;
-			struct t_backend *b, *target;
+			struct t_backend *target;
 
 			next = start = strdup(env);
 			while (next != NULL) {
@@ -62,6 +65,18 @@ t_all_backends(void)
 			}
 			free(start);
 		}
+
+		/* call setup routine foreach backend needing it. */
+		TAILQ_FOREACH_SAFE(b, &bQ, entries, b_temp) {
+			if (b->setup != NULL) {
+				if (b->setup() != 0) {
+					warnx("backend %s setup failed.", b->libid);
+					TAILQ_REMOVE(&bQ, b, entries);
+				}
+			}
+		}
+
+		initialized = 1;
 	}
 	return (&bQ);
 }

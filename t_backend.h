@@ -17,6 +17,14 @@ struct t_backend {
 	struct t_file * (*ctor)(const char *path) t__deprecated;
 
 	/*
+	 * called at the application startup.
+	 *
+	 * @return
+	 *   0 on success, -1 on error.
+	 */
+	int	(*setup)(void);
+
+	/*
 	 * tune internal data (opaque) initialization.
 	 *
 	 * This routine can be used to detect if a backend can handle a
