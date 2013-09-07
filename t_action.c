@@ -395,7 +395,7 @@ t_action_backend(struct t_action *self, struct t_file *file)
 	assert_not_null(file);
 	assert(self->kind == T_ACTION_SHOWBACKEND);
 
-	(void)printf("%s: %s\n", file->path, file->libid);
+	(void)printf("%s %s\n", file->libid, file->path);
 	return (true);
 }
 
