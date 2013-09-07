@@ -3,349 +3,252 @@
  *
  * a generic tagutil backend, using TagLib.
  */
-#include <stdlib.h>
 #include <limits.h>
-#include <stdbool.h>
-#include <string.h>
 
 /* TagLib headers */
 #include "tag_c.h"
 
 #include "t_config.h"
-#include "t_toolkit.h"
-#include "t_file.h"
 #include "t_backend.h"
 
 
 static const char libid[] = "TagLib";
-static bool taglib_init_done = false;
 
 
-struct t_generic_data {
+struct t_ftgeneric_data {
+	const char	*libid;
 	TagLib_File	*file;
 	TagLib_Tag	*tag;
 };
 
-static void	taglib_init(void);
+struct t_backend	*t_ftgeneric_backend(void);
 
-static struct t_file *	t_file_new(const char *path);
+static void 		*t_ftgeneric_init(const char *path);
+static struct t_taglist	*t_ftgeneric_read(void *opaque);
+static int		 t_ftgeneric_write(void *opaque, const struct t_taglist *tlist);
+static void		 t_ftgeneric_clear(void *opaque);
 
-static void	t_file_destroy(struct t_file *file);
-
-static bool	t_file_save(struct t_file *file);
-
-static struct t_taglist * t_file_get(struct t_file *file,
-    const char *key);
-
-static bool	t_file_clear(struct t_file *file,
-    const struct t_taglist *T);
-
-static bool	t_file_add(struct t_file *file,
-    const struct t_taglist *T);
-
-
-void
-taglib_init(void)
-{
-	char *lcall, *dot;
-
-	/* TagLib specific init */
-	lcall = getenv("LC_ALL");
-	if (lcall != NULL) {
-		dot = strchr(lcall, '.');
-		if (dot && strcmp(dot + 1, "UTF-8"))
-			taglib_set_strings_unicode(true);
-	}
-
-	taglib_set_string_management_enabled(false);
-	taglib_init_done = true;
-}
-
+static struct {
+	const char *key,
+} taglibkeys[] = {
+	"album",
+	"artist",
+	"date",
+	"description",
+	"genre",
+	"title",
+	"tracknumber",
+};
 
 struct t_backend *
-t_generic_backend(void)
+t_ftgeneric_backend(void)
 {
+
 	static struct t_backend b = {
 		.libid		= libid,
 		.desc		= "various file format (flac,ogg,mp3...)",
-		.ctor		= t_file_new,
+		.init		= t_ftgeneric_init,
+		.read		= t_ftgeneric_read,
+		.write		= t_ftgeneric_write,
+		.clear		= t_ftgeneric_clear,
 	};
+
+	/* TagLib specific init */
+
+	/*
+	 * FIXME: UTF-8 is a default in TagLib's C API, so this is useless.
+	 * However it is unclear when we should switch to Latin1, in particular
+	 * when we can't get a locale. This OK for now since most backend assume
+	 * an UTF-8 (which should be fixed).
+	 */
+	char *lc_all, *dot;
+	lc_all = getenv("LC_ALL");
+	if (lc_all != NULL) {
+		dot = strchr(lc_all, '.');
+		if (dot != NULL && strcmp(dot + 1, "UTF-8") == 0)
+			taglib_set_strings_unicode(true);
+	}
+	taglib_set_string_management_enabled(false);
+
 	return (&b);
 }
 
-
-static struct t_file *
-t_file_new(const char *path)
+static void *
+t_ftgeneric_init(const char *path)
 {
-	TagLib_File	*f;
-	struct t_file *file;
-	struct t_generic_data data;
+	TagLib_File *f;
+	struct t_ftgeneric_data *data;
 
 	assert_not_null(path);
 
-	if (!taglib_init_done)
-		taglib_init();
+	data = calloc(1, sizeof(struct t_ftflac_data));
+	if (data == NULL)
+		return (NULL);
+	data->libid = libid;
 
 	f = taglib_file_new(path);
-	if (f == NULL || !taglib_file_is_valid(f))
+	if (f == NULL || !taglib_file_is_valid(f)) {
+		free(data);
+		return (NULL);
+	}
+
+	data->file = f;
+	data->tag  = taglib_file_tag(f);
+
+	return (data);
+}
+
+static struct t_taglist *
+t_ftgeneric_read(void *opaque)
+{
+	unsigned int uintval;
+	char buf[5], *val = NULL;
+	struct t_ftgeneric_data *data;
+	struct t_taglist *tlist = NULL;
+
+	assert_not_null(opaque);
+	data = opaque;
+	assert(data->libid == libid);
+
+	if ((tlist = t_taglist_new()) == NULL)
 		return (NULL);
 
-	data.file = f;
-	data.tag  = taglib_file_tag(f);
+	/*
+	 * we're abusing assert, mainly because TagLib does not document what
+	 * happen on error. There is a lot of duplication but it's ok because
+	 * it's very dumb code.
+	 */
 
-	T_FILE_NEW(file, path, data);
-	return (file);
-}
+	assert(val = taglib_tag_title(data->tag));
+	if (strlen(val) > 0 && t_taglist_insert(tlist, "title", val) == -1)
+		goto error;
+	taglib_free(val);
+	val = NULL;
 
+	assert(val = taglib_tag_artist(data->tag));
+	if (strlen(val) > 0 && t_taglist_insert(tlist, "artist", val) == -1)
+		goto error;
+	taglib_free(val);
+	val = NULL;
 
-static void
-t_file_destroy(struct t_file *file)
-{
-	struct t_generic_data *data;
-
-	assert_not_null(file);
-	assert_not_null(file->data);
-	assert(file->libid == libid);
-
-	data = file->data;
-	taglib_file_free(data->file);
-	T_FILE_DESTROY(file);
-}
-
-
-static bool
-t_file_save(struct t_file *file)
-{
-	bool ok;
-	struct t_generic_data *data;
-
-	assert_not_null(file);
-	assert_not_null(file->data);
-	assert(file->libid == libid);
-	t_error_clear(file);
-
-	data = file->data;
-	if (!file->dirty)
-		return (true);
-	ok = taglib_file_save(data->file);
-	if (!ok)
-		t_error_set(file, "%s error: taglib_file_save", file->libid);
-	else
-		file->dirty = false;
-	return (ok);
-}
-
-
-static const char * taglibkeys[] = {
-	"album", "artist", "description", "date", "genre", "title", "tracknumber"
-};
-static struct t_taglist *
-t_file_get(struct t_file *file, const char *key)
-{
-	int		 i;
-	unsigned int	 uintval;
-	char		*val;
-	struct t_generic_data *data;
-	struct t_taglist *T;
-
-	assert_not_null(file);
-	assert_not_null(file->data);
-	assert(file->libid == libid);
-	t_error_clear(file);
-
-	data = file->data;
-	if ((T = t_taglist_new()) == NULL)
-		err(ENOMEM, "malloc");
-
-	for (i = 0; i < countof(taglibkeys); i++) {
-		if (key != NULL) {
-			if (strcasecmp(key, taglibkeys[i]) != 0)
-				continue;
-		}
-		val = NULL;
-		switch (i) {
-		case 0:
-			val = taglib_tag_album(data->tag);
-			break;
-		case 1:
-			val = taglib_tag_artist(data->tag);
-			break;
-		case 2:
-			val = taglib_tag_comment(data->tag);
-			break;
-		case 3:
-			uintval = taglib_tag_year(data->tag);
-			if (uintval > 0)
-				(void)xasprintf(&val, "%04u", uintval);
-			break;
-		case 4:
-			val = taglib_tag_genre(data->tag);
-			break;
-		case 5:
-			val = taglib_tag_title(data->tag);
-			break;
-		case 6:
-			uintval = taglib_tag_track(data->tag);
-			if (uintval > 0)
-				(void)xasprintf(&val, "%02u", uintval);
-			break;
-		}
-		if (val != NULL && val[0] != '\0') {
-			/* clean value, when TagLib return "" we return NULL */
-			free(val);
-			val = NULL;
-		}
-
-		if (val != NULL) {
-			if ((t_taglist_insert(T, taglibkeys[i], val)) == -1)
-				err(ENOMEM, "malloc");
-			free(val);
-			val = NULL;
-		}
-		if (key != NULL)
-			break;
+	uintval = taglib_tag_year(data->tag);
+	if (uintval > 0 && uintval < 10000) {
+		if (sprintf(&buf, "%04u", uintval) < 0)
+			goto error;
+		if (t_taglist_insert(tlist, "year", buf) == -1)
+			goto error;
 	}
 
-	return (T);
-}
+	assert(val = taglib_tag_album(data->tag));
+	if (strlen(val) > 0 && t_taglist_insert(tlist, "album", val) == -1)
+		goto error;
+	taglib_free(val);
+	val = NULL;
 
-
-static unsigned int
-t_taglist_filter_count(const struct t_taglist *T,
-        const char *key, bool onlyfirst)
-{
-    size_t len;
-    unsigned int ret;
-    struct t_tag *t;
-
-    assert_not_null(T);
-    assert_not_null(key);
-
-    ret = 0;
-    len = strlen(key);
-    TAILQ_FOREACH(t, T->tags, entries) {
-        if (len == t->klen && strcasecmp(t->key, key) == 0) {
-            ret++;
-            if (onlyfirst)
-                break;
-        }
-    }
-
-    return (ret);
-}
-
-static bool
-t_file_clear(struct t_file *file, const struct t_taglist *T)
-{
-	int	i;
-	struct t_generic_data *data;
-
-	assert_not_null(file);
-	assert_not_null(file->data);
-	assert(file->libid == libid);
-	t_error_clear(file);
-
-	data = file->data;
-
-	for (i = 0; i < countof(taglibkeys); i++) {
-#define T_TAG_FIRST true
-		if (T == NULL || t_taglist_filter_count(T, taglibkeys[i], T_TAG_FIRST)) {
-			switch (i) {
-			case 0:
-				taglib_tag_set_album(data->tag, "");
-				break;
-			case 1:
-				taglib_tag_set_artist(data->tag, "");
-				break;
-			case 2:
-				taglib_tag_set_comment(data->tag, "");
-				break;
-			case 3:
-				taglib_tag_set_year(data->tag, 0);
-				break;
-			case 4:
-				taglib_tag_set_genre(data->tag, "");
-				break;
-			case 5:
-				taglib_tag_set_title(data->tag, "");
-				break;
-			case 6:
-				taglib_tag_set_track(data->tag, 0);
-				break;
-			}
-			file->dirty++;
-		}
+	uintval = taglib_tag_track(data->tag);
+	if (uintval > 0 && uintval < 10000) {
+		if (sprintf(&buf, "%02u", uintval) < 0)
+			goto error;
+		if (t_taglist_insert(tlist, "track", buf) == -1)
+			goto error;
 	}
 
-	return (true);
+	assert(val = taglib_tag_genre(data->tag));
+	if (strlen(val) > 0 && t_taglist_insert(tlist, "genre", val) == -1)
+		goto error;
+	taglib_free(val);
+	val = NULL;
+
+	assert(val = taglib_tag_comment(data->tag));
+	if (strlen(val) > 0 && t_taglist_insert(tlist, "comment", val) == -1)
+		goto error;
+	taglib_free(val);
+	val = NULL;
+
+error:
+	if (val != NULL)
+		taglib_free(val);
+	t_taglist_delete(tlist);
+	return (NULL);
 }
 
-
-static bool
-t_file_add(struct t_file *file, const struct t_taglist *T)
+static int
+t_ftgeneric_write(void *opaque, const struct t_taglist *tlist)
 {
-	bool	isstrf;
-	struct t_generic_data *data;
+	struct t_ftgeneric_data *data;
 	struct t_tag *t;
-	void (*strf)(TagLib_Tag *, const char *);
-	void (*uif)(TagLib_Tag *, unsigned int);
+	char *endptr;
+	unsigned long ulongval;
 
-	assert_not_null(file);
-	assert_not_null(file->data);
-	assert(file->libid == libid);
-	assert_not_null(T);
-	t_error_clear(file);
+	assert_not_null(opaque);
+	data = opaque;
+	assert(data->libid == libid);
 
-	data = file->data;
+	/* clear all the tags */
+	taglib_tag_set_title(data->tag, "");
+	taglib_tag_set_artist(data->tag, "");
+	taglib_tag_set_year(data->tag, 0);
+	taglib_tag_set_album(data->tag, "");
+	taglib_tag_set_track(data->tag, 0);
+	taglib_tag_set_genre(data->tag, "");
+	taglib_tag_set_comment(data->tag, "");
 
-	TAILQ_FOREACH(t, T->tags, entries) {
-		/* detect key function to use */
-		isstrf = true;
-		assert_not_null(t->key);
-		if (strcmp(t->key, "artist") == 0)
-			strf = taglib_tag_set_artist;
-		else if (strcmp(t->key, "album") == 0)
-			strf = taglib_tag_set_album;
-		else if (strcmp(t->key, "description") == 0)
-			strf = taglib_tag_set_comment;
-		else if (strcmp(t->key, "genre") == 0)
-			strf = taglib_tag_set_genre;
-		else if (strcmp(t->key, "title") == 0)
-			strf = taglib_tag_set_title;
-		else {
-			isstrf = false;
-			if (strcmp(t->key, "tracknumber") == 0)
-				uif = taglib_tag_set_track;
-			else if (strcmp(t->key, "date") == 0)
-				uif = taglib_tag_set_year;
-			else {
-				t_error_set(file,
-				    "%s backend can't handle `%s' tag", file->libid, t->key);
-				return (false);
-			}
-		}
-		if (isstrf)
-			strf(data->tag, t->val);
-		else {
-			char	*endptr;
-			unsigned long ulongval;
+	/* load the tlist */
+	TAILQ_FOREACH(t, tlist->tags, entries) {
+		if (strcmp(t->key, "title") == 0)
+			taglib_tag_set_title(data->tag, t->val)
+		else if (strcmp(t->key, "artist") == 0)
+			taglib_tag_set_artist(data->tag, t->val);
+		else if (strcmp(t->key, "year") == 0) {
 			ulongval = strtoul(t->val, &endptr, 10);
 			if (endptr == t->val || *endptr != '\0') {
-				t_error_set(file, "invalid unsigned int argument for %s: `%s'",
+				warnx("invalid unsigned int argument for %s: %s",
 				    t->key, t->val);
-				return (false);
 			} else if (ulongval > UINT_MAX) {
-				t_error_set(file, "invalid unsigned int argument for %s: `%s' (too large)",
+				warnx(file, "invalid unsigned int argument for %s: %s (too large)",
 				    t->key, t->val);
-				return (false);
 			} else if (errno) {
 				/* should be EINVAL (ERANGE catched by last condition). */
 				assert_fail();
-			}
-			uif(data->tag, (unsigned int)ulongval);
-		}
-		file->dirty++;
+			} else
+				taglib_tag_set_year(data->tag, (unsigned int)ulongval);
+		} else if (strcmp(t->key, "album") == 0)
+			taglib_tag_set_album(data->tag, t->val);
+		else if (strcmp(t->key, "track") == 0) {
+			ulongval = strtoul(t->val, &endptr, 10);
+			if (endptr == t->val || *endptr != '\0') {
+				warnx("invalid unsigned int argument for %s: %s",
+				    t->key, t->val);
+			} else if (ulongval > UINT_MAX) {
+				warnx(file, "invalid unsigned int argument for %s: %s (too large)",
+				    t->key, t->val);
+			} else if (errno) {
+				/* should be EINVAL (ERANGE catched by last condition). */
+				assert_fail();
+			} else
+				taglib_tag_set_track(data->tag, (unsigned int)ulongval);
+		} else if (strcmp(t->key, "genre") == 0)
+			taglib_tag_set_genre(data->tag, t->val);
+		else if (strcmp(t->key, "comment") == 0)
+			taglib_tag_set_comment(data->tag, "");
+		else
+			warnx("unsupported tag for TagLib backend: %s", t->key);
 	}
 
-	return (true);
+	if (!taglib_file_save(data->file))
+		return (-1);
+	return (0);
+}
+
+static void
+t_ftgeneric_clear(void *opaque)
+{
+	struct t_ftgeneric_data *data;
+
+	assert_not_null(opaque);
+	data = opaque;
+	assert(data->libid == libid);
+
+	taglib_file_free(data->file);
+	free(data);
 }
