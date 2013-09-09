@@ -33,7 +33,7 @@ static int build(char *path, mode_t omode);
 bool
 t_rename_safe(struct t_file *file, const char *newpath)
 {
-	extern bool dflag;
+	extern int dflag;
 	bool failed = false;
 	struct stat st;
 	const char *odir, *ndir;

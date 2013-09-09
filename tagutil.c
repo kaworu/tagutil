@@ -14,13 +14,20 @@
 #include "t_config.h"
 #include "t_toolkit.h"
 #include "t_file.h"
+#include "t_backend.h"
 #include "t_action.h"
 
 
+/*
+ * show usage and exit.
+ */
+void usage(void) t__dead2;
+
+
 /* options */
-bool	dflag = false; /* create directory with rename */
-bool	Nflag = false; /* answer no to all questions */
-bool	Yflag = false; /* answer yes to all questions */
+int	dflag; /* create directory with rename */
+int	Nflag; /* answer no to all questions */
+int	Yflag; /* answer yes to all questions */
 
 
 /*
@@ -31,7 +38,7 @@ int
 main(int argc, char *argv[])
 {
     	int	i, retval;
-	bool	write; /* write access needed */
+	int	write; /* write access needed */
     	struct t_file		*file;
 	struct t_action		*a;
 	struct t_actionQ	*aQ;
@@ -41,17 +48,17 @@ main(int argc, char *argv[])
 	while ((i = getopt(argc, argv, "dhNY")) != -1) {
 		switch ((char)i) {
 		case 'd':
-			dflag = true;
+			dflag = 1;
 			break;
 		case 'N':
 			if (Yflag)
-				errx(EINVAL, "cannot set both -Y and -N");
-			Nflag = true;
+				err(EINVAL, "cannot set both -Y and -N");
+			Nflag = 1;
 			break;
 		case 'Y':
 			if (Nflag)
-				errx(EINVAL, "cannot set both -Y and -N");
-			Yflag = true;
+				err(EINVAL, "cannot set both -Y and -N");
+			Yflag = 1;
 			break;
 		case 'h': /* FALLTHROUGH */
 		case '?': /* FALLTHROUGH */
@@ -64,9 +71,19 @@ main(int argc, char *argv[])
 	argv += optind;
 
 	aQ = t_actionQ_new(&argc, &argv, &write);
+	if (aQ == NULL) {
+		if (errno == ENOMEM)
+			err(ENOMEM, "malloc");
+		else /* if EINVAL */ {
+			(void)fprintf(stderr, "Try `%s -h' for help.\n",
+			    getprogname());
+			exit(EINVAL);
+		}
+		/* NOTREACHED */
+	}
 
 	if (argc == 0) {
-		errx(EINVAL, "missing file argument.\nrun `%s -h' to see help.",
+		errx(EINVAL, "missing file argument.\nTry `%s -h' for help.",
 		    getprogname());
 	}
 
@@ -103,4 +120,49 @@ main(int argc, char *argv[])
 	}
 	t_actionQ_delete(aQ);
 	return (retval);
+}
+
+
+/*
+ * show usage and exit.
+ */
+void
+usage(void)
+{
+	const struct t_backendQ *bQ = t_all_backends();
+	const struct t_backend	*b;
+
+	(void)fprintf(stderr, "tagutil v"T_TAGUTIL_VERSION "\n\n");
+	(void)fprintf(stderr, "usage: %s [OPTION]... [ACTION:ARG]... [FILE]...\n",
+	    getprogname());
+	(void)fprintf(stderr, "Modify or display music file's tag.\n");
+	(void)fprintf(stderr, "\n");
+
+	(void)fprintf(stderr, "Options:\n");
+	(void)fprintf(stderr, "  -h  show this help\n");
+	(void)fprintf(stderr, "  -d  create directory on rename if needed\n");
+	(void)fprintf(stderr, "  -Y  answer yes to all questions\n");
+	(void)fprintf(stderr, "  -N  answer no  to all questions\n");
+	(void)fprintf(stderr, "\n");
+
+	(void)fprintf(stderr, "Actions:\n");
+	(void)fprintf(stderr, "  add:TAG=VALUE    add a TAG=VALUE pair\n");
+	(void)fprintf(stderr, "  backend          print backend used\n");
+	(void)fprintf(stderr, "  clear:TAG        clear all tag TAG\n");
+	(void)fprintf(stderr, "  edit             prompt for editing\n");
+	(void)fprintf(stderr, "  filter:FILTER    use only files matching "
+	    "FILTER for next(s) action(s)\n");
+	(void)fprintf(stderr, "  load:PATH        load PATH yaml tag file\n");
+	(void)fprintf(stderr, "  path             print only filename's path\n");
+	(void)fprintf(stderr, "  print (or show)  print tags (default action)\n");
+	(void)fprintf(stderr, "  rename:PATTERN   rename to PATTERN\n");
+	(void)fprintf(stderr, "  set:TAG=VALUE    set TAG to VALUE\n");
+	(void)fprintf(stderr, "\n");
+
+	(void)fprintf(stderr, "Backend:\n");
+	TAILQ_FOREACH(b, bQ, entries)
+		(void)fprintf(stderr, "  %10s: %s\n", b->libid, b->desc);
+	(void)fprintf(stderr, "\n");
+
+	exit(1);
 }

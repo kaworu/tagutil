@@ -1,16 +1,16 @@
 /*
- * @(#)t_action.c
+ * t_action.c
  *
  * tagutil actions.
  */
+
 #include "t_config.h"
 #include "t_backend.h"
 #include "t_tag.h"
 #include "t_action.h"
 
-#include "t_renamer.h"
-
 #include "t_yaml.h"
+#include "t_renamer.h"
 
 #include "t_lexer.h"
 #include "t_parser.h"
@@ -19,98 +19,53 @@
 
 struct t_action_token {
 	const char		*word;
-	enum t_actionkind 	kind;
-	bool	need_arg;
+	enum t_actionkind 	 kind;
+	int			 argc;
 };
+
 
 /* keep this array sorted, as it is used with bsearch(3) */
 static struct t_action_token t_action_keywords[] = {
-	{ "add",	T_ACTION_ADD,		true  },
-	{ "backend",	T_ACTION_SHOWBACKEND,	false },
-	{ "clear",	T_ACTION_CLEAR,		true  },
-	{ "edit",	T_ACTION_EDIT,		false },
-	{ "filter",	T_ACTION_FILTER,	true  },
-	{ "load",	T_ACTION_LOAD,		true  },
-	{ "path",	T_ACTION_SHOWPATH,	false },
-	{ "print",	T_ACTION_SHOW,		false },
-	{ "rename",	T_ACTION_RENAME,	true  },
-	{ "set",	T_ACTION_SET,		true  },
-	{ "show",	T_ACTION_SHOW,		false },
+	{ "add",	T_ACTION_ADD,		1 },
+	{ "backend",	T_ACTION_BACKEND,	0 },
+	{ "clear",	T_ACTION_CLEAR,		1 },
+	{ "edit",	T_ACTION_EDIT,		0 },
+	{ "filter",	T_ACTION_FILTER,	1 },
+	{ "load",	T_ACTION_LOAD,		1 },
+	{ "path",	T_ACTION_PATH,		0 },
+	{ "print",	T_ACTION_PRINT,		0 },
+	{ "rename",	T_ACTION_RENAME,	1 },
+	{ "set",	T_ACTION_SET,		1 },
+	{ "show",	T_ACTION_PRINT,		0 },
 };
 
 
-/* action methods */
-static bool	t_action_add(struct t_action *self, struct t_file *file);
-static bool	t_action_backend(struct t_action *self, struct t_file *file);
-static bool	t_action_clear(struct t_action *self, struct t_file *file);
-static bool	t_action_edit(struct t_action *self, struct t_file *file);
-static bool	t_action_load(struct t_action *self, struct t_file *file);
-static bool	t_action_print(struct t_action *self, struct t_file *file);
-static bool	t_action_showpath(struct t_action *self, struct t_file *file);
-static bool	t_action_rename(struct t_action *self, struct t_file *file);
-static bool	t_action_set(struct t_action *self, struct t_file *file);
-static bool	t_action_filter(struct t_action *self, struct t_file *file);
-static bool	t_action_reload(struct t_action *self, struct t_file *file);
-static bool	t_action_saveifdirty(struct t_action *self, struct t_file *file);
-
-
 /*
- * create an action.
+ * create a new action.
+ * return NULL on error and set errno to ENOMEM or EINVAL
  */
 static struct t_action	*t_action_new(enum t_actionkind kind, char *arg);
+/* free an action and all internal ressources */
+static void		 t_action_delete(struct t_action *victim);
 
-/*
- * delete an action.
- */
-static void	t_action_delete(struct t_action *a);
-
-
-/*
- * show usage and exit.
- */
-void
-usage(void)
-{
-	const struct t_backendQ *bQ = t_all_backends();
-	const struct t_backend	*b;
-
-	(void)fprintf(stderr, "tagutil v"T_TAGUTIL_VERSION "\n\n");
-	(void)fprintf(stderr, "usage: %s [OPTION]... [ACTION:ARG]... [FILE]...\n",
-	    getprogname());
-	(void)fprintf(stderr, "Modify or display music file's tag.\n");
-	(void)fprintf(stderr, "\n");
-
-	(void)fprintf(stderr, "Options:\n");
-	(void)fprintf(stderr, "  -h  show this help\n");
-	(void)fprintf(stderr, "  -d  create directory on rename if needed\n");
-	(void)fprintf(stderr, "  -Y  answer yes to all questions\n");
-	(void)fprintf(stderr, "  -N  answer no  to all questions\n");
-	(void)fprintf(stderr, "\n");
-
-	(void)fprintf(stderr, "Actions:\n");
-	(void)fprintf(stderr, "  add:TAG=VALUE    add a TAG=VALUE pair\n");
-	(void)fprintf(stderr, "  backend          print backend used\n");
-	(void)fprintf(stderr, "  clear:TAG        clear all tag TAG\n");
-	(void)fprintf(stderr, "  edit             prompt for editing\n");
-	(void)fprintf(stderr, "  filter:FILTER    use only files matching "
-	    "FILTER for next(s) action(s)\n");
-	(void)fprintf(stderr, "  load:PATH        load PATH yaml tag file\n");
-	(void)fprintf(stderr, "  path             print only filename's path\n");
-	(void)fprintf(stderr, "  print (or show)  print tags (default action)\n");
-	(void)fprintf(stderr, "  rename:PATTERN   rename to PATTERN\n");
-	(void)fprintf(stderr, "  set:TAG=VALUE    set TAG to VALUE\n");
-	(void)fprintf(stderr, "\n");
-
-	(void)fprintf(stderr, "Backend:\n");
-	TAILQ_FOREACH(b, bQ, entries)
-		(void)fprintf(stderr, "  %10s: %s\n", b->libid, b->desc);
-	(void)fprintf(stderr, "\n");
-
-	exit(EXIT_SUCCESS);
-}
+/* action methods */
+static int	t_action_add(struct t_action *self, struct t_file *file);
+static int	t_action_backend(struct t_action *self, struct t_file *file);
+static int	t_action_clear(struct t_action *self, struct t_file *file);
+static int	t_action_edit(struct t_action *self, struct t_file *file);
+static int	t_action_load(struct t_action *self, struct t_file *file);
+static int	t_action_print(struct t_action *self, struct t_file *file);
+static int	t_action_path(struct t_action *self, struct t_file *file);
+static int	t_action_rename(struct t_action *self, struct t_file *file);
+static int	t_action_set(struct t_action *self, struct t_file *file);
+static int	t_action_filter(struct t_action *self, struct t_file *file);
+static int	t_action_reload(struct t_action *self, struct t_file *file);
+static int	t_action_save(struct t_action *self, struct t_file *file);
 
 
-static int t_action_token_cmp(const void *vstr, const void *vtoken)
+/* used by bsearch(3) in the t_action_keywords array */
+static int
+t_action_token_cmp(const void *vstr, const void *vtoken)
 {
 	const char	*str;
 	size_t		tlen, slen;
@@ -135,46 +90,53 @@ static int t_action_token_cmp(const void *vstr, const void *vtoken)
 
 
 struct t_actionQ *
-t_actionQ_new(int *argcp, char ***argvp, bool *writep)
+t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
 {
-	bool	write = false; /* at least one action want to write */
-	int 	argc;
-	char 	**argv;
-	struct t_action		*a;
-	struct t_actionQ	*aQ;
+	int write, argc;
+	char **argv;
+	struct t_action  *a;
+	struct t_actionQ *aQ;
 
-	assert_not_null(argcp);
-	assert_not_null(argvp);
+	assert_not_null(argc_p);
+	assert_not_null(argv_p);
 
-	argc = *argcp;
-	argv = *argvp;
-	aQ = xmalloc(sizeof(struct t_actionQ));
+	argc = *argc_p;
+	argv = *argv_p;
+	aQ = malloc(sizeof(struct t_actionQ));
+	if (aQ == NULL)
+		goto error;
 	TAILQ_INIT(aQ);
 
 	while (argc > 0) {
 		char	*arg;
 		struct t_action_token *t;
 
-		t = bsearch(*argv, t_action_keywords, countof(t_action_keywords),
-		    sizeof(*t_action_keywords), t_action_token_cmp);
+		t = bsearch(*argv, t_action_keywords,
+		    countof(t_action_keywords), sizeof(*t_action_keywords),
+		    t_action_token_cmp);
 		if (t == NULL) {
 			/* it doesn't look like an option */
 			break;
 		}
-		if (t->need_arg) {
+		if (t->argc == 0)
+			arg = NULL;
+		else if (t->argc == 1) {
 			arg = strchr(*argv, ':');
 			if (arg == NULL) {
-				warnx("option requires an argument -- %s", t->word);
-				usage();
+				warnx("option %s requires an argument", t->word);
+				errno = EINVAL;
+				goto error;
 				/* NOTREACHED */
 			}
 			arg++; /* skip : */
-		} else
-			arg = NULL;
+		} else /* if t->argc > 1 */
+			assert_fail();
 
 		switch (t->kind) {
 		case T_ACTION_FILTER:
-			a = t_action_new(T_ACTION_SAVE_IF_DIRTY, NULL);
+			a = t_action_new(T_ACTION_SAVE, NULL);
+			if (a == NULL)
+				goto error;
 			TAILQ_INSERT_TAIL(aQ, a, entries);
 			/* FALLTHROUGH */
 		case T_ACTION_ADD: /* FALLTHROUGH */
@@ -182,61 +144,77 @@ t_actionQ_new(int *argcp, char ***argvp, bool *writep)
 		case T_ACTION_EDIT: /* FALLTHROUGH */
 		case T_ACTION_LOAD: /* FALLTHROUGH */
 		case T_ACTION_SET: /* FALLTHROUGH */
-		case T_ACTION_SHOW: /* FALLTHROUGH */
-		case T_ACTION_SHOWBACKEND: /* FALLTHROUGH */
-		case T_ACTION_SHOWPATH:
+		case T_ACTION_PRINT: /* FALLTHROUGH */
+		case T_ACTION_BACKEND: /* FALLTHROUGH */
+		case T_ACTION_PATH:
 			a = t_action_new(t->kind, arg);
+			if (a == NULL)
+				goto error;
 			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		case T_ACTION_RENAME:
-			a = t_action_new(T_ACTION_SAVE_IF_DIRTY, NULL);
+			a = t_action_new(T_ACTION_SAVE, NULL);
+			if (a == NULL)
+				goto error;
 			TAILQ_INSERT_TAIL(aQ, a, entries);
 			a = t_action_new(T_ACTION_RENAME, arg);
+			if (a == NULL)
+				goto error;
 			TAILQ_INSERT_TAIL(aQ, a, entries);
-			write = (write || a->write);
 			a = t_action_new(T_ACTION_RELOAD, NULL);
+			if (a == NULL)
+				goto error;
 			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
-		default:
-			assert_fail();
 		}
-		write = (write || a->write);
 		argc--;
 		argv++;
 	}
 
 	if (TAILQ_EMPTY(aQ)) {
 		/* no action given, fallback to default which is show */
-		a = t_action_new(T_ACTION_SHOW, NULL);
+		a = t_action_new(T_ACTION_PRINT, NULL);
+		if (a == NULL)
+			goto error;
 		TAILQ_INSERT_TAIL(aQ, a, entries);
 	}
 
 	/* check if write access is needed */
-	if (write) {
-		a = t_action_new(T_ACTION_SAVE_IF_DIRTY, NULL);
+	write = 0;
+	TAILQ_FOREACH(a, aQ, entries)
+		write += a->write;
+	if (write > 0) {
+		a = t_action_new(T_ACTION_SAVE, NULL);
+		if (a == NULL)
+			goto error;
 		TAILQ_INSERT_TAIL(aQ, a, entries);
 	}
-	if (writep != NULL)
-		*writep = write;
 
-	*argcp = argc;
-	*argvp = argv;
+	if (write_p != NULL)
+		*write_p = write;
+	*argc_p = argc;
+	*argv_p = argv;
 	return (aQ);
+	/* NOTREACHED */
+error:
+	t_actionQ_delete(aQ);
+	assert(errno == EINVAL || errno == ENOMEM);
+	return (NULL);
 }
 
 
 void
 t_actionQ_delete(struct t_actionQ *aQ)
 {
-	struct t_action	*victim, *next;
 
-	assert_not_null(aQ);
-
-	victim = TAILQ_FIRST(aQ);
-	while (victim != NULL) {
-		next = TAILQ_NEXT(victim, entries);
-		t_action_delete(victim);
-		victim = next;
+	if (aQ != NULL) {
+		struct t_action *victim, *next;
+		victim = TAILQ_FIRST(aQ);
+		while (victim != NULL) {
+			next = TAILQ_NEXT(victim, entries);
+			t_action_delete(victim);
+			victim = next;
+		}
 	}
 	free(aQ);
 }
@@ -245,137 +223,153 @@ t_actionQ_delete(struct t_actionQ *aQ)
 static struct t_action *
 t_action_new(enum t_actionkind kind, char *arg)
 {
-	char		*key, *val, *eq;
-	struct t_action		*a;
-	struct t_taglist	*T;
+	char *key, *val, *eq;
+	struct t_action *a;
+	struct t_taglist *tlist = NULL;
 
-	a = xcalloc(1, sizeof(struct t_action));
+	a = calloc(1, sizeof(struct t_action));
+	if (a == NULL)
+		goto error;
 	a->kind = kind;
+
 	switch (a->kind) {
 	case T_ACTION_ADD:
 		assert_not_null(arg);
-		if ((T = t_taglist_new()) == NULL)
-			err(ENOMEM, "malloc");
+		if ((tlist = t_taglist_new()) == NULL)
+			goto error;
 		key = arg;
 		eq = strchr(key, '=');
-		if (eq == NULL)
-			errx(EINVAL, "`%s': invalid `add' argument: `=' is missing.", key);
+		if (eq == NULL) {
+			warnc(errno = EINVAL, "add: missing '='");
+			goto error;
+		}
 		*eq = '\0';
 		val = eq + 1;
-		if (t_taglist_insert(T, key, val) == -1)
-			err(ENOMEM, "malloc");
-		a->data  = T;
-		a->write = true;
+		if (t_taglist_insert(tlist, key, val) != 0)
+			goto error;
+		a->data  = tlist;
+		a->write = 1;
 		a->apply = t_action_add;
 		break;
-	case T_ACTION_SHOWBACKEND:
+	case T_ACTION_BACKEND:
 		a->apply = t_action_backend;
 		break;
 	case T_ACTION_CLEAR:
 		assert_not_null(arg);
 		if (arg[0] == '\0')
-			T = NULL;
+			tlist = NULL;
 		else {
-			if ((T = t_taglist_new()) == NULL)
-				err(ENOMEM, "malloc");
-			if ((t_taglist_insert(T, arg, "")) == -1)
-				err(ENOMEM, "malloc");
+			if ((tlist = t_taglist_new()) == NULL)
+				goto error;
+			if ((t_taglist_insert(tlist, arg, "")) != 0)
+				goto error;
 		}
-		a->data  = T;
-		a->write = true;
+		a->data  = tlist;
+		a->write = 1;
 		a->apply = t_action_clear;
 		break;
 	case T_ACTION_EDIT:
-		a->write = true;
+		a->write = 1;
 		a->apply = t_action_edit;
 		break;
 	case T_ACTION_LOAD:
 		assert_not_null(arg);
 		a->data  = arg;
-		a->write = true;
+		a->write = 1;
 		a->apply = t_action_load;
 		break;
-	case T_ACTION_SHOW:
+	case T_ACTION_PRINT:
 		a->apply = t_action_print;
 		break;
-	case T_ACTION_SHOWPATH:
-		a->apply = t_action_showpath;
+	case T_ACTION_PATH:
+		a->apply = t_action_path;
 		break;
 	case T_ACTION_RENAME:
 		assert_not_null(arg);
-		if (arg[0] == '\0')
-			errx(EINVAL, "empty rename pattern");
+		if (arg[0] == '\0') {
+			warnc(errno = EINVAL, "empty rename pattern");
+			goto error;
+		}
 		a->data  = t_rename_parse(arg);
-		a->write = true;
+		/* FIXME: error checking on t_rename_parse() */
+		a->write = 1;
 		a->apply = t_action_rename;
 		break;
 	case T_ACTION_SET:
 		assert_not_null(arg);
-		if ((T = t_taglist_new()) == NULL)
-			err(ENOMEM, "malloc");
+		if ((tlist = t_taglist_new()) == NULL)
+			goto error;
 		key = arg;
 		eq = strchr(key, '=');
 		if (eq == NULL)
-			errx(EINVAL, "`%s': invalid `set' argument: `=' is missing.", key);
+			warnc(errno = EINVAL, "set: missing '='");
 		*eq = '\0';
 		val = eq + 1;
-		if ((t_taglist_insert(T, key, val)) == -1)
-			err(ENOMEM, "malloc");
-		a->data  = T;
-		a->write = true;
+		if ((t_taglist_insert(tlist, key, val)) != 0)
+			goto error;
+		a->data  = tlist;
+		a->write = 1;
 		a->apply = t_action_set;
 		break;
 	case T_ACTION_FILTER:
 		assert_not_null(arg);
 		a->data  = t_parse_filter(t_lexer_new(arg));
+		/* FIXME: error checking on t_parse_filter & t_lexer_new */
 		a->apply = t_action_filter;
 		break;
 	case T_ACTION_RELOAD:
 		a->apply = t_action_reload;
 		break;
-	case T_ACTION_SAVE_IF_DIRTY:
-		a->write = false; /* writting is not needed after a T_ACTION_SAVE_IF_DIRTY */
-		a->apply = t_action_saveifdirty;
+	case T_ACTION_SAVE:
+		a->write = 1;
+		a->apply = t_action_save;
 		break;
 	default:
 		assert_fail();
 	}
+
 	return (a);
+	/* NOTREACHED */
+error:
+	t_taglist_delete(tlist);
+	t_action_delete(a);
+	return (NULL);
 }
 
 
 static void
-t_action_delete(struct t_action *a)
+t_action_delete(struct t_action *victim)
 {
-	int	i;
-	struct token	**tknv;
+	int i;
+	struct token **tknv;
 
-	assert_not_null(a);
+	if (victim == NULL)
+		return;
 
-	switch (a->kind) {
+	switch (victim->kind) {
 	case T_ACTION_ADD:	/* FALLTHROUGH */
 	case T_ACTION_CLEAR:	/* FALLTHROUGH */
 	case T_ACTION_SET:
-		t_taglist_delete(a->data);
+		t_taglist_delete(victim->data);
 		break;
 	case T_ACTION_RENAME:
-		tknv = a->data;
+		tknv = victim->data;
 		for (i = 0; tknv[i]; i++)
 			free(tknv[i]);
 		free(tknv);
 		break;
 	case T_ACTION_FILTER:
-		t_ast_destroy(a->data);
+		t_ast_destroy(victim->data);
 		break;
 	default:
 		/* do nada */
 		break;
 	}
-	free(a);
+	free(victim);
 }
 
 
-static bool
+static int
 t_action_add(struct t_action *self, struct t_file *file)
 {
 
@@ -387,20 +381,20 @@ t_action_add(struct t_action *self, struct t_file *file)
 }
 
 
-static bool
+static int
 t_action_backend(struct t_action *self, struct t_file *file)
 {
 
 	assert_not_null(self);
 	assert_not_null(file);
-	assert(self->kind == T_ACTION_SHOWBACKEND);
+	assert(self->kind == T_ACTION_BACKEND);
 
 	(void)printf("%s %s\n", file->libid, file->path);
 	return (true);
 }
 
 
-static bool
+static int
 t_action_clear(struct t_action *self, struct t_file *file)
 {
 
@@ -412,10 +406,10 @@ t_action_clear(struct t_action *self, struct t_file *file)
 }
 
 
-static bool
+static int
 t_action_edit(struct t_action *self, struct t_file *file)
 {
-	bool	retval = true;
+	int	retval = true;
 	char	*tmp_file, *yaml, *question;
 	FILE	*stream;
 	struct t_action *load;
@@ -459,13 +453,13 @@ t_action_edit(struct t_action *self, struct t_file *file)
 }
 
 
-static bool
+static int
 t_action_load(struct t_action *self, struct t_file *file)
 {
-	bool	retval = true;
+	int	retval = true;
 	FILE	*stream;
 	const char *path;
-	struct t_taglist *T;
+	struct t_taglist *tlist;
 
 	assert_not_null(self);
 	assert_not_null(file);
@@ -480,20 +474,20 @@ t_action_load(struct t_action *self, struct t_file *file)
 			err(errno, "fopen %s", path);
 	}
 
-	T = t_yaml2tags(file, stream);
+	tlist = t_yaml2tags(file, stream);
 	if (stream != stdin)
 		(void)fclose(stream);
-	if (T == NULL)
+	if (tlist == NULL)
 		return (false);
 	retval = file->clear(file, NULL) &&
-	    file->add(file, T) &&
+	    file->add(file, tlist) &&
 	    file->save(file);
-	t_taglist_delete(T);
+	t_taglist_delete(tlist);
 	return (retval);
 }
 
 
-static bool
+static int
 t_action_print(struct t_action *self, struct t_file *file)
 {
 	char	*yaml;
@@ -501,7 +495,7 @@ t_action_print(struct t_action *self, struct t_file *file)
 
 	assert_not_null(self);
 	assert_not_null(file);
-	assert(self->kind == T_ACTION_SHOW);
+	assert(self->kind == T_ACTION_PRINT);
 
 	tlist = file->get(file, NULL);
 	if (tlist == NULL)
@@ -516,23 +510,23 @@ t_action_print(struct t_action *self, struct t_file *file)
 }
 
 
-static bool
-t_action_showpath(struct t_action *self, struct t_file *file)
+static int
+t_action_path(struct t_action *self, struct t_file *file)
 {
 
 	assert_not_null(self);
 	assert_not_null(file);
-	assert(self->kind == T_ACTION_SHOWPATH);
+	assert(self->kind == T_ACTION_PATH);
 
 	(void)printf("%s\n", file->path);
 	return (true);
 }
 
 
-static bool
+static int
 t_action_rename(struct t_action *self, struct t_file *file)
 {
-	bool	retval = true;
+	int	retval = true;
 	char	*ext, *result, *fname, *question;
 	const char	*dirn;
 	struct t_token **tknv;
@@ -580,7 +574,7 @@ t_action_rename(struct t_action *self, struct t_file *file)
 }
 
 
-static bool
+static int
 t_action_set(struct t_action *self, struct t_file *file)
 {
 
@@ -593,7 +587,7 @@ t_action_set(struct t_action *self, struct t_file *file)
 
 
 /* FIXME: error handling? */
-static bool
+static int
 t_action_filter(struct t_action *self, struct t_file *file)
 {
 	const struct t_ast *ast;
@@ -608,7 +602,7 @@ t_action_filter(struct t_action *self, struct t_file *file)
 }
 
 
-static bool
+static int
 t_action_reload(struct t_action *self, struct t_file *file)
 {
 	struct t_file	tmp;
@@ -630,13 +624,13 @@ t_action_reload(struct t_action *self, struct t_file *file)
 }
 
 
-static bool
-t_action_saveifdirty(struct t_action *self, struct t_file *file)
+static int
+t_action_save(struct t_action *self, struct t_file *file)
 {
 
 	assert_not_null(self);
 	assert_not_null(file);
-	assert(self->kind == T_ACTION_SAVE_IF_DIRTY);
+	assert(self->kind == T_ACTION_SAVE);
 
 	return (!file->dirty || file->save(file));
 }
