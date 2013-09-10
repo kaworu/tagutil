@@ -173,7 +173,7 @@ t_ftoggvorbis_write(void *opaque, const struct t_taglist *tlist)
 	if ((sb = sbuf_new(NULL, NULL, BUFSIZ + 1, SBUF_FIXEDLEN)) == NULL)
 		goto cleanup;
 	/* open the write file pointer */
-	if (xasprintf(&tmp, "%s/.__%s_XXXXXX", t_dirname(data->path), getprogname()) < 0)
+	if (asprintf(&tmp, "%s/.__%s_XXXXXX", t_dirname(data->path), getprogname()) < 0)
 		goto cleanup;
 	if (mkstemps(tmp, 0) == -1)
 		goto cleanup;

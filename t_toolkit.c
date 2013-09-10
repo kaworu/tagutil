@@ -15,6 +15,31 @@
 #include "t_action.h"
 
 
+char *
+t_strtoupper(char *str)
+{
+	char *s;
+
+	assert_not_null(str);
+
+	for (s = str; *s != '\0'; s++)
+		*s = toupper(*s);
+	return (str);
+}
+
+
+char *
+t_strtolower(char *str)
+{
+	char *s;
+
+	assert_not_null(str);
+
+	for (s = str; *s != '\0'; s++)
+		*s = tolower(*s);
+	return (str);
+}
+
 
 bool
 t_yesno(const char *question)

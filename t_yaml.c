@@ -431,7 +431,9 @@ t_yaml_parse_scalar_key(struct t_yaml_fsm *FSM,
     assert_not_null(e);
 
     if (e->type == YAML_SCALAR_EVENT) {
-        FSM->parsed_key = xcalloc(e->data.scalar.length + 1, sizeof(char));
+        FSM->parsed_key = calloc(e->data.scalar.length + 1, sizeof(char));
+	if (FSM->parsed_key == NULL)
+		err(ENOMEM, "calloc");
         (void)memcpy(FSM->parsed_key, e->data.scalar.value, e->data.scalar.length);
         FSM->handle = t_yaml_parse_scalar_value;
     }
@@ -455,12 +457,16 @@ t_yaml_parse_scalar_value(struct t_yaml_fsm *FSM,
 	assert_not_null(e);
 
 	if (e->type == YAML_SCALAR_EVENT) {
-		val = xcalloc(e->data.scalar.length + 1, sizeof(char));
+		val = calloc(e->data.scalar.length + 1, sizeof(char));
+		if (val == NULL)
+			err(ENOMEM, "calloc");
 		(void)memcpy(val, e->data.scalar.value, e->data.scalar.length);
 		if ((t_taglist_insert(FSM->tlist, FSM->parsed_key, val)) == -1)
 			err(ENOMEM, "malloc");
-		freex(FSM->parsed_key);
-		freex(val);
+		free(FSM->parsed_key);
+		FSM->parsed_key = NULL;
+		free(val);
+		val = NULL;
 		FSM->handle = t_yaml_parse_mapping_end;
 	} else {
 		t_error_set(FSM, "expected %s (value), got %s",

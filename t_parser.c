@@ -74,7 +74,9 @@ t_ast_new(struct t_ast *lhs, struct t_token *t,
 
     assert_not_null(t);
 
-    ret = xmalloc(sizeof(struct t_ast));
+    ret = malloc(sizeof(struct t_ast));
+    if (ret == NULL)
+    	    err(ENOMEM, "malloc");
     ret->lhs = lhs;
     ret->rhs = rhs;
     ret->token = t;
@@ -95,8 +97,9 @@ t_ast_destroy(struct t_ast *victim)
         t_ast_destroy(victim->rhs);
         if (victim->token->kind == T_REGEX)
             regfree(&victim->token->val.regex);
-        freex(victim->token);
-        freex(victim);
+        free(victim->token);
+	victim->token = NULL;
+        free(victim);
     }
 }
 
@@ -115,7 +118,8 @@ t_parse_filter(struct t_lexer *L)
                 t->str);
         /* NOTREACHED */
     }
-    freex(t);
+    free(t);
+    t = NULL;
 
     (void)t_lex_next_token(L);
     ret = t_parse_condition(L);
@@ -126,7 +130,8 @@ t_parse_filter(struct t_lexer *L)
                 t->str);
         /* NOTREACHED */
     }
-    freex(t);
+    free(t);
+    t = NULL;
 
     t_lexer_destroy(L);
     return (ret);
@@ -265,8 +270,8 @@ t_parse_nestedcond(struct t_lexer *L)
 
     ret->start = oparen->start;
     ret->end   = cparen->end;
-    freex(oparen);
-    freex(cparen);
+    free(oparen);
+    free(cparen);
     return (ret);
 }
 

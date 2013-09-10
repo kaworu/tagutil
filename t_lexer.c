@@ -25,7 +25,9 @@ t_lexer_new(const char *source)
     assert_not_null(source);
 
     len = strlen(source) + 1;
-    L = xmalloc(sizeof(struct t_lexer) + len);
+    L = malloc(sizeof(struct t_lexer) + len);
+    if (L == NULL)
+    	    err(ENOMEM, "malloc");
 
     L->srclen = len - 1;
     s = (char *)(L + 1);
@@ -44,7 +46,7 @@ t_lexer_destroy(struct t_lexer *L)
 
     assert_not_null(L);
 
-    freex(L);
+    free(L);
 }
 
 
@@ -127,7 +129,9 @@ t_lex_number(struct t_lexer *L, struct t_token *t)
         }
         end = L->source + L->cindex - 1;
         assert(end >= start);
-        num = xcalloc((end - start + 1) + 1, sizeof(char));
+        num = calloc((end - start + 1) + 1, sizeof(char));
+	if (num == NULL)
+		err(ENOMEM, "calloc");
         memcpy(num, start, end - start + 1);
         if (isfp) {
             double doubleval;
@@ -170,7 +174,8 @@ t_lex_number(struct t_lexer *L, struct t_token *t)
             }
             t->val.integer = (int)longval;
         }
-        freex(num);
+        free(num);
+	num = NULL;
     }
     t->end = L->cindex - 1;
 }
@@ -214,7 +219,9 @@ t_lex_strlit_or_regex(struct t_lexer *L, struct t_token **tptr)
 
     /* do the copy */
     t->slen  = t->end - t->start - skip - 1;
-    t = xrealloc(t, sizeof(struct t_token) + t->slen + 1);
+    t = realloc(t, sizeof(struct t_token) + t->slen + 1);
+    if (t == NULL)
+    	    err(ENOMEM, "realloc");
     *tptr = t;
     t->val.str = (char *)(t + 1);
     t_lexc_move_to(L, t->start);
@@ -270,7 +277,9 @@ regopt_error:
                 (mflag ? REG_NEWLINE : 0) );
 
         if (error != 0) {
-            errbuf = xcalloc(BUFSIZ, sizeof(char));
+            errbuf = calloc(BUFSIZ, sizeof(char));
+	if (errbuf == NULL)
+		err(ENOMEM, "calloc");
             (void)regerror(error, &t->val.regex, errbuf, BUFSIZ);
             t_lex_error(L, t->start, t->end,
                     "can't compile REGEX /%s/: %s", s, errbuf);
@@ -316,7 +325,9 @@ t_lex_tagkey(struct t_lexer *L, struct t_token **tptr,
 
         /* do the copy */
         t->slen = copyend - t->start - 2 - skip;
-        t = xrealloc(t, sizeof(struct t_token) + t->slen + 1);
+        t = realloc(t, sizeof(struct t_token) + t->slen + 1);
+    	    if (t == NULL)
+    	    	    err(ENOMEM, "realloc");
         *tptr = t;
         t->val.str = (char *)(t + 1);
         t_lexc_move_to(L, t->start + 2); /* move on first tagkeychar */
@@ -350,7 +361,9 @@ t_lex_tagkey(struct t_lexer *L, struct t_token **tptr,
             t_lex_tagidx(L, t, allow_star_modifier);
         t->end = L->cindex - 1;
         t->slen = copyend - t->start;
-        t = xrealloc(t, sizeof(struct t_token) + t->slen + 1);
+        t = realloc(t, sizeof(struct t_token) + t->slen + 1);
+    	    if (t == NULL)
+    	    	    err(ENOMEM, "realloc");
         *tptr = t;
         t->val.str = (char *)(t + 1);
         memcpy(t->val.str, L->source + t->start + 1, t->slen);
@@ -414,7 +427,9 @@ t_lex_next_token(struct t_lexer *L)
 
     assert_not_null(L);
 
-    t = xcalloc(1, sizeof(struct t_token));
+    t = calloc(1, sizeof(struct t_token));
+	if (t == NULL)
+		err(ENOMEM, "calloc");
 
     /* check for T_START */
     if (L->cindex == -1) {
@@ -693,7 +708,8 @@ main(int argc, char *argv[])
         t = t_lex_next_token(L);
         the_end = t_lex_token_debug(t);
         (void)printf(" ");
-        freex(t);
+        free(t);
+	t = NULL;
     }
     t_lexer_destroy(L);
 

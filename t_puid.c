@@ -25,8 +25,11 @@ puid_create(const struct audio_data *ad)
         fflush(stdout);
         ret = NULL;
     }
-    else
-        ret = xstrdup(fprint);
+    else {
+        ret = strdup(fprint);
+	if (ret == NULL)
+		err(ENOMEM, "strdup");
+    }
 
     return (ret);
 }

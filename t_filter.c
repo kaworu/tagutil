@@ -174,7 +174,8 @@ t_filter_eval_cmp(struct t_tune *tune,
                     if ((s = t_taglist_join(rlist, " - ")) == NULL)
 		    	    err(ENOMEM, "malloc");
                     ret = t_filter_eval_str_cmp(tune, s, rhs, f);
-                    freex(s);
+                    free(s);
+		    s = NULL;
                     break;
                 case T_TOKEN_STAR_OR_MOD:
                     ret = false;
@@ -262,7 +263,8 @@ t_filter_eval_match(struct t_tune *tune,
                 if ((s = t_taglist_join(rlist, " - ")) == NULL)
 			err(ENOMEM, "malloc");
                 ret = t_filter_regexec(r, s);
-                freex(s);
+                free(s);
+		s = NULL;
                 break;
             case T_TOKEN_STAR_OR_MOD:
                 ret = false;
@@ -327,7 +329,9 @@ t_filter_regexec(const regex_t *r, const char *s)
         ret = false;
         break;
     default:
-        errmsg = xcalloc(BUFSIZ, sizeof(char));
+        errmsg = calloc(BUFSIZ, sizeof(char));
+	if (errmsg == NULL)
+		err(ENOMEM, "calloc");
         (void)regerror(error, r, errmsg, BUFSIZ);
         errx(-1, "filter error, can't exec regex: `%s'", errmsg);
         /* NOTREACHED */
@@ -445,7 +449,8 @@ t_filter_eval_int_cmp(struct t_tune *tune,
                 if ((s = t_taglist_join(rlist, " - ")) == NULL)
 			err(ENOMEM, "malloc");
                 ret = (*f)((double)(i - strtol(s, NULL, 10)));
-                freex(s);
+                free(s);
+		s = NULL;
                 break;
             case T_TOKEN_STAR_OR_MOD:
                 ret = false;
@@ -524,7 +529,8 @@ t_filter_eval_double_cmp(struct t_tune *tune,
                 if ((s = t_taglist_join(rlist, " - ")) == NULL)
 			err(ENOMEM, "malloc");
                 ret = (*f)(d - strtod(s, NULL));
-                freex(s);
+                free(s);
+		s = NULL;
                 break;
             case T_TOKEN_STAR_OR_MOD:
                 ret = false;
@@ -603,7 +609,8 @@ t_filter_eval_str_cmp(struct t_tune *tune,
                 if ((s = t_taglist_join(rlist, " - ")) == NULL)
 			err(ENOMEM, "malloc");
                 ret = (*f)((double)strcmp(str, s));
-                freex(s);
+                free(s);
+		s = NULL;
                 break;
             case T_TOKEN_STAR_OR_MOD:
                 TAILQ_FOREACH(t, rlist->tags, entries) {

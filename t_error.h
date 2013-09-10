@@ -22,7 +22,7 @@
 
 /* set the error message (with printflike syntax) */
 #define	t_error_set(o, fmt, ...) \
-    do { (void)xasprintf(&t_error_msg(o), fmt, ##__VA_ARGS__); } while (/*CONSTCOND*/0)
+    do { assert(asprintf(&t_error_msg(o), fmt, ##__VA_ARGS__) > 0); } while (/*CONSTCOND*/0)
 
 /* reset the error message. free it if needed, set to NULL */
 #define	t_error_clear(o) \
@@ -76,6 +76,6 @@ t_error_delete(struct t_error *e)
 	assert_not_null(e);
 
 	t_error_clear(e);
-	freex(e);
+	free(e);
 }
 #endif /* not T_ERROR_H */

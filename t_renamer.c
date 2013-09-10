@@ -101,21 +101,27 @@ t_rename_parse(const char *pattern)
     L = t_lexer_new(pattern);
     (void)t_rename_lex_next_token(L);
     assert(L->current->kind == T_START);
-    freex(L->current);
+    free(L->current);
+    L->current = NULL;
 
     count = 0;
     len   = 16;
-    ret   = xcalloc(len + 1, sizeof(struct t_token *));
+    ret   = calloc(len + 1, sizeof(struct t_token *));
+	if (ret == NULL)
+		err(ENOMEM, "calloc");
 
     while (t_rename_lex_next_token(L)->kind != T_END) {
             assert(L->current->kind == T_TAGKEY || L->current->kind == T_STRING);
             if (count == (len - 1)) {
                 len = len * 2;
-                ret = xrealloc(ret, (len + 1) * sizeof(struct t_token *));
+                ret = realloc(ret, (len + 1) * sizeof(struct t_token *));
+    	    	    if (ret == NULL)
+    	    	    	    err(ENOMEM, "realloc");
             }
             ret[count++] = L->current;
     }
-    freex(L->current);
+    free(L->current);
+    L->current = NULL;
     t_lexer_destroy(L);
 
     ret[count] = NULL;
@@ -132,7 +138,9 @@ t_rename_lex_next_token(struct t_lexer *L)
 
 	assert_not_null(L);
 
-	t = xcalloc(1, sizeof(struct t_token));
+	t = calloc(1, sizeof(struct t_token));
+	if (t == NULL)
+		err(ENOMEM, "calloc");
 
 	/* check for T_START */
 	if (L->cindex == -1) {
@@ -180,7 +188,9 @@ t_rename_lex_next_token(struct t_lexer *L)
 		if (sbuf_finish(sb) == -1)
 			err(errno, "sbuf_finish");
 		t->slen = sbuf_len(sb);
-		t = xrealloc(t, sizeof(struct t_token) + t->slen + 1);
+		t = realloc(t, sizeof(struct t_token) + t->slen + 1);
+    	    	    if (t == NULL)
+    	    	    	    err(ENOMEM, "realloc");
 		t->val.str = (char *)(t + 1);
 		assert(strlcpy(t->val.str, sbuf_data(sb), t->slen + 1) == t->slen);
 		assert(strlen(t->val.str) == t->slen);
