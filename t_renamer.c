@@ -206,9 +206,9 @@ char *
 t_rename_eval(struct t_tune *tune, struct t_token **ts)
 {
 	const struct t_token *tkn;
-	struct sbuf *sb;
+	struct sbuf *sb = NULL;
 	const struct t_taglist *tlist;
-	struct t_taglist *l;
+	struct t_taglist *l = NULL;
 	struct t_tag *t;
 	char *ret, *s = NULL, *slash;
 
@@ -216,10 +216,10 @@ t_rename_eval(struct t_tune *tune, struct t_token **ts)
 	assert_not_null(tune);
 
 	tlist = t_tune_tags(tune);
-	if (tlist == NULL)
-		goto error;
 	sb = sbuf_new_auto();
 	if (sb == NULL)
+		goto error;
+	if (tlist == NULL)
 		goto error;
 
 	tkn = *ts;
