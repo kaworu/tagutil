@@ -22,19 +22,27 @@
  *
  * @return
  *   a string containing YAML data that must be passed to free(3) after use. On
- *   error, NULL is returned.
+ *   error, NULL is returned and errno is set to ENOMEM.
  */
 char *	t_tags2yaml(const struct t_taglist *tlist, const char *path);
 
 
 /*
- * read a yaml file.
+ * Parse a yaml file and create a t_taglist based on its content.
  *
- * On error t_error_msg(file) contains an error message and NULL is
- * returned. Otherwhise the loaded t_taglist is returned.
+ * @param fp
+ *   a file pointer to the input stream that will passed to the YAML parser.
  *
- * returned value has to be free()d (see t_taglist_delete()).
+ * @param errmsg_p
+ *   a pointer to an error message. If not NULL and an error arise, it will be
+ *   set to a string with a descriptive error message. The error message string
+ *   should be passed to free(3) after use. If an error occured (NULL is
+ *   returned) and errmsg_p is NULL too, malloc(3) failed.
+ *
+ * @return
+ *   a t_taglist that should be passed to t_taglist_delete() after use. On
+ *   error, NULL is returned and the errmsg_p is set.
  */
-struct t_taglist * t_yaml2tags(struct t_file *file, FILE *stream);
+struct t_taglist	*t_yaml2tags(FILE *fp, char **errmsg_p);
 
 #endif /* not T_YAML_H */

@@ -78,14 +78,15 @@ t_tune_set_tags(struct t_tune *tune, const struct t_taglist *tlist)
 	assert_not_null(tlist);
 	/* this is not really needed because we would return -1, but we ensure a safe initialization */
 	assert_not_null(tune->backend);
-	assert(tune->tlist != tlist);
 
-	t_taglist_delete(tune->tlist);
-	tune->tlist = t_taglist_clone(tlist);
-	if (tune->tlist == NULL)
-		return (-1);
+	if (tune->tlist != tlist) {
+		t_taglist_delete(tune->tlist);
+		tune->tlist = t_taglist_clone(tlist);
+		if (tune->tlist == NULL)
+			return (-1);
+		tune->dirty++;
+	}
 
-	tune->dirty++;
 	return (0);
 }
 

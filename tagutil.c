@@ -13,7 +13,7 @@
  */
 #include "t_config.h"
 #include "t_toolkit.h"
-#include "t_file.h"
+#include "t_tune.h"
 #include "t_backend.h"
 #include "t_action.h"
 
@@ -39,7 +39,7 @@ main(int argc, char *argv[])
 {
     	int	i, retval;
 	int	write; /* write access needed */
-    	struct t_file		*file;
+    	struct t_tune		 tune;
 	struct t_action		*a;
 	struct t_actionQ	*aQ;
 
@@ -100,23 +100,25 @@ main(int argc, char *argv[])
 			continue;
 		}
 
-#include "t_file_compat.h"
-		file = t_file_new(path);
-		if (file == NULL) {
-			warnx("`%s' unsupported file format", path);
+		if (t_tune_init(&tune, path) != 0) {
+			if (errno == ENOMEM)
+				err(ENOMEM, "malloc");
+			warnx("%s: unsupported file format", path);
 			retval = EINVAL;
 			continue;
 		}
 
-		/* apply every action asked to the file */
+		/* apply every actions */
 		TAILQ_FOREACH(a, aQ, entries) {
-			bool ok = (*a->apply)(a, file);
-			if (!ok) {
-				warnx("%s: %s", file->path, t_error_msg(file));
+			if (a->apply(a, &tune) != 0) {
+				/*
+				 * prevent further action on this particular
+				 * file.
+				 */
 				break;
 			}
 		}
-        	file->destroy(file);
+		t_tune_clear(&tune);
 	}
 	t_actionQ_delete(aQ);
 	return (retval);

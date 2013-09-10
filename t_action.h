@@ -7,6 +7,7 @@
  */
 #include "t_config.h"
 #include "t_toolkit.h"
+#include "t_tune.h"
 
 
 /* type of action that can be performed */
@@ -30,9 +31,9 @@ enum t_actionkind {
 /* action with (or without) argument to proceed */
 struct t_action {
 	enum t_actionkind kind;
-	void	*data; /* argument of the action */
+	void	*opaque; /* argument of the action */
 	int	write; /* 1 if the action need write access, 0 otherwise */
-	int (*apply)(struct t_action *self, struct t_file *file);
+	int (*apply)(struct t_action *self, struct t_tune *tune);
 	TAILQ_ENTRY(t_action)	entries;
 };
 /* action queue head */

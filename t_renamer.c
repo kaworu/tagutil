@@ -24,74 +24,68 @@
 /*
  * TODO
  */
-struct t_token * t_rename_lex_next_token(struct t_lexer *L);
-
+struct t_token	*t_rename_lex_next_token(struct t_lexer *L);
 /* taken from mkdir(3) */
-static int build(char *path, mode_t omode);
+static int	build(char *path, mode_t omode);
 
 
-bool
-t_rename_safe(struct t_file *file, const char *newpath)
+int
+t_rename_safe(const char *opath, const char *npath)
 {
 	extern int dflag;
-	bool failed = false;
+	int failed = 0;
 	struct stat st;
-	const char *odir, *ndir;
+	const char *s;
+	char odir[MAXPATHLEN], ndir[MAXPATHLEN];
 
-	assert_not_null(file);
-	assert_not_null(file->path);
-	assert_not_null(newpath);
+	assert_not_null(opath);
+	assert_not_null(npath);
 
-	odir = t_dirname(file->path);
-	if (odir == NULL) {
-		t_error_set(file, "%s", file->path);
-		return (false);
+	if ((s = t_dirname(opath)) == NULL) {
+		warn("dirname");
+		return (-1);
 	}
-	ndir = t_dirname(newpath);
-	if (ndir == NULL) {
-		t_error_set(file, "%s", newpath);
-		return (false);
+	assert(strlcpy(odir, s, sizeof(odir)) < sizeof(odir));
+	if ((s = t_dirname(npath)) == NULL) {
+		warn("dirname");
+		return (-1);
 	}
+	assert(strlcpy(ndir, s, sizeof(odir)) < sizeof(odir));
 
 	if (strcmp(odir, ndir) != 0) {
 		/* srcdir != destdir, we need to check if destdir is OK */
 		if (dflag) { /* we are asked to create the directory */
-			char	*d;
-
-			d = strdup(ndir);
+			char *d = strdup(ndir);
 			if (d == NULL)
-				err(ENOMEM, "strdup");
+				return (-1);
 			(void)build(d, S_IRWXU | S_IRWXG | S_IRWXO);
 			free(d);
 		}
 		if (stat(ndir, &st) != 0) {
-			if (errno == ENOENT)
-				t_error_set(file, "forgot -d?");
-			failed = true;
+			failed = 1;
+			if (errno == ENOENT && !dflag)
+				warn("%s (forgot -d ?):", ndir);
 		} else if (!S_ISDIR(st.st_mode)) {
+			failed = 1;
 			errno  = ENOTDIR;
-			failed = true;
+			warn("%s", ndir);
 		}
 	}
-	if (failed) {
-		t_error_set(file, "%s", ndir);
-		return (false);
-	}
+	if (failed)
+		return (-1);
 
-	if (stat(newpath, &st) == 0) {
+	if (stat(npath, &st) == 0) {
 		errno = EEXIST;
-		t_error_set(file, "%s", newpath);
-		return (false);
+		warn("%s", ndir);
+		return (-1);
 	}
 
-	if (rename(file->path, newpath) == -1) {
-		t_error_set(file, "rename");
-		return (false);
+	if (rename(opath, npath) == -1) {
+		warn("rename");
+		return (-1);
 	}
 
-	free(file->path);
-	file->path = xstrdup(newpath);
-	return (true);
+	return (0);
 }
 
 
@@ -199,49 +193,53 @@ t_rename_lex_next_token(struct t_lexer *L)
 
 
 char *
-t_rename_eval(struct t_file *file, struct t_token **ts)
+t_rename_eval(struct t_tune *tune, struct t_token **ts)
 {
 	const struct t_token *tkn;
 	struct sbuf *sb;
-	struct t_taglist *T;
+	const struct t_taglist *tlist;
 	struct t_tag *t;
 	char *ret, *s, *slash;
 
 	assert_not_null(ts);
-	assert_not_null(file);
-	t_error_clear(file);
+	assert_not_null(tune);
 
 	sb = sbuf_new_auto();
 	if (sb == NULL)
-		err(errno, "sbuf_new");
+		return (NULL);
 	tkn = *ts;
 	while (tkn != NULL) {
 		s = NULL;
 		if (tkn->kind == T_TAGKEY) {
-			T = file->get(file, tkn->val.str);
-			if (T == NULL) {
+			tlist = t_tune_tags(tune);
+			if (tlist == NULL) {
 				sbuf_delete(sb);
 				return (NULL);
-			} else if (T->count > 0) {
+			} else if (tlist->count > 0) {
 				/* tag exist */
 				if (tkn->tidx == T_TOKEN_STAR) {
 					/* user ask for *all* tag values */
-					if ((s = t_taglist_join(T, " - ")) == NULL)
-						err(ENOMEM, "malloc");
+					if ((s = t_taglist_join(tlist, " - ")) == NULL) {
+						sbuf_delete(sb);
+						return (NULL);
+					}
 				} else {
 					/* requested one tag */
-					t = t_taglist_tag_at(T, tkn->tidx);
-					if (t != NULL)
-						s = xstrdup(t->val);
+					t = t_taglist_tag_at(tlist, tkn->tidx);
+					if (t != NULL) {
+						if ((s = strdup(t->val)) == NULL) {
+							sbuf_delete(sb);
+							return (NULL);
+						}
+					}
 				}
 			}
-			t_taglist_delete(T);
 			if (s != NULL) {
 				/* check for slash in tag value */
 				slash = strchr(s, '/');
 				if (slash != NULL) {
-					warnx("rename_eval: `%s': tag `%s' has / in value, "
-							"replacing by `-'", file->path, tkn->val.str);
+					warnx("%s: tag `%s' has / in value, replacing by `-'",
+					    tune->path, tkn->val.str);
 					do {
 						*slash = '-';
 						slash = strchr(slash, '/');
@@ -251,7 +249,8 @@ t_rename_eval(struct t_file *file, struct t_token **ts)
 		}
 		if (s != NULL) {
 			(void)sbuf_cat(sb, s);
-			freex(s);
+			free(s);
+			s = NULL;
 		} else
 			(void)sbuf_cat(sb, tkn->val.str);
 		/* go to next token */
@@ -261,11 +260,10 @@ t_rename_eval(struct t_file *file, struct t_token **ts)
 
 	ret = NULL;
 	if (sbuf_len(sb) > MAXPATHLEN)
-		t_error_set(file, "t_rename_eval result is too long (>MAXPATHLEN)");
+		warnx("t_rename_eval result is too long (>MAXPATHLEN)");
 	else {
-		if (sbuf_finish(sb) == -1)
-			err(errno, "sbuf_finish");
-		ret = xstrdup(sbuf_data(sb));
+		if (sbuf_finish(sb) != -1)
+			ret = strdup(sbuf_data(sb));
 		sbuf_delete(sb);
 	}
 	return (ret);

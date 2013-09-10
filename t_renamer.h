@@ -7,7 +7,7 @@
  */
 #include "t_config.h"
 #include "t_error.h"
-#include "t_file.h"
+#include "t_tune.h"
 #include "t_lexer.h"
 
 
@@ -22,17 +22,17 @@
  *
  * return value and all its elements has to be free()d.
  */
-struct t_token ** t_rename_parse(const char *pattern);
+struct t_token	**t_rename_parse(const char *pattern);
 
 /*
- * eval the given token array in the context of given t_file.
+ * eval the given token array in the context of given t_tune.
  *
  * On error t_error_msg(file) is set and NULL is returned. Otherwhise the
  * result is returned.
  *
  * returned value has to be free()d.
  */
-char * t_rename_eval(struct t_file *file, struct t_token **ts);
+char	*t_rename_eval(struct t_tune *tune, struct t_token **ts);
 
 /*
  * rename path to new_path.
@@ -40,6 +40,6 @@ char * t_rename_eval(struct t_file *file, struct t_token **ts);
  * return false on error and set t_error_msg(e) if not NULL and errno.
  * return true otherwise.
  */
-bool t_rename_safe(struct t_file *file, const char *newpath);
+int	t_rename_safe(const char *oldpath, const char *newpath);
 
 #endif /* not T_RENAMER_H */

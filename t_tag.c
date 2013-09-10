@@ -40,7 +40,7 @@ t_taglist_clone(const struct t_taglist *tlist)
 	if (clone == NULL)
 		return (NULL);
 	TAILQ_FOREACH(t, tlist->tags, entries) {
-		if (t_taglist_insert(clone, t->key, t->val) == -1) {
+		if (t_taglist_insert(clone, t->key, t->val) != 0) {
 			t_taglist_delete(clone);
 			return (NULL);
 		}
