@@ -13,6 +13,7 @@
 
 #include "t_config.h"
 #include "t_toolkit.h"
+#include "t_taglist.h"
 #include "t_tune.h"
 #include "t_yaml.h"
 
@@ -217,6 +218,7 @@ t_yaml2tags(FILE *fp, char **errmsg_p)
 		if (!yaml_parser_parse(&parser, &event))
 			goto parser_error;
 		FSM.handle(&FSM, &event);
+		yaml_event_delete(&event);
 	} while (FSM.hungry);
 
 	if (t_error_msg(&FSM)) {
@@ -224,7 +226,6 @@ t_yaml2tags(FILE *fp, char **errmsg_p)
 		goto cleanup;
 	}
 
-	yaml_event_delete(&event);
 	yaml_parser_delete(&parser);
 	return (FSM.tlist);
 

@@ -76,7 +76,7 @@ t_rename_safe(const char *opath, const char *npath)
 
 	if (stat(npath, &st) == 0) {
 		errno = EEXIST;
-		warn("%s", ndir);
+		warn("%s", npath);
 		return (-1);
 	}
 
@@ -198,42 +198,43 @@ t_rename_eval(struct t_tune *tune, struct t_token **ts)
 	const struct t_token *tkn;
 	struct sbuf *sb;
 	const struct t_taglist *tlist;
+	struct t_taglist *l;
 	struct t_tag *t;
-	char *ret, *s, *slash;
+	char *ret, *s = NULL, *slash;
 
 	assert_not_null(ts);
 	assert_not_null(tune);
 
+	tlist = t_tune_tags(tune);
+	if (tlist == NULL)
+		goto error;
 	sb = sbuf_new_auto();
 	if (sb == NULL)
-		return (NULL);
+		goto error;
+
 	tkn = *ts;
 	while (tkn != NULL) {
-		s = NULL;
 		if (tkn->kind == T_TAGKEY) {
-			tlist = t_tune_tags(tune);
-			if (tlist == NULL) {
-				sbuf_delete(sb);
-				return (NULL);
-			} else if (tlist->count > 0) {
+			l = t_taglist_find_all(tlist, tkn->val.str);
+			if (l == NULL)
+				goto error;
+			if (l->count > 0) {
 				/* tag exist */
 				if (tkn->tidx == T_TOKEN_STAR) {
 					/* user ask for *all* tag values */
-					if ((s = t_taglist_join(tlist, " - ")) == NULL) {
-						sbuf_delete(sb);
-						return (NULL);
-					}
+					if ((s = t_taglist_join(l, " - ")) == NULL)
+						goto error;
 				} else {
 					/* requested one tag */
-					t = t_taglist_tag_at(tlist, tkn->tidx);
+					t = t_taglist_tag_at(l, tkn->tidx);
 					if (t != NULL) {
-						if ((s = strdup(t->val)) == NULL) {
-							sbuf_delete(sb);
-							return (NULL);
-						}
+						if ((s = strdup(t->val)) == NULL)
+							goto error;
 					}
 				}
 			}
+			t_taglist_delete(l);
+			l = NULL;
 			if (s != NULL) {
 				/* check for slash in tag value */
 				slash = strchr(s, '/');
@@ -267,6 +268,11 @@ t_rename_eval(struct t_tune *tune, struct t_token **ts)
 		sbuf_delete(sb);
 	}
 	return (ret);
+error:
+	free(s);
+	t_taglist_delete(l);
+	sbuf_delete(sb);
+	return (NULL);
 }
 
 

@@ -3,18 +3,12 @@
 /*
  * t_tag.h
  *
- * tagutil's tag structures/functions.
+ * a tag (or "comment").
  */
-#include <stdbool.h>
-
 #include "t_config.h"
-#include "t_error.h"
-
 
 /*
- * a tag.
- *
- * a key / value pair, element of a list (implemented as TAILQ).
+ * key / value pair, element of a list (implemented as TAILQ).
  */
 struct t_tag {
 	size_t		klen;
@@ -27,81 +21,38 @@ TAILQ_HEAD(t_tagQ, t_tag);
 
 
 /*
- * a list of tags.
+ * create a new tag.
  *
- * abstract structure for a music file's tags. t_error macros can (and should)
- * be used on this structure.
- */
-struct t_taglist {
-	size_t		count;
-	struct t_tagQ	*tags;
-
-	T_ERROR_MSG_MEMBER;
-};
-
-
-/*
- * create a new t_taglist.
- *
- * The returned t_taglist is empty and should be passed to t_taglist_delete()
- * after use.
+ * The returned t_tag should be passed to free(3) after use.
  *
  * @return
- *   a t_taglist pointer on success, NULL and set errno on error (malloc(3)
- *   failed).
+ *   a new t_tag or NULL or error (malloc(3) failed).
  */
-struct t_taglist	*t_taglist_new(void);
+struct t_tag *	t_tag_new(const char *key, const char *val);
 
 /*
- * create a deep copy of a taglist.
+ * compare two tag keys.
  *
- * The returned should be passed to t_taglist_delete() after use.
+ * This routine should be used when key comparison is needed.
+ *
+ * @param k1
+ *   The first key to compare, cannot be NULL.
+ *
+ * @param k2
+ *   The second key to compare, cannot be NULL.
  *
  * @return
- *   a t_taglist pointer on success, NULL and set errno on error (malloc(3)
- *   failed).
+ *   an integer greater than, equal to, or less than 0, according as the string
+ *   k1 is greater than, equal to, or less than the string k2.
  */
-struct t_taglist	*t_taglist_clone(const struct t_taglist *tags);
+int	t_tag_keycmp(const char *k1, const char *k2);
 
 /*
- * insert a tag in a tag list.
+ * free a t_tag and its associated data.
  *
- * @param key
- *   The tag's key
- *
- * @param val
- *   The tag's value
- *
- * @return
- *   0 on success, -1 and set errno on error (malloc(3) failed).
+ * @param victim
+ *   The t_tag to free.
  */
-int	t_taglist_insert(struct t_taglist *T, const char *key,
-	    const char *val);
+void t_tag_delete(struct t_tag *victim);
 
-/*
- * return the tag at given index, or NULL.
- */
-struct t_tag	*t_taglist_tag_at(const struct t_taglist *T, unsigned int index);
-
-/*
- * join all the tag values in T with the given glue.
- *
- * @param T
- *   The taglist containing all the tag to join.
- *
- * @param glue
- *   inserted between each tag value.
- *
- * @return
- *   NULL on error and a (char *) that should be passed to free(3) after use.
- */
-char	*t_taglist_join(const struct t_taglist *T, const char *glue);
-
-/*
- * free the t_taglist and all its tags.
- *
- * A t_taglist should not be used after a call to t_taglist_delete().
- */
-void	t_taglist_delete(struct t_taglist *T);
-
-#endif /* not T_TAG_H */
+#endif /* ndef T_TAG_H */

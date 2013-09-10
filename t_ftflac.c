@@ -123,7 +123,7 @@ t_ftflac_read(void *opaque)
 		if (!FLAC__metadata_object_vorbiscomment_entry_to_name_value_pair(e,
 		    &field_name, &field_value))
 			goto error;
-		if ((t_taglist_insert(tlist, t_strtolower(field_name), field_value)) == -1)
+		if ((t_taglist_insert(tlist, field_name, field_value)) == -1)
 			goto error;
 		free(field_name);
 		free(field_value);

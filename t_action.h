@@ -24,7 +24,6 @@ enum t_actionkind {
 	T_ACTION_SET,		/* set:TAG=VALUE	set tags */
 	T_ACTION_FILTER,	/* filter:FILTER	filter */
 	/* internal */
-	T_ACTION_RELOAD,
 	T_ACTION_SAVE,
 };
 

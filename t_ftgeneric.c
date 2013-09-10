@@ -185,11 +185,11 @@ t_ftgeneric_write(void *opaque, const struct t_taglist *tlist)
 
 	/* load the tlist */
 	TAILQ_FOREACH(t, tlist->tags, entries) {
-		if (strcmp(t->key, "title") == 0)
+		if (t_tag_keycmp(t->key, "title") == 0)
 			taglib_tag_set_title(data->tag, t->val);
-		else if (strcmp(t->key, "artist") == 0)
+		else if (t_tag_keycmp(t->key, "artist") == 0)
 			taglib_tag_set_artist(data->tag, t->val);
-		else if (strcmp(t->key, "year") == 0) {
+		else if (t_tag_keycmp(t->key, "year") == 0) {
 			ulongval = strtoul(t->val, &endptr, 10);
 			if (endptr == t->val || *endptr != '\0') {
 				warnx("invalid unsigned int argument for %s: %s",
@@ -202,9 +202,9 @@ t_ftgeneric_write(void *opaque, const struct t_taglist *tlist)
 				assert_fail();
 			} else
 				taglib_tag_set_year(data->tag, (unsigned int)ulongval);
-		} else if (strcmp(t->key, "album") == 0)
+		} else if (t_tag_keycmp(t->key, "album") == 0)
 			taglib_tag_set_album(data->tag, t->val);
-		else if (strcmp(t->key, "track") == 0) {
+		else if (t_tag_keycmp(t->key, "track") == 0) {
 			ulongval = strtoul(t->val, &endptr, 10);
 			if (endptr == t->val || *endptr != '\0') {
 				warnx("invalid unsigned int argument for %s: %s",
@@ -217,9 +217,9 @@ t_ftgeneric_write(void *opaque, const struct t_taglist *tlist)
 				assert_fail();
 			} else
 				taglib_tag_set_track(data->tag, (unsigned int)ulongval);
-		} else if (strcmp(t->key, "genre") == 0)
+		} else if (t_tag_keycmp(t->key, "genre") == 0)
 			taglib_tag_set_genre(data->tag, t->val);
-		else if (strcmp(t->key, "comment") == 0)
+		else if (t_tag_keycmp(t->key, "comment") == 0)
 			taglib_tag_set_comment(data->tag, "");
 		else
 			warnx("unsupported tag for TagLib backend: %s", t->key);

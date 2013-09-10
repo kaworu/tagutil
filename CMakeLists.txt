@@ -15,6 +15,7 @@ set(SRCS
     tagutil.c
     t_toolkit.c
     t_tag.c
+    t_taglist.c
     t_tune.c
     t_yaml.c
     t_renamer.c
@@ -23,7 +24,6 @@ set(SRCS
     t_filter.c
     t_backend.c
     t_action.c
-    t_file_compat.c
 )
 
 include_directories(

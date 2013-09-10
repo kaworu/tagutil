@@ -9,7 +9,7 @@
 #include <stdio.h>
 
 #include "t_config.h"
-#include "t_file.h"
+#include "t_taglist.h"
 
 /*
  * return a yaml formated string with all the given tags.

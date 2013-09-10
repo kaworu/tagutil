@@ -79,6 +79,10 @@ bool t_user_edit(const char *path);
  * dirname() routine that does not modify its argument.
  */
 char * t_dirname(const char *);
+/*
+ * basename() routine that does not modify its argument.
+ */
+char * t_basename(const char *);
 
 /**********************************************************************/
 
