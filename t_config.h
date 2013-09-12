@@ -11,12 +11,14 @@
 #if defined(lint)
 #	define	inline
 #	define	t__weak
+#	define	t__packed
 #	define	t__unused
 #	define	t__dead2
 #	define	t__deprecated
 #	define	t__printflike(fmtarg, firstvarg)
 #else
 #	define	t__weak		__attribute__((__weak__))
+#	define	t__packed	__attribute__((__packed__))
 #	define	t__unused	__attribute__((__unused__))
 #	define	t__dead2	__attribute__((__noreturn__))
 #	define	t__deprecated	__attribute__((__deprecated__))

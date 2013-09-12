@@ -101,6 +101,7 @@ error0:
 	return (NULL);
 }
 
+
 static struct t_taglist *
 t_ftflac_read(void *opaque)
 {
@@ -140,6 +141,7 @@ error:
 	return (NULL);
 }
 
+
 static int
 t_ftflac_write(void *opaque, const struct t_taglist *tlist)
 {
@@ -174,6 +176,7 @@ t_ftflac_write(void *opaque, const struct t_taglist *tlist)
 
 	return (0);
 }
+
 
 static void
 t_ftflac_clear(void *opaque)

@@ -12,6 +12,7 @@
 struct t_backend	*t_ftflac_backend(void) t__weak;
 struct t_backend	*t_ftoggvorbis_backend(void) t__weak;
 struct t_backend	*t_ftgeneric_backend(void) t__weak;
+struct t_backend	*t_ftid3v1_backend(void) t__weak;
 
 
 const struct t_backendQ *
@@ -30,6 +31,9 @@ t_all_backends(void)
 
 		if (t_ftgeneric_backend != NULL)
 			TAILQ_INSERT_TAIL(&bQ, t_ftgeneric_backend(), entries);
+
+		if (t_ftid3v1_backend != NULL)
+			TAILQ_INSERT_TAIL(&bQ, t_ftid3v1_backend(), entries);
 
 		initialized = 1;
 	}

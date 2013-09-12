@@ -35,7 +35,7 @@ t_ftgeneric_backend(void)
 
 	static struct t_backend b = {
 		.libid		= libid,
-		.desc		= "various file format (flac,ogg,mp3...)",
+		.desc		= "various file format (flac, ogg, mp3...)",
 		.init		= t_ftgeneric_init,
 		.read		= t_ftgeneric_read,
 		.write		= t_ftgeneric_write,

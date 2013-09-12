@@ -52,6 +52,7 @@ t_ftoggvorbis_backend(void)
 	return (&b);
 }
 
+
 static void *
 t_ftoggvorbis_init(const char *path)
 {
@@ -78,6 +79,7 @@ t_ftoggvorbis_init(const char *path)
 
 	return (data);
 }
+
 
 static struct t_taglist *
 t_ftoggvorbis_read(void *opaque)
@@ -119,6 +121,7 @@ t_ftoggvorbis_read(void *opaque)
 
 	return (tlist);
 }
+
 
 static int
 t_ftoggvorbis_write(void *opaque, const struct t_taglist *tlist)
@@ -348,6 +351,7 @@ cleanup:
 	t_error_clear(&e);
 	return (state == DONE_SUCCESS ? 0 : -1);
 }
+
 
 static void
 t_ftoggvorbis_clear(void *opaque)

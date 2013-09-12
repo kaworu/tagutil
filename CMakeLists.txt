@@ -24,6 +24,7 @@ set(SRCS
     t_filter.c
     t_backend.c
     t_action.c
+    t_ftid3v1.c
 )
 
 include_directories(
