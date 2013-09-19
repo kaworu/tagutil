@@ -43,7 +43,7 @@ main(int argc, char *argv[])
 	struct t_action		*a;
 	struct t_actionQ	*aQ;
 
-	errno = 0;
+	errno = 0; /* this is a bug in malloc(3) */
 
 	while ((i = getopt(argc, argv, "dhNY")) != -1) {
 		switch ((char)i) {
