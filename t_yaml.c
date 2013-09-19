@@ -168,7 +168,7 @@ event_error:
 	/* NOTREACHED */
 emitter_error:
 	warnx("t_tags2yaml: emit error");
-	assert_fail();
+	ABANDON_SHIP();
 }
 
 
@@ -546,5 +546,5 @@ t_yaml_parse_nop(t__unused struct t_yaml_fsm *FSM,
     t__unused const yaml_event_t *e)
 {
 
-    assert_fail();
+    ABANDON_SHIP();
 }

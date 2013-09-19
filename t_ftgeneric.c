@@ -197,9 +197,6 @@ t_ftgeneric_write(void *opaque, const struct t_taglist *tlist)
 			} else if (ulongval > UINT_MAX) {
 				warnx("invalid unsigned int argument for %s: %s (too large)",
 				    t->key, t->val);
-			} else if (errno) {
-				/* should be EINVAL (ERANGE catched by last condition). */
-				assert_fail();
 			} else
 				taglib_tag_set_year(data->tag, (unsigned int)ulongval);
 		} else if (t_tag_keycmp(t->key, "album") == 0)
@@ -212,9 +209,6 @@ t_ftgeneric_write(void *opaque, const struct t_taglist *tlist)
 			} else if (ulongval > UINT_MAX) {
 				warnx("invalid unsigned int argument for %s: %s (too large)",
 				    t->key, t->val);
-			} else if (errno) {
-				/* should be EINVAL (ERANGE catched by last condition). */
-				assert_fail();
 			} else
 				taglib_tag_set_track(data->tag, (unsigned int)ulongval);
 		} else if (t_tag_keycmp(t->key, "genre") == 0)

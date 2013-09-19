@@ -134,7 +134,7 @@ t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
 			}
 			arg++; /* skip : */
 		} else /* if t->argc > 1 */
-			assert_fail();
+			ABANDON_SHIP();
 
 		/* FIXME: maybe a flag to know if we need to save before the
 		   action ? */
@@ -160,7 +160,7 @@ t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
 			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		default: /* private action */
-			assert_fail();
+			ABANDON_SHIP();
 		}
 		argc--;
 		argv++;
@@ -329,8 +329,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		/* we don't set write() because T_ACTION_SAVE is private */
 		a->apply = t_action_save;
 		break;
-	default:
-		assert_fail();
+	default: ABANDON_SHIP();
 	}
 
 	return (a);

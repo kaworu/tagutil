@@ -168,10 +168,6 @@ t_lex_number(struct t_lexer *L, struct t_token *t)
                         "bad integer value (%s)",
                         (longval > INT_MAX ? "too large" : "too small"));
             }
-            else if (errno) {
-            /* should be EINVAL (ERANGE catched by last condition). */
-                assert_fail();
-            }
             t->val.integer = (int)longval;
         }
         free(num);
@@ -260,7 +256,7 @@ t_lex_strlit_or_regex(struct t_lexer *L, struct t_token **tptr)
                     break;
                 default:
                     (void)fprintf(stderr, "***bug in regex option lexing***\n");
-                    assert_fail();
+                    ABANDON_SHIP();
                     /* NOTREACHED */
 regopt_error:
                     t_lex_error(L, t->start, L->cindex,

@@ -24,9 +24,9 @@
 #define countof(ary) (sizeof(ary) / sizeof((ary)[0]))
 
 /* some handy assert macros */
-#define assert_not_null(x) assert((x) != NULL)
-#define assert_null(x) assert((x) == NULL)
-#define assert_fail() abort()
+#define	assert_not_null(x) assert((x) != NULL)
+#define	assert_null(x) assert((x) == NULL)
+#define	ABANDON_SHIP() abort()
 
 
 /*

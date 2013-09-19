@@ -102,7 +102,7 @@ t_filter_eval(struct t_tune *tune,
         case T_LE: f = t_cmp_le; break;
         case T_GT: f = t_cmp_gt; break;
         case T_GE: f = t_cmp_ge; break;
-        default: /* NOTREACHED */ assert_fail();
+        default: ABANDON_SHIP();
         }
         ret = t_filter_eval_cmp(tune, filter->lhs, filter->rhs, f);
         break;
@@ -115,8 +115,7 @@ t_filter_eval(struct t_tune *tune,
     default:
         (void)fprintf(stderr, "***internal filter error*** "
                 "unexpected AST: `%s'\n", filter->token->str);
-        assert_fail();
-        /* NOTREACHED */
+        ABANDON_SHIP();
     }
 
     return (ret);
@@ -210,8 +209,7 @@ t_filter_eval_cmp(struct t_tune *tune,
         (void)fprintf(stderr, "***internal filter error*** "
                 "unexpected token kind: lhs(%s) rhs(%s)\n",
                 lhs->token->str, rhs->token->str);
-        assert_fail();
-        /* NOTREACHED */
+        ABANDON_SHIP();
     }
 
     t_taglist_delete(rlist);
@@ -301,8 +299,7 @@ t_filter_eval_match(struct t_tune *tune,
     default:
         fprintf(stderr, "***internal filter error*** unexpected AST: `%s'\n",
                 strast->token->str);
-        assert_fail();
-        /* NOTREACHED */
+        ABANDON_SHIP();
     }
 
     t_taglist_delete(rlist);
@@ -402,8 +399,7 @@ t_invert(t_cmp_func *f)
     else {
         (void)fprintf(stderr, "***internal filter error*** "
                 "unexpected function in t_invert");
-        assert_fail();
-        /* NOTREACHED */
+        ABANDON_SHIP();
     }
 
     return (ret);
@@ -481,8 +477,7 @@ t_filter_eval_int_cmp(struct t_tune *tune,
     default:
         (void)fprintf(stderr, "***internal filter error*** "
                 "unexpected token kind: rhs(%s)\n", rhs->token->str);
-        assert_fail();
-        /* NOTREACHED */
+        ABANDON_SHIP();
     }
 
     t_taglist_delete(rlist);
@@ -560,8 +555,7 @@ t_filter_eval_double_cmp(struct t_tune *tune,
     default:
         (void)fprintf(stderr, "***internal filter error*** "
                 "unexpected token kind: rhs(%s)\n", rhs->token->str);
-        assert_fail();
-        /* NOTREACHED */
+        ABANDON_SHIP();
     }
 
     t_taglist_delete(rlist);
@@ -638,8 +632,7 @@ t_filter_eval_str_cmp(struct t_tune *tune,
     default:
         (void)fprintf(stderr, "***internal filter error*** "
                 "unexpected token kind: rhs(%s)\n", rhs->token->str);
-        assert_fail();
-        /* NOTREACHED */
+        ABANDON_SHIP();
     }
 
     t_taglist_delete(rlist);
@@ -672,8 +665,7 @@ t_filter_eval_undef_cmp(struct t_tune *tune,
     default:
         (void)fprintf(stderr, "***internal filter error*** "
                 "unexpected token kind: rhs(%s)\n", rhs->token->str);
-        assert_fail();
-        /* NOTREACHED */
+        ABANDON_SHIP();
     }
 
     t_taglist_delete(rlist);
