@@ -40,7 +40,7 @@ add_definitions(-std=c99 -g -Wall)
 macro(t_try_compile variable test_file compat_file)
     try_compile(${variable}
         ${CMAKE_BINARY_DIR}
-        ${CMAKE_SOURCE_DIR}/build-tests/${test_file}
+        ${CMAKE_SOURCE_DIR}/compat/tests/${test_file}
         CMAKE_FLAGS "-DLINK_LIBRARIES=-lsbuf"
     )
     if(${variable})

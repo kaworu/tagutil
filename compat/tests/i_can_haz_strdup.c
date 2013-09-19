@@ -8,8 +8,6 @@ main(void)
 {
 	const char *str = "foo";
 	const char *cpy = strdup(str);
-	/* check? */
-	if (cpy != NULL)
-		free(cpy);
+	(void)cpy; /* check? */
 	return (0);
 }
