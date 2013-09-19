@@ -4,6 +4,7 @@
  * ID3v1 backend.
  */
 #include <stdio.h>
+#include <limits.h>
 
 #include "t_config.h"
 #include "t_backend.h"
@@ -186,7 +187,7 @@ struct t_ftid3v1_data {
 	const char	*libid; /* pointer to libid */
 	const char	*path; /* this is needed for t_ftid3v1_write() */
 	int		 id3; /* 1 if id3 tag is already present in the file, 0 otherwise */
-	FILE		*fp; /* read-only filedescriptor */
+	FILE		*fp; /* read-only file pointer */
 };
 
 
@@ -256,12 +257,10 @@ t_ftid3v1_init(const char *path)
 		goto error;
 	if (data->id3) {
 		/* check that we don't handle a file with ID3v2 tags. */
-#if 0
 		if (magic[0] == 'I' &&
 		    magic[1] == 'D' &&
 		    magic[2] == '3')
 			goto error;
-#endif
 	} else {
 		/* check that the file looks like mp3 */
 	if (!(magic[0] == 0xFF && magic[1] == 0xFB))
@@ -330,18 +329,18 @@ t_ftid3v1_write(void *opaque, const struct t_taglist *tlist)
 
 	(void)fclose(data->fp);
 	data->fp = NULL;
-	if ((fp = fopen(data->path, "w")) == NULL)
-		goto error;
 
 	if (data->id3) {
-		if ((fp = fopen(data->path, "w")) == NULL)
+		(void)printf("-- id3v1 present");
+		if ((fp = fopen(data->path, "r+")) == NULL)
 			goto error;
 		if (fseek(fp, -(sizeof(struct id3v1_tag)), SEEK_END) != 0)
-			goto error;
+			err(-1, "fseek");
 	} else {
 		if ((fp = fopen(data->path, "a")) == NULL)
 			goto error;
 	}
+	(void)printf("-- writting");
 	if (fwrite(&id3tag, sizeof(struct id3v1_tag), 1, fp) != 1)
 		goto error;
 	if (fclose(fp) != 0)
@@ -448,13 +447,77 @@ id3tag_to_taglist(const struct id3v1_tag *tag, struct t_taglist *tlist)
 
 
 static int
-taglist_to_id3tag(const struct t_taglist *tlist,struct id3v1_tag *tag)
+taglist_to_id3tag(const struct t_taglist *tlist, struct id3v1_tag *tag)
 {
+	const struct t_tag *t;
 
 	assert_not_null(tlist);
 	assert_not_null(tag);
 
-	warnx("taglist_to_id3tag: not implemented yet.");
+	/* strlen is right here, we dont want it NUL-terminated */
+	bzero(tag, sizeof(struct id3v1_tag));
+	(void)memcpy(tag->magic, "TAG", strlen("TAG"));
+	tag->genre = 0xFF;
 
-	return (-1);
+	TAILQ_FOREACH(t, tlist->tags, entries) {
+		size_t siz = 30;
+		size_t len = strlen(t->val);
+		char *p    = NULL;
+
+		/*
+		 * XXX: we use strtoul(3) for tracknumber and year parsing. It
+		 * means that leading whitespace are accepted (which is OK) and
+		 * leading sign `+' or `-' are accepted as well. A leading `-'
+		 * is likely to fail when the value is checked but `+' will be
+		 * accepted. This is, at the moment, considered as an
+		 * undocumented feature and not a bug.
+		 */
+		if (strcasecmp(t->key, "tracknumber") == 0) {
+			char *endptr;
+			unsigned long lu = strtoul(t->val, &endptr, 10);
+			if (*endptr != '\0' || endptr == t->val || lu > UCHAR_MAX || lu == 0)
+				warnx("ID3v1: %s: invalid tracknumber value.", t->val);
+			else /* casting is safe now */
+				tag->comment.v1_1.tracknumber = (unsigned char)lu;
+			continue;
+		} else if (strcasecmp(t->key, "genre") == 0) {
+			int i;
+			for (i = 0; i < countof(id3v1_genre_str); i++) {
+				if (strcasecmp(t->val, id3v1_genre_str[i]) == 0) {
+					tag->genre = i;
+					break;
+				}
+			}
+			if (i == countof(id3v1_genre_str))
+				warnx("ID3v1: %s: invalid value for %s", t->val, t->key);
+			continue;
+		} else if (strcasecmp(t->key, "title") == 0) {
+			p = tag->title;
+		} else if (strcasecmp(t->key, "artist") == 0) {
+			p = tag->artist;
+		} else if (strcasecmp(t->key, "album") == 0) {
+			p = tag->album;
+		} else if (strcasecmp(t->key, "year") == 0) {
+			char *endptr;
+			unsigned long lu = strtoul(t->val, &endptr, 10);
+			if (*endptr != '\0' || endptr == t->val ||
+			    lu > 9000 /* IT'S OVER NINE THOUSAAAAAAAAAAAAAND!!! */) {
+				warnx("ID3v1: %s: invalid tracknumber value.", t->val);
+			} else {
+				p = tag->year;
+				siz = 4;
+			}
+		} else if (strcasecmp(t->key, "comment") == 0) {
+			p = tag->comment.v1_1.comment;
+			siz = 28;
+		}
+		if (len > siz) {
+			warnx("ID3v1: %s: too long for %s (%zu but expected %zu max)",
+			    t->val, t->key, len, siz);
+			len = siz;
+		}
+		(void)memcpy(p, t->val, len);
+	}
+
+	return (0);
 }
