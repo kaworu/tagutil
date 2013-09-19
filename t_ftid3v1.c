@@ -209,7 +209,7 @@ t_ftid3v1_backend(void)
 
 	static struct t_backend b = {
 		.libid		= libid,
-		.desc		= "ID3v1 tag used by old mp3 files",
+		.desc		= "ID3v1.1 tag (only used by \"old\" mp3 files)",
 		.init		= t_ftid3v1_init,
 		.read		= t_ftid3v1_read,
 		.write		= t_ftid3v1_write,

@@ -142,23 +142,25 @@ usage(void)
 
 	(void)fprintf(stderr, "Options:\n");
 	(void)fprintf(stderr, "  -h  show this help\n");
-	(void)fprintf(stderr, "  -d  create directory on rename if needed\n");
+	(void)fprintf(stderr, "  -d  create destination directories if needed (used by rename)\n");
 	(void)fprintf(stderr, "  -Y  answer yes to all questions\n");
 	(void)fprintf(stderr, "  -N  answer no  to all questions\n");
 	(void)fprintf(stderr, "\n");
 
 	(void)fprintf(stderr, "Actions:\n");
-	(void)fprintf(stderr, "  add:TAG=VALUE    add a TAG=VALUE pair\n");
+	(void)fprintf(stderr, "  print            print tags (default action)\n");
+	(void)fprintf(stderr, "  show             alias for `print'\n");
+	(void)fprintf(stderr, "  path             print only filename's path\n");
 	(void)fprintf(stderr, "  backend          print backend used\n");
-	(void)fprintf(stderr, "  clear:TAG        clear all tag TAG\n");
+	(void)fprintf(stderr, "  clear:TAG        clear all tag TAG. If TAG is "
+	    "empty, all tags are cleared\n");
+	(void)fprintf(stderr, "  add:TAG=VALUE    add a TAG=VALUE pair\n");
+	(void)fprintf(stderr, "  set:TAG=VALUE    set TAG to VALUE\n");
 	(void)fprintf(stderr, "  edit             prompt for editing\n");
+	(void)fprintf(stderr, "  load:PATH        load PATH yaml tag file\n");
 	(void)fprintf(stderr, "  filter:FILTER    use only files matching "
 	    "FILTER for next(s) action(s)\n");
-	(void)fprintf(stderr, "  load:PATH        load PATH yaml tag file\n");
-	(void)fprintf(stderr, "  path             print only filename's path\n");
-	(void)fprintf(stderr, "  print (or show)  print tags (default action)\n");
 	(void)fprintf(stderr, "  rename:PATTERN   rename to PATTERN\n");
-	(void)fprintf(stderr, "  set:TAG=VALUE    set TAG to VALUE\n");
 	(void)fprintf(stderr, "\n");
 
 	(void)fprintf(stderr, "Backend:\n");
