@@ -6,7 +6,7 @@
  * handy functions toolkit for tagutil.
  *
  */
-#include </usr/include/assert.h>
+#include <assert.h>
 #include <ctype.h>
 #include <err.h>
 #include <errno.h>
