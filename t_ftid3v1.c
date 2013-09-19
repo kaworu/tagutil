@@ -223,7 +223,8 @@ t_ftid3v1_backend(void)
 static void *
 t_ftid3v1_init(const char *path)
 {
-	char magic[3], *p;
+	unsigned char magic[3];
+	char *p;
 	struct t_ftid3v1_data *data = NULL;
 	FILE *fp = NULL;
 	size_t plen;
@@ -331,7 +332,6 @@ t_ftid3v1_write(void *opaque, const struct t_taglist *tlist)
 	data->fp = NULL;
 
 	if (data->id3) {
-		(void)printf("-- id3v1 present");
 		if ((fp = fopen(data->path, "r+")) == NULL)
 			goto error;
 		if (fseek(fp, -(sizeof(struct id3v1_tag)), SEEK_END) != 0)
@@ -340,7 +340,6 @@ t_ftid3v1_write(void *opaque, const struct t_taglist *tlist)
 		if ((fp = fopen(data->path, "a")) == NULL)
 			goto error;
 	}
-	(void)printf("-- writting");
 	if (fwrite(&id3tag, sizeof(struct id3v1_tag), 1, fp) != 1)
 		goto error;
 	if (fclose(fp) != 0)
@@ -516,7 +515,10 @@ taglist_to_id3tag(const struct t_taglist *tlist, struct id3v1_tag *tag)
 			    t->val, t->key, len, siz);
 			len = siz;
 		}
-		(void)memcpy(p, t->val, len);
+		if (p == NULL)
+			warnx("ID3v1: %s: invalid tag key, skipping.", t->key);
+		else
+			(void)memcpy(p, t->val, len);
 	}
 
 	return (0);
