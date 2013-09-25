@@ -8,7 +8,7 @@ endif()
 #{{{ Basic App setup
 set(PROJECT_NAME tagutil)
 set(CMAKE_BUILD_TYPE DEBUG)
-add_definitions(-DT_TAGUTIL_VERSION="3.0alpha")
+add_definitions(-DT_TAGUTIL_VERSION="3.0rc0")
 project(${PROJECT_NAME} C)
 
 set(SRCS
