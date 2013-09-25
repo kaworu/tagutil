@@ -138,9 +138,8 @@ t_ftoggvorbis_write(void *opaque, const struct t_taglist *tlist)
 	struct sbuf *sb = NULL;
 	FILE *rfp = NULL, *wfp = NULL;
 	char *buf, *tmp = NULL;
-	size_t s;
-	ogg_int64_t granpos = 0;
-	int npacket = 0, prevW = 0;
+	ogg_int64_t granulepos = 0;
+	int npacket = 0, bs = 0, lastbs = 0;
 	enum {
 		BUILDING_VC_PACKET, SETUP, START_READING, STREAMS_INITIALIZED,
 		READING_HEADERS, READING_DATA, READING_DATA_NEED_FLUSH,
@@ -197,6 +196,7 @@ t_ftoggvorbis_write(void *opaque, const struct t_taglist *tlist)
 					goto cleanup;
 				state = E_O_S;
 			} else {
+				size_t s;
 				if ((buf = ogg_sync_buffer(&oy, BUFSIZ)) == NULL)
 					goto cleanup;
 				if ((s = fread(buf, sizeof(char), BUFSIZ, rfp)) == -1)
@@ -247,9 +247,9 @@ t_ftoggvorbis_write(void *opaque, const struct t_taglist *tlist)
 					state = (npacket == 3 ? READING_DATA_NEED_FLUSH : READING_HEADERS);
 				} else {
 					/* granule computation */
-					int bs   = vorbis_packet_blocksize(&vi, &op);
-					granpos += (prevW == 0 ? 0 : (bs + prevW) / 4);
-					prevW    = bs;
+					bs   = vorbis_packet_blocksize(&vi, &op);
+					granulepos += (lastbs == 0 ? 0 : (bs + lastbs) / 4);
+					lastbs   = bs;
 
 					/* save a page in the buffer a page if needed */
 					while (
@@ -259,19 +259,27 @@ t_ftoggvorbis_write(void *opaque, const struct t_taglist *tlist)
 						(void)sbuf_bcat(sb, oog.body, oog.body_len);
 					}
 
-					/*
-					 * force a flush or a pageout,  granpos
-					 * hack, idk the logic i just saw it in
-					 * vcedit.c
-					 */
+					/* NOTE: only the last packet ending on a page
+					   has granulepos set, see
+					   http://lists.xiph.org/pipermail/vorbis/2002-June/020453.html */
 					state = READING_DATA;
 					if (op.granulepos == -1) {
-						op.granulepos = granpos;
-					} else if (granpos > op.granulepos) {
-						granpos = op.granulepos;
+						/* we set the granulepos for
+						 * this packet */
+						op.granulepos = granulepos;
+					} else if (granulepos > op.granulepos) {
+						/* we will force a page to be
+						   flushed */
+						granulepos = op.granulepos;
 						state = READING_DATA_NEED_FLUSH;
-					} else
+					} else {
+						/* this packet has granulepos
+						   set, which hint that it is
+						   the last packet ending on
+						   this page, we do a pageout to
+						   output a page if needed. */
 						state = READING_DATA_NEED_PAGEOUT;
+					}
 				}
 				if (ogg_stream_packetin(&oos, target) == -1)
 					goto cleanup;
