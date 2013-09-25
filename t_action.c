@@ -247,7 +247,8 @@ t_action_new(enum t_actionkind kind, const char *arg)
 			goto error;
 		eq = strchr(key, '=');
 		if (eq == NULL) {
-			warnc(errno = EINVAL, "add: missing '='");
+			errno = EINVAL;
+			warn("add: missing '='");
 			goto error;
 		}
 		*eq = '\0';
@@ -293,7 +294,8 @@ t_action_new(enum t_actionkind kind, const char *arg)
 	case T_ACTION_RENAME:
 		assert_not_null(arg);
 		if (strlen(arg) == 0) {
-			warnc(errno = EINVAL, "empty rename pattern");
+			errno = EINVAL;
+			warn("empty rename pattern");
 			goto error;
 		}
 		a->opaque = t_rename_parse(arg);
@@ -307,7 +309,8 @@ t_action_new(enum t_actionkind kind, const char *arg)
 			goto error;
 		eq = strchr(key, '=');
 		if (eq == NULL) {
-			warnc(errno = EINVAL, "set: missing '='");
+			errno = EINVAL;
+			warn("set: missing '='");
 			goto error;
 		}
 		*eq = '\0';
