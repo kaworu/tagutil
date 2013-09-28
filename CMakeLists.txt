@@ -24,7 +24,6 @@ set(SRCS
     t_filter.c
     t_backend.c
     t_action.c
-    t_ftid3v1.c
 )
 
 include_directories(
@@ -123,6 +122,11 @@ if(NOT DEFINED WITHOUT_OGGVORBIS)
     else()
         message(STATUS "libogg/libvorbis not found. Disabled.")
     endif()
+endif()
+
+if(NOT DEFINED WITHOUT_ID3V1)
+    add_definitions(-DWITH_ID3V1)
+    set(SRCS ${SRCS} t_ftid3v1.c)
 endif()
 
 include_directories(${OPTIONAL_INCLUDE_DIRS})
