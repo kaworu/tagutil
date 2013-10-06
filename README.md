@@ -10,3 +10,7 @@ Hum, for now you will have to read the INSTALL file.
 ## Concepts
 - No config file
 - Provide command for basic tag manipulations and YAML output / parsing to allow scripting.
+
+## LICENSE
+
+tagutil is under a BSD 2-Clause license, see LICENSE.

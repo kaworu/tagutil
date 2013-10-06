@@ -9,7 +9,7 @@
  * TagLib, libvorbis and / or libflac  to get and set music file's tags.
  * for help, launch tagutil without argument and enjoy the show.
  *
- * The license is a BSD 2-Clause, see COPYING.
+ * tagutil is under a BSD 2-Clause license, see LICENSE.
  */
 #include "t_config.h"
 #include "t_toolkit.h"
