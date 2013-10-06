@@ -6,7 +6,12 @@
  * handy functions toolkit for tagutil.
  *
  */
-#include <assert.h>
+
+/* FLAC's assert header conflict with the standard. It has been fixed in
+ * "recent" libFLAC (by requiring prefixing) but not all OS / distro have
+ * updated yet (namely Ubuntu 13.04 for example).
+ */
+#include </usr/include/assert.h>
 #include <ctype.h>
 #include <err.h>
 #include <errno.h>
