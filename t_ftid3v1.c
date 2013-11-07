@@ -501,7 +501,7 @@ taglist_to_id3tag(const struct t_taglist *tlist, struct id3v1_tag *tag)
 			unsigned long lu = strtoul(t->val, &endptr, 10);
 			if (*endptr != '\0' || endptr == t->val ||
 			    lu > 9000 /* IT'S OVER NINE THOUSAAAAAAAAAAAAAND!!! */) {
-				warnx("ID3v1: %s: invalid tracknumber value.", t->val);
+				warnx("ID3v1: %s: invalid year value.", t->val);
 			} else {
 				p = tag->year;
 				siz = 4;
