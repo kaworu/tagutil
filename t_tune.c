@@ -58,7 +58,7 @@ t_tune_init(struct t_tune *tune, const char *path)
 	return (-1);
 }
 
-const struct t_taglist *
+struct t_taglist *
 t_tune_tags(struct t_tune *tune)
 {
 
@@ -68,7 +68,7 @@ t_tune_tags(struct t_tune *tune)
 	if (tune->tlist == NULL)
 		tune->tlist = tune->backend->read(tune->opaque);
 
-	return (tune->tlist);
+	return (t_taglist_clone(tune->tlist));
 }
 
 int

@@ -108,7 +108,7 @@ t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
 	argv = *argv_p;
 	aQ = malloc(sizeof(struct t_actionQ));
 	if (aQ == NULL)
-		goto error;
+		goto error_label;
 	TAILQ_INIT(aQ);
 
 	while (argc > 0) {
@@ -129,7 +129,7 @@ t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
 			if (arg == NULL) {
 				warnx("option %s requires an argument", t->word);
 				errno = EINVAL;
-				goto error;
+				goto error_label;
 				/* NOTREACHED */
 			}
 			arg++; /* skip : */
@@ -143,7 +143,7 @@ t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
 		case T_ACTION_FILTER:
 			a = t_action_new(T_ACTION_SAVE, NULL);
 			if (a == NULL)
-				goto error;
+				goto error_label;
 			TAILQ_INSERT_TAIL(aQ, a, entries);
 			/* FALLTHROUGH */
 		case T_ACTION_ADD: /* FALLTHROUGH */
@@ -156,7 +156,7 @@ t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
 		case T_ACTION_PATH:
 			a = t_action_new(t->kind, arg);
 			if (a == NULL)
-				goto error;
+				goto error_label;
 			TAILQ_INSERT_TAIL(aQ, a, entries);
 			break;
 		default: /* private action */
@@ -170,7 +170,7 @@ t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
 		/* no action given, fallback to default which is show */
 		a = t_action_new(T_ACTION_PRINT, NULL);
 		if (a == NULL)
-			goto error;
+			goto error_label;
 		TAILQ_INSERT_TAIL(aQ, a, entries);
 	}
 
@@ -181,7 +181,7 @@ t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
 	if (write > 0) {
 		a = t_action_new(T_ACTION_SAVE, NULL);
 		if (a == NULL)
-			goto error;
+			goto error_label;
 		TAILQ_INSERT_TAIL(aQ, a, entries);
 	}
 
@@ -191,7 +191,7 @@ t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
 	*argv_p = argv;
 	return (aQ);
 	/* NOTREACHED */
-error:
+error_label:
 	t_actionQ_delete(aQ);
 	assert(errno == EINVAL || errno == ENOMEM);
 	return (NULL);
@@ -237,24 +237,24 @@ t_action_new(enum t_actionkind kind, const char *arg)
 
 	a = calloc(1, sizeof(struct t_action));
 	if (a == NULL)
-		goto error;
+		goto error_label;
 	a->kind = kind;
 
 	switch (a->kind) {
 	case T_ACTION_ADD:
 		assert_not_null(arg);
 		if ((key = strdup(arg)) == NULL)
-			goto error;
+			goto error_label;
 		eq = strchr(key, '=');
 		if (eq == NULL) {
 			errno = EINVAL;
 			warn("add: missing '='");
-			goto error;
+			goto error_label;
 		}
 		*eq = '\0';
 		val = eq + 1;
 		if ((a->opaque = t_tag_new(key, val)) == NULL)
-			goto error;
+			goto error_label;
 		free(key);
 		key = NULL;
 		a->write = 1;
@@ -268,7 +268,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		if (strlen(arg) > 0) {
 			a->opaque = strdup(arg);
 			if (a->opaque == NULL)
-				goto error;
+				goto error_label;
 		}
 		a->write = 1;
 		a->apply = t_action_clear;
@@ -281,7 +281,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		assert_not_null(arg);
 		a->opaque = strdup(arg);
 		if (a->opaque == NULL)
-			goto error;
+			goto error_label;
 		a->write = 1;
 		a->apply = t_action_load;
 		break;
@@ -296,7 +296,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		if (strlen(arg) == 0) {
 			errno = EINVAL;
 			warn("empty rename pattern");
-			goto error;
+			goto error_label;
 		}
 		a->opaque = t_rename_parse(arg);
 		/* FIXME: error checking on t_rename_parse() */
@@ -306,17 +306,17 @@ t_action_new(enum t_actionkind kind, const char *arg)
 	case T_ACTION_SET:
 		assert_not_null(arg);
 		if ((key = strdup(arg)) == NULL)
-			goto error;
+			goto error_label;
 		eq = strchr(key, '=');
 		if (eq == NULL) {
 			errno = EINVAL;
 			warn("set: missing '='");
-			goto error;
+			goto error_label;
 		}
 		*eq = '\0';
 		val = eq + 1;
 		if ((a->opaque = t_tag_new(key, val)) == NULL)
-			goto error;
+			goto error_label;
 		free(key);
 		key = NULL;
 		a->write = 1;
@@ -337,7 +337,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 
 	return (a);
 	/* NOTREACHED */
-error:
+error_label:
 	free(key);
 	t_action_delete(a);
 	return (NULL);
@@ -384,7 +384,7 @@ t_action_add(struct t_action *self, struct t_tune *tune)
 {
 
 	const struct t_tag *t;
-	struct t_taglist *ret = NULL;
+	struct t_taglist *tlist = NULL;
 
 	assert_not_null(self);
 	assert_not_null(tune);
@@ -392,20 +392,20 @@ t_action_add(struct t_action *self, struct t_tune *tune)
 
 	t = self->opaque;
 
-	ret = t_taglist_clone(t_tune_tags(tune));
-	if (ret == NULL)
-		goto error;
+	tlist = t_tune_tags(tune);
+	if (tlist == NULL)
+		goto error_label;
 
-	if (t_taglist_insert(ret, t->key, t->val) != 0)
-		goto error;
-	if (t_tune_set_tags(tune, ret) != 0)
-		goto error;
+	if (t_taglist_insert(tlist, t->key, t->val) != 0)
+		goto error_label;
+	if (t_tune_set_tags(tune, tlist) != 0)
+		goto error_label;
 
-	t_taglist_delete(ret);
+	t_taglist_delete(tlist);
 	return (0);
 	/* NOTREACHED */
-error:
-	t_taglist_delete(ret);
+error_label:
+	t_taglist_delete(tlist);
 	return (-1);
 }
 
@@ -427,7 +427,7 @@ static int
 t_action_clear(struct t_action *self, struct t_tune *tune)
 {
 	const struct t_tag *t;
-	const struct t_taglist *tlist;
+	struct t_taglist *tlist = NULL;
 	struct t_taglist *ret;
 	const char *clear_key;
 
@@ -438,26 +438,28 @@ t_action_clear(struct t_action *self, struct t_tune *tune)
 	clear_key = self->opaque;
 	ret = t_taglist_new();
 	if (ret == NULL)
-		goto error;
+		goto error_label;
 
 	if (clear_key != NULL) {
 		if ((tlist = t_tune_tags(tune)) == NULL)
-			goto error;
+			goto error_label;
 		TAILQ_FOREACH(t, tlist->tags, entries) {
 			if (t_tag_keycmp(t->key, clear_key) != 0) {
 				if (t_taglist_insert(ret, t->key, t->val) != 0)
-					goto error;
+					goto error_label;
 			}
 		}
 	}
 	if (t_tune_set_tags(tune, ret) != 0)
-		goto error;
+		goto error_label;
 
 	t_taglist_delete(ret);
+	t_taglist_delete(tlist);
 	return (0);
 	/* NOTREACHED */
-error:
+error_label:
 	t_taglist_delete(ret);
+	t_taglist_delete(tlist);
 	return (-1);
 }
 
@@ -466,6 +468,7 @@ static int
 t_action_edit(struct t_action *self, struct t_tune *tune)
 {
 	FILE *fp = NULL;
+	struct t_taglist *tlist = NULL;
 	char *tmp = NULL, *yaml = NULL, *q = NULL;
 	const char *editor;
 	pid_t editpid; /* child process */
@@ -477,35 +480,37 @@ t_action_edit(struct t_action *self, struct t_tune *tune)
 	assert(self->kind == T_ACTION_EDIT);
 
 	if (asprintf(&q, "edit %s", tune->path) < 0)
-		goto error;
+		goto error_label;
 	if (t_yesno(q)) {
 		/* convert the tags into YAML */
-		const struct t_taglist *tlist = t_tune_tags(tune);
+		tlist = t_tune_tags(tune);
 		if (tlist == NULL)
-			goto error;
+			goto error_label;
 		yaml = t_tags2yaml(tlist, tune->path);
+		t_taglist_delete(tlist);
+		tlist = NULL;
 		if (yaml == NULL)
-			goto error;
+			goto error_label;
 
 		/* print the YAML into a temp file */
 		if (asprintf(&tmp, "/tmp/%s-XXXXXX.yml", getprogname()) < 0)
-			goto error;
+			goto error_label;
 		if (mkstemps(tmp, 4) == -1) {
 			warn("mkstemps");
-			goto error;
+			goto error_label;
 		}
 		fp = fopen(tmp, "w");
 		if (fp == NULL) {
 			warn("%s: fopen", tmp);
-			goto error;
+			goto error_label;
 		}
 		if (fprintf(fp, "%s", yaml) < 0) {
 			warn("%s: fprintf", tmp);
-			goto error;
+			goto error_label;
 		}
 		if (fclose(fp) != 0) {
 			warn("%s: fclose", tmp);
-			goto error;
+			goto error_label;
 		}
 		fp = NULL;
 
@@ -513,14 +518,14 @@ t_action_edit(struct t_action *self, struct t_tune *tune)
 		editor = getenv("EDITOR");
 		if (editor == NULL) {
 			warnx("please set the $EDITOR environment variable.");
-			goto error;
+			goto error_label;
 		}
 		if (stat(tmp, &before) != 0)
-			goto error;
+			goto error_label;
 		switch (editpid = fork()) {
 		case -1:
 			warn("fork");
-			goto error;
+			goto error_label;
 			/* NOTREACHED */
 		case 0: /* child (edit process) */
 			/*
@@ -538,18 +543,18 @@ t_action_edit(struct t_action *self, struct t_tune *tune)
 			waitpid(editpid, &status, 0);
 		}
 		if (stat(tmp, &after) != 0)
-			goto error;
+			goto error_label;
 
 		/* check if the edit process went successfully */
 		if (after.st_mtime > before.st_mtime &&
 		    WIFEXITED(status) && WEXITSTATUS(status) == 0) {
 			struct t_action *load = t_action_new(T_ACTION_LOAD, tmp);
 			if (load == NULL)
-				goto error;
+				goto error_label;
 			status = load->apply(load, tune);
 			t_action_delete(load);
 			if (status != 0)
-				goto error;
+				goto error_label;
 		}
 	}
 
@@ -558,7 +563,7 @@ t_action_edit(struct t_action *self, struct t_tune *tune)
 	free(yaml);
 	free(q);
 	return (0);
-error:
+error_label:
 	if (fp != NULL)
 		(void)fclose(fp);
 	if (tmp != NULL)
@@ -612,7 +617,7 @@ static int
 t_action_print(struct t_action *self, struct t_tune *tune)
 {
 	char	*yaml;
-	const struct t_taglist *tlist;
+	struct t_taglist *tlist;
 
 	assert_not_null(self);
 	assert_not_null(tune);
@@ -622,6 +627,8 @@ t_action_print(struct t_action *self, struct t_tune *tune)
 	if (tlist == NULL)
 		return (-1);
 	yaml = t_tags2yaml(tlist, tune->path);
+	t_taglist_delete(tlist);
+	tlist = NULL;
 	if (yaml == NULL)
 		return (-1);
 	(void)printf("%s\n", yaml);
@@ -663,19 +670,19 @@ t_action_rename(struct t_action *self, struct t_tune *tune)
 	ext = strrchr(tune->path, '.');
 	if (ext == NULL) {
 		warnx("%s: can not find file extension", tune->path);
-		goto error;
+		goto error_label;
 	}
 	ext++; /* skip dot */
 	/* FIXME: t_rename_eval() error handling ? */
 	rname = t_rename_eval(tune, tknv);
 	if (rname == NULL)
-		goto error;
+		goto error_label;
 
 	/* rname is now OK. store into result the full new path.  */
 	dirn = t_dirname(tune->path);
 	if (dirn == NULL) {
 		warn("dirname");
-		goto error;
+		goto error_label;
 	}
 
 	opath = tune->path;
@@ -683,15 +690,15 @@ t_action_rename(struct t_action *self, struct t_tune *tune)
 	   different path like ./foo.flac */
 	if (strcmp(opath, t_basename(opath)) == 0) {
 		if (asprintf(&npath, "%s.%s", rname, ext) < 0)
-			goto error;
+			goto error_label;
 	} else {
 		if (asprintf(&npath, "%s/%s.%s", dirn, rname, ext) < 0)
-			goto error;
+			goto error_label;
 	}
 
 	/* ask user for confirmation and rename if user want to */
 	if (asprintf(&q, "rename `%s' to `%s'", opath, npath) < 0)
-		goto error;
+		goto error_label;
 	if (strcmp(opath, npath) != 0 && t_yesno(q)) {
 		ret = t_rename_safe(opath, npath);
 		if (ret == 0) {
@@ -699,7 +706,7 @@ t_action_rename(struct t_action *self, struct t_tune *tune)
 			struct t_tune tmp;
 			struct t_tune *neo = t_tune_new(npath);
 			if (neo == NULL)
-				goto error;
+				goto error_label;
 
 			/* switch */
 			memcpy(&tmp, tune, sizeof(struct t_tune));
@@ -714,7 +721,7 @@ t_action_rename(struct t_action *self, struct t_tune *tune)
 	free(npath);
 	free(rname);
 	return (ret);
-error:
+error_label:
 	free(q);
 	free(npath);
 	free(rname);
@@ -739,12 +746,14 @@ t_action_set(struct t_action *self, struct t_tune *tune)
 		return (-1);
 	t_tmp = NULL;
 
-	tlist = t_taglist_clone(t_tune_tags(tune));
+	tlist = t_tune_tags(tune);
 	if (tlist == NULL) {
 		t_tag_delete(neo);
 		return (-1);
 	}
 
+	/* We want to "replace" existing tag(s) with a matching key. If there is
+	   any, neo replace the first occurence found */
 	n = 0;
 	TAILQ_FOREACH_SAFE(t, tlist->tags, entries, t_tmp) {
 		if (t_tag_keycmp(neo->key, t->key) == 0) {
@@ -754,8 +763,11 @@ t_action_set(struct t_action *self, struct t_tune *tune)
 			t_tag_delete(t);
 		}
 	}
-	if (n == 0)
+	if (n == 0) {
+		/* there wasn't any tag matching the key, so we just add neo at
+		   the end. */
 		TAILQ_INSERT_TAIL(tlist->tags, neo, entries);
+	}
 
 	status = t_tune_set_tags(tune, tlist);
 	t_taglist_delete(tlist);

@@ -44,9 +44,10 @@ int t_tune_init(struct t_tune *tune, const char *path);
  * get all the tags of a tune.
  *
  * @return
- *   A complete and ordered t_taglist on success, NULL on error.
+ *   A complete and ordered t_taglist on success, NULL on error. The called
+ *   should pass the returned t_taglist to t_taglist_delete() after use.
  */
-const struct t_taglist	*t_tune_tags(struct t_tune *tune);
+struct t_taglist	*t_tune_tags(struct t_tune *tune);
 
 /*
  * set the tags for a tune.

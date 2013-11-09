@@ -207,7 +207,7 @@ t_rename_eval(struct t_tune *tune, struct t_token **ts)
 {
 	const struct t_token *tkn;
 	struct sbuf *sb = NULL;
-	const struct t_taglist *tlist;
+	struct t_taglist *tlist = NULL;
 	struct t_taglist *l = NULL;
 	struct t_tag *t;
 	char *ret, *s = NULL, *slash;
@@ -275,13 +275,16 @@ t_rename_eval(struct t_tune *tune, struct t_token **ts)
 	else {
 		if (sbuf_finish(sb) != -1)
 			ret = strdup(sbuf_data(sb));
-		sbuf_delete(sb);
 	}
+
+	sbuf_delete(sb);
+	t_taglist_delete(tlist);
 	return (ret);
 error:
 	free(s);
 	t_taglist_delete(l);
 	sbuf_delete(sb);
+	t_taglist_delete(tlist);
 	return (NULL);
 }
 
