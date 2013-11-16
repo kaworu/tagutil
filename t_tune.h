@@ -36,7 +36,8 @@ struct t_tune	*t_tune_new(const char *path);
  *
  * @return
  *   0 on success and the t_tune is ready to be passed to t_tune_tags(),
- *   t_tune_set_tags() and t_tune_save() routines, -1 on error.
+ *   t_tune_set_tags() and t_tune_save() routines, -1 on error (ENOMEM) or if no
+ *   backend was found.
  */
 int t_tune_init(struct t_tune *tune, const char *path);
 
@@ -44,7 +45,7 @@ int t_tune_init(struct t_tune *tune, const char *path);
  * get all the tags of a tune.
  *
  * @return
- *   A complete and ordered t_taglist on success, NULL on error. The called
+ *   A complete and ordered t_taglist on success, NULL on error. The caller
  *   should pass the returned t_taglist to t_taglist_delete() after use.
  */
 struct t_taglist	*t_tune_tags(struct t_tune *tune);

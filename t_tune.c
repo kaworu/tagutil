@@ -27,6 +27,7 @@ t_tune_new(const char *path)
 	return (tune);
 }
 
+
 int
 t_tune_init(struct t_tune *tune, const char *path)
 {
@@ -53,10 +54,12 @@ t_tune_init(struct t_tune *tune, const char *path)
 		}
 	}
 
+	/* no backend found */
 	free(tune->path);
 	tune->path = NULL;
 	return (-1);
 }
+
 
 struct t_taglist *
 t_tune_tags(struct t_tune *tune)
@@ -71,12 +74,12 @@ t_tune_tags(struct t_tune *tune)
 	return (t_taglist_clone(tune->tlist));
 }
 
+
 int
 t_tune_set_tags(struct t_tune *tune, const struct t_taglist *tlist)
 {
 	assert_not_null(tune);
 	assert_not_null(tlist);
-	/* this is not really needed because we would return -1, but we ensure a safe initialization */
 	assert_not_null(tune->backend);
 
 	if (tune->tlist != tlist) {
@@ -90,6 +93,7 @@ t_tune_set_tags(struct t_tune *tune, const struct t_taglist *tlist)
 	return (0);
 }
 
+
 int
 t_tune_save(struct t_tune *tune)
 {
@@ -98,12 +102,15 @@ t_tune_save(struct t_tune *tune)
 	assert_not_null(tune->backend);
 
 	if (tune->dirty) {
-		if (tune->backend->write(tune->opaque, tune->tlist) == 0) /* success */
+		if (tune->backend->write(tune->opaque, tune->tlist) == 0) {
+			/* success */
 			tune->dirty = 0;
+		}
 	}
 
 	return (tune->dirty ? -1 : 0);
 }
+
 
 void
 t_tune_clear(struct t_tune *tune)
@@ -119,6 +126,7 @@ t_tune_clear(struct t_tune *tune)
 	free(tune->path);
 	bzero(tune, sizeof(struct t_tune));
 }
+
 
 void
 t_tune_delete(struct t_tune *tune)
