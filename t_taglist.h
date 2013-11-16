@@ -19,8 +19,6 @@
 struct t_taglist {
 	size_t		count;
 	struct t_tagQ	*tags;
-
-	T_ERROR_MSG_MEMBER;
 };
 
 

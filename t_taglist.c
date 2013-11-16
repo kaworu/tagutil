@@ -6,7 +6,6 @@
 #include <string.h>
 
 #include "t_config.h"
-#include "t_error.h"
 #include "t_tag.h"
 #include "t_taglist.h"
 
@@ -22,7 +21,6 @@ t_taglist_new(void)
 
 	ret->tags = (struct t_tagQ *)(ret + 1);
 	ret->count = 0;
-	t_error_init(ret);
 	TAILQ_INIT(ret->tags);
 
 	return (ret);
@@ -158,6 +156,5 @@ t_taglist_delete(struct t_taglist *tlist)
 		free(t1);
 		t1 = t2;
 	}
-	t_error_clear(tlist);
 	free(tlist);
 }
