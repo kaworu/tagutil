@@ -469,7 +469,7 @@ t_action_edit(struct t_action *self, struct t_tune *tune)
 {
 	FILE *fp = NULL;
 	struct t_taglist *tlist = NULL;
-	char *tmp = NULL, *yaml = NULL, *q = NULL;
+	char *tmp = NULL, *yaml = NULL;
 	const char *editor;
 	pid_t editpid; /* child process */
 	int status;
@@ -479,89 +479,84 @@ t_action_edit(struct t_action *self, struct t_tune *tune)
 	assert_not_null(tune);
 	assert(self->kind == T_ACTION_EDIT);
 
-	if (asprintf(&q, "edit %s", tune->path) < 0)
+	/* convert the tags into YAML */
+	tlist = t_tune_tags(tune);
+	if (tlist == NULL)
 		goto error_label;
-	if (t_yesno(q)) {
-		/* convert the tags into YAML */
-		tlist = t_tune_tags(tune);
-		if (tlist == NULL)
-			goto error_label;
-		yaml = t_tags2yaml(tlist, tune->path);
-		t_taglist_delete(tlist);
-		tlist = NULL;
-		if (yaml == NULL)
-			goto error_label;
+	yaml = t_tags2yaml(tlist, tune->path);
+	t_taglist_delete(tlist);
+	tlist = NULL;
+	if (yaml == NULL)
+		goto error_label;
 
-		/* print the YAML into a temp file */
-		if (asprintf(&tmp, "/tmp/%s-XXXXXX.yml", getprogname()) < 0)
-			goto error_label;
-		if (mkstemps(tmp, 4) == -1) {
-			warn("mkstemps");
-			goto error_label;
-		}
-		fp = fopen(tmp, "w");
-		if (fp == NULL) {
-			warn("%s: fopen", tmp);
-			goto error_label;
-		}
-		if (fprintf(fp, "%s", yaml) < 0) {
-			warn("%s: fprintf", tmp);
-			goto error_label;
-		}
-		if (fclose(fp) != 0) {
-			warn("%s: fclose", tmp);
-			goto error_label;
-		}
-		fp = NULL;
+	/* print the YAML into a temp file */
+	if (asprintf(&tmp, "/tmp/%s-XXXXXX.yml", getprogname()) < 0)
+		goto error_label;
+	if (mkstemps(tmp, 4) == -1) {
+		warn("mkstemps");
+		goto error_label;
+	}
+	fp = fopen(tmp, "w");
+	if (fp == NULL) {
+		warn("%s: fopen", tmp);
+		goto error_label;
+	}
+	if (fprintf(fp, "%s", yaml) < 0) {
+		warn("%s: fprintf", tmp);
+		goto error_label;
+	}
+	if (fclose(fp) != 0) {
+		warn("%s: fclose", tmp);
+		goto error_label;
+	}
+	fp = NULL;
 
-		/* call the user's editor to edit the temp file */
-		editor = getenv("EDITOR");
-		if (editor == NULL) {
-			warnx("please set the $EDITOR environment variable.");
-			goto error_label;
-		}
-		if (stat(tmp, &before) != 0)
-			goto error_label;
-		switch (editpid = fork()) {
-		case -1:
-			warn("fork");
-			goto error_label;
-			/* NOTREACHED */
-		case 0: /* child (edit process) */
-			/*
-			 * we're actually so cool, that we keep the user waiting if
-			 * $EDITOR start slowly. The slow-editor-detection-algorithm
-			 * used might not be the best known at the time of writing, but
-			 * it has shown really good results and is pretty clear.
-			 */
-			if (strcmp(editor, "emacs") == 0)
-				(void)fprintf(stderr, "Starting %s, please wait...\n", editor);
-			execlp(editor, /* argv[0] */editor, /* argv[1] */tmp, NULL);
-			err(errno, "execlp");
-			/* NOTREACHED */
-		default: /* parent (tagutil process) */
-			waitpid(editpid, &status, 0);
-		}
-		if (stat(tmp, &after) != 0)
-			goto error_label;
+	/* call the user's editor to edit the temp file */
+	editor = getenv("EDITOR");
+	if (editor == NULL) {
+		warnx("please set the $EDITOR environment variable.");
+		goto error_label;
+	}
+	if (stat(tmp, &before) != 0)
+		goto error_label;
+	switch (editpid = fork()) {
+	case -1:
+		warn("fork");
+		goto error_label;
+		/* NOTREACHED */
+	case 0: /* child (edit process) */
+		/*
+		 * we're actually so cool, that we keep the user waiting if
+		 * $EDITOR start slowly. The slow-editor-detection-algorithm
+		 * used might not be the best known at the time of writing, but
+		 * it has shown really good results and is pretty clear.
+		 */
+		if (strcmp(editor, "emacs") == 0)
+			(void)fprintf(stderr, "Starting %s, please wait...\n", editor);
+		execlp(editor, /* argv[0] */editor, /* argv[1] */tmp, NULL);
+		err(errno, "execlp");
+		/* NOTREACHED */
+	default: /* parent (tagutil process) */
+		waitpid(editpid, &status, 0);
+	}
+	if (stat(tmp, &after) != 0)
+		goto error_label;
 
-		/* check if the edit process went successfully */
-		if (after.st_mtime > before.st_mtime &&
-		    WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-			struct t_action *load = t_action_new(T_ACTION_LOAD, tmp);
-			if (load == NULL)
-				goto error_label;
-			status = load->apply(load, tune);
-			t_action_delete(load);
-			if (status != 0)
-				goto error_label;
-		}
+	/* check if the edit process went successfully */
+	if (after.st_mtime > before.st_mtime &&
+	    WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+		struct t_action *load = t_action_new(T_ACTION_LOAD, tmp);
+		if (load == NULL)
+			goto error_label;
+		status = load->apply(load, tune);
+		t_action_delete(load);
+		if (status != 0)
+			goto error_label;
 	}
 
 	(void)unlink(tmp);
 	free(tmp);
 	free(yaml);
-	free(q);
 	return (0);
 error_label:
 	if (fp != NULL)
@@ -570,7 +565,6 @@ error_label:
 		(void)unlink(tmp);
 	free(tmp);
 	free(yaml);
-	free(q);
 	return (-1);
 }
 
