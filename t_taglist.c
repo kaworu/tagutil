@@ -118,8 +118,6 @@ t_taglist_join(const struct t_taglist *tlist, const char *glue)
 	assert_not_null(tlist);
 	assert_not_null(glue);
 
-	if (tlist->count == 0)
-		return (calloc(1, sizeof(char)));
 	sb = sbuf_new_auto();
 	if (sb == NULL)
 		return (NULL);
