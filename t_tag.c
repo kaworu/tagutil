@@ -39,15 +39,16 @@ t_tag_new(const char *key, const char *val)
 
 
 int
-t_tag_keycmp(const char *k1, const char *k2)
+t_tag_keycmp(const char *x, const char *y)
 {
 
-	return (strcasecmp(k1, k2));
+	return (strcasecmp(x, y));
 }
 
 
 void
 t_tag_delete(struct t_tag *victim)
 {
+
 	free(victim);
 }
