@@ -151,7 +151,7 @@ t_taglist_delete(struct t_taglist *tlist)
 	t1 = TAILQ_FIRST(tlist->tags);
 	while (t1 != NULL) {
 		t2 = TAILQ_NEXT(t1, entries);
-		free(t1);
+		t_tag_delete(t1);
 		t1 = t2;
 	}
 	free(tlist);
