@@ -144,8 +144,7 @@ t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
 		case T_ACTION_LOAD: /* FALLTHROUGH */
 		case T_ACTION_SET: /* FALLTHROUGH */
 		case T_ACTION_PRINT: /* FALLTHROUGH */
-		case T_ACTION_BACKEND: /* FALLTHROUGH */
-		case T_ACTION_PATH:
+		case T_ACTION_BACKEND:
 			a = t_action_new(t->kind, arg);
 			if (a == NULL)
 				goto error_label;

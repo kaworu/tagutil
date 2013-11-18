@@ -19,7 +19,6 @@ enum t_actionkind {
 	T_ACTION_EDIT,		/* edit			edit with $EDITOR */
 	T_ACTION_LOAD,		/* load:PATH		load file */
 	T_ACTION_PRINT,		/* print		display tags */
-	T_ACTION_PATH,		/* path			display only file path */
 	T_ACTION_RENAME,	/* rename:PATTERN	rename files */
 	T_ACTION_SET,		/* set:TAG=VALUE	set tags */
 	/* internal */
