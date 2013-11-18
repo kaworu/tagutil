@@ -34,7 +34,6 @@ static struct t_action_token t_action_keywords[] = {
 	{ .word = "clear",	.kind = T_ACTION_CLEAR,		.argc = 1 },
 	{ .word = "edit",	.kind = T_ACTION_EDIT,		.argc = 0 },
 	{ .word = "load",	.kind = T_ACTION_LOAD,		.argc = 1 },
-	{ .word = "path",	.kind = T_ACTION_PATH,		.argc = 0 },
 	{ .word = "print",	.kind = T_ACTION_PRINT,		.argc = 0 },
 	{ .word = "rename",	.kind = T_ACTION_RENAME,	.argc = 1 },
 	{ .word = "set",	.kind = T_ACTION_SET,		.argc = 1 },
@@ -56,7 +55,6 @@ static int	t_action_clear(struct t_action *self, struct t_tune *tune);
 static int	t_action_edit(struct t_action *self, struct t_tune *tune);
 static int	t_action_load(struct t_action *self, struct t_tune *tune);
 static int	t_action_print(struct t_action *self, struct t_tune *tune);
-static int	t_action_path(struct t_action *self, struct t_tune *tune);
 static int	t_action_rename(struct t_action *self, struct t_tune *tune);
 static int	t_action_set(struct t_action *self, struct t_tune *tune);
 static int	t_action_save(struct t_action *self, struct t_tune *tune);
@@ -281,9 +279,6 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		break;
 	case T_ACTION_PRINT:
 		a->apply = t_action_print;
-		break;
-	case T_ACTION_PATH:
-		a->apply = t_action_path;
 		break;
 	case T_ACTION_RENAME:
 		assert_not_null(arg);
@@ -612,19 +607,6 @@ t_action_print(struct t_action *self, struct t_tune *tune)
 		return (-1);
 	(void)printf("%s\n", yaml);
 	free(yaml);
-	return (0);
-}
-
-
-static int
-t_action_path(struct t_action *self, struct t_tune *tune)
-{
-
-	assert_not_null(self);
-	assert_not_null(tune);
-	assert(self->kind == T_ACTION_PATH);
-
-	(void)printf("%s\n", tune->path);
 	return (0);
 }
 
