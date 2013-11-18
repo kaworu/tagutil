@@ -38,7 +38,6 @@ static struct t_action_token t_action_keywords[] = {
 	{ .word = "print",	.kind = T_ACTION_PRINT,		.argc = 0 },
 	{ .word = "rename",	.kind = T_ACTION_RENAME,	.argc = 1 },
 	{ .word = "set",	.kind = T_ACTION_SET,		.argc = 1 },
-	{ .word = "show",	.kind = T_ACTION_PRINT,		.argc = 0 },
 };
 
 
@@ -162,7 +161,7 @@ t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
 	}
 
 	if (TAILQ_EMPTY(aQ)) {
-		/* no action given, fallback to default which is show */
+		/* no action given, fallback to default which is print */
 		a = t_action_new(T_ACTION_PRINT, NULL);
 		if (a == NULL)
 			goto error_label;

@@ -149,7 +149,6 @@ usage(void)
 
 	(void)fprintf(stderr, "Actions:\n");
 	(void)fprintf(stderr, "  print            print tags (default action)\n");
-	(void)fprintf(stderr, "  show             alias for `print'\n");
 	(void)fprintf(stderr, "  path             print only filename's path\n");
 	(void)fprintf(stderr, "  backend          print backend used\n");
 	(void)fprintf(stderr, "  clear:TAG        clear all tag TAG. If TAG is "
