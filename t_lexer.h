@@ -4,7 +4,6 @@
  * t_lexer.h
  *
  * a hand writted lexer for tagutil.
- * used by the filter function.
  */
 #include <stdarg.h>
 #include <stdbool.h>

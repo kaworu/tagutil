@@ -20,8 +20,6 @@ set(SRCS
     t_yaml.c
     t_renamer.c
     t_lexer.c
-    t_parser.c
-    t_filter.c
     t_backend.c
     t_action.c
 )

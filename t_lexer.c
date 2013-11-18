@@ -2,7 +2,6 @@
  * t_lexer.c
  *
  * a hand writted lexer for tagutil.
- * used by the filter function.
  */
 #include <limits.h>
 #include <math.h>

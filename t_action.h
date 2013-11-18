@@ -22,7 +22,6 @@ enum t_actionkind {
 	T_ACTION_PATH,		/* path			display only file path */
 	T_ACTION_RENAME,	/* rename:PATTERN	rename files */
 	T_ACTION_SET,		/* set:TAG=VALUE	set tags */
-	T_ACTION_FILTER,	/* filter:FILTER	filter */
 	/* internal */
 	T_ACTION_SAVE,
 };
@@ -50,9 +49,7 @@ TAILQ_HEAD(t_actionQ, t_action);
  * @param write_p
  *   If not NULL, the pointer is set to the number of action needing write
  *   access. Thus, 0 mean that no action require writting. The value is merely a
- *   hint; a rename action will enqueue two write action (a save and a rename),
- *   and a filter action could dimiss a file before it goes through any write
- *   action.
+ *   hint; a rename action will enqueue two write action (a save and a rename).
  *
  * @return
  *   A new t_actionQ that resulted from argc/argv parsing. On error, NULL is

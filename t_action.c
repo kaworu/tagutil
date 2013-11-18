@@ -18,8 +18,6 @@
 #include "t_yaml.h"
 #include "t_renamer.h"
 #include "t_lexer.h"
-#include "t_parser.h"
-#include "t_filter.h"
 
 
 struct t_action_token {
@@ -35,7 +33,6 @@ static struct t_action_token t_action_keywords[] = {
 	{ .word = "backend",	.kind = T_ACTION_BACKEND,	.argc = 0 },
 	{ .word = "clear",	.kind = T_ACTION_CLEAR,		.argc = 1 },
 	{ .word = "edit",	.kind = T_ACTION_EDIT,		.argc = 0 },
-	{ .word = "filter",	.kind = T_ACTION_FILTER,	.argc = 1 },
 	{ .word = "load",	.kind = T_ACTION_LOAD,		.argc = 1 },
 	{ .word = "path",	.kind = T_ACTION_PATH,		.argc = 0 },
 	{ .word = "print",	.kind = T_ACTION_PRINT,		.argc = 0 },
@@ -63,7 +60,6 @@ static int	t_action_print(struct t_action *self, struct t_tune *tune);
 static int	t_action_path(struct t_action *self, struct t_tune *tune);
 static int	t_action_rename(struct t_action *self, struct t_tune *tune);
 static int	t_action_set(struct t_action *self, struct t_tune *tune);
-static int	t_action_filter(struct t_action *self, struct t_tune *tune);
 static int	t_action_save(struct t_action *self, struct t_tune *tune);
 
 
@@ -139,8 +135,7 @@ t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
 		/* FIXME: maybe a flag to know if we need to save before the
 		   action ? */
 		switch (t->kind) {
-		case T_ACTION_RENAME: /* FALLTHROUGH */
-		case T_ACTION_FILTER:
+		case T_ACTION_RENAME:
 			a = t_action_new(T_ACTION_SAVE, NULL);
 			if (a == NULL)
 				goto error_label;
@@ -322,12 +317,6 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		a->write = 1;
 		a->apply = t_action_set;
 		break;
-	case T_ACTION_FILTER:
-		assert_not_null(arg);
-		a->opaque = t_parse_filter(t_lexer_new(arg));
-		/* FIXME: error checking on t_parse_filter & t_lexer_new */
-		a->apply = t_action_filter;
-		break;
 	case T_ACTION_SAVE:
 		/* we don't set write() because T_ACTION_SAVE is private */
 		a->apply = t_action_save;
@@ -367,9 +356,6 @@ t_action_delete(struct t_action *victim)
 		for (i = 0; tknv[i]; i++)
 			free(tknv[i]);
 		free(tknv);
-		break;
-	case T_ACTION_FILTER:
-		t_ast_destroy(victim->opaque);
 		break;
 	default:
 		/* do nada */
@@ -766,22 +752,6 @@ t_action_set(struct t_action *self, struct t_tune *tune)
 	status = t_tune_set_tags(tune, tlist);
 	t_taglist_delete(tlist);
 	return (status == 0 ? 0 : -1);
-}
-
-
-/* FIXME: error handling? */
-static int
-t_action_filter(struct t_action *self, struct t_tune *tune)
-{
-	const struct t_ast *ast;
-
-	assert_not_null(self);
-	assert_not_null(tune);
-	assert(self->kind == T_ACTION_FILTER);
-	assert(!tune->dirty);
-
-	ast = self->opaque;
-	return (t_filter_eval(tune, ast) ? 0 : -1);
 }
 
 

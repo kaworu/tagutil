@@ -158,8 +158,6 @@ usage(void)
 	(void)fprintf(stderr, "  set:TAG=VALUE    set TAG to VALUE\n");
 	(void)fprintf(stderr, "  edit             prompt for editing\n");
 	(void)fprintf(stderr, "  load:PATH        load PATH yaml tag file\n");
-	(void)fprintf(stderr, "  filter:FILTER    use only files matching "
-	    "FILTER for next(s) action(s)\n");
 	(void)fprintf(stderr, "  rename:PATTERN   rename to PATTERN\n");
 	(void)fprintf(stderr, "\n");
 
