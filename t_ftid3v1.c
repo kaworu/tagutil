@@ -243,7 +243,7 @@ t_ftid3v1_init(const char *path)
 		goto error;
 	if (fseek(fp, -(sizeof(struct id3v1_tag)), SEEK_END) != 0)
 		goto error;
-	if (fread(&magic, sizeof(char), countof(magic), fp) != countof(magic))
+	if (fread(&magic, sizeof(char), NELEM(magic), fp) != NELEM(magic))
 		goto error;
 	data->id3 = (
 	    magic[0] == 'T' &&
@@ -254,7 +254,7 @@ t_ftid3v1_init(const char *path)
 
 	if (fseek(fp, 0L, SEEK_SET) != 0)
 		goto error;
-	if (fread(&magic, sizeof(char), countof(magic), fp) != countof(magic))
+	if (fread(&magic, sizeof(char), NELEM(magic), fp) != NELEM(magic))
 		goto error;
 	if (data->id3) {
 		/* check that we don't handle a file with ID3v2 tags. */
@@ -436,7 +436,7 @@ id3tag_to_taglist(const struct id3v1_tag *tag, struct t_taglist *tlist)
 		}
 	}
 	/* genre */
-	if (tag->genre < countof(id3v1_genre_str)) {
+	if (tag->genre < NELEM(id3v1_genre_str)) {
 		if (t_taglist_insert(tlist, "genre", id3v1_genre_str[tag->genre]) != 0)
 			return (-1);
 	}
@@ -481,13 +481,13 @@ taglist_to_id3tag(const struct t_taglist *tlist, struct id3v1_tag *tag)
 			continue;
 		} else if (strcasecmp(t->key, "genre") == 0) {
 			int i;
-			for (i = 0; i < countof(id3v1_genre_str); i++) {
+			for (i = 0; i < NELEM(id3v1_genre_str); i++) {
 				if (strcasecmp(t->val, id3v1_genre_str[i]) == 0) {
 					tag->genre = i;
 					break;
 				}
 			}
-			if (i == countof(id3v1_genre_str))
+			if (i == NELEM(id3v1_genre_str))
 				warnx("ID3v1: %s: invalid value for %s", t->val, t->key);
 			continue;
 		} else if (strcasecmp(t->key, "title") == 0) {

@@ -109,7 +109,7 @@ t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
 		struct t_action_token *t;
 
 		t = bsearch(*argv, t_action_keywords,
-		    countof(t_action_keywords), sizeof(*t_action_keywords),
+		    NELEM(t_action_keywords), sizeof(*t_action_keywords),
 		    t_action_token_cmp);
 		if (t == NULL) {
 			/* it doesn't look like an option */

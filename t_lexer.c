@@ -573,7 +573,7 @@ t_lex_next_token(struct t_lexer *L)
     default:
         /* keywords, not optimized at all, no gperf or so */
         found = false;
-        for (i = 0; !found && i < countof(t_lex_keywords_table); i++) {
+        for (i = 0; !found && i < NELEM(t_lex_keywords_table); i++) {
             if (strncmp(L->source + L->cindex,
                         t_lex_keywords_table[i].lexem,
                         t_lex_keywords_table[i].lexemlen) == 0) {

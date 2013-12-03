@@ -67,7 +67,7 @@ t_yesno(const char *question)
 			return (false);
 		}
 
-		if (fgets(buffer, countof(buffer), stdin) == NULL) {
+		if (fgets(buffer, NELEM(buffer), stdin) == NULL) {
 			if (feof(stdin))
 				return (false);
 			else
