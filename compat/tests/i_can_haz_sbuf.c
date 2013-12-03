@@ -9,7 +9,13 @@ int
 main(void)
 {
 	struct sbuf *_ = sbuf_new_auto();
-	(void)_;
+
+	/*
+	 * XXX: DragonFly has a different interface. where sbuf_finish() return
+	 * void.
+	 */
+	if (sbuf_finish(_) == -1)
+		return (-1);
 
 	return (0);
 }
