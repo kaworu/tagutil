@@ -17,7 +17,6 @@
 #include "t_tune.h"
 #include "t_yaml.h"
 #include "t_renamer.h"
-#include "t_lexer.h"
 
 
 struct t_action_token {
