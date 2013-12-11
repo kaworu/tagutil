@@ -2,6 +2,12 @@
  * t_yaml.c
  *
  * yaml tagutil interface, using libyaml.
+ *
+ * basically implement both t_yaml2tags and t_tags2yaml.
+ *
+ * XXX: t_yaml2tags use a Finite State Machine that should be refactored into
+ * something simpler and cleaner. At the same time t_error should be dropped
+ * (it's the only code that still use it).
  */
 #include <sys/param.h>
 

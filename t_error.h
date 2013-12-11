@@ -3,6 +3,9 @@
 /*
  * t_error.h
  *
+ * XXX: This interface is deprecated and no "new" code should use it. It is left
+ * because some codepath still use it.
+ *
  * error handling for tagutil.
  */
 #include "t_config.h"
@@ -12,7 +15,7 @@
 /* error handling macros */
 
 /* used for any struct that need to behave like a t_error */
-#define	T_ERROR_MSG_MEMBER	char *t__errmsg
+#define	T_ERROR_MSG_MEMBER	char *t__errmsg /* t__deprecated XXX: whine too much */
 
 /* error message getter */
 #define	t_error_msg(o)	((o)->t__errmsg)
@@ -40,19 +43,19 @@
  */
 struct t_error {
 	T_ERROR_MSG_MEMBER;
-};
+} t__deprecated;
 
 
 /*
  * create a t_error struct.
  */
-t__unused
+t__unused t__deprecated
 static inline struct t_error	*t_error_new(void);
 
 /*
  * free a t_error struct.
  */
-t__unused
+t__unused t__deprecated
 static inline void	t_error_delete(struct t_error *e);
 
 
