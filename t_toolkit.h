@@ -52,11 +52,6 @@ char	*t_strtolower(char *str);
 int	t_yesno(const char *question);
 
 /*
- * call "$EDITOR path" (the environment variable $EDITOR must be set).
- */
-int	t_user_edit(const char *path);
-
-/*
  * dirname() routine that does not modify its argument.
  */
 char	*t_dirname(const char *);

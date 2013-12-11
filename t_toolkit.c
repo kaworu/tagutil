@@ -91,58 +91,6 @@ t_yesno(const char *question)
 }
 
 
-int
-t_user_edit(const char *path)
-{
-	pid_t	edit; /* child process */
-	int	status;
-	time_t	before;
-	time_t	after;
-	struct stat s;
-	char	*editor;
-
-	assert_not_null(path);
-
-	editor = getenv("EDITOR");
-	if (editor == NULL)
-		errx(-1, "please, set the $EDITOR environment variable.");
-	/*
-	 * we're actually so cool, that we keep the user waiting if $EDITOR
-	 * start slowly. The slow-editor-detection-algorithm used maybe not
-	 * the best known at the time of writing, but it has shown really good
-	 * results and is pretty short and clear.
-	 */
-	if (strcmp(editor, "emacs") == 0)
-		(void)fprintf(stderr, "Starting %s, please wait...\n", editor);
-
-        if (stat(path, &s) != 0)
-		return (0);
-	before = s.st_mtime;
-	switch (edit = fork()) {
-	case -1:
-		err(errno, "fork");
-		/* NOTREACHED */
-	case 0:
-		/* child (edit process) */
-		execlp(editor, /* argv[0] */editor, /* argv[1] */path, NULL);
-		err(errno, "execlp");
-		/* NOTREACHED */
-	default:
-		/* parent (tagutil process) */
-		waitpid(edit, &status, 0);
-	}
-
-        if (stat(path, &s) != 0)
-		return (0);
-	after = s.st_mtime;
-	if (before == after)
-		/* the file hasn't been modified */
-		return (0);
-
-	return (WIFEXITED(status) && WEXITSTATUS(status) == 0);
-}
-
-
 /*	$OpenBSD: dirname.c,v 1.14 2013/04/05 12:59:54 kurt Exp $	*/
 
 /*
@@ -160,7 +108,6 @@ t_user_edit(const char *path)
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-
 #include <errno.h>
 #include <libgen.h>
 #include <string.h>
@@ -231,7 +178,6 @@ t_dirname(const char *path)
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-
 #include <errno.h>
 #include <libgen.h>
 #include <string.h>
