@@ -337,8 +337,6 @@ error_label:
 static void
 t_action_delete(struct t_action *victim)
 {
-	int i;
-	struct token **tknv;
 
 	if (victim == NULL)
 		return;
@@ -353,10 +351,7 @@ t_action_delete(struct t_action *victim)
 		free(victim->opaque);
 		break;
 	case T_ACTION_RENAME:
-		tknv = victim->opaque;
-		for (i = 0; tknv[i]; i++)
-			free(tknv[i]);
-		free(tknv);
+		t_rename_pattern_delete(victim->opaque);
 		break;
 	default:
 		/* do nada */
@@ -626,14 +621,14 @@ t_action_rename(struct t_action *self, struct t_tune *tune)
 	char *npath = NULL, *rname = NULL, *q = NULL;
 	const char *opath;
 	const char *dirn;
-	struct t_token **tknv;
+	struct t_rename_pattern *pattern;
 
 	assert_not_null(self);
 	assert(self->kind == T_ACTION_RENAME);
 	assert_not_null(tune);
 	assert(!t__tune_dirty__(tune)); /* FIXME: just do a t_tune_save() ? */
 
-	tknv = self->opaque;
+	pattern = self->opaque;
 
 	ext = strrchr(t_tune_path(tune), '.');
 	if (ext == NULL) {
@@ -642,7 +637,7 @@ t_action_rename(struct t_action *self, struct t_tune *tune)
 	}
 	ext++; /* skip dot */
 	/* FIXME: t_rename_eval() error handling ? */
-	rname = t_rename_eval(tune, tknv);
+	rname = t_rename_eval(tune, pattern);
 	if (rname == NULL)
 		goto error_label;
 

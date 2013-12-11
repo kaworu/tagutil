@@ -7,30 +7,35 @@
  */
 #include "t_config.h"
 #include "t_tune.h"
-#include "t_lexer.h"
 
+struct t_rename_pattern;
 
 /*
- * create a token array usable for t_rename_eval() from given pattern.
- * the array is NULL terminated.
+ * create a pattern usable for t_rename_eval().
  *
  * The tag keys in pattern must look like shell variables (i.e. %artist or/and
  * %{album}). If the tag key is not defined for a file, the tag key is replaced
  * by its name (i.e. "%{undefined}" or "%undefined" becomes "undefined"). If
  * you want a litteral %, use \%
  *
- * return value and all its elements has to be free()d.
+ * return value and all its elements has to be given to
+ * t_rename_pattern_delete() after use.
  */
-struct t_token	**t_rename_parse(const char *pattern);
+struct t_rename_pattern	*t_rename_parse(const char *pattern);
 
 /*
- * eval the given token array in the context of given t_tune.
+ * eval the given pattern in the context of given t_tune.
  *
  * On error NULL is returned. Otherwhise the result is returned.
  *
  * returned value has to be free()d.
  */
-char	*t_rename_eval(struct t_tune *tune, struct t_token **ts);
+char	*t_rename_eval(struct t_tune *tune, struct t_rename_pattern *pattern);
+
+/*
+ * free all memory associated with a pattern.
+ */
+void	t_rename_pattern_delete(struct t_rename_pattern *pattern);
 
 /*
  * rename path to new_path.

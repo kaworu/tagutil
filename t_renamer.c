@@ -19,6 +19,9 @@
 #include "t_renamer.h"
 
 
+struct t_rename_pattern {
+	struct t_token **tokens;
+};
 
 /*
  * TODO
@@ -88,11 +91,12 @@ t_rename_safe(const char *opath, const char *npath)
 }
 
 
-struct t_token **
+struct t_rename_pattern *
 t_rename_parse(const char *pattern)
 {
     struct t_lexer *L;
-    struct t_token **ret;
+    struct t_token **tokens;
+    struct t_rename_pattern *ret;
     size_t count, len;
 
     assert_not_null(pattern);
@@ -105,25 +109,29 @@ t_rename_parse(const char *pattern)
 
     count = 0;
     len   = 16;
-    ret   = calloc(len + 1, sizeof(struct t_token *));
-	if (ret == NULL)
+    tokens   = calloc(len + 1, sizeof(struct t_token *));
+	if (tokens == NULL)
 		err(ENOMEM, "calloc");
 
     while (t_rename_lex_next_token(L)->kind != T_END) {
             assert(L->current->kind == T_TAGKEY || L->current->kind == T_STRING);
             if (count == (len - 1)) {
                 len = len * 2;
-                ret = realloc(ret, (len + 1) * sizeof(struct t_token *));
-    	    	    if (ret == NULL)
+                tokens = realloc(tokens, (len + 1) * sizeof(struct t_token *));
+    	    	    if (tokens == NULL)
     	    	    	    err(ENOMEM, "realloc");
             }
-            ret[count++] = L->current;
+            tokens[count++] = L->current;
     }
     free(L->current);
     L->current = NULL;
     t_lexer_destroy(L);
 
-    ret[count] = NULL;
+    tokens[count] = NULL;
+    ret = malloc(sizeof(*ret));
+    if (ret == NULL)
+    	    err(ENOMEM, "malloc");
+    ret->tokens = tokens;
     return (ret);
 }
 
@@ -202,7 +210,7 @@ t_rename_lex_next_token(struct t_lexer *L)
 
 
 char *
-t_rename_eval(struct t_tune *tune, struct t_token **ts)
+t_rename_eval(struct t_tune *tune, struct t_rename_pattern *pattern)
 {
 	const struct t_token *tkn;
 	struct sbuf *sb = NULL;
@@ -210,9 +218,12 @@ t_rename_eval(struct t_tune *tune, struct t_token **ts)
 	struct t_taglist *l = NULL;
 	struct t_tag *t;
 	char *ret, *s = NULL, *slash;
+	struct t_token **ts;
 
-	assert_not_null(ts);
 	assert_not_null(tune);
+	assert_not_null(pattern);
+
+	ts = pattern->tokens;
 
 	tlist = t_tune_tags(tune);
 	sb = sbuf_new_auto();
@@ -394,3 +405,16 @@ build(char *path, mode_t omode)
 	return (retval);
 }
 
+
+void
+t_rename_pattern_delete(struct t_rename_pattern *pattern)
+{
+	if (pattern != NULL) {
+		int i;
+		struct t_token **tknv = pattern->tokens;
+		for (i = 0; tknv[i]; i++)
+			free(tknv[i]);
+		free(tknv);
+		free(pattern);
+	}
+}
