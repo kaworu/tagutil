@@ -41,56 +41,6 @@ t_strtolower(char *str)
 }
 
 
-int
-t_yesno(const char *question)
-{
-	extern int	Yflag, Nflag;
-	char		*endl;
-	char		buffer[5]; /* strlen("yes\n\0") == 5 */
-
-	for (;;) {
-		if (feof(stdin) && !Yflag && !Nflag)
-			return (0);
-
-		(void)memset(buffer, '\0', sizeof(buffer));
-
-		if (question != NULL) {
-			(void)printf("%s? [y/n] ", question);
-			(void)fflush(stdout);
-		}
-
-		if (Yflag) {
-			(void)printf("y\n");
-			return (1);
-		} else if (Nflag) {
-			(void)printf("n\n");
-			return (0);
-		}
-
-		if (fgets(buffer, NELEM(buffer), stdin) == NULL) {
-			if (feof(stdin))
-				return (0);
-			else
-				err(errno, "fgets");
-		}
-
-		endl = strchr(buffer, '\n');
-		if (endl == NULL) {
-			/* buffer didn't receive EOL, must still be on stdin */
-			while (getc(stdin) != '\n' && !feof(stdin))
-				continue;
-		} else {
-			*endl = '\0';
-			(void)t_strtolower(buffer);
-			if (strcmp(buffer, "n") == 0 || strcmp(buffer, "no") == 0)
-				return (0);
-			else if (strcmp(buffer, "y") == 0 || strcmp(buffer, "yes") == 0)
-				return (1);
-		}
-	}
-}
-
-
 /*	$OpenBSD: dirname.c,v 1.14 2013/04/05 12:59:54 kurt Exp $	*/
 
 /*

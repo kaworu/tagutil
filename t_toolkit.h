@@ -44,14 +44,6 @@ char	*t_strtoupper(char *str);
 char	*t_strtolower(char *str);
 
 /*
- * print the given question, and read user's input. input should match
- * y|yes|n|no.  t_yesno() loops until a valid response is given and then return
- * 1 if the response match y|yes, 0 if it match n|no.
- * Honor Yflag and Nflag.
- */
-int	t_yesno(const char *question);
-
-/*
  * dirname() routine that does not modify its argument.
  */
 char	*t_dirname(const char *);
