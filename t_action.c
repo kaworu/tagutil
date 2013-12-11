@@ -294,6 +294,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 			goto error_label;
 		}
 		a->opaque = t_rename_parse(arg);
+		assert_not_null(a->opaque);
 		/* FIXME: error checking on t_rename_parse() */
 		a->write = 1;
 		a->apply = t_action_rename;

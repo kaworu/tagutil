@@ -15,20 +15,228 @@
 
 #include "t_config.h"
 #include "t_toolkit.h"
-#include "t_lexer.h"
 #include "t_renamer.h"
 
 
-struct t_rename_pattern {
-	struct t_token **tokens;
+struct t_rename_token {
+	int		is_tag; /* 0 means string litteral, != 0 means a tag */
+	const char	*value;
+	TAILQ_ENTRY(t_rename_token)	entries;
 };
+TAILQ_HEAD(t_rename_pattern, t_rename_token);
 
-/*
- * TODO
- */
-static struct t_token	*t_rename_lex_next_token(struct t_lexer *L);
-/* taken from mkdir(3) */
+
+/* helper for t_rename_parse() */
+static struct t_rename_token	*t_rename_token_new(int is_tag, const char *value)
+/* helper for t_rename_safe(), taken from mkdir(3) */
 static int	build(char *path, mode_t omode);
+
+
+static struct t_rename_token *
+t_rename_token_new(int is_tag, const char *value)
+{
+	struct t_rename_token *token;
+	char *p;
+	size_t len;
+
+	len = strlen(value);
+	token = malloc(sizeof(struct t_rename_token) + len + 1);
+	if (token != NULL) {
+		token->is_tag = is_tag;
+		token->value = p = (char *)(token + 1);
+		memcpy(p, value, len + 1);
+	}
+	return (token);
+}
+
+
+struct t_rename_pattern *
+t_rename_parse(const char *source)
+{
+	const char *c = source;
+	struct t_rename_pattern *pattern = NULL;
+	struct t_rename_token *token;
+	struct sbuf *sb = NULL;
+	enum {
+		PARSING_STRING,
+		PARSING_SIMPLE_TAG,
+		PARSING_BRACE_TAG
+	} state;
+
+	sb = sbuf_new_auto();
+	if (sb == NULL)
+		goto error_label;
+
+	pattern = malloc(sizeof(struct t_rename_pattern));
+	if (pattern == NULL)
+		goto error_label;
+	TAILQ_INIT(pattern);
+
+	state = PARSING_STRING;
+	while (*c != '\0') {
+		/* test for a starting tag */
+		if (state == PARSING_STRING && *c == '%') {
+			/* avoid to add a empty token. This happend when
+			   two tag are consecutive */
+			if (sbuf_len(sb) > 0) {
+				if (sbuf_finish(sb) == -1)
+					goto error_label;
+				token = t_rename_token_new(0, sbuf_data(sb));
+				if (token == NULL)
+					goto error_label;
+				TAILQ_INSERT_TAIL(pattern, token, entries);
+			}
+			sbuf_clear(sb);
+			c += 1;
+			if (*c == '{') {
+				c += 1;
+				state = PARSING_BRACE_TAG;
+			} else {
+				state = PARSING_SIMPLE_TAG;
+			}
+		/* test for the end of a tag */
+		} else if ((state == PARSING_SIMPLE_TAG && (isspace(*c) || *c == '%')) ||
+		           (state == PARSING_BRACE_TAG  && *c == '}')) {
+				if (sbuf_finish(sb) == -1)
+					goto error_label;
+				token = t_rename_token_new(1, sbuf_data(sb));
+				if (token == NULL)
+					goto error_label;
+				sbuf_clear(sb);
+				TAILQ_INSERT_TAIL(pattern, token, entries);
+				if (state == PARSING_BRACE_TAG) {
+					/* eat the closing `}' */
+					c += 1;
+				}
+				state = PARSING_STRING;
+		} else {
+			/* default case for both string and tags. `\' escape
+			   everything */
+			if (*c == '\\') {
+				c += 1;
+				if (*c == '\0')
+					break;
+			}
+			sbuf_putc(sb, *c);
+			c += 1;
+		}
+	}
+	/* we've hit the end of the source. Check in which state we are and try
+	   to finish cleany */
+	if (sbuf_len(sb) == 0 && state != PARSING_STRING) {
+		warnx(" not cool");
+		goto error_label;
+	}
+	if (state == PARSING_BRACE_TAG) {
+		warnx(" not cool");
+		goto error_label;
+	}
+	/* finish a string or simple tag */
+	if (sbuf_len(sb) > 0) {
+		if (sbuf_finish(sb) == -1)
+			goto error_label;
+		token = t_rename_token_new(state != PARSING_STRING, sbuf_data(sb));
+		if (token == NULL)
+			goto error_label;
+		TAILQ_INSERT_TAIL(pattern, token, entries);
+	}
+
+	sbuf_delete(sb);
+	return (pattern);
+error_label:
+	sbuf_delete(sb);
+	t_rename_pattern_delete(pattern);
+	return (NULL);
+}
+
+
+char *
+t_rename_eval(struct t_tune *tune, struct t_rename_pattern *pattern)
+{
+	struct t_rename_token *token;
+	struct sbuf *sb = NULL;
+	struct t_taglist *tlist = NULL, *l = NULL;
+	char *s = NULL, *ret;
+
+	assert_not_null(tune);
+	assert_not_null(pattern);
+
+	tlist = t_tune_tags(tune);
+	sb = sbuf_new_auto();
+	if (sb == NULL)
+		goto error;
+	if (tlist == NULL)
+		goto error;
+
+	TAILQ_FOREACH(token, pattern, entries) {
+		if (token->is_tag) {
+			l = t_taglist_find_all(tlist, token->value);
+			if (l == NULL)
+				goto error;
+			if (l->count > 0) {
+				/* tag exist */
+				if ((s = t_taglist_join(l, " + ")) == NULL)
+					goto error;
+			}
+			t_taglist_delete(l);
+			l = NULL;
+			if (s != NULL) {
+				char *slash = strchr(s, '/');
+				/* check for slash in tag value */
+				if (slash != NULL) {
+					warnx("%s: tag `%s' has / in value, replacing by `-'",
+					    t_tune_path(tune), token->value);
+					do {
+						*slash = '-';
+						slash = strchr(slash, '/');
+					} while (slash != NULL);
+				}
+			}
+		}
+		if (s != NULL) {
+			(void)sbuf_cat(sb, s);
+			free(s);
+			s = NULL;
+		} else
+			(void)sbuf_cat(sb, token->value);
+	}
+
+	ret = NULL;
+	if (sbuf_len(sb) > MAXPATHLEN)
+		warnx("t_rename_eval result is too long (>MAXPATHLEN)");
+	else {
+		if (sbuf_finish(sb) != -1)
+			ret = strdup(sbuf_data(sb));
+	}
+
+	sbuf_delete(sb);
+	t_taglist_delete(tlist);
+	return (ret);
+error:
+	free(s);
+	t_taglist_delete(l);
+	sbuf_delete(sb);
+	t_taglist_delete(tlist);
+	return (NULL);
+}
+
+
+void
+t_rename_pattern_delete(struct t_rename_pattern *pattern)
+{
+	struct t_rename_token *t1, *t2;
+
+	if (pattern == NULL)
+		return;
+
+	t1 = TAILQ_FIRST(pattern);
+	while (t1 != NULL) {
+		t2 = TAILQ_NEXT(t1, entries);
+		free(t1);
+		t1 = t2;
+	}
+	free(pattern);
+}
 
 
 int
@@ -88,214 +296,6 @@ t_rename_safe(const char *opath, const char *npath)
 	}
 
 	return (0);
-}
-
-
-struct t_rename_pattern *
-t_rename_parse(const char *pattern)
-{
-    struct t_lexer *L;
-    struct t_token **tokens;
-    struct t_rename_pattern *ret;
-    size_t count, len;
-
-    assert_not_null(pattern);
-
-    L = t_lexer_new(pattern);
-    (void)t_rename_lex_next_token(L);
-    assert(L->current->kind == T_START);
-    free(L->current);
-    L->current = NULL;
-
-    count = 0;
-    len   = 16;
-    tokens   = calloc(len + 1, sizeof(struct t_token *));
-	if (tokens == NULL)
-		err(ENOMEM, "calloc");
-
-    while (t_rename_lex_next_token(L)->kind != T_END) {
-            assert(L->current->kind == T_TAGKEY || L->current->kind == T_STRING);
-            if (count == (len - 1)) {
-                len = len * 2;
-                tokens = realloc(tokens, (len + 1) * sizeof(struct t_token *));
-    	    	    if (tokens == NULL)
-    	    	    	    err(ENOMEM, "realloc");
-            }
-            tokens[count++] = L->current;
-    }
-    free(L->current);
-    L->current = NULL;
-    t_lexer_destroy(L);
-
-    tokens[count] = NULL;
-    ret = malloc(sizeof(*ret));
-    if (ret == NULL)
-    	    err(ENOMEM, "malloc");
-    ret->tokens = tokens;
-    return (ret);
-}
-
-
-static struct t_token *
-t_rename_lex_next_token(struct t_lexer *L)
-{
-	int done;
-	struct t_token *t;
-	struct sbuf *sb;
-
-	assert_not_null(L);
-
-	t = calloc(1, sizeof(struct t_token));
-	if (t == NULL)
-		err(ENOMEM, "calloc");
-
-	/* check for T_START */
-	if (L->cindex == -1) {
-		(void)t_lexc(L);
-		t->kind  = T_START;
-		t->str   = "START";
-		L->current = t;
-		return (L->current);
-	}
-
-	t->start = L->cindex;
-	switch (L->c) {
-	case '\0':
-		t->kind = T_END;
-		t->str  = "END";
-		t->end  = L->cindex;
-		break;
-	case '%':
-		t_lex_tagkey(L, &t, !T_LEXER_ALLOW_STAR_MOD);
-		break;
-	default:
-		t->kind = T_STRING;
-		t->str  = "STRING";
-		sb = sbuf_new_auto();
-		if (sb == NULL)
-			err(errno, "sbuf_new");
-		done = 0;
-		while (!done) {
-			switch (L->c) {
-			case '%': /* FALLTHROUGH */
-			case '\0':
-				done = 1;
-				break;
-			case '\\':
-				if (t_lexc(L) != '%')
-					(void)sbuf_putc(sb, '\\');
-				/* FALLTHROUGH */
-			default:
-				(void)sbuf_putc(sb, L->c);
-				(void)t_lexc(L);
-			}
-		}
-		t->end = L->cindex - 1;
-		assert(t->end >= t->start);
-		if (sbuf_finish(sb) == -1)
-			err(errno, "sbuf_finish");
-		t->slen = sbuf_len(sb);
-		t = realloc(t, sizeof(struct t_token) + t->slen + 1);
-    	    	    if (t == NULL)
-    	    	    	    err(ENOMEM, "realloc");
-		t->val.str = (char *)(t + 1);
-		assert(strlcpy(t->val.str, sbuf_data(sb), t->slen + 1) == t->slen);
-		assert(strlen(t->val.str) == t->slen);
-		sbuf_delete(sb);
-	}
-
-	L->current = t;
-	return (L->current);
-}
-
-
-char *
-t_rename_eval(struct t_tune *tune, struct t_rename_pattern *pattern)
-{
-	const struct t_token *tkn;
-	struct sbuf *sb = NULL;
-	struct t_taglist *tlist = NULL;
-	struct t_taglist *l = NULL;
-	struct t_tag *t;
-	char *ret, *s = NULL, *slash;
-	struct t_token **ts;
-
-	assert_not_null(tune);
-	assert_not_null(pattern);
-
-	ts = pattern->tokens;
-
-	tlist = t_tune_tags(tune);
-	sb = sbuf_new_auto();
-	if (sb == NULL)
-		goto error;
-	if (tlist == NULL)
-		goto error;
-
-	tkn = *ts;
-	while (tkn != NULL) {
-		if (tkn->kind == T_TAGKEY) {
-			l = t_taglist_find_all(tlist, tkn->val.str);
-			if (l == NULL)
-				goto error;
-			if (l->count > 0) {
-				/* tag exist */
-				if (tkn->tidx == T_TOKEN_STAR) {
-					/* user ask for *all* tag values */
-					if ((s = t_taglist_join(l, " - ")) == NULL)
-						goto error;
-				} else {
-					/* requested one tag */
-					t = t_taglist_tag_at(l, tkn->tidx);
-					if (t != NULL) {
-						if ((s = strdup(t->val)) == NULL)
-							goto error;
-					}
-				}
-			}
-			t_taglist_delete(l);
-			l = NULL;
-			if (s != NULL) {
-				/* check for slash in tag value */
-				slash = strchr(s, '/');
-				if (slash != NULL) {
-					warnx("%s: tag `%s' has / in value, replacing by `-'",
-					    t_tune_path(tune), tkn->val.str);
-					do {
-						*slash = '-';
-						slash = strchr(slash, '/');
-					} while (slash != NULL);
-				}
-			}
-		}
-		if (s != NULL) {
-			(void)sbuf_cat(sb, s);
-			free(s);
-			s = NULL;
-		} else
-			(void)sbuf_cat(sb, tkn->val.str);
-		/* go to next token */
-		ts += 1;
-		tkn = *ts;
-	}
-
-	ret = NULL;
-	if (sbuf_len(sb) > MAXPATHLEN)
-		warnx("t_rename_eval result is too long (>MAXPATHLEN)");
-	else {
-		if (sbuf_finish(sb) != -1)
-			ret = strdup(sbuf_data(sb));
-	}
-
-	sbuf_delete(sb);
-	t_taglist_delete(tlist);
-	return (ret);
-error:
-	free(s);
-	t_taglist_delete(l);
-	sbuf_delete(sb);
-	t_taglist_delete(tlist);
-	return (NULL);
 }
 
 
@@ -403,18 +403,4 @@ build(char *path, mode_t omode)
 	if (!first && !last)
 		(void)umask(oumask);
 	return (retval);
-}
-
-
-void
-t_rename_pattern_delete(struct t_rename_pattern *pattern)
-{
-	if (pattern != NULL) {
-		int i;
-		struct t_token **tknv = pattern->tokens;
-		for (i = 0; tknv[i]; i++)
-			free(tknv[i]);
-		free(tknv);
-		free(pattern);
-	}
 }

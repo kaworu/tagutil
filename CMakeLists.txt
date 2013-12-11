@@ -19,7 +19,6 @@ set(SRCS
     t_tune.c
     t_yaml.c
     t_renamer.c
-    t_lexer.c
     t_backend.c
     t_action.c
 )
