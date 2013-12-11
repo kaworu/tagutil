@@ -8,12 +8,15 @@
 #include "t_config.h"
 #include "t_tune.h"
 
+
+/* declaration of a rename pattern type */
 struct t_rename_pattern;
+
 
 /*
  * create a pattern usable for t_rename_eval().
  *
- * The tag keys in pattern must look like shell variables (i.e. %artist or/and
+ * The tag keys in pattern should look like shell variables (%artist or/and
  * %{album}). If the tag key is not defined for a file, the tag key is replaced
  * by its name (i.e. "%{undefined}" or "%undefined" becomes "undefined"). If
  * you want a litteral %, use \%

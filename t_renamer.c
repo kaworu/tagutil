@@ -18,6 +18,12 @@
 #include "t_renamer.h"
 
 
+/*
+ * t_rename_pattern definition
+ *
+ * a t_rename_pattern is a list of parsed tokens. Token are either a tag
+ * reference or a string litteral.
+ * */
 struct t_rename_token {
 	int		is_tag; /* 0 means string litteral, != 0 means a tag */
 	const char	*value;
@@ -32,6 +38,7 @@ static struct t_rename_token	*t_rename_token_new(int is_tag, const char *value);
 static int	build(char *path, mode_t omode);
 
 
+/* alloc and initialize a new t_rename_token */
 static struct t_rename_token *
 t_rename_token_new(int is_tag, const char *value)
 {
@@ -48,11 +55,14 @@ t_rename_token_new(int is_tag, const char *value)
 	}
 	return (token);
 }
+#define	t_rename_strtok(s)	t_rename_token_new(0, (s))
+#define	t_rename_tagtok(s)	t_rename_token_new(1, (s))
 
 
 struct t_rename_pattern *
 t_rename_parse(const char *source)
 {
+	const char sep = '%';
 	const char *c = source;
 	struct t_rename_pattern *pattern = NULL;
 	struct t_rename_token *token;
@@ -74,14 +84,15 @@ t_rename_parse(const char *source)
 
 	state = PARSING_STRING;
 	while (*c != '\0') {
-		/* test for a starting tag */
-		if (state == PARSING_STRING && *c == '%') {
-			/* avoid to add a empty token. This happend when
-			   two tag are consecutive */
+		/* if we parse a litteral string, check if this is the start of
+		   a tag */
+		if (state == PARSING_STRING && *c == sep) {
+			/* avoid to add a empty token. This can happen when
+			   when parsing two consecutive tags like `%tag%tag' */
 			if (sbuf_len(sb) > 0) {
 				if (sbuf_finish(sb) == -1)
 					goto error_label;
-				token = t_rename_token_new(0, sbuf_data(sb));
+				token = t_rename_strtok(sbuf_data(sb));
 				if (token == NULL)
 					goto error_label;
 				TAILQ_INSERT_TAIL(pattern, token, entries);
@@ -94,21 +105,23 @@ t_rename_parse(const char *source)
 			} else {
 				state = PARSING_SIMPLE_TAG;
 			}
-		/* test for the end of a tag */
-		} else if ((state == PARSING_SIMPLE_TAG && (isspace(*c) || *c == '%')) ||
+		/* if we parse a tag, check for the end of it */
+		} else if ((state == PARSING_SIMPLE_TAG && (isspace(*c) || *c == sep)) ||
 		           (state == PARSING_BRACE_TAG  && *c == '}')) {
-				if (sbuf_finish(sb) == -1)
-					goto error_label;
-				token = t_rename_token_new(1, sbuf_data(sb));
-				if (token == NULL)
-					goto error_label;
-				sbuf_clear(sb);
-				TAILQ_INSERT_TAIL(pattern, token, entries);
-				if (state == PARSING_BRACE_TAG) {
-					/* eat the closing `}' */
-					c += 1;
-				}
-				state = PARSING_STRING;
+			if (sbuf_len(sb) == 0)
+				warnx("empty tag in rename pattern");
+			if (sbuf_finish(sb) == -1)
+				goto error_label;
+			token = t_rename_tagtok(sbuf_data(sb));
+			if (token == NULL)
+				goto error_label;
+			sbuf_clear(sb);
+			TAILQ_INSERT_TAIL(pattern, token, entries);
+			if (state == PARSING_BRACE_TAG) {
+				/* eat the closing `}' */
+				c += 1;
+			}
+			state = PARSING_STRING;
 		} else {
 			/* default case for both string and tags. `\' escape
 			   everything */
@@ -123,16 +136,18 @@ t_rename_parse(const char *source)
 	}
 	/* we've hit the end of the source. Check in which state we are and try
 	   to finish cleany */
-	if (sbuf_len(sb) == 0 && state != PARSING_STRING) {
-		warnx(" not cool");
+	switch (state) {
+	case PARSING_BRACE_TAG:
+		warnx("missing closing `}' at the end of the rename pattern");
 		goto error_label;
+	case PARSING_SIMPLE_TAG:
+		if (sbuf_len(sb) == 0)
+			warnx("empty tag at the end of the rename pattern");
+	case PARSING_STRING:
+		/* all is right */;
 	}
-	if (state == PARSING_BRACE_TAG) {
-		warnx(" not cool");
-		goto error_label;
-	}
-	/* finish a string or simple tag */
-	if (sbuf_len(sb) > 0) {
+	/* finish the last tag unless it is the empty string */
+	if (state != PARSING_STRING || sbuf_len(sb) > 0) {
 		if (sbuf_finish(sb) == -1)
 			goto error_label;
 		token = t_rename_token_new(state != PARSING_STRING, sbuf_data(sb));
@@ -143,6 +158,7 @@ t_rename_parse(const char *source)
 
 	sbuf_delete(sb);
 	return (pattern);
+	/* NOTREACHED */
 error_label:
 	sbuf_delete(sb);
 	t_rename_pattern_delete(pattern);
@@ -161,10 +177,11 @@ t_rename_eval(struct t_tune *tune, struct t_rename_pattern *pattern)
 	assert_not_null(tune);
 	assert_not_null(pattern);
 
-	tlist = t_tune_tags(tune);
 	sb = sbuf_new_auto();
 	if (sb == NULL)
 		goto error;
+
+	tlist = t_tune_tags(tune);
 	if (tlist == NULL)
 		goto error;
 
@@ -177,6 +194,10 @@ t_rename_eval(struct t_tune *tune, struct t_rename_pattern *pattern)
 				/* tag exist */
 				if ((s = t_taglist_join(l, " + ")) == NULL)
 					goto error;
+				if (l->count > 1) {
+					warnx("%s: has many `%s' tags, joined with `+'",
+					    t_tune_path(tune), token->value);
+				}
 			}
 			t_taglist_delete(l);
 			l = NULL;
