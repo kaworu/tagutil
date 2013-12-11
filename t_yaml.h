@@ -5,7 +5,6 @@
  *
  * yaml tagutil parser and converter.
  */
-#include <stdbool.h>
 #include <stdio.h>
 
 #include "t_config.h"

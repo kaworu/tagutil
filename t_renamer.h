@@ -35,7 +35,7 @@ char	*t_rename_eval(struct t_tune *tune, struct t_token **ts);
 /*
  * rename path to new_path.
  *
- * return false on error and set and errno,  return true otherwise.
+ * return 0 on error and set and errno, return 1 otherwise.
  */
 int	t_rename_safe(const char *oldpath, const char *newpath);
 

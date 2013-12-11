@@ -10,7 +10,6 @@
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -132,7 +131,7 @@ t_rename_parse(const char *pattern)
 static struct t_token *
 t_rename_lex_next_token(struct t_lexer *L)
 {
-	bool done;
+	int done;
 	struct t_token *t;
 	struct sbuf *sb;
 
@@ -167,12 +166,12 @@ t_rename_lex_next_token(struct t_lexer *L)
 		sb = sbuf_new_auto();
 		if (sb == NULL)
 			err(errno, "sbuf_new");
-		done = false;
+		done = 0;
 		while (!done) {
 			switch (L->c) {
 			case '%': /* FALLTHROUGH */
 			case '\0':
-				done = true;
+				done = 1;
 				break;
 			case '\\':
 				if (t_lexc(L) != '%')

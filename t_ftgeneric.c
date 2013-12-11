@@ -55,9 +55,9 @@ t_ftgeneric_backend(void)
 	if (lc_all != NULL) {
 		dot = strchr(lc_all, '.');
 		if (dot != NULL && strcmp(dot + 1, "UTF-8") == 0)
-			taglib_set_strings_unicode(true);
+			taglib_set_strings_unicode(1);
 	}
-	taglib_set_string_management_enabled(false);
+	taglib_set_string_management_enabled(0);
 
 	return (&b);
 }

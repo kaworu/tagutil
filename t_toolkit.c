@@ -41,7 +41,7 @@ t_strtolower(char *str)
 }
 
 
-bool
+int
 t_yesno(const char *question)
 {
 	extern int	Yflag, Nflag;
@@ -50,7 +50,7 @@ t_yesno(const char *question)
 
 	for (;;) {
 		if (feof(stdin) && !Yflag && !Nflag)
-			return (false);
+			return (0);
 
 		(void)memset(buffer, '\0', sizeof(buffer));
 
@@ -61,15 +61,15 @@ t_yesno(const char *question)
 
 		if (Yflag) {
 			(void)printf("y\n");
-			return (true);
+			return (1);
 		} else if (Nflag) {
 			(void)printf("n\n");
-			return (false);
+			return (0);
 		}
 
 		if (fgets(buffer, NELEM(buffer), stdin) == NULL) {
 			if (feof(stdin))
-				return (false);
+				return (0);
 			else
 				err(errno, "fgets");
 		}
@@ -83,15 +83,15 @@ t_yesno(const char *question)
 			*endl = '\0';
 			(void)t_strtolower(buffer);
 			if (strcmp(buffer, "n") == 0 || strcmp(buffer, "no") == 0)
-				return (false);
+				return (0);
 			else if (strcmp(buffer, "y") == 0 || strcmp(buffer, "yes") == 0)
-				return (true);
+				return (1);
 		}
 	}
 }
 
 
-bool
+int
 t_user_edit(const char *path)
 {
 	pid_t	edit; /* child process */
@@ -116,7 +116,7 @@ t_user_edit(const char *path)
 		(void)fprintf(stderr, "Starting %s, please wait...\n", editor);
 
         if (stat(path, &s) != 0)
-		return (false);
+		return (0);
 	before = s.st_mtime;
 	switch (edit = fork()) {
 	case -1:
@@ -133,11 +133,11 @@ t_user_edit(const char *path)
 	}
 
         if (stat(path, &s) != 0)
-		return (false);
+		return (0);
 	after = s.st_mtime;
 	if (before == after)
 		/* the file hasn't been modified */
-		return (false);
+		return (0);
 
 	return (WIFEXITED(status) && WEXITSTATUS(status) == 0);
 }
