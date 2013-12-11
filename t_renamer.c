@@ -249,7 +249,7 @@ t_rename_eval(struct t_tune *tune, struct t_token **ts)
 				slash = strchr(s, '/');
 				if (slash != NULL) {
 					warnx("%s: tag `%s' has / in value, replacing by `-'",
-					    tune->path, tkn->val.str);
+					    t_tune_path(tune), tkn->val.str);
 					do {
 						*slash = '-';
 						slash = strchr(slash, '/');
