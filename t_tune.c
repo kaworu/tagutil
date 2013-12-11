@@ -9,6 +9,32 @@
 #include "t_tune.h"
 
 
+/* t_tune definition */
+struct t_tune {
+	char	*path;    /* the file's path */
+	int	dirty;   /* 0 if clean (tags have not changed), >0 otherwise. */
+	void	*opaque; /* pointer used by the backend's read and write routines */
+	const struct t_backend	*backend; /* backend used to handle this file. */
+	struct t_taglist	*tlist; /* used internal by t_tune routines. use t_tune_tags() instead */
+};
+
+
+/*
+ * initialize internal data, find a backend able to handle the tune.
+ *
+ * @return
+ *   0 on success and the t_tune is ready to be passed to t_tune_tags(),
+ *   t_tune_set_tags() and t_tune_save() routines, -1 on error (ENOMEM) or if no
+ *   backend was found.
+ */
+static int	t_tune_init(struct t_tune *tune, const char *path);
+
+/*
+ * free all the memory used internally by the t_tune.
+ */
+static void	t_tune_clear(struct t_tune *tune);
+
+
 struct t_tune *
 t_tune_new(const char *path)
 {
@@ -28,7 +54,7 @@ t_tune_new(const char *path)
 }
 
 
-int
+static int
 t_tune_init(struct t_tune *tune, const char *path)
 {
 	const struct t_backend  *b;
@@ -66,7 +92,6 @@ t_tune_tags(struct t_tune *tune)
 {
 
 	assert_not_null(tune);
-	assert_not_null(tune->backend);
 
 	if (tune->tlist == NULL)
 		tune->tlist = tune->backend->read(tune->opaque);
@@ -75,12 +100,29 @@ t_tune_tags(struct t_tune *tune)
 }
 
 
+const char *
+t_tune_path(struct t_tune *tune)
+{
+	assert_not_null(tune);
+
+	return (tune->path);
+}
+
+
+const struct t_backend *
+t_tune_backend(struct t_tune *tune)
+{
+	assert_not_null(tune);
+
+	return (tune->backend);
+}
+
+
 int
 t_tune_set_tags(struct t_tune *tune, const struct t_taglist *tlist)
 {
 	assert_not_null(tune);
 	assert_not_null(tlist);
-	assert_not_null(tune->backend);
 
 	if (tune->tlist != tlist) {
 		t_taglist_delete(tune->tlist);
@@ -99,7 +141,6 @@ t_tune_save(struct t_tune *tune)
 {
 
 	assert_not_null(tune);
-	assert_not_null(tune->backend);
 
 	if (tune->dirty) {
 		if (tune->backend->write(tune->opaque, tune->tlist) == 0) {
@@ -112,7 +153,7 @@ t_tune_save(struct t_tune *tune)
 }
 
 
-void
+static void
 t_tune_clear(struct t_tune *tune)
 {
 
@@ -135,4 +176,21 @@ t_tune_delete(struct t_tune *tune)
 	if (tune != NULL)
 		t_tune_clear(tune);
 	free(tune);
+}
+
+/* XXX: these are undocumented interfaces existing because of the rename feature. */
+int
+t__tune_dirty__(struct t_tune *tune)
+{
+	assert_not_null(tune);
+	return (tune->dirty);
+}
+
+int
+t__tune_reload__(struct t_tune *tune, const char *path)
+{
+	assert_not_null(tune);
+
+	t_tune_clear(tune);
+	return (t_tune_init(tune, path));
 }

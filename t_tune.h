@@ -13,15 +13,8 @@
 #include "t_taglist.h"
 
 
-
 /* abstract music file */
-struct t_tune {
-	char	*path;    /* the file's path */
-	int	dirty;   /* 0 if clean (tags have not changed), >0 otherwise. */
-	void	*opaque; /* pointer used by the backend's read and write routines */
-	const struct t_backend	*backend; /* backend used to handle this file. */
-	struct t_taglist	*tlist; /* used internal by t_tune routines. use t_tune_tags() instead */
-};
+struct t_tune;
 
 /*
  * allocate memory for a new t_tune.
@@ -32,16 +25,6 @@ struct t_tune {
 struct t_tune	*t_tune_new(const char *path);
 
 /*
- * initialize internal data, find a backend able to handle the tune.
- *
- * @return
- *   0 on success and the t_tune is ready to be passed to t_tune_tags(),
- *   t_tune_set_tags() and t_tune_save() routines, -1 on error (ENOMEM) or if no
- *   backend was found.
- */
-int t_tune_init(struct t_tune *tune, const char *path);
-
-/*
  * get all the tags of a tune.
  *
  * @return
@@ -49,6 +32,22 @@ int t_tune_init(struct t_tune *tune, const char *path);
  *   should pass the returned t_taglist to t_taglist_delete() after use.
  */
 struct t_taglist	*t_tune_tags(struct t_tune *tune);
+
+/*
+ * get the tune's path.
+ *
+ * @return
+ *   the path given at tune initialization.
+ */
+const char	*t_tune_path(struct t_tune *tune);
+
+/*
+ * get the tune's backend.
+ *
+ * @return
+ *   the backend used for this tune.
+ */
+const struct t_backend	*t_tune_backend(struct t_tune *tune);
 
 /*
  * set the tags for a tune.
@@ -67,14 +66,13 @@ int	t_tune_set_tags(struct t_tune *tune, const struct t_taglist *tlist);
 int	t_tune_save(struct t_tune *tune);
 
 /*
- * free all the memory used internally by the t_tune.
- */
-void	t_tune_clear(struct t_tune *tune);
-
-/*
  * clear the t_tune and pass it to free(3). The pointer should not be used
  * afterward.
  */
 void	t_tune_delete(struct t_tune *tune);
 
+
+/* XXX: these are undocumented interfaces existing because of the rename feature. */
+int	t__tune_dirty__(struct t_tune *tune);
+int	t__tune_reload__(struct t_tune *tune, const char *path);
 #endif /* not T_TUNE_H */

@@ -405,7 +405,7 @@ t_action_backend(struct t_action *self, struct t_tune *tune)
 	assert_not_null(tune);
 	assert(self->kind == T_ACTION_BACKEND);
 
-	(void)printf("%s %s\n", tune->backend->libid, tune->path);
+	(void)printf("%s %s\n", t_tune_backend(tune)->libid, t_tune_path(tune));
 	return (0);
 }
 
@@ -470,7 +470,7 @@ t_action_edit(struct t_action *self, struct t_tune *tune)
 	tlist = t_tune_tags(tune);
 	if (tlist == NULL)
 		goto error_label;
-	yaml = t_tags2yaml(tlist, tune->path);
+	yaml = t_tags2yaml(tlist, t_tune_path(tune));
 	t_taglist_delete(tlist);
 	tlist = NULL;
 	if (yaml == NULL)
@@ -607,7 +607,7 @@ t_action_print(struct t_action *self, struct t_tune *tune)
 	tlist = t_tune_tags(tune);
 	if (tlist == NULL)
 		return (-1);
-	yaml = t_tags2yaml(tlist, tune->path);
+	yaml = t_tags2yaml(tlist, t_tune_path(tune));
 	t_taglist_delete(tlist);
 	tlist = NULL;
 	if (yaml == NULL)
@@ -629,15 +629,15 @@ t_action_rename(struct t_action *self, struct t_tune *tune)
 	struct t_token **tknv;
 
 	assert_not_null(self);
-	assert_not_null(tune);
 	assert(self->kind == T_ACTION_RENAME);
-	assert(!tune->dirty);
+	assert_not_null(tune);
+	assert(!t__tune_dirty__(tune)); /* FIXME: just do a t_tune_save() ? */
 
 	tknv = self->opaque;
 
-	ext = strrchr(tune->path, '.');
+	ext = strrchr(t_tune_path(tune), '.');
 	if (ext == NULL) {
-		warnx("%s: can not find file extension", tune->path);
+		warnx("%s: can not find file extension", t_tune_path(tune));
 		goto error_label;
 	}
 	ext++; /* skip dot */
@@ -647,13 +647,13 @@ t_action_rename(struct t_action *self, struct t_tune *tune)
 		goto error_label;
 
 	/* rname is now OK. store into result the full new path.  */
-	dirn = t_dirname(tune->path);
+	dirn = t_dirname(t_tune_path(tune));
 	if (dirn == NULL) {
 		warn("dirname");
 		goto error_label;
 	}
 
-	opath = tune->path;
+	opath = t_tune_path(tune);
 	/* we dont want foo.flac to be renamed then same name just with a
 	   different path like ./foo.flac */
 	if (strcmp(opath, t_basename(opath)) == 0) {
@@ -670,18 +670,8 @@ t_action_rename(struct t_action *self, struct t_tune *tune)
 	if (strcmp(opath, npath) != 0 && t_yesno(q)) {
 		ret = t_rename_safe(opath, npath);
 		if (ret == 0) {
-			/* do a full reload of the file */
-			struct t_tune tmp;
-			struct t_tune *neo = t_tune_new(npath);
-			if (neo == NULL)
+			if (t__tune_reload__(tune, npath) == -1)
 				goto error_label;
-
-			/* switch */
-			memcpy(&tmp, tune, sizeof(struct t_tune));
-			memcpy(tune, neo,  sizeof(struct t_tune));
-			memcpy(neo,  &tmp, sizeof(struct t_tune));
-			/* now neo is in fact the "old" one */
-			t_tune_delete(neo);
 		}
 	}
 

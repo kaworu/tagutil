@@ -37,9 +37,9 @@ int	Yflag; /* answer yes to all questions */
 int
 main(int argc, char *argv[])
 {
-    	int	i, retval;
+	int	i, retval;
 	int	write; /* write access needed */
-    	struct t_tune		 tune;
+	struct t_tune		*tune;
 	struct t_action		*a;
 	struct t_actionQ	*aQ;
 
@@ -100,7 +100,7 @@ main(int argc, char *argv[])
 			continue;
 		}
 
-		if (t_tune_init(&tune, path) != 0) {
+		if ((tune = t_tune_new(path)) == NULL) {
 			if (errno == ENOMEM)
 				err(ENOMEM, "malloc");
 			warnx("%s: unsupported file format", path);
@@ -110,7 +110,7 @@ main(int argc, char *argv[])
 
 		/* apply every actions */
 		TAILQ_FOREACH(a, aQ, entries) {
-			if (a->apply(a, &tune) != 0) {
+			if (a->apply(a, tune) != 0) {
 				/*
 				 * prevent further action on this particular
 				 * file.
@@ -118,7 +118,7 @@ main(int argc, char *argv[])
 				break;
 			}
 		}
-		t_tune_clear(&tune);
+		t_tune_delete(tune);
 	}
 	t_actionQ_delete(aQ);
 	return (retval);
