@@ -16,6 +16,7 @@
 #include "t_taglist.h"
 #include "t_tune.h"
 #include "t_yaml.h"
+#include "t_error.h"
 
 
 /*

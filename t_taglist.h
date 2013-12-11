@@ -7,14 +7,12 @@
  */
 #include "t_config.h"
 #include "t_tag.h"
-#include "t_error.h"
 
 
 /*
  * a list of tags.
  *
- * abstract structure for a music file's tags. t_error macros can (and should)
- * be used on this structure.
+ * abstract structure for a music file's tags.
  */
 struct t_taglist {
 	size_t		count;

@@ -14,7 +14,6 @@
 
 #include "t_config.h"
 #include "t_backend.h"
-#include "t_error.h"
 
 
 static const char libid[] = "libvorbis";

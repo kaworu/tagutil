@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "t_config.h"
+#include "t_toolkit.h"
 #include "t_tag.h"
 #include "t_taglist.h"
 
