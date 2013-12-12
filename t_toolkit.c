@@ -10,9 +10,16 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
+#include <locale.h>
+#include <iconv.h>
+
 #include "t_config.h"
 #include "t_toolkit.h"
 #include "t_action.h"
+
+
+/* accept NULL as src */
+static char *	t_iconv_convert(int tou8, const char *src);
 
 
 char *
@@ -38,6 +45,22 @@ t_strtolower(char *str)
 	for (s = str; *s != '\0'; s++)
 		*s = tolower(*s);
 	return (str);
+}
+
+
+char *
+t_iconv_utf8_to_loc(const char *src)
+{
+
+	return (t_iconv_convert(0, src));
+}
+
+
+char *
+t_iconv_loc_to_utf8(const char *src)
+{
+
+	return (t_iconv_convert(1, src));
 }
 
 
@@ -172,4 +195,47 @@ t_basename(const char *path)
 	memcpy(bname, startp, len);
 	bname[len] = '\0';
 	return (bname);
+}
+
+
+static char *
+t_iconv_convert(int tou8, const char *src)
+{
+	static int setlocale_called = 0;
+	size_t n, srclen, destlen;
+	char *dest, *ret;
+	iconv_t cd;
+
+	if (src == NULL)
+		return (NULL);
+
+	if (!setlocale_called) {
+		setlocale(LC_ALL, "");
+		setlocale_called = 1;
+	}
+
+	if (tou8)
+		cd = iconv_open("utf-8", "");
+	else
+		cd = iconv_open("", "utf-8");
+	if (cd == (iconv_t)-1)
+		return (NULL);
+
+	srclen = strlen(src);
+	ret = dest = calloc(srclen + 1, 4 * sizeof(char));
+	if (dest == NULL) {
+		iconv_close(cd);
+		return (NULL);
+	}
+	destlen = srclen * 4;
+
+	n = iconv(cd, &src, &srclen, &dest, &destlen);
+	if (n == -1) {
+		free(ret);
+		iconv_close(cd);
+		return (NULL);
+	}
+
+	iconv_close(cd);
+	return (ret);
 }

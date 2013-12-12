@@ -9,8 +9,6 @@
  * design (like backend for example) but it is intentionally "big", "ugly" and
  * simple to discourage anyone to add more action (so tagutil stay small).
  */
-#include <iconv.h>
-
 #include "t_config.h"
 #include "t_action.h"
 
@@ -182,6 +180,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 
 	switch (a->kind) {
 	case T_ACTION_ADD:
+		/* FIXME: convert to UTF-8 */
 		assert_not_null(arg);
 		if ((key = strdup(arg)) == NULL)
 			goto error_label;
@@ -204,6 +203,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		a->apply = t_action_backend;
 		break;
 	case T_ACTION_CLEAR:
+		/* FIXME: convert to UTF-8 */
 		assert_not_null(arg);
 		if (strlen(arg) > 0) {
 			a->opaque = strdup(arg);
@@ -214,10 +214,12 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		a->apply = t_action_clear;
 		break;
 	case T_ACTION_EDIT:
+		/* FIXME: convert to UTF-8 */
 		a->write = 1;
 		a->apply = t_action_edit;
 		break;
 	case T_ACTION_LOAD:
+		/* FIXME: convert to UTF-8 */
 		assert_not_null(arg);
 		a->opaque = strdup(arg);
 		if (a->opaque == NULL)
@@ -229,6 +231,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		a->apply = t_action_print;
 		break;
 	case T_ACTION_RENAME:
+		/* FIXME: convert to UTF-8 */
 		assert_not_null(arg);
 		if (strlen(arg) == 0) {
 			errno = EINVAL;
@@ -245,6 +248,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		a->apply = t_action_rename;
 		break;
 	case T_ACTION_SET:
+		/* FIXME: convert to UTF-8 */
 		assert_not_null(arg);
 		if ((key = strdup(arg)) == NULL)
 			goto error_label;
@@ -413,10 +417,8 @@ t_action_load(struct t_action *self, struct t_tune *tune)
 static int
 t_action_print(struct t_action *self, struct t_tune *tune)
 {
-	int status = -1;
-	iconv_t conv = (iconv_t)-1;
-	char	*yamlutf8 = NULL, *yaml = NULL, *s, *d;
-	size_t yu8siz, ysiz, n;
+	int success = 0;
+	char *yaml = NULL;
 	struct t_taglist *tlist = NULL;
 
 	assert_not_null(self);
@@ -427,35 +429,16 @@ t_action_print(struct t_action *self, struct t_tune *tune)
 	if (tlist == NULL)
 		goto error_label;
 
-	s = yamlutf8 = t_tags2yaml(tlist, t_tune_path(tune));
-	if (yamlutf8 == NULL)
-		goto error_label;
-	yu8siz = strlen(yamlutf8) + 1;
-
-	d = yaml = calloc(yu8siz, 4 * sizeof(char));
+	yaml = t_iconv_utf8_to_loc(t_tags2yaml(tlist, t_tune_path(tune)));
 	if (yaml == NULL)
 		goto error_label;
-	ysiz = yu8siz * 4;
 
-	conv = iconv_open("", "UTF-8");
-	if (conv == (iconv_t)-1)
-		goto error_label;
-
-	n = iconv(conv, (const char **)&s, &yu8siz, &d, &ysiz);
-	if (n == -1)
-		goto error_label;
-
-	(void)printf("%s\n", yaml);
-
-	status = 0;
+	success = (printf("%s\n", yaml) == (strlen(yaml) + 1));
 	/* FALLTHROUGH */
 error_label:
 	t_taglist_delete(tlist);
-	free(yamlutf8);
 	free(yaml);
-	if (conv != (iconv_t)-1)
-		iconv_close(conv);
-	return (status);
+	return (success ? 0 : -1);
 }
 
 

@@ -481,6 +481,7 @@ t_yaml_parse_scalar_value(struct t_yaml_fsm *FSM,
 		if (val == NULL)
 			err(ENOMEM, "calloc");
 		(void)memcpy(val, e->data.scalar.value, e->data.scalar.length);
+		/* FIXME: convert to UTF-8 */
 		if ((t_taglist_insert(FSM->tlist, FSM->parsed_key, val)) == -1)
 			err(ENOMEM, "malloc");
 		free(FSM->parsed_key);

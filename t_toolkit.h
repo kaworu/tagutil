@@ -44,6 +44,29 @@ char	*t_strtoupper(char *str);
 char	*t_strtolower(char *str);
 
 /*
+ * convert string from UTF-8 to the locale charset.
+ *
+ * @param src
+ *   The string to convert encoded in UTF-8. If NULL, NULL is returned.
+ *
+ * @return
+ *   A C-string encoded in the locale charset or NULL on error.
+ */
+char	*t_iconv_utf8_to_loc(const char *src);
+
+/*
+ * convert string from the locale charset to UTF-8.
+ *
+ * @param src
+ *   The string to convert encoded in the locale charset. If NULL, NULL is
+ *   returned.
+ *
+ * @return
+ *   A C-string encoded in UTF-8 or NULL on error.
+ */
+char	*t_iconv_loc_to_utf8(const char *src);
+
+/*
  * dirname() routine that does not modify its argument.
  */
 char	*t_dirname(const char *);
