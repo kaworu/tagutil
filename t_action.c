@@ -103,12 +103,17 @@ t_actionQ_new(int *argc_p, char ***argv_p)
 				/* NOTREACHED */
 			}
 			arg++; /* skip the `:' char */
+			/* convert arg to UTF-8 */
+			arg = t_iconv_loc_to_utf8(arg);
+			if (arg == NULL)
+				goto error_label;
 		} else {
 			/* t->argc > 1 is unsuported */
 			ABANDON_SHIP();
 		}
 
 		a = t_action_new(t->kind, arg);
+		free(arg);
 		if (a == NULL)
 			goto error_label;
 		TAILQ_INSERT_TAIL(aQ, a, entries);
@@ -180,7 +185,6 @@ t_action_new(enum t_actionkind kind, const char *arg)
 
 	switch (a->kind) {
 	case T_ACTION_ADD:
-		/* FIXME: convert to UTF-8 */
 		assert_not_null(arg);
 		if ((key = strdup(arg)) == NULL)
 			goto error_label;
@@ -203,7 +207,6 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		a->apply = t_action_backend;
 		break;
 	case T_ACTION_CLEAR:
-		/* FIXME: convert to UTF-8 */
 		assert_not_null(arg);
 		if (strlen(arg) > 0) {
 			a->opaque = strdup(arg);
@@ -248,7 +251,6 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		a->apply = t_action_rename;
 		break;
 	case T_ACTION_SET:
-		/* FIXME: convert to UTF-8 */
 		assert_not_null(arg);
 		if ((key = strdup(arg)) == NULL)
 			goto error_label;
