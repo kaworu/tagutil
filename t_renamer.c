@@ -81,6 +81,9 @@ t_rename(struct t_tune *tune, const struct t_rename_pattern *pattern)
 	const char *opath;
 	const char *dirn;
 
+	/* XXX: these are undocumented hacky interfaces for the rename feature. */
+	int	t__tune_reload__(struct t_tune *tune, const char *path);
+
 	assert_not_null(pattern);
 	assert_not_null(tune);
 

@@ -178,8 +178,9 @@ t_tune_delete(struct t_tune *tune)
 	free(tune);
 }
 
-/* XXX: these are undocumented interfaces existing because of the rename feature. */
-
+/* this is needed because we don't expose t_tune_init nor t_tune_clear. The
+   renamer does something pretty unusual so it's implemented that way for the
+   time being. */
 int
 t__tune_reload__(struct t_tune *tune, const char *path)
 {
