@@ -22,7 +22,8 @@ t_edit(struct t_tune *tune)
 	FILE *fp = NULL;
 	struct t_taglist *tlist = NULL;
 	char *tmp = NULL, *yaml = NULL;
-	const char *editor;
+	const char *tmpdir;
+	const char *editor, tmpdir;
 	pid_t editpid; /* child process */
 	int status;
 	struct stat before, after;
@@ -39,8 +40,11 @@ t_edit(struct t_tune *tune)
 	if (yaml == NULL)
 		goto error_label;
 
+	tmpdir = getenv("TMPDIR");
+	if (tmpdir == NULL)
+		tmpdir = "/tmp";
 	/* print the YAML into a temp file */
-	if (asprintf(&tmp, "/tmp/%s-XXXXXX.yml", getprogname()) < 0)
+	if (asprintf(&tmp, "%s/%s-XXXXXX.yml", tmpdir, getprogname()) < 0)
 		goto error_label;
 	if (mkstemps(tmp, 4) == -1) {
 		warn("mkstemps");
