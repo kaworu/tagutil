@@ -25,6 +25,20 @@
 #include "t_error.h"
 
 
+/* t_error handling macros */
+/* used for any struct that need to behave like a t_error */
+#define	T_ERROR_MSG_MEMBER	char *t__errmsg /* t__deprecated XXX: whine too much */
+/* error message getter */
+#define	t_error_msg(o)	((o)->t__errmsg)
+/* initializer */
+#define	t_error_init(o)	do { t_error_msg(o) = NULL; } while (/*CONSTCOND*/0)
+/* set the error message (with printflike syntax) */
+#define	t_error_set(o, fmt, ...) \
+    do { assert(asprintf(&t_error_msg(o), fmt, ##__VA_ARGS__) > 0); } while (/*CONSTCOND*/0)
+/* reset the error message. free it if needed, set to NULL */
+#define	t_error_clear(o) \
+    do { free(t_error_msg(o)); t_error_init(o); } while (/*CONSTCOND*/0)
+
 /*
  * libyaml emitter helper.
  */
