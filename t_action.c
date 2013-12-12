@@ -217,12 +217,10 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		a->apply = t_action_clear;
 		break;
 	case T_ACTION_EDIT:
-		/* FIXME: convert to UTF-8 */
 		a->write = 1;
 		a->apply = t_action_edit;
 		break;
 	case T_ACTION_LOAD:
-		/* FIXME: convert to UTF-8 */
 		assert_not_null(arg);
 		a->opaque = strdup(arg);
 		if (a->opaque == NULL)
@@ -234,7 +232,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		a->apply = t_action_print;
 		break;
 	case T_ACTION_RENAME:
-		/* FIXME: convert to UTF-8 */
+		/* FIXME: what about encoding in t_rename_safe() ? */
 		assert_not_null(arg);
 		if (strlen(arg) == 0) {
 			errno = EINVAL;
@@ -431,7 +429,7 @@ t_action_print(struct t_action *self, struct t_tune *tune)
 	if (tlist == NULL)
 		goto error_label;
 
-	yaml = t_iconv_utf8_to_loc(t_tags2yaml(tlist, t_tune_path(tune)));
+	yaml = t_tags2yaml(tlist, t_tune_path(tune));
 	if (yaml == NULL)
 		goto error_label;
 
