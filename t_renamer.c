@@ -34,29 +34,10 @@ TAILQ_HEAD(t_rename_pattern, t_rename_token);
 
 /* helper for t_rename_parse() */
 static struct t_rename_token	*t_rename_token_new(int is_tag, const char *value);
-/* helper for t_rename_safe(), taken from mkdir(3) */
-static int	build(char *path, mode_t omode);
-
-
-/* alloc and initialize a new t_rename_token */
-static struct t_rename_token *
-t_rename_token_new(int is_tag, const char *value)
-{
-	struct t_rename_token *token;
-	char *p;
-	size_t len;
-
-	len = strlen(value);
-	token = malloc(sizeof(struct t_rename_token) + len + 1);
-	if (token != NULL) {
-		token->is_tag = is_tag;
-		token->value = p = (char *)(token + 1);
-		memcpy(p, value, len + 1);
-	}
-	return (token);
-}
 #define	t_rename_strtok(s)	t_rename_token_new(0, (s))
 #define	t_rename_tagtok(s)	t_rename_token_new(1, (s))
+/* helper for t_rename_safe(), taken from mkdir(3) */
+static int	build(char *path, mode_t omode);
 
 
 struct t_rename_pattern *
@@ -320,6 +301,25 @@ t_rename_safe(const char *opath, const char *npath)
 }
 
 
+/* alloc and initialize a new t_rename_token */
+static struct t_rename_token *
+t_rename_token_new(int is_tag, const char *value)
+{
+	struct t_rename_token *token;
+	char *p;
+	size_t len;
+
+	len = strlen(value);
+	token = malloc(sizeof(struct t_rename_token) + len + 1);
+	if (token != NULL) {
+		token->is_tag = is_tag;
+		token->value = p = (char *)(token + 1);
+		memcpy(p, value, len + 1);
+	}
+	return (token);
+}
+
+
 /*-
  * Copyright (c) 1983, 1992, 1993
  *	The Regents of the University of California.  All rights reserved.
@@ -347,10 +347,9 @@ t_rename_safe(const char *opath, const char *npath)
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
+ *
+ * $FreeBSD: src/bin/mkdir/mkdir.c,v 1.33 2006/10/10 20:18:20 ru Exp $
  */
-#if 0
-__FBSDID("$FreeBSD: src/bin/mkdir/mkdir.c,v 1.33 2006/10/10 20:18:20 ru Exp $");
-#endif
 
 /*
  * Returns 1 if a directory has been created,

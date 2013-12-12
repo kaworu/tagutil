@@ -72,7 +72,7 @@ int	t_tune_save(struct t_tune *tune);
 void	t_tune_delete(struct t_tune *tune);
 
 
-/* XXX: these are undocumented interfaces existing because of the rename feature. */
+/* XXX: these are undocumented interfaces currently used by the rename feature. */
 int	t__tune_dirty__(struct t_tune *tune);
 int	t__tune_reload__(struct t_tune *tune, const char *path);
 #endif /* not T_TUNE_H */
