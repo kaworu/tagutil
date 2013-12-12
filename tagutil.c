@@ -11,6 +11,8 @@
  *
  * tagutil is under a BSD 2-Clause license, see LICENSE.
  */
+#include <locale.h>
+
 #include "t_config.h"
 #include "t_toolkit.h"
 #include "t_tune.h"
@@ -44,6 +46,8 @@ main(int argc, char *argv[])
 	struct t_actionQ	*aQ;
 
 	errno = 0; /* this is a bug in malloc(3) */
+
+	setlocale(LC_ALL, "");
 
 	while ((i = getopt(argc, argv, "dhNY")) != -1) {
 		switch ((char)i) {
