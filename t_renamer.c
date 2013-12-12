@@ -64,10 +64,10 @@ static int	t_rename_safe(const char *oldpath, const char *newpath);
  * needs it, it should be moved back to t_toolkit.
  */
 static int	t_yesno(const char *question);
+
 /* helper for t_rename_parse() */
 static struct t_rename_token	*t_rename_token_new(int is_tag, const char *value);
-#define	t_rename_strtok(s)	t_rename_token_new(0, (s))
-#define	t_rename_tagtok(s)	t_rename_token_new(1, (s))
+
 /* helper for t_rename_safe(), taken from mkdir(3) */
 static int	build(char *path, mode_t omode);
 
@@ -177,7 +177,7 @@ t_rename_parse(const char *source)
 			if (sbuf_len(sb) > 0) {
 				if (sbuf_finish(sb) == -1)
 					goto error_label;
-				token = t_rename_strtok(sbuf_data(sb));
+				token = t_rename_token_new(0, sbuf_data(sb));
 				if (token == NULL)
 					goto error_label;
 				TAILQ_INSERT_TAIL(pattern, token, entries);
@@ -197,7 +197,7 @@ t_rename_parse(const char *source)
 				warnx("empty tag in rename pattern");
 			if (sbuf_finish(sb) == -1)
 				goto error_label;
-			token = t_rename_tagtok(sbuf_data(sb));
+			token = t_rename_token_new(1, sbuf_data(sb));
 			if (token == NULL)
 				goto error_label;
 			sbuf_clear(sb);
