@@ -27,7 +27,7 @@ TAILQ_HEAD(t_rename_pattern, t_rename_token);
 
 
 /* helper for t_rename_parse() */
-static struct t_rename_token	*t_rename_token_new(int is_tag, const char *value)
+static struct t_rename_token	*t_rename_token_new(int is_tag, const char *value);
 /* helper for t_rename_safe(), taken from mkdir(3) */
 static int	build(char *path, mode_t omode);
 
