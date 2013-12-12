@@ -98,6 +98,7 @@ main(int argc, char *argv[])
 	for (i = 0; i < argc; i++) {
 		/* check file path and access */
 		const char *path = argv[i];
+		int success = 1;
 		if (access(path, (write ? (R_OK | W_OK) : R_OK)) == -1) {
 			warn("%s", path);
 			retval = EINVAL;
@@ -119,7 +120,16 @@ main(int argc, char *argv[])
 				 * prevent further action on this particular
 				 * file.
 				 */
+				success = 0;
 				break;
+			}
+		}
+		if (write && success) {
+			/* all actions went well and at least one of them
+			   require the tags to be written back to the file */
+			if (t_tune_save(tune) == -1) {
+				warnx("%s: could not write tags to the file,",
+				    t_tune_path(tune));
 			}
 		}
 		t_tune_delete(tune);
