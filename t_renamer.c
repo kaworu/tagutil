@@ -2,6 +2,9 @@
  * t_renamer.c
  *
  * renamer for tagutil.
+ *
+ * This file is big and use a ton of helper, mainly because it handle both
+ * actual rename and pattern parsing / evaluation.
  */
 #include <sys/param.h>
 #include <sys/types.h>
@@ -32,12 +35,110 @@ struct t_rename_token {
 TAILQ_HEAD(t_rename_pattern, t_rename_token);
 
 
+/*
+ * helper for t_rename() - eval the given pattern in the context of given
+ * t_tune.
+ *
+ * @return
+ *  the resulting string or NULL on error. Returned value has to be free()d by
+ *  the caller.
+ */
+static char	*t_rename_eval(struct t_tune *tune,
+		    const struct t_rename_pattern *pattern);
+
+/*
+ * helper for t_rename() - rename path to new_path.
+ *
+ * @return
+ *   return -1 on error and set and errno, 0 on success.
+ */
+static int	t_rename_safe(const char *oldpath, const char *newpath);
+
+/*
+ * print the given question, and read user's input. input should match
+ * y|yes|n|no.  t_yesno() loops until a valid response is given and then return
+ * 1 if the response match y|yes, 0 if it match n|no.
+ * Honor Yflag and Nflag.
+ *
+ * This routine is defined here because only the renamer use it. If another file
+ * needs it, it should be moved back to t_toolkit.
+ */
+static int	t_yesno(const char *question);
 /* helper for t_rename_parse() */
 static struct t_rename_token	*t_rename_token_new(int is_tag, const char *value);
 #define	t_rename_strtok(s)	t_rename_token_new(0, (s))
 #define	t_rename_tagtok(s)	t_rename_token_new(1, (s))
 /* helper for t_rename_safe(), taken from mkdir(3) */
 static int	build(char *path, mode_t omode);
+
+
+int
+t_rename(struct t_tune *tune, const struct t_rename_pattern *pattern)
+{
+	int ret = 0;
+	const char *ext;
+	char *npath = NULL, *rname = NULL, *q = NULL;
+	const char *opath;
+	const char *dirn;
+
+	assert_not_null(pattern);
+	assert_not_null(tune);
+
+	/* ensure a clean file state */
+	if (t_tune_save(tune) == -1)
+		goto error_label;
+
+	ext = strrchr(t_tune_path(tune), '.');
+	if (ext == NULL) {
+		warnx("%s: can not find file extension", t_tune_path(tune));
+		goto error_label;
+	}
+	ext++; /* skip dot */
+	rname = t_rename_eval(tune, pattern);
+	if (rname == NULL)
+		goto error_label;
+
+	/* rname is now OK. store into result the full new path.  */
+	dirn = t_dirname(t_tune_path(tune));
+	if (dirn == NULL) {
+		warn("dirname");
+		goto error_label;
+	}
+
+	opath = t_tune_path(tune);
+	/* we dont want foo.flac to be renamed then same name just with a
+	   different path like ./foo.flac */
+	if (strcmp(opath, t_basename(opath)) == 0) {
+		if (asprintf(&npath, "%s.%s", rname, ext) < 0)
+			goto error_label;
+	} else {
+		if (asprintf(&npath, "%s/%s.%s", dirn, rname, ext) < 0)
+			goto error_label;
+	}
+
+	/* ask user for confirmation and rename if user want to */
+	if (asprintf(&q, "rename `%s' to `%s'", opath, npath) < 0)
+		goto error_label;
+	if (strcmp(opath, npath) != 0 && t_yesno(q)) {
+		ret = t_rename_safe(opath, npath);
+		if (ret == 0) {
+			if (t__tune_reload__(tune, npath) == -1)
+				goto error_label;
+		}
+	}
+
+	free(q);
+	free(npath);
+	free(rname);
+	return (ret);
+	/* NOTREACHED */
+
+error_label:
+	free(q);
+	free(npath);
+	free(rname);
+	return (-1);
+}
 
 
 struct t_rename_pattern *
@@ -148,7 +249,7 @@ error_label:
 
 
 char *
-t_rename_eval(struct t_tune *tune, struct t_rename_pattern *pattern)
+t_rename_eval(struct t_tune *tune, const struct t_rename_pattern *pattern)
 {
 	struct t_rename_token *token;
 	struct sbuf *sb = NULL;
@@ -241,7 +342,57 @@ t_rename_pattern_delete(struct t_rename_pattern *pattern)
 }
 
 
-int
+static int
+t_yesno(const char *question)
+{
+	extern int	Yflag, Nflag;
+	char		*endl;
+	char		buffer[5]; /* strlen("yes\n\0") == 5 */
+
+	for (;;) {
+		if (feof(stdin) && !Yflag && !Nflag)
+			return (0);
+
+		(void)memset(buffer, '\0', sizeof(buffer));
+
+		if (question != NULL) {
+			(void)printf("%s? [y/n] ", question);
+			(void)fflush(stdout);
+		}
+
+		if (Yflag) {
+			(void)printf("y\n");
+			return (1);
+		} else if (Nflag) {
+			(void)printf("n\n");
+			return (0);
+		}
+
+		if (fgets(buffer, NELEM(buffer), stdin) == NULL) {
+			if (feof(stdin))
+				return (0);
+			else
+				err(errno, "fgets");
+		}
+
+		endl = strchr(buffer, '\n');
+		if (endl == NULL) {
+			/* buffer didn't receive EOL, must still be on stdin */
+			while (getc(stdin) != '\n' && !feof(stdin))
+				continue;
+		} else {
+			*endl = '\0';
+			(void)t_strtolower(buffer);
+			if (strcmp(buffer, "n") == 0 || strcmp(buffer, "no") == 0)
+				return (0);
+			else if (strcmp(buffer, "y") == 0 || strcmp(buffer, "yes") == 0)
+				return (1);
+		}
+	}
+}
+
+
+static int
 t_rename_safe(const char *opath, const char *npath)
 {
 	extern int dflag;

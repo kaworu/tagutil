@@ -21,8 +21,6 @@ enum t_actionkind {
 	T_ACTION_PRINT,		/* print		display tags */
 	T_ACTION_RENAME,	/* rename:PATTERN	rename files */
 	T_ACTION_SET,		/* set:TAG=VALUE	set tags */
-	/* internal */
-	T_ACTION_SAVE,
 };
 
 /* action with (or without) argument to proceed */
@@ -45,18 +43,13 @@ TAILQ_HEAD(t_actionQ, t_action);
  * @param argv_p
  *   A pointer to argv. Cannot be NULL.
  *
- * @param write_p
- *   If not NULL, the pointer is set to the number of action needing write
- *   access. Thus, 0 mean that no action require writting. The value is merely a
- *   hint; a rename action will enqueue two write action (a save and a rename).
- *
  * @return
  *   A new t_actionQ that resulted from argc/argv parsing. On error, NULL is
  *   returned: either errno is set to ENOMEM then malloc(3) failed, or there was
- *   an error in option parsing (argv is malformed). On error argc_p, argv_p and
- *   write_p are left unmodified.
+ *   an error in option parsing (argv is malformed). On error argc_p and argv_p
+ *   are left unmodified.
  */
-struct t_actionQ	*t_actionQ_new(int *argc_p, char ***argv_p, int *write_p);
+struct t_actionQ	*t_actionQ_new(int *argc_p, char ***argv_p);
 
 /*
  * destroy (free memory) of an action queue.

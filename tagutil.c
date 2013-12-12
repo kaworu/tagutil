@@ -38,7 +38,7 @@ int
 main(int argc, char *argv[])
 {
 	int	i, retval;
-	int	write; /* write access needed */
+	int	write = 0; /* write access needed ? */
 	struct t_tune		*tune;
 	struct t_action		*a;
 	struct t_actionQ	*aQ;
@@ -70,7 +70,7 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	aQ = t_actionQ_new(&argc, &argv, &write);
+	aQ = t_actionQ_new(&argc, &argv);
 	if (aQ == NULL) {
 		if (errno == ENOMEM)
 			err(ENOMEM, "malloc");
@@ -86,6 +86,10 @@ main(int argc, char *argv[])
 		errx(EINVAL, "missing file argument.\nTry `%s -h' for help.",
 		    getprogname());
 	}
+
+	/* find if any action need write access */
+	TAILQ_FOREACH(a, aQ, entries)
+		write += a->write;
 
 	/*
 	 * main loop, foreach files

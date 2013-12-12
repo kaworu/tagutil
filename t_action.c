@@ -2,21 +2,23 @@
  * t_action.c
  *
  * tagutil actions.
+ *
+ * Actions are all defined in this file. Complex action have implementations in
+ * their own file(s) to avoid bloating this one (like load, edit, rename) while
+ * simple action are implemented in this one. It could have an overall better
+ * design (like backend for example) but it is intentionally "big", "ugly" and
+ * simple to discourage anyone to add more action (so tagutil stay small).
  */
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-
 #include "t_config.h"
 #include "t_action.h"
 
 #include "t_backend.h"
 #include "t_taglist.h"
 #include "t_tune.h"
-#include "t_yaml.h"
+#include "t_editor.h"
+#include "t_loader.h"
 #include "t_renamer.h"
+#include "t_yaml.h"
 
 
 struct t_action_token {
@@ -46,14 +48,6 @@ static struct t_action_token t_action_keywords[] = {
 static struct t_action	*t_action_new(enum t_actionkind kind, const char *arg);
 /* free an action and all internal ressources */
 static void		 t_action_delete(struct t_action *victim);
-/*
- * print the given question, and read user's input. input should match
- * y|yes|n|no.  t_yesno() loops until a valid response is given and then return
- * 1 if the response match y|yes, 0 if it match n|no.
- * Honor Yflag and Nflag.
- */
-static int	t_yesno(const char *question);
-
 
 /* action methods */
 static int	t_action_add(struct t_action *self, struct t_tune *tune);
@@ -64,39 +58,15 @@ static int	t_action_load(struct t_action *self, struct t_tune *tune);
 static int	t_action_print(struct t_action *self, struct t_tune *tune);
 static int	t_action_rename(struct t_action *self, struct t_tune *tune);
 static int	t_action_set(struct t_action *self, struct t_tune *tune);
-static int	t_action_save(struct t_action *self, struct t_tune *tune);
 
-
-/* used by bsearch(3) in the t_action_keywords array */
-static int
-t_action_token_cmp(const void *vstr, const void *vtoken)
-{
-	const char	*str;
-	size_t		tlen, slen;
-	int		cmp;
-	const struct t_action_token *token;
-
-	assert_not_null(vstr);
-	assert_not_null(vtoken);
-
-	token = vtoken;
-	str   = vstr;
-	slen = strlen(str);
-	tlen = strlen(token->word);
-	cmp = strncmp(str, token->word, tlen);
-
-	/* we accept either slen == tlen or a finishing `:' */
-	if (cmp == 0 && slen > tlen && str[tlen] != ':')
-		cmp = str[tlen] - '\0';
-
-	return (cmp);
-}
+/* used to search in the t_action_keywords array */
+static int	t_action_token_cmp(const void *vstr, const void *vtoken);
 
 
 struct t_actionQ *
-t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
+t_actionQ_new(int *argc_p, char ***argv_p)
 {
-	int write, argc;
+	int argc;
 	char **argv;
 	struct t_action  *a;
 	struct t_actionQ *aQ;
@@ -132,34 +102,17 @@ t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
 				goto error_label;
 				/* NOTREACHED */
 			}
-			arg++; /* skip : */
-		} else /* if t->argc > 1 */
-			ABANDON_SHIP();
-
-		/* FIXME: maybe a flag to know if we need to save before the
-		   action ? */
-		switch (t->kind) {
-		case T_ACTION_RENAME:
-			a = t_action_new(T_ACTION_SAVE, NULL);
-			if (a == NULL)
-				goto error_label;
-			TAILQ_INSERT_TAIL(aQ, a, entries);
-			/* FALLTHROUGH */
-		case T_ACTION_ADD: /* FALLTHROUGH */
-		case T_ACTION_CLEAR: /* FALLTHROUGH */
-		case T_ACTION_EDIT: /* FALLTHROUGH */
-		case T_ACTION_LOAD: /* FALLTHROUGH */
-		case T_ACTION_SET: /* FALLTHROUGH */
-		case T_ACTION_PRINT: /* FALLTHROUGH */
-		case T_ACTION_BACKEND:
-			a = t_action_new(t->kind, arg);
-			if (a == NULL)
-				goto error_label;
-			TAILQ_INSERT_TAIL(aQ, a, entries);
-			break;
-		default: /* private action */
+			arg++; /* skip the `:' char */
+		} else {
+			/* t->argc > 1 is unsuported */
 			ABANDON_SHIP();
 		}
+
+		a = t_action_new(t->kind, arg);
+		if (a == NULL)
+			goto error_label;
+		TAILQ_INSERT_TAIL(aQ, a, entries);
+
 		argc--;
 		argv++;
 	}
@@ -172,19 +125,6 @@ t_actionQ_new(int *argc_p, char ***argv_p, int *write_p)
 		TAILQ_INSERT_TAIL(aQ, a, entries);
 	}
 
-	/* check if write access is needed */
-	write = 0;
-	TAILQ_FOREACH(a, aQ, entries)
-		write += a->write;
-	if (write > 0) {
-		a = t_action_new(T_ACTION_SAVE, NULL);
-		if (a == NULL)
-			goto error_label;
-		TAILQ_INSERT_TAIL(aQ, a, entries);
-	}
-
-	if (write_p != NULL)
-		*write_p = write;
 	*argc_p = argc;
 	*argv_p = argv;
 	return (aQ);
@@ -294,8 +234,11 @@ t_action_new(enum t_actionkind kind, const char *arg)
 			goto error_label;
 		}
 		a->opaque = t_rename_parse(arg);
-		assert_not_null(a->opaque);
-		/* FIXME: error checking on t_rename_parse() */
+		if (a->opaque == NULL) {
+			errno = EINVAL;
+			warn("rename: bad rename pattern");
+			goto error_label;
+		}
 		a->write = 1;
 		a->apply = t_action_rename;
 		break;
@@ -318,11 +261,6 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		a->write = 1;
 		a->apply = t_action_set;
 		break;
-	case T_ACTION_SAVE:
-		/* we don't set write() because T_ACTION_SAVE is private */
-		a->apply = t_action_save;
-		break;
-	default: ABANDON_SHIP();
 	}
 
 	return (a);
@@ -369,8 +307,8 @@ t_action_add(struct t_action *self, struct t_tune *tune)
 	struct t_taglist *tlist = NULL;
 
 	assert_not_null(self);
-	assert_not_null(tune);
 	assert(self->kind == T_ACTION_ADD);
+	assert_not_null(tune);
 
 	t = self->opaque;
 
@@ -414,8 +352,8 @@ t_action_clear(struct t_action *self, struct t_tune *tune)
 	const char *clear_key;
 
 	assert_not_null(self);
-	assert_not_null(tune);
 	assert(self->kind == T_ACTION_CLEAR);
+	assert_not_null(tune);
 
 	clear_key = self->opaque;
 	ret = t_taglist_new();
@@ -449,143 +387,24 @@ error_label:
 static int
 t_action_edit(struct t_action *self, struct t_tune *tune)
 {
-	FILE *fp = NULL;
-	struct t_taglist *tlist = NULL;
-	char *tmp = NULL, *yaml = NULL;
-	const char *editor;
-	pid_t editpid; /* child process */
-	int status;
-	struct stat before, after;
 
 	assert_not_null(self);
-	assert_not_null(tune);
 	assert(self->kind == T_ACTION_EDIT);
+	assert_not_null(tune);
 
-	/* convert the tags into YAML */
-	tlist = t_tune_tags(tune);
-	if (tlist == NULL)
-		goto error_label;
-	yaml = t_tags2yaml(tlist, t_tune_path(tune));
-	t_taglist_delete(tlist);
-	tlist = NULL;
-	if (yaml == NULL)
-		goto error_label;
-
-	/* print the YAML into a temp file */
-	if (asprintf(&tmp, "/tmp/%s-XXXXXX.yml", getprogname()) < 0)
-		goto error_label;
-	if (mkstemps(tmp, 4) == -1) {
-		warn("mkstemps");
-		goto error_label;
-	}
-	fp = fopen(tmp, "w");
-	if (fp == NULL) {
-		warn("%s: fopen", tmp);
-		goto error_label;
-	}
-	if (fprintf(fp, "%s", yaml) < 0) {
-		warn("%s: fprintf", tmp);
-		goto error_label;
-	}
-	if (fclose(fp) != 0) {
-		warn("%s: fclose", tmp);
-		goto error_label;
-	}
-	fp = NULL;
-
-	/* call the user's editor to edit the temp file */
-	editor = getenv("EDITOR");
-	if (editor == NULL) {
-		warnx("please set the $EDITOR environment variable.");
-		goto error_label;
-	}
-	if (stat(tmp, &before) != 0)
-		goto error_label;
-	switch (editpid = fork()) {
-	case -1:
-		warn("fork");
-		goto error_label;
-		/* NOTREACHED */
-	case 0: /* child (edit process) */
-		/*
-		 * we're actually so cool, that we keep the user waiting if
-		 * $EDITOR start slowly. The slow-editor-detection-algorithm
-		 * used might not be the best known at the time of writing, but
-		 * it has shown really good results and is pretty clear.
-		 */
-		if (strcmp(editor, "emacs") == 0)
-			(void)fprintf(stderr, "Starting %s, please wait...\n", editor);
-		execlp(editor, /* argv[0] */editor, /* argv[1] */tmp, NULL);
-		err(errno, "execlp");
-		/* NOTREACHED */
-	default: /* parent (tagutil process) */
-		waitpid(editpid, &status, 0);
-	}
-	if (stat(tmp, &after) != 0)
-		goto error_label;
-
-	/* check if the edit process went successfully */
-	if (after.st_mtime > before.st_mtime &&
-	    WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-		struct t_action *load = t_action_new(T_ACTION_LOAD, tmp);
-		if (load == NULL)
-			goto error_label;
-		status = load->apply(load, tune);
-		t_action_delete(load);
-		if (status != 0)
-			goto error_label;
-	}
-
-	(void)unlink(tmp);
-	free(tmp);
-	free(yaml);
-	return (0);
-error_label:
-	if (fp != NULL)
-		(void)fclose(fp);
-	if (tmp != NULL)
-		(void)unlink(tmp);
-	free(tmp);
-	free(yaml);
-	return (-1);
+	return (t_edit(tune));
 }
 
 
 static int
 t_action_load(struct t_action *self, struct t_tune *tune)
 {
-	FILE *fp;
-	const char *yamlfile;
-	char *errmsg;
-	struct t_taglist *tlist;
-	int r;
 
 	assert_not_null(self);
-	assert_not_null(tune);
 	assert(self->kind == T_ACTION_LOAD);
+	assert_not_null(tune);
 
-	yamlfile = self->opaque;
-	if (strcmp(yamlfile, "-") == 0)
-		fp = stdin;
-	else {
-		fp = fopen(yamlfile, "r");
-		if (fp == NULL) {
-			warn("%s: fopen", yamlfile);
-			return (-1);
-		}
-	}
-
-	tlist = t_yaml2tags(fp, &errmsg);
-	if (fp != stdin)
-		(void)fclose(fp);
-	if (tlist == NULL) {
-		warnx("%s", errmsg);
-		free(errmsg);
-		return (-1);
-	 }
-	r = t_tune_set_tags(tune, tlist);
-	t_taglist_delete(tlist);
-	return (r);
+	return (t_load(tune, self->opaque));
 }
 
 
@@ -596,8 +415,8 @@ t_action_print(struct t_action *self, struct t_tune *tune)
 	struct t_taglist *tlist;
 
 	assert_not_null(self);
-	assert_not_null(tune);
 	assert(self->kind == T_ACTION_PRINT);
+	assert_not_null(tune);
 
 	tlist = t_tune_tags(tune);
 	if (tlist == NULL)
@@ -616,69 +435,12 @@ t_action_print(struct t_action *self, struct t_tune *tune)
 static int
 t_action_rename(struct t_action *self, struct t_tune *tune)
 {
-	int ret = 0;
-	const char *ext;
-	char *npath = NULL, *rname = NULL, *q = NULL;
-	const char *opath;
-	const char *dirn;
-	struct t_rename_pattern *pattern;
 
 	assert_not_null(self);
 	assert(self->kind == T_ACTION_RENAME);
 	assert_not_null(tune);
-	assert(!t__tune_dirty__(tune)); /* FIXME: just do a t_tune_save() ? */
 
-	pattern = self->opaque;
-
-	ext = strrchr(t_tune_path(tune), '.');
-	if (ext == NULL) {
-		warnx("%s: can not find file extension", t_tune_path(tune));
-		goto error_label;
-	}
-	ext++; /* skip dot */
-	/* FIXME: t_rename_eval() error handling ? */
-	rname = t_rename_eval(tune, pattern);
-	if (rname == NULL)
-		goto error_label;
-
-	/* rname is now OK. store into result the full new path.  */
-	dirn = t_dirname(t_tune_path(tune));
-	if (dirn == NULL) {
-		warn("dirname");
-		goto error_label;
-	}
-
-	opath = t_tune_path(tune);
-	/* we dont want foo.flac to be renamed then same name just with a
-	   different path like ./foo.flac */
-	if (strcmp(opath, t_basename(opath)) == 0) {
-		if (asprintf(&npath, "%s.%s", rname, ext) < 0)
-			goto error_label;
-	} else {
-		if (asprintf(&npath, "%s/%s.%s", dirn, rname, ext) < 0)
-			goto error_label;
-	}
-
-	/* ask user for confirmation and rename if user want to */
-	if (asprintf(&q, "rename `%s' to `%s'", opath, npath) < 0)
-		goto error_label;
-	if (strcmp(opath, npath) != 0 && t_yesno(q)) {
-		ret = t_rename_safe(opath, npath);
-		if (ret == 0) {
-			if (t__tune_reload__(tune, npath) == -1)
-				goto error_label;
-		}
-	}
-
-	free(q);
-	free(npath);
-	free(rname);
-	return (ret);
-error_label:
-	free(q);
-	free(npath);
-	free(rname);
-	return (-1);
+	return (t_rename(tune, self->opaque));
 }
 
 
@@ -690,8 +452,8 @@ t_action_set(struct t_action *self, struct t_tune *tune)
 	int n, status;
 
 	assert_not_null(self);
-	assert_not_null(tune);
 	assert(self->kind == T_ACTION_SET);
+	assert_not_null(tune);
 
 	t_tmp = self->opaque;
 	neo = t_tag_new(t_tmp->key, t_tmp->val);
@@ -728,63 +490,27 @@ t_action_set(struct t_action *self, struct t_tune *tune)
 }
 
 
+/* used to search in the t_action_keywords array */
 static int
-t_action_save(struct t_action *self, struct t_tune *tune)
+t_action_token_cmp(const void *vstr, const void *vtoken)
 {
+	const char	*str;
+	size_t		tlen, slen;
+	int		cmp;
+	const struct t_action_token *token;
 
-	assert_not_null(self);
-	assert_not_null(tune);
-	assert(self->kind == T_ACTION_SAVE);
+	assert_not_null(vstr);
+	assert_not_null(vtoken);
 
-	return (t_tune_save(tune) == 0 ? 0 : -1);
-}
+	token = vtoken;
+	str   = vstr;
+	slen = strlen(str);
+	tlen = strlen(token->word);
+	cmp = strncmp(str, token->word, tlen);
 
+	/* we accept either slen == tlen or a finishing `:' */
+	if (cmp == 0 && slen > tlen && str[tlen] != ':')
+		cmp = str[tlen] - '\0';
 
-static int
-t_yesno(const char *question)
-{
-	extern int	Yflag, Nflag;
-	char		*endl;
-	char		buffer[5]; /* strlen("yes\n\0") == 5 */
-
-	for (;;) {
-		if (feof(stdin) && !Yflag && !Nflag)
-			return (0);
-
-		(void)memset(buffer, '\0', sizeof(buffer));
-
-		if (question != NULL) {
-			(void)printf("%s? [y/n] ", question);
-			(void)fflush(stdout);
-		}
-
-		if (Yflag) {
-			(void)printf("y\n");
-			return (1);
-		} else if (Nflag) {
-			(void)printf("n\n");
-			return (0);
-		}
-
-		if (fgets(buffer, NELEM(buffer), stdin) == NULL) {
-			if (feof(stdin))
-				return (0);
-			else
-				err(errno, "fgets");
-		}
-
-		endl = strchr(buffer, '\n');
-		if (endl == NULL) {
-			/* buffer didn't receive EOL, must still be on stdin */
-			while (getc(stdin) != '\n' && !feof(stdin))
-				continue;
-		} else {
-			*endl = '\0';
-			(void)t_strtolower(buffer);
-			if (strcmp(buffer, "n") == 0 || strcmp(buffer, "no") == 0)
-				return (0);
-			else if (strcmp(buffer, "y") == 0 || strcmp(buffer, "yes") == 0)
-				return (1);
-		}
-	}
+	return (cmp);
 }

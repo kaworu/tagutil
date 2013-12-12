@@ -14,7 +14,7 @@ struct t_rename_pattern;
 
 
 /*
- * create a pattern usable for t_rename_eval().
+ * create a pattern usable for t_rename().
  *
  * The tag keys in pattern should look like shell variables (%artist or/and
  * %{album}). If the tag key is not defined for a file, the tag key is replaced
@@ -27,24 +27,25 @@ struct t_rename_pattern;
 struct t_rename_pattern	*t_rename_parse(const char *pattern);
 
 /*
- * eval the given pattern in the context of given t_tune.
+ * rename the given file (tune) using pattern.
  *
- * On error NULL is returned. Otherwhise the result is returned.
+ * This routine will require user confirmation unless the Yflag or Nflag was
+ * set.
  *
- * returned value has to be free()d.
+ * @param tune
+ *   The file to rename.
+ *
+ * @param pattern
+ *   The pattern for the new filename.
+ *
+ * @return
+ *   -1 on error, 0 on success.
  */
-char	*t_rename_eval(struct t_tune *tune, struct t_rename_pattern *pattern);
+int	t_rename(struct t_tune *tune, const struct t_rename_pattern *pattern);
 
 /*
  * free all memory associated with a pattern.
  */
 void	t_rename_pattern_delete(struct t_rename_pattern *pattern);
-
-/*
- * rename path to new_path.
- *
- * return 0 on error and set and errno, return 1 otherwise.
- */
-int	t_rename_safe(const char *oldpath, const char *newpath);
 
 #endif /* not T_RENAMER_H */
