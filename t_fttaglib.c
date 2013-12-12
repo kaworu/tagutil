@@ -1,7 +1,7 @@
 /*
- * t_ftgeneric.c
+ * t_fttaglib.c
  *
- * a generic tagutil backend, using TagLib.
+ * a taglib tagutil backend, using TagLib.
  */
 #include <limits.h>
 
@@ -15,31 +15,31 @@
 static const char libid[] = "TagLib";
 
 
-struct t_ftgeneric_data {
+struct t_fttaglib_data {
 	const char	*libid;
 	TagLib_File	*file;
 	TagLib_Tag	*tag;
 };
 
-struct t_backend	*t_ftgeneric_backend(void);
+struct t_backend	*t_fttaglib_backend(void);
 
-static void 		*t_ftgeneric_init(const char *path);
-static struct t_taglist	*t_ftgeneric_read(void *opaque);
-static int		 t_ftgeneric_write(void *opaque, const struct t_taglist *tlist);
-static void		 t_ftgeneric_clear(void *opaque);
+static void 		*t_fttaglib_init(const char *path);
+static struct t_taglist	*t_fttaglib_read(void *opaque);
+static int		 t_fttaglib_write(void *opaque, const struct t_taglist *tlist);
+static void		 t_fttaglib_clear(void *opaque);
 
 
 struct t_backend *
-t_ftgeneric_backend(void)
+t_fttaglib_backend(void)
 {
 
 	static struct t_backend b = {
 		.libid		= libid,
 		.desc		= "various file format but limited set of tags",
-		.init		= t_ftgeneric_init,
-		.read		= t_ftgeneric_read,
-		.write		= t_ftgeneric_write,
-		.clear		= t_ftgeneric_clear,
+		.init		= t_fttaglib_init,
+		.read		= t_fttaglib_read,
+		.write		= t_fttaglib_write,
+		.clear		= t_fttaglib_clear,
 	};
 
 	/* TagLib specific init */
@@ -63,14 +63,14 @@ t_ftgeneric_backend(void)
 }
 
 static void *
-t_ftgeneric_init(const char *path)
+t_fttaglib_init(const char *path)
 {
 	TagLib_File *f;
-	struct t_ftgeneric_data *data;
+	struct t_fttaglib_data *data;
 
 	assert_not_null(path);
 
-	data = calloc(1, sizeof(struct t_ftgeneric_data));
+	data = calloc(1, sizeof(struct t_fttaglib_data));
 	if (data == NULL)
 		return (NULL);
 	data->libid = libid;
@@ -88,11 +88,11 @@ t_ftgeneric_init(const char *path)
 }
 
 static struct t_taglist *
-t_ftgeneric_read(void *opaque)
+t_fttaglib_read(void *opaque)
 {
 	unsigned int uintval;
 	char buf[5], *val = NULL;
-	struct t_ftgeneric_data *data;
+	struct t_fttaglib_data *data;
 	struct t_taglist *tlist = NULL;
 
 	assert_not_null(opaque);
@@ -163,9 +163,9 @@ error:
 }
 
 static int
-t_ftgeneric_write(void *opaque, const struct t_taglist *tlist)
+t_fttaglib_write(void *opaque, const struct t_taglist *tlist)
 {
-	struct t_ftgeneric_data *data;
+	struct t_fttaglib_data *data;
 	struct t_tag *t;
 	char *endptr;
 	unsigned long ulongval;
@@ -225,9 +225,9 @@ t_ftgeneric_write(void *opaque, const struct t_taglist *tlist)
 }
 
 static void
-t_ftgeneric_clear(void *opaque)
+t_fttaglib_clear(void *opaque)
 {
-	struct t_ftgeneric_data *data;
+	struct t_fttaglib_data *data;
 
 	assert_not_null(opaque);
 	data = opaque;

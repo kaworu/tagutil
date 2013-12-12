@@ -20,7 +20,7 @@ detection you can define `WITHOUT_$LIB` to avoid tagutil to link against
 - TAGLIB: TagLib (>=1.5)
     Generic backend. Can handle a lot of different file type, but only a
     limited set of tags (artist, title, album, tracknumber, date, genre and
-    comment)
+    comment).
 - ID3V1:
     A stock ID3v1.1 TAG backend. ID3v1 is only used by very old mp3 files and
     has a lot of limitation including: limited set of tags, limited length (30

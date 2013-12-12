@@ -11,7 +11,7 @@
 
 struct t_backend	*t_ftflac_backend(void) t__weak;
 struct t_backend	*t_ftoggvorbis_backend(void) t__weak;
-struct t_backend	*t_ftgeneric_backend(void) t__weak;
+struct t_backend	*t_fttaglib_backend(void) t__weak;
 struct t_backend	*t_ftid3v1_backend(void) t__weak;
 
 
@@ -33,8 +33,8 @@ t_all_backends(void)
 			TAILQ_INSERT_TAIL(&bQ, t_ftoggvorbis_backend(), entries);
 
 		/* Multiple files types support using TagLib */
-		if (t_ftgeneric_backend != NULL)
-			TAILQ_INSERT_TAIL(&bQ, t_ftgeneric_backend(), entries);
+		if (t_fttaglib_backend != NULL)
+			TAILQ_INSERT_TAIL(&bQ, t_fttaglib_backend(), entries);
 
 		/* mp3 ID3v1.1 files types support */
 		if (t_ftid3v1_backend != NULL)
