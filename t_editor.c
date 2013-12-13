@@ -11,9 +11,10 @@
 
 #include "t_config.h"
 #include "t_editor.h"
+#include "t_loader.h"
 
 #include "t_yaml.h"
-#include "t_loader.h"
+#include "t_json.h"
 
 
 int
@@ -21,7 +22,7 @@ t_edit(struct t_tune *tune)
 {
 	FILE *fp = NULL;
 	struct t_taglist *tlist = NULL;
-	char *tmp = NULL, *yaml = NULL;
+	char *tmp = NULL, *json = NULL;
 	const char *editor, *tmpdir;
 	pid_t editpid; /* child process */
 	int status;
@@ -33,10 +34,10 @@ t_edit(struct t_tune *tune)
 	tlist = t_tune_tags(tune);
 	if (tlist == NULL)
 		goto error_label;
-	yaml = t_tags2yaml(tlist, t_tune_path(tune));
+	json = t_tags2json(tlist, t_tune_path(tune));
 	t_taglist_delete(tlist);
 	tlist = NULL;
-	if (yaml == NULL)
+	if (json == NULL)
 		goto error_label;
 
 	tmpdir = getenv("TMPDIR");
@@ -54,7 +55,7 @@ t_edit(struct t_tune *tune)
 		warn("%s: fopen", tmp);
 		goto error_label;
 	}
-	if (fprintf(fp, "%s", yaml) < 0) {
+	if (fprintf(fp, "%s", json) < 0) {
 		warn("%s: fprintf", tmp);
 		goto error_label;
 	}
@@ -96,7 +97,7 @@ t_edit(struct t_tune *tune)
 
 	(void)unlink(tmp);
 	free(tmp);
-	free(yaml);
+	free(json);
 	return (0);
 error_label:
 	if (fp != NULL)
@@ -104,6 +105,6 @@ error_label:
 	if (tmp != NULL)
 		(void)unlink(tmp);
 	free(tmp);
-	free(yaml);
+	free(json);
 	return (-1);
 }

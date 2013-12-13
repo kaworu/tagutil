@@ -18,6 +18,7 @@ set(SRCS
     t_taglist.c
     t_tune.c
     t_yaml.c
+    t_json.c
     t_renamer.c
     t_editor.c
     t_loader.c
@@ -73,6 +74,14 @@ if(YAML_FOUND)
     set(REQUIRED_INCLUDE_DIR ${REQUIRED_INCLUDE_DIR} ${YAML_INCLUDE_DIRS})
 else()
     message(FATAL_ERROR "libyaml not found.")
+endif()
+
+pkg_check_modules(JSON jansson)
+if(JSON_FOUND)
+    set(REQUIRED_LIBRARIES ${REQUIRED_LIBRARIES} ${JSON_LDFLAGS})
+    set(REQUIRED_INCLUDE_DIR ${REQUIRED_INCLUDE_DIR} ${JSON_INCLUDE_DIRS})
+else()
+    message(FATAL_ERROR "jansson not found.")
 endif()
 
 if (HAS_SBUF)

@@ -18,7 +18,9 @@
 #include "t_editor.h"
 #include "t_loader.h"
 #include "t_renamer.h"
+
 #include "t_yaml.h"
+#include "t_json.h"
 
 
 struct t_action_token {
@@ -418,7 +420,7 @@ static int
 t_action_print(struct t_action *self, struct t_tune *tune)
 {
 	int success = 0;
-	char *yaml = NULL;
+	char *json = NULL;
 	struct t_taglist *tlist = NULL;
 
 	assert_not_null(self);
@@ -429,15 +431,15 @@ t_action_print(struct t_action *self, struct t_tune *tune)
 	if (tlist == NULL)
 		goto error_label;
 
-	yaml = t_tags2yaml(tlist, t_tune_path(tune));
-	if (yaml == NULL)
+	json = t_tags2json(tlist, t_tune_path(tune));
+	if (json == NULL)
 		goto error_label;
 
-	success = (printf("%s\n", yaml) == (strlen(yaml) + 1));
+	success = (printf("%s\n", json) == (strlen(json) + 1));
 	/* FALLTHROUGH */
 error_label:
 	t_taglist_delete(tlist);
-	free(yaml);
+	free(json);
 	return (success ? 0 : -1);
 }
 
