@@ -173,13 +173,13 @@ target_link_libraries(${PROJECT_NAME}
 )
 #}}}
 
-#{{{ man FIXME
-#set(MAN_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}.1)
+#{{{ man
+set(MAN_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}.1)
 #}}}
 
 # {{{ Installation
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
-#install(FILES ${AWE_MAN1_FILES} DESTINATION ${MAN_PATH}/man1)
+install(FILES ${MAN_SRCS} DESTINATION ${MAN_PATH}/man1)
 # }}}
 
 # vim: filetype=cmake:expandtab:shiftwidth=4:tabstop=8:softtabstop=4:textwidth=80
