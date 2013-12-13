@@ -17,40 +17,52 @@
 #include "t_tune.h"
 #include "t_json.h"
 
-int
-t_json_whdl(void *sb, unsigned char *buffer, size_t size)
-{
-
-	assert_not_null(sb);
-	assert_not_null(buffer);
-
-	if (sb == NULL || buffer == NULL)
-		return (0); /* error */
-	else
-		(void)sbuf_bcat(sb, buffer, size);
-	
-	return (1); /* success */
-}
-
 
 char *
 t_tags2json(const struct t_taglist *tlist, const char *path)
 {
-	assert(0 && "Unimplemented");
-	/* NOTREACHED */
+	json_t *root = NULL, *obj = NULL;
+	const struct t_tag *t;
+	char *ret = NULL;
+
+	assert_not_null(tlist);
+
+	if ((root = json_array()) == NULL)
+		goto error_label;
+
+	TAILQ_FOREACH(t, tlist->tags, entries) {
+		if ((obj = json_object()) == NULL)
+			goto error_label;
+		if (json_object_set_new_nocheck(obj, t->key,
+		    json_string_nocheck(t->val)) == -1) {
+			goto error_label;
+		}
+		if (json_array_append(root, obj) == -1)
+			goto error_label;
+		json_decref(obj);
+		obj = NULL;
+	}
+
+	ret = json_dumps(root, JSON_COMPACT);
+	/* FALLTHROUGH */
+error_label:
+	if (root != NULL)
+		json_decref(root);
+	if (obj != NULL)
+		json_decref(obj);
+
+	return (ret);
 }
 
 
 /*
  * Our parser FSM. we only handle this JSON subset:
  *
- *  STREAM-START
- *      (DOCUMENT-START
- *          (SEQUENCE-START
- *              (MAPPING-START SCALAR SCALAR MAPPING-END)*
- *           SEQUENCE-END)?
- *       DOCUMENT-END)?
- *  STREAM-END
+ *  [
+ *      { "key" : "value" },
+ *      { "key" : "value" },
+ *      ...
+ *  ]
  */
 struct t_taglist *
 t_json2tags(FILE *fp, char **errmsg_p)
