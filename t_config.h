@@ -3,7 +3,7 @@
 
 #if !defined(T_TAGUTIL_VERSION)
 #	define	T_TAGUTIL_VERSION "(unknow version)"
-#endif /* not T_TAGUTIL_VERSION */
+#endif /* ndef T_TAGUTIL_VERSION */
 
 /*
  * avoid lint to complain for non C89 keywords and macros
@@ -47,4 +47,4 @@
 #	include <sys/sbuf.h>
 #endif
 
-#endif /* not T_CONFIG_H */
+#endif /* ndef T_CONFIG_H */

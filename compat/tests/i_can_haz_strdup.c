@@ -1,5 +1,5 @@
 /*
- * build-tests/i_can_haz_strdup.c
+ * tests/i_can_haz_strdup.c
  */
 #include <string.h>
 

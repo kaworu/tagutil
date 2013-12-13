@@ -1,5 +1,5 @@
 /*
- * build-tests/i_can_haz_strlcpy.c
+ * tests/i_can_haz_strlcpy.c
  */
 #include <string.h>
 

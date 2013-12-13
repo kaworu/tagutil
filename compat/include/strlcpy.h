@@ -9,4 +9,4 @@
 
 size_t strlcpy(char *dst, const char *src, size_t siz);
 
-#endif /* not T_COMPAT_STRLCPY_H */
+#endif /* ndef T_COMPAT_STRLCPY_H */

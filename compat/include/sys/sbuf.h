@@ -39,7 +39,7 @@
 #define	__END_DECLS
 #ifndef __printflike
 #define	__printflike(fmtarg, firstvarg) t__printflike(fmtarg, firstvarg)
-#endif /* not __printflike */
+#endif /* ndef __printflike */
 #include <stdarg.h>
 #define	__va_list va_list
 /* /HACK */

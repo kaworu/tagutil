@@ -81,4 +81,4 @@ char	*t_dirname(const char *);
  */
 char	*t_basename(const char *);
 
-#endif /* not T_TOOLKIT_H */
+#endif /* ndef T_TOOLKIT_H */

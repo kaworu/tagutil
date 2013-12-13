@@ -9,4 +9,4 @@
 
 const char * getprogname(void);
 
-#endif /* not T_COMPAT_GETPROGNAME_H */
+#endif /* ndef T_COMPAT_GETPROGNAME_H */

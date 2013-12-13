@@ -9,4 +9,4 @@
 
 size_t strlcat(char *dst, const char *src, size_t siz);
 
-#endif /* not T_COMPAT_STRLCAT_H */
+#endif /* ndef T_COMPAT_STRLCAT_H */

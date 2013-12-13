@@ -1,5 +1,5 @@
 /*
- * build-tests/i_can_haz_strlcat.c
+ * tests/i_can_haz_strlcat.c
  */
 #include <string.h>
 

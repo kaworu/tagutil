@@ -70,4 +70,4 @@ int	t_tune_save(struct t_tune *tune);
  * afterward.
  */
 void	t_tune_delete(struct t_tune *tune);
-#endif /* not T_TUNE_H */
+#endif /* ndef T_TUNE_H */

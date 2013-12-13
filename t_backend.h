@@ -54,4 +54,4 @@ TAILQ_HEAD(t_backendQ, t_backend);
  */
 const struct t_backendQ	*t_all_backends(void);
 
-#endif /* not T_BACKEND_H */
+#endif /* ndef T_BACKEND_H */

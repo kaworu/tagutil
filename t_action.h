@@ -55,4 +55,4 @@ struct t_actionQ	*t_actionQ_new(int *argc_p, char ***argv_p);
  * destroy (free memory) of an action queue.
  */
 void	t_actionQ_delete(struct t_actionQ *aQ);
-#endif /* not T_ACTION_H */
+#endif /* ndef T_ACTION_H */

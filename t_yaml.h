@@ -44,4 +44,4 @@ char *	t_tags2yaml(const struct t_taglist *tlist, const char *path);
  */
 struct t_taglist	*t_yaml2tags(FILE *fp, char **errmsg_p);
 
-#endif /* not T_YAML_H */
+#endif /* ndef T_YAML_H */

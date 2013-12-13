@@ -1,5 +1,5 @@
 /*
- * build-tests/i_can_haz_sbuf.c
+ * tests/i_can_haz_sbuf.c
  */
 #include <stddef.h>
 #include <sys/types.h>

@@ -48,4 +48,4 @@ int	t_rename(struct t_tune *tune, const struct t_rename_pattern *pattern);
  */
 void	t_rename_pattern_delete(struct t_rename_pattern *pattern);
 
-#endif /* not T_RENAMER_H */
+#endif /* ndef T_RENAMER_H */

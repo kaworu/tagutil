@@ -104,4 +104,4 @@ char	*t_taglist_join(const struct t_taglist *tlist, const char *glue);
  */
 void	t_taglist_delete(struct t_taglist *tlist);
 
-#endif /* not T_TAGLIST_H */
+#endif /* ndef T_TAGLIST_H */

@@ -1,5 +1,5 @@
 /*
- * build-tests/i_can_haz_getprogname.c
+ * tests/i_can_haz_getprogname.c
  */
 #include <stdlib.h>
 
