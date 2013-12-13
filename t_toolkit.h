@@ -7,11 +7,17 @@
  *
  */
 
-/* FLAC's assert header conflict with the standard. It has been fixed in
- * "recent" libFLAC (by requiring prefixing) but not all OS / distro have
- * updated yet (namely Ubuntu 13.04 for example).
+#ifdef FLAC_CLASH_WORKAROUND
+/*
+ * FLAC's assert header conflict with the standard. It has been fixed in libFLAC
+ * 1.3 (by requiring prefixing) but not all OS / distro have updated yet (Ubuntu
+ * 13.04 for example).
  */
 #include </usr/include/assert.h>
+#else
+#include <assert.h>
+#endif
+
 #include <ctype.h>
 #include <err.h>
 #include <errno.h>
