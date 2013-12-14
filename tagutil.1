@@ -341,6 +341,9 @@ set the title "foo" to file.ogg:
 .Pp
 set the year number 2000 to file.mp3:
 .Dl Nm Fl y Ar 2000 file.mp3
+.Pp
+Save all your music into a json file to create a database.
+.Dl (echo '['; Nm Fl F Ar json ~/Music/* | sed -e 's/$/,/'; echo ']') | tee music.json
 .Sh AUTHORS
 .An "Alexandre Perrin" Aq kaworu@kaworu.ch
 .An "Baptiste Daroussin" Aq baptiste.daroussin@gmail.com
