@@ -13,17 +13,17 @@ project(${PROJECT_NAME} C)
 
 set(SRCS
     tagutil.c
-    t_toolkit.c
-    t_tag.c
-    t_taglist.c
-    t_tune.c
-    t_yaml.c
-    t_json.c
+    t_action.c
     t_renamer.c
     t_editor.c
     t_loader.c
+    t_tune.c
+    t_taglist.c
+    t_tag.c
     t_backend.c
-    t_action.c
+    t_format.c
+    t_yaml.c
+    t_toolkit.c
 )
 
 include_directories(
@@ -74,18 +74,6 @@ if(YAML_FOUND)
     set(REQUIRED_INCLUDE_DIR ${REQUIRED_INCLUDE_DIR} ${YAML_INCLUDE_DIRS})
 else()
     message(FATAL_ERROR "libyaml not found.")
-endif()
-
-pkg_check_modules(JSON jansson)
-if(JSON_FOUND)
-    set(REQUIRED_LIBRARIES ${REQUIRED_LIBRARIES} ${JSON_LDFLAGS})
-    set(REQUIRED_INCLUDE_DIR ${REQUIRED_INCLUDE_DIR} ${JSON_INCLUDE_DIRS})
-else()
-    message(FATAL_ERROR "jansson not found.")
-endif()
-
-if (HAS_SBUF)
-    set(REQUIRED_LIBRARIES ${REQUIRED_LIBRARIES} "-lsbuf")
 endif()
 
 include_directories(${REQUIRED_INCLUDE_DIR})
@@ -148,6 +136,22 @@ endif()
 if(NOT DEFINED WITHOUT_ID3V1)
     add_definitions(-DWITH_ID3V1)
     set(SRCS ${SRCS} t_ftid3v1.c)
+endif()
+
+if(NOT DEFINED WITHOUT_JSON)
+    pkg_check_modules(JSON jansson)
+    if(JSON_FOUND)
+        add_definitions(-DWITH_JSON)
+        set(SRCS ${SRCS} t_json.c)
+        set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${JSON_LDFLAGS})
+        set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${JSON_INCLUDE_DIRS})
+    else()
+        message(STATUS "jansson not found. Disabled.")
+    endif()
+endif()
+
+if (HAS_SBUF)
+    set(REQUIRED_LIBRARIES ${REQUIRED_LIBRARIES} "-lsbuf")
 endif()
 
 include_directories(${OPTIONAL_INCLUDE_DIRS})

@@ -44,6 +44,7 @@ t_ftflac_backend(void)
 		.write		= t_ftflac_write,
 		.clear		= t_ftflac_clear,
 	};
+
 	return (&b);
 }
 

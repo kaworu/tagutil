@@ -3,14 +3,11 @@
  *
  * json tagutil interface, using jansson.
  */
-#include <sys/param.h>
-
 #include <string.h>
 #include <stdlib.h>
 
 /* jansson headers */
 #include "jansson.h"
-
 /*
  * json_array_foreach macro is new in 2.5. We could test JANSSON_VERSION_HEX but
  * that would be ugly.
@@ -23,11 +20,36 @@
 #include "t_config.h"
 #include "t_toolkit.h"
 #include "t_taglist.h"
-#include "t_tune.h"
-#include "t_json.h"
+#include "t_format.h"
 
 
-char *
+static const char libid[]   = "jansson";
+static const char fileext[] = "json";
+
+
+struct t_format		*t_json_format(void);
+
+static char		*t_tags2json(const struct t_taglist *tlist, const char *path);
+static struct t_taglist	*t_json2tags(FILE *fp, char **errmsg_p);
+
+
+struct t_format *
+t_json_format(void)
+{
+	static struct t_format fmt = {
+		.libid		= libid,
+		.fileext	= fileext,
+		.desc		=
+		    "JSON - JavaScript Object Notation",
+		.tags2fmt	= t_tags2json,
+		.fmt2tags	= t_json2tags,
+	};
+
+	return (&fmt);
+}
+
+
+static char *
 t_tags2json(const struct t_taglist *tlist, const char *path)
 {
 	json_t *root = NULL, *obj = NULL;
@@ -73,7 +95,7 @@ error_label:
  *      ...
  *  ]
  */
-struct t_taglist *
+static struct t_taglist *
 t_json2tags(FILE *fp, char **errmsg_p)
 {
 	size_t idx;

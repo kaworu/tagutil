@@ -10,11 +10,9 @@
 #include <sys/resource.h>
 
 #include "t_config.h"
+#include "t_format.h"
 #include "t_editor.h"
 #include "t_loader.h"
-
-#include "t_yaml.h"
-#include "t_json.h"
 
 
 int
@@ -22,31 +20,34 @@ t_edit(struct t_tune *tune)
 {
 	FILE *fp = NULL;
 	struct t_taglist *tlist = NULL;
-	char *tmp = NULL, *json = NULL;
+	char *tmp = NULL, *fmtdata = NULL;
 	const char *editor, *tmpdir;
 	pid_t editpid; /* child process */
 	int status;
 	struct stat before, after;
+	extern const struct t_format *Fflag;
 
 	assert_not_null(tune);
 
-	/* convert the tags into YAML */
+	/* convert the tags into the requested format */
 	tlist = t_tune_tags(tune);
 	if (tlist == NULL)
 		goto error_label;
-	json = t_tags2json(tlist, t_tune_path(tune));
+	fmtdata = Fflag->tags2fmt(tlist, t_tune_path(tune));
 	t_taglist_delete(tlist);
 	tlist = NULL;
-	if (json == NULL)
+	if (fmtdata == NULL)
 		goto error_label;
 
 	tmpdir = getenv("TMPDIR");
 	if (tmpdir == NULL)
 		tmpdir = "/tmp";
-	/* print the YAML into a temp file */
-	if (asprintf(&tmp, "%s/%s-XXXXXX.yml", tmpdir, getprogname()) < 0)
+	/* print the format data into a temp file */
+	if (asprintf(&tmp, "%s/%s-XXXXXX.%s", tmpdir, getprogname(),
+	    Fflag->fileext) < 0) {
 		goto error_label;
-	if (mkstemps(tmp, 4) == -1) {
+	}
+	if (mkstemps(tmp, strlen(Fflag->fileext) + 1) == -1) {
 		warn("mkstemps");
 		goto error_label;
 	}
@@ -55,7 +56,7 @@ t_edit(struct t_tune *tune)
 		warn("%s: fopen", tmp);
 		goto error_label;
 	}
-	if (fprintf(fp, "%s", json) < 0) {
+	if (fprintf(fp, "%s", fmtdata) < 0) {
 		warn("%s: fprintf", tmp);
 		goto error_label;
 	}
@@ -97,7 +98,7 @@ t_edit(struct t_tune *tune)
 
 	(void)unlink(tmp);
 	free(tmp);
-	free(json);
+	free(fmtdata);
 	return (0);
 error_label:
 	if (fp != NULL)
@@ -105,6 +106,6 @@ error_label:
 	if (tmp != NULL)
 		(void)unlink(tmp);
 	free(tmp);
-	free(json);
+	free(fmtdata);
 	return (-1);
 }

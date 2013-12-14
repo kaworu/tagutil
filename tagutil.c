@@ -15,6 +15,7 @@
 #include "t_toolkit.h"
 #include "t_tune.h"
 #include "t_backend.h"
+#include "t_format.h"
 #include "t_action.h"
 
 
@@ -25,9 +26,10 @@ void usage(void) t__dead2;
 
 
 /* options */
-int	dflag; /* create directory with rename */
-int	Nflag; /* answer no to all questions */
-int	Yflag; /* answer yes to all questions */
+int			 dflag; /* create directory with rename */
+const struct t_format	*Fflag; /* output format */
+int			 Nflag; /* answer no to all questions */
+int			 Yflag; /* answer yes to all questions */
 
 
 /*
@@ -41,23 +43,42 @@ main(int argc, char *argv[])
 	int	write = 0; /* write access needed ? */
 	struct t_tune		*tune;
 	struct t_action		*a;
+	struct t_format		*fmt;
 	struct t_actionQ	*aQ;
 
 	errno = 0; /* this is a bug in malloc(3) */
 
-	while ((i = getopt(argc, argv, "dhNY")) != -1) {
+	/* we assert because only the build system ensure that tagutil is build
+	   against at least libyaml as format. */
+	assert(Fflag = TAILQ_FIRST(t_all_formats()));
+
+	while ((i = getopt(argc, argv, "dhF:NY")) != -1) {
 		switch ((char)i) {
 		case 'd':
 			dflag = 1;
 			break;
+		case 'F':
+			Fflag = NULL;
+			TAILQ_FOREACH(fmt, t_all_formats(), entries) {
+				if (strcmp(fmt->fileext, optarg) == 0) {
+					Fflag = fmt;
+					break;
+				}
+			}
+			if (Fflag == NULL) {
+				errx(errno = EINVAL, "%s: invalid -F option, "
+				    "try %s -h' to see supported formats.",
+				    optarg, getprogname());
+			}
+			break;
 		case 'N':
 			if (Yflag)
-				err(EINVAL, "cannot set both -Y and -N");
+				err(errno = EINVAL, "cannot set both -Y and -N");
 			Nflag = 1;
 			break;
 		case 'Y':
 			if (Nflag)
-				err(EINVAL, "cannot set both -Y and -N");
+				err(errno = EINVAL, "cannot set both -Y and -N");
 			Yflag = 1;
 			break;
 		case 'h': /* FALLTHROUGH */
@@ -75,7 +96,7 @@ main(int argc, char *argv[])
 		if (errno == ENOMEM)
 			err(ENOMEM, "malloc");
 		else /* if EINVAL */ {
-			(void)fprintf(stderr, "Try `%s -h' for help.\n",
+			fprintf(stderr, "Try `%s -h' for help.\n",
 			    getprogname());
 			exit(EINVAL);
 		}
@@ -145,38 +166,46 @@ main(int argc, char *argv[])
 void
 usage(void)
 {
-	const struct t_backendQ *bQ = t_all_backends();
+	const struct t_formatQ	*fmtQ = t_all_formats();
+	const struct t_backendQ	*bQ   = t_all_backends();
+	const struct t_format	*fmt;
 	const struct t_backend	*b;
 
-	(void)fprintf(stderr, "tagutil v"T_TAGUTIL_VERSION "\n\n");
-	(void)fprintf(stderr, "usage: %s [OPTION]... [ACTION:ARG]... [FILE]...\n",
+	fprintf(stderr, "tagutil v"T_TAGUTIL_VERSION "\n\n");
+	fprintf(stderr, "usage: %s [OPTION]... [ACTION:ARG]... [FILE]...\n",
 	    getprogname());
-	(void)fprintf(stderr, "Modify or display music file's tag.\n");
-	(void)fprintf(stderr, "\n");
+	fprintf(stderr, "Modify or display music file's tag.\n");
+	fprintf(stderr, "\n");
 
-	(void)fprintf(stderr, "Options:\n");
-	(void)fprintf(stderr, "  -h  show this help\n");
-	(void)fprintf(stderr, "  -d  create destination directories if needed (used by rename)\n");
-	(void)fprintf(stderr, "  -Y  answer yes to all questions\n");
-	(void)fprintf(stderr, "  -N  answer no  to all questions\n");
-	(void)fprintf(stderr, "\n");
+	fprintf(stderr, "Options:\n");
+	fprintf(stderr, "  -h     show this help\n");
+	fprintf(stderr, "  -d     create destination directories if needed (used by rename)\n");
+	fprintf(stderr, "  -F fmt use the fmt format for print, edit and load actions (see Formats)\n");
+	fprintf(stderr, "  -Y     answer yes to all questions\n");
+	fprintf(stderr, "  -N     answer no  to all questions\n");
+	fprintf(stderr, "\n");
 
-	(void)fprintf(stderr, "Actions:\n");
-	(void)fprintf(stderr, "  print            print tags (default action)\n");
-	(void)fprintf(stderr, "  backend          print backend used\n");
-	(void)fprintf(stderr, "  clear:TAG        clear all tag TAG. If TAG is "
+	fprintf(stderr, "Actions:\n");
+	fprintf(stderr, "  print            print tags (default action)\n");
+	fprintf(stderr, "  backend          print the backend used (see Backend)\n");
+	fprintf(stderr, "  clear:TAG        clear all tag TAG. If TAG is "
 	    "empty, all tags are cleared\n");
-	(void)fprintf(stderr, "  add:TAG=VALUE    add a TAG=VALUE pair\n");
-	(void)fprintf(stderr, "  set:TAG=VALUE    set TAG to VALUE\n");
-	(void)fprintf(stderr, "  edit             prompt for editing\n");
-	(void)fprintf(stderr, "  load:PATH        load PATH yaml tag file\n");
-	(void)fprintf(stderr, "  rename:PATTERN   rename to PATTERN\n");
-	(void)fprintf(stderr, "\n");
+	fprintf(stderr, "  add:TAG=VALUE    add a TAG=VALUE pair\n");
+	fprintf(stderr, "  set:TAG=VALUE    set TAG to VALUE\n");
+	fprintf(stderr, "  edit             prompt for editing\n");
+	fprintf(stderr, "  load:PATH        load PATH yaml tag file\n");
+	fprintf(stderr, "  rename:PATTERN   rename to PATTERN\n");
+	fprintf(stderr, "\n");
 
-	(void)fprintf(stderr, "Backend:\n");
+	fprintf(stderr, "Formats:\n");
+	TAILQ_FOREACH(fmt, fmtQ, entries)
+		fprintf(stderr, "  %10s: %s\n", fmt->fileext, fmt->desc);
+	fprintf(stderr, "\n");
+
+	fprintf(stderr, "Backends:\n");
 	TAILQ_FOREACH(b, bQ, entries)
-		(void)fprintf(stderr, "  %10s: %s\n", b->libid, b->desc);
-	(void)fprintf(stderr, "\n");
+		fprintf(stderr, "  %10s: %s\n", b->libid, b->desc);
+	fprintf(stderr, "\n");
 
 	exit(1);
 }
