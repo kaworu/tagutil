@@ -11,6 +11,15 @@
 /* jansson headers */
 #include "jansson.h"
 
+/*
+ * json_array_foreach macro is new in 2.5. We could test JANSSON_VERSION_HEX but
+ * that would be ugly.
+ */
+#ifndef json_array_foreach
+#define	json_array_foreach(array, index, value) \
+	for (index = 0; index < json_array_size(array) && (value = json_array_get(array, index)); index++)
+#endif
+
 #include "t_config.h"
 #include "t_toolkit.h"
 #include "t_taglist.h"
@@ -56,7 +65,7 @@ error_label:
 
 
 /*
- * Our parser FSM. we only handle this JSON subset:
+ * We only handle this JSON subset:
  *
  *  [
  *      { "key" : "value" },
@@ -67,6 +76,87 @@ error_label:
 struct t_taglist *
 t_json2tags(FILE *fp, char **errmsg_p)
 {
-	assert(0 && "Unimplemented");
-	/* NOTREACHED */
+	size_t idx;
+	struct t_taglist *ret = NULL, *tlist = NULL;
+	json_t *root = NULL, *obj, *val;
+	json_error_t error;
+	char *errmsg = NULL;
+
+	assert_not_null(fp);
+
+	/* parse and load the JSON */
+	root = json_loadf(fp, JSON_DISABLE_EOF_CHECK, &error);
+	if (root == NULL) {
+		asprintf(&errmsg, "json parsing error on line %d: %s\n",
+		    error.line, error.text);
+		goto error_label;
+	}
+	if (!json_is_array(root)) {
+		asprintf(&errmsg, "json parsing error: root is not an array");
+		goto error_label;
+	}
+
+	if ((tlist = t_taglist_new()) == NULL) {
+		asprintf(&errmsg, "%s", strerror(errno));
+		goto error_label;
+	}
+
+	json_array_foreach(root, idx, obj) {
+		const char *key;
+		if (json_object_size(obj) != 1) {
+			/* this also test if obj is an object */
+			asprintf(&errmsg, "json parsing error: element#%zu is "
+			    "not an object (or has many elements)", idx);
+			goto error_label;
+		}
+
+		json_object_foreach(obj, key, val) {
+			char buf[21]; /* "-9223372036854775808"NUL (LLONG_MIN) */
+			const char *vstr = buf;
+
+			if (json_is_string(val))
+				vstr = json_string_value(val);
+			else if (json_is_integer(val)) {
+				int n = snprintf(buf, sizeof(buf),
+				    "%"JSON_INTEGER_FORMAT,
+				    json_integer_value(val));
+				if (n >= sizeof(buf)) {
+					/* json_int_t should be `long long' (at
+					 * max) and sizeof(long long) > 8 is
+					 * unlikely. Maybe both
+					 * json_integer_value() and
+					 * JSON_INTEGER_FORMAT are lying, or I
+					 * just screwed something (unlikely).
+					 */
+					ABANDON_SHIP();
+				}
+			} else {
+				asprintf(&errmsg, "json parsing error: object#"
+				    "%zu's value is not a string nor a number",
+				    idx);
+				goto error_label;
+			}
+			if (t_taglist_insert(tlist, key, vstr) == -1) {
+				asprintf(&errmsg, "%s", strerror(errno));
+				goto error_label;
+			}
+		}
+	}
+
+	/* all went well. now switch ret and tlist */
+	ret   = tlist;
+	tlist = NULL;
+
+	/* FALLTHROUGH */
+error_label:
+	if (root != NULL)
+		json_decref(root);
+	if (tlist != NULL)
+		t_taglist_delete(tlist);
+
+	if (errmsg_p != NULL)
+		*errmsg_p = errmsg;
+	else
+		free(errmsg);
+	return (ret);
 }
