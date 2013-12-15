@@ -84,14 +84,21 @@ include_directories(${REQUIRED_INCLUDE_DIR})
 # this sets up:
 # OPTIONAL_LIBRARIES
 # OPTIONAL_INCLUDE_DIRS
+if (HAS_SBUF)
+    set(REQUIRED_LIBRARIES ${REQUIRED_LIBRARIES} "-lsbuf")
+endif()
+
+# Backends
 if(NOT DEFINED WITHOUT_TAGLIB)
     pkg_check_modules(TAGLIB taglib_c>=1.4)
     if(TAGLIB_FOUND)
+        set(WITH_TAGLIB YES)
         add_definitions(-DWITH_TAGLIB)
         set(SRCS ${SRCS} t_fttaglib.c)
         set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${TAGLIB_LDFLAGS})
         set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${TAGLIB_INCLUDE_DIRS})
     else()
+        set(WITH_TAGLIB NO)
         message(STATUS "TagLib not found. Disabled.")
     endif()
 endif()
@@ -99,12 +106,14 @@ endif()
 if(NOT DEFINED WITHOUT_FLAC)
     pkg_check_modules(FLAC flac)
     if(FLAC_FOUND)
+        set(WITH_FLAC YES)
         add_definitions(-DWITH_FLAC)
         set(SRCS ${SRCS} t_ftflac.c)
         set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${FLAC_LDFLAGS})
         set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${FLAC_INCLUDE_DIRS})
         # test if libFLAC assert.h does clash with the system one. FLAC >= 1.3
         # did solve this issue.
+        # FIXME: not working correctly, false positive with libflac 1.3
         try_compile(FLAC_CLASH_WORKAROUND
             ${CMAKE_BINARY_DIR}
             ${CMAKE_SOURCE_DIR}/compat/tests/libFLAC_assert_clash.c
@@ -117,6 +126,7 @@ if(NOT DEFINED WITHOUT_FLAC)
             add_definitions(-DFLAC_CLASH_WORKAROUND)
         endif()
     else()
+        set(WITH_FLAC NO)
         message(STATUS "libFLAC not found. Disabled.")
     endif()
 endif()
@@ -124,34 +134,38 @@ endif()
 if(NOT DEFINED WITHOUT_OGGVORBIS)
     pkg_check_modules(OGGVORBIS vorbisfile)
     if(OGGVORBIS_FOUND)
+        set(WITH_OGGVORBIS YES)
         add_definitions(-DWITH_OGGVORBIS)
         set(SRCS ${SRCS} t_ftoggvorbis.c)
         set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${OGGVORBIS_LDFLAGS})
         set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${OGGVORBIS_INCLUDE_DIRS})
     else()
+        set(WITH_OGGVORBIS NO)
         message(STATUS "libogg/libvorbis not found. Disabled.")
     endif()
 endif()
 
 if(NOT DEFINED WITHOUT_ID3V1)
+    set(WITH_ID3V1 YES)
     add_definitions(-DWITH_ID3V1)
     set(SRCS ${SRCS} t_ftid3v1.c)
+else()
+    set(WITH_ID3V1 NO)
 endif()
 
+# Output
 if(NOT DEFINED WITHOUT_JSON)
     pkg_check_modules(JSON jansson)
     if(JSON_FOUND)
+        set(WITH_JSON YES)
         add_definitions(-DWITH_JSON)
         set(SRCS ${SRCS} t_json.c)
         set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${JSON_LDFLAGS})
         set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${JSON_INCLUDE_DIRS})
     else()
+        set(WITH_JSON NO)
         message(STATUS "jansson not found. Disabled.")
     endif()
-endif()
-
-if (HAS_SBUF)
-    set(REQUIRED_LIBRARIES ${REQUIRED_LIBRARIES} "-lsbuf")
 endif()
 
 include_directories(${OPTIONAL_INCLUDE_DIRS})
@@ -164,13 +178,6 @@ if(DEFINED PREFIX)
     set(CMAKE_INSTALL_PREFIX ${PREFIX})
 else()
     set(PREFIX ${CMAKE_INSTALL_PREFIX} CACHE PATH "install prefix")
-endif()
-
-# set man path
-if(DEFINED MAN_PATH)
-   set(MAN_PATH ${MAN_PATH} CACHE PATH "manpage directory")
-else()
-   set(MAN_PATH ${PREFIX}/share/man CACHE PATH "manpage directory")
 endif()
 
 # Hide to avoid confusion
@@ -188,6 +195,13 @@ target_link_libraries(${PROJECT_NAME}
 
 #{{{ man
 set(MAN_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}.1)
+
+# set man path
+if(DEFINED MAN_PATH)
+   set(MAN_PATH ${MAN_PATH} CACHE PATH "manpage directory")
+else()
+   set(MAN_PATH ${PREFIX}/share/man CACHE PATH "manpage directory")
+endif()
 #}}}
 
 # {{{ Installation
@@ -195,4 +209,13 @@ install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
 install(FILES ${MAN_SRCS} DESTINATION ${MAN_PATH}/man1)
 # }}}
 
+message(STATUS "************ ${PROJECT_NAME} build options ************")
+message(STATUS "Backends:")
+message(STATUS "  TagLib support:                  ${WITH_TAGLIB}")
+message(STATUS "  FLAC (libflac) support:          ${WITH_FLAC}")
+message(STATUS "  Ogg/Vorbis (vorbisfile) support: ${WITH_OGGVORBIS}")
+message(STATUS "  ID3v1.1 support:                 ${WITH_ID3V1}")
+message(STATUS "Output:")
+message(STATUS "   JSON (jansson) support:          ${WITH_JSON}")
+message(STATUS "***********************************************")
 # vim: filetype=cmake:expandtab:shiftwidth=4:tabstop=8:softtabstop=4:textwidth=80
