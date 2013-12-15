@@ -89,7 +89,7 @@ t_tags2yaml(const struct t_taglist *tlist, const char *path)
 	yaml_event_t event;
 	struct sbuf *sb;
 	const struct t_tag *t;
-	char *s;
+	char *ret;
 
 	assert_not_null(tlist);
 
@@ -99,12 +99,7 @@ t_tags2yaml(const struct t_taglist *tlist, const char *path)
 
 	if (path != NULL) {
 		/* create a comment header with the filename */
-		if (asprintf(&s, "# %s\n", path) < 0) {
-			sbuf_delete(sb);
-			return (NULL);
-		}
-		(void)sbuf_cpy(sb, s);
-		free(s);
+		(void)sbuf_printf(sb, "# %s\n", path);
 	}
 
 	/* Create the Emitter object. */
@@ -200,9 +195,9 @@ t_tags2yaml(const struct t_taglist *tlist, const char *path)
 		return (NULL);
 	}
 
-	s = strdup(sbuf_data(sb));
+	ret = strdup(sbuf_data(sb));
 	sbuf_delete(sb);
-	return (s);
+	return (ret);
 	/* NOTREACHED */
 event_error:
 	sbuf_delete(sb);

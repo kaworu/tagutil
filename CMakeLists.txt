@@ -22,13 +22,11 @@ set(SRCS
     t_tag.c
     t_backend.c
     t_format.c
-    t_yaml.c
     t_toolkit.c
 )
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 # CFLAGS
@@ -67,16 +65,18 @@ include(FindPkgConfig)
 #
 # this sets up:
 # REQUIRED_LIBRARIES
-# REQUIRED_INCLUDE_DIR
+# REQUIRED_INCLUDE_DIRS
 pkg_check_modules(YAML yaml-0.1)
 if(YAML_FOUND)
+    set(WITH_YAML YES)
+    set(SRCS ${SRCS} t_yaml.c)
     set(REQUIRED_LIBRARIES ${REQUIRED_LIBRARIES} ${YAML_LDFLAGS})
-    set(REQUIRED_INCLUDE_DIR ${REQUIRED_INCLUDE_DIR} ${YAML_INCLUDE_DIRS})
+    set(REQUIRED_INCLUDE_DIRS ${REQUIRED_INCLUDE_DIRS} ${YAML_INCLUDE_DIRS})
 else()
     message(FATAL_ERROR "libyaml not found.")
 endif()
 
-include_directories(${REQUIRED_INCLUDE_DIR})
+include_directories(${REQUIRED_INCLUDE_DIRS})
 # }}}
 
 # {{{ Optional libraries
@@ -216,6 +216,7 @@ message(STATUS "  FLAC (libflac) support:          ${WITH_FLAC}")
 message(STATUS "  Ogg/Vorbis (vorbisfile) support: ${WITH_OGGVORBIS}")
 message(STATUS "  ID3v1.1 support:                 ${WITH_ID3V1}")
 message(STATUS "Output:")
-message(STATUS "   JSON (jansson) support:          ${WITH_JSON}")
+message(STATUS "   YAML (libyaml) support:         ${WITH_YAML}")
+message(STATUS "   JSON (jansson) support:         ${WITH_JSON}")
 message(STATUS "***********************************************")
 # vim: filetype=cmake:expandtab:shiftwidth=4:tabstop=8:softtabstop=4:textwidth=80
