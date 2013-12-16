@@ -185,7 +185,6 @@ mark_as_advanced(CMAKE_INSTALL_PREFIX)
 # }}}
 
 #{{{ Link stuff
-link_directories(/usr/local/lib)
 add_executable(${PROJECT_NAME} ${SRCS})
 target_link_libraries(${PROJECT_NAME}
     ${REQUIRED_LIBRARIES}
