@@ -70,10 +70,15 @@ t_edit(struct t_tune *tune)
 		warnx("please set the $EDITOR environment variable.");
 		goto error_label;
 	}
+
+	/* save the current mtime so we know later if the file has been
+	   modified */
 	if (stat(tmp, &before) != 0)
 		goto error_label;
+
+	/* launch the editor */
 	switch (editpid = fork()) {
-	case -1:
+	case -1: /* error */
 		warn("fork");
 		goto error_label;
 		/* NOTREACHED */
@@ -84,10 +89,13 @@ t_edit(struct t_tune *tune)
 	default: /* parent (tagutil process) */
 		waitpid(editpid, &status, 0);
 	}
+
+	/* get the mtime now that the editor has been run */
 	if (stat(tmp, &after) != 0)
 		goto error_label;
 
-	/* check if the edit process went successfully */
+	/* we perform the load iff the file has been modified by the edit
+	   process and that process exited with success */
 	if (after.st_mtime > before.st_mtime &&
 	    WIFEXITED(status) && WEXITSTATUS(status) == 0) {
 		if (t_load(tune, tmp) == -1)
