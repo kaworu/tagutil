@@ -8,26 +8,25 @@ endif()
 #{{{ Basic App setup
 set(PROJECT_NAME tagutil)
 set(CMAKE_BUILD_TYPE DEBUG)
-add_definitions(-DT_TAGUTIL_VERSION="3.0rc0")
+add_definitions(-DT_TAGUTIL_VERSION="3.0")
 project(${PROJECT_NAME} C)
 
 set(SRCS
     tagutil.c
-    t_toolkit.c
-    t_tag.c
-    t_taglist.c
-    t_tune.c
-    t_yaml.c
+    t_action.c
     t_renamer.c
     t_editor.c
     t_loader.c
+    t_tune.c
+    t_taglist.c
+    t_tag.c
     t_backend.c
-    t_action.c
+    t_format.c
+    t_toolkit.c
 )
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 # CFLAGS
@@ -66,20 +65,18 @@ include(FindPkgConfig)
 #
 # this sets up:
 # REQUIRED_LIBRARIES
-# REQUIRED_INCLUDE_DIR
+# REQUIRED_INCLUDE_DIRS
 pkg_check_modules(YAML yaml-0.1)
 if(YAML_FOUND)
+    set(WITH_YAML YES)
+    set(SRCS ${SRCS} t_yaml.c)
     set(REQUIRED_LIBRARIES ${REQUIRED_LIBRARIES} ${YAML_LDFLAGS})
-    set(REQUIRED_INCLUDE_DIR ${REQUIRED_INCLUDE_DIR} ${YAML_INCLUDE_DIRS})
+    set(REQUIRED_INCLUDE_DIRS ${REQUIRED_INCLUDE_DIRS} ${YAML_INCLUDE_DIRS})
 else()
     message(FATAL_ERROR "libyaml not found.")
 endif()
 
-if (HAS_SBUF)
-    set(REQUIRED_LIBRARIES ${REQUIRED_LIBRARIES} "-lsbuf")
-endif()
-
-include_directories(${REQUIRED_INCLUDE_DIR})
+include_directories(${REQUIRED_INCLUDE_DIRS})
 # }}}
 
 # {{{ Optional libraries
@@ -87,14 +84,21 @@ include_directories(${REQUIRED_INCLUDE_DIR})
 # this sets up:
 # OPTIONAL_LIBRARIES
 # OPTIONAL_INCLUDE_DIRS
+if (HAS_SBUF)
+    set(REQUIRED_LIBRARIES ${REQUIRED_LIBRARIES} "-lsbuf")
+endif()
+
+# Backends
 if(NOT DEFINED WITHOUT_TAGLIB)
     pkg_check_modules(TAGLIB taglib_c>=1.4)
     if(TAGLIB_FOUND)
+        set(WITH_TAGLIB YES)
         add_definitions(-DWITH_TAGLIB)
         set(SRCS ${SRCS} t_fttaglib.c)
         set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${TAGLIB_LDFLAGS})
         set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${TAGLIB_INCLUDE_DIRS})
     else()
+        set(WITH_TAGLIB NO)
         message(STATUS "TagLib not found. Disabled.")
     endif()
 endif()
@@ -102,12 +106,14 @@ endif()
 if(NOT DEFINED WITHOUT_FLAC)
     pkg_check_modules(FLAC flac)
     if(FLAC_FOUND)
+        set(WITH_FLAC YES)
         add_definitions(-DWITH_FLAC)
         set(SRCS ${SRCS} t_ftflac.c)
         set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${FLAC_LDFLAGS})
         set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${FLAC_INCLUDE_DIRS})
         # test if libFLAC assert.h does clash with the system one. FLAC >= 1.3
         # did solve this issue.
+        # FIXME: not working correctly, false positive with libflac 1.3
         try_compile(FLAC_CLASH_WORKAROUND
             ${CMAKE_BINARY_DIR}
             ${CMAKE_SOURCE_DIR}/compat/tests/libFLAC_assert_clash.c
@@ -120,6 +126,7 @@ if(NOT DEFINED WITHOUT_FLAC)
             add_definitions(-DFLAC_CLASH_WORKAROUND)
         endif()
     else()
+        set(WITH_FLAC NO)
         message(STATUS "libFLAC not found. Disabled.")
     endif()
 endif()
@@ -127,18 +134,38 @@ endif()
 if(NOT DEFINED WITHOUT_OGGVORBIS)
     pkg_check_modules(OGGVORBIS vorbisfile)
     if(OGGVORBIS_FOUND)
+        set(WITH_OGGVORBIS YES)
         add_definitions(-DWITH_OGGVORBIS)
         set(SRCS ${SRCS} t_ftoggvorbis.c)
         set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${OGGVORBIS_LDFLAGS})
         set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${OGGVORBIS_INCLUDE_DIRS})
     else()
+        set(WITH_OGGVORBIS NO)
         message(STATUS "libogg/libvorbis not found. Disabled.")
     endif()
 endif()
 
 if(NOT DEFINED WITHOUT_ID3V1)
+    set(WITH_ID3V1 YES)
     add_definitions(-DWITH_ID3V1)
     set(SRCS ${SRCS} t_ftid3v1.c)
+else()
+    set(WITH_ID3V1 NO)
+endif()
+
+# Output
+if(NOT DEFINED WITHOUT_JSON)
+    pkg_check_modules(JSON jansson)
+    if(JSON_FOUND)
+        set(WITH_JSON YES)
+        add_definitions(-DWITH_JSON)
+        set(SRCS ${SRCS} t_json.c)
+        set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${JSON_LDFLAGS})
+        set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${JSON_INCLUDE_DIRS})
+    else()
+        set(WITH_JSON NO)
+        message(STATUS "jansson not found. Disabled.")
+    endif()
 endif()
 
 include_directories(${OPTIONAL_INCLUDE_DIRS})
@@ -151,13 +178,6 @@ if(DEFINED PREFIX)
     set(CMAKE_INSTALL_PREFIX ${PREFIX})
 else()
     set(PREFIX ${CMAKE_INSTALL_PREFIX} CACHE PATH "install prefix")
-endif()
-
-# set man path
-if(DEFINED MAN_PATH)
-   set(MAN_PATH ${MAN_PATH} CACHE PATH "manpage directory")
-else()
-   set(MAN_PATH ${PREFIX}/share/man CACHE PATH "manpage directory")
 endif()
 
 # Hide to avoid confusion
@@ -173,13 +193,30 @@ target_link_libraries(${PROJECT_NAME}
 )
 #}}}
 
-#{{{ man FIXME
-#set(MAN_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}.1)
+#{{{ man
+set(MAN_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}.1)
+
+# set man path
+if(DEFINED MAN_PATH)
+   set(MAN_PATH ${MAN_PATH} CACHE PATH "manpage directory")
+else()
+   set(MAN_PATH ${PREFIX}/share/man CACHE PATH "manpage directory")
+endif()
 #}}}
 
 # {{{ Installation
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
-#install(FILES ${AWE_MAN1_FILES} DESTINATION ${MAN_PATH}/man1)
+install(FILES ${MAN_SRCS} DESTINATION ${MAN_PATH}/man1)
 # }}}
 
+message(STATUS "************ ${PROJECT_NAME} build options ************")
+message(STATUS "Backends:")
+message(STATUS "  TagLib support:                  ${WITH_TAGLIB}")
+message(STATUS "  FLAC (libflac) support:          ${WITH_FLAC}")
+message(STATUS "  Ogg/Vorbis (vorbisfile) support: ${WITH_OGGVORBIS}")
+message(STATUS "  ID3v1.1 support:                 ${WITH_ID3V1}")
+message(STATUS "Output:")
+message(STATUS "   YAML (libyaml) support:         ${WITH_YAML}")
+message(STATUS "   JSON (jansson) support:         ${WITH_JSON}")
+message(STATUS "***********************************************")
 # vim: filetype=cmake:expandtab:shiftwidth=4:tabstop=8:softtabstop=4:textwidth=80

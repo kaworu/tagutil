@@ -1,36 +1,63 @@
 .\"
-.\" Copyright (c) 2008, Perrin Alexandre <kaworu@kaworu.ch>
+.\" Copyright (c) 2008-2013
+.\"    Alexandre Perrin <alex@kaworu.ch>.  All rights reserved.
 .\"
-.\" All rights reserved.
 .\" Redistribution and use in source and binary forms, with or without
-.\" modification, are permitted provided that the following conditions are met:
+.\" modification, are permitted provided that the following conditions
+.\" are met:
 .\"
-.\" *   Redistributions of source code must retain the above copyright
-.\"     notice, this list of conditions and the following disclaimer.
-.\" *   Redistributions in binary form must reproduce the above copyright
-.\"     notice, this list of conditions and the following disclaimer in the
-.\"     documentation and/or other materials provided with the distribution.
-.\" *   Neither the name of Perrin Alexandre, nor the names of its
-.\"     contributors may be used to endorse or promote products derived
-.\"     from this software without specific prior written permission.
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
 .\"
-.\" THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND ANY
-.\" EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-.\" WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-.\" DISCLAIMED. IN NO EVENT SHALL THE REGENTS AND CONTRIBUTORS BE LIABLE FOR ANY
-.\" DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-.\" (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-.\" LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-.\" ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-.\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-.\" SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
 .\"
-.Dd June 26, 2008
+.\" THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+.\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+.\" LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+.\" CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+.\" SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+.\" INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+.\" CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+.\" ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+.\" POSSIBILITY OF SUCH DAMAGE.
+.\"
+.\" ---------------------------------------------------------------------------
+.\" --- tagutil man page cheat sheet.
+.\"
+.\" .Nm → the program's name (tagutil) (often used)
+.\"
+.\" .Bl
+.\" .It option
+.\" desc
+.\" .El        → Bl is kind of a list, It will left align stuff in followings
+.\"              .It and desc will be right aligned.
+.\"
+.\" .Fl f Ar file → Option like `-f file'.
+.\"
+.\" .Pp → paragraphe.
+.\"
+.\" .Xr ls 1 → command like ls(1)
+.\"
+.\" .Sq → quoted text like `foo`
+.\" .Pa → source file ? (rarely used)
+.\" .Dv → constant ? (rarely used)
+.\" .Ev → environnment variable (rarely used)
+.\" .Er → error code (rarely used)
+.\" .Sh → Section (rarely used)
+.\" .Dl → cli invocation ? (in examples)
+.\"
+.\" ---------------------------------------------------------------------------
+.\"
+.Dd December 14, 2013
 .Dt TAGUTIL 1
 .Os
 .Sh NAME
 .Nm tagutil
-.Nd edit music files tags
+.Nd edit and display music files tags
 .Sh SYNOPSIS
 .Nm
 .Op Ar
@@ -123,8 +150,8 @@ is only valid with the
 .It Fl x Ar filter
 print to stdout files matching the given
 .Ar filter .
-.Pp The filter format is a C-like boolean expression, which
-keywords are
+.Pp
+The filter format is a C-like boolean expression, which keywords are
 .Sq album ,
 .Sq artist ,
 .Sq comment ,
@@ -337,9 +364,12 @@ set the title "foo" to file.ogg:
 .Pp
 set the year number 2000 to file.mp3:
 .Dl Nm Fl y Ar 2000 file.mp3
+.Pp
+Save all your music into a json file to create a database.
+.Dl (echo '['; Nm Fl F Ar json ~/Music/* | sed -e 's/$/,/'; echo ']') | tee music.json
 .Sh AUTHORS
-.An "Alexandre Perrin" Aq kaworu@kaworu.ch
-.An "Baptiste Daroussin" Aq baptiste.daroussin@gmail.com
+.An "Alexandre Perrin" Aq alex@kaworu.ch
+.An "Baptiste Daroussin" Aq bapt@FreeBSD.org
 .Sh BUGS
 .Sq filter
 option can't compare

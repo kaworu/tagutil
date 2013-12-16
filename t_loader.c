@@ -5,33 +5,33 @@
  */
 #include "t_config.h"
 #include "t_loader.h"
-
+#include "t_format.h"
 #include "t_tune.h"
-#include "t_yaml.h"
 
 
 int
-t_load(struct t_tune *tune, const char *yamlfile)
+t_load(struct t_tune *tune, const char *fmtfile)
 {
-	FILE *fp;
+	int ret;
 	char *errmsg;
 	struct t_taglist *tlist;
-	int ret;
+	extern const struct t_format *Fflag;
+	FILE *fp;
 
 	assert_not_null(tune);
-	assert_not_null(yamlfile);
+	assert_not_null(fmtfile);
 
-	if (strcmp(yamlfile, "-") == 0)
+	if (strlen(fmtfile) == 0 || strcmp(fmtfile, "-") == 0)
 		fp = stdin;
 	else {
-		fp = fopen(yamlfile, "r");
+		fp = fopen(fmtfile, "r");
 		if (fp == NULL) {
-			warn("%s: fopen", yamlfile);
+			warn("%s: fopen", fmtfile);
 			return (-1);
 		}
 	}
 
-	tlist = t_yaml2tags(fp, &errmsg);
+	tlist = Fflag->fmt2tags(fp, &errmsg);
 	if (fp != stdin)
 		(void)fclose(fp);
 	if (tlist == NULL) {

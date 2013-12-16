@@ -9,8 +9,6 @@
  * something simpler and cleaner. At the same time t_error should be dropped
  * (it's the only code that still use it).
  */
-#include <sys/param.h>
-
 #include <string.h>
 #include <stdlib.h>
 
@@ -20,8 +18,7 @@
 #include "t_config.h"
 #include "t_toolkit.h"
 #include "t_taglist.h"
-#include "t_tune.h"
-#include "t_yaml.h"
+#include "t_format.h"
 
 
 /* t_error handling macros */
@@ -38,10 +35,36 @@
 #define	t_error_clear(o) \
     do { free(t_error_msg(o)); t_error_init(o); } while (/*CONSTCOND*/0)
 
+
+static const char libid[]   = "libyaml";
+static const char fileext[] = "yml";
+
+
+struct t_format		*t_yaml_format(void);
+
+static char		*t_tags2yaml(const struct t_taglist *tlist, const char *path);
+static struct t_taglist	*t_yaml2tags(FILE *fp, char **errmsg_p);
 /*
  * libyaml emitter helper.
  */
 yaml_write_handler_t t_yaml_whdl;
+
+
+struct t_format *
+t_yaml_format(void)
+{
+	static struct t_format fmt = {
+		.libid		= libid,
+		.fileext	= fileext,
+		.desc		=
+		    "YAML - YAML Ain't Markup Language",
+		.tags2fmt	= t_tags2yaml,
+		.fmt2tags	= t_yaml2tags,
+	};
+
+	return (&fmt);
+}
+
 
 int
 t_yaml_whdl(void *sb, unsigned char *buffer, size_t size)
@@ -59,14 +82,14 @@ t_yaml_whdl(void *sb, unsigned char *buffer, size_t size)
 }
 
 
-char *
+static char *
 t_tags2yaml(const struct t_taglist *tlist, const char *path)
 {
 	yaml_emitter_t emitter;
 	yaml_event_t event;
 	struct sbuf *sb;
 	const struct t_tag *t;
-	char *s;
+	char *ret;
 
 	assert_not_null(tlist);
 
@@ -76,12 +99,7 @@ t_tags2yaml(const struct t_taglist *tlist, const char *path)
 
 	if (path != NULL) {
 		/* create a comment header with the filename */
-		if (asprintf(&s, "# %s\n", path) < 0) {
-			sbuf_delete(sb);
-			return (NULL);
-		}
-		(void)sbuf_cpy(sb, s);
-		free(s);
+		(void)sbuf_printf(sb, "# %s\n", path);
 	}
 
 	/* Create the Emitter object. */
@@ -177,9 +195,9 @@ t_tags2yaml(const struct t_taglist *tlist, const char *path)
 		return (NULL);
 	}
 
-	s = strdup(sbuf_data(sb));
+	ret = strdup(sbuf_data(sb));
 	sbuf_delete(sb);
-	return (s);
+	return (ret);
 	/* NOTREACHED */
 event_error:
 	sbuf_delete(sb);
@@ -216,7 +234,8 @@ struct t_yaml_fsm {
 	T_ERROR_MSG_MEMBER;
 };
 
-struct t_taglist *
+
+static struct t_taglist *
 t_yaml2tags(FILE *fp, char **errmsg_p)
 {
 	struct t_yaml_fsm FSM;

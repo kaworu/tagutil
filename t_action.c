@@ -12,13 +12,13 @@
 #include "t_config.h"
 #include "t_action.h"
 
+#include "t_format.h"
 #include "t_backend.h"
 #include "t_taglist.h"
 #include "t_tune.h"
 #include "t_editor.h"
 #include "t_loader.h"
 #include "t_renamer.h"
-#include "t_yaml.h"
 
 
 struct t_action_token {
@@ -418,8 +418,9 @@ static int
 t_action_print(struct t_action *self, struct t_tune *tune)
 {
 	int success = 0;
-	char *yaml = NULL;
+	char *fmtdata = NULL;
 	struct t_taglist *tlist = NULL;
+	extern const struct t_format *Fflag;
 
 	assert_not_null(self);
 	assert(self->kind == T_ACTION_PRINT);
@@ -429,15 +430,15 @@ t_action_print(struct t_action *self, struct t_tune *tune)
 	if (tlist == NULL)
 		goto error_label;
 
-	yaml = t_tags2yaml(tlist, t_tune_path(tune));
-	if (yaml == NULL)
+	fmtdata = Fflag->tags2fmt(tlist, t_tune_path(tune));
+	if (fmtdata == NULL)
 		goto error_label;
 
-	success = (printf("%s\n", yaml) == (strlen(yaml) + 1));
+	success = (printf("%s\n", fmtdata) == (strlen(fmtdata) + 1));
 	/* FALLTHROUGH */
 error_label:
 	t_taglist_delete(tlist);
-	free(yaml);
+	free(fmtdata);
 	return (success ? 0 : -1);
 }
 

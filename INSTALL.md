@@ -13,6 +13,8 @@ Optionals dependencies are detected by cmake. If you want to override the
 detection you can define `WITHOUT_$LIB` to avoid tagutil to link against
 `$LIB`.
 
+- JSON: jansson
+    JSON output format.
 - FLAC: libFLAC
     If you want the flac files to be handled by libFLAC.
 - OGGVORBIS: libvorbis
