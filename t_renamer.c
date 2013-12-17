@@ -430,7 +430,7 @@ t_rename_safe(const char *opath, const char *npath)
 		if (stat(ndir, &st) != 0) {
 			failed = 1;
 			if (errno == ENOENT && !dflag)
-				warn("%s (forgot -d ?):", ndir);
+				warn("%s (forgot -p ?):", ndir);
 		} else if (!S_ISDIR(st.st_mode)) {
 			failed = 1;
 			errno  = ENOTDIR;

@@ -28,31 +28,28 @@
 .\" ---------------------------------------------------------------------------
 .\" --- tagutil man page cheat sheet.
 .\"
+.\" .Sh → Section (rarely used)
+.\" .Pp → "paragraph" or line break
+.\"
 .\" .Nm → the program's name (tagutil) (often used)
-.\"
-.\" .Bl
-.\" .It option
-.\" desc
-.\" .El        → Bl is kind of a list, It will left align stuff in followings
-.\"              .It and desc will be right aligned.
-.\"
-.\" .Fl f Ar file → Option like `-f file'.
-.\"
-.\" .Pp → paragraphe.
-.\"
-.\" .Xr ls 1 → command like ls(1)
-.\"
 .\" .Sq → quoted text like `foo`
+.\" .Xr ls 1 → command like ls(1)
+.\" .Ev → environnment variable (rarely used)
 .\" .Pa → source file ? (rarely used)
 .\" .Dv → constant ? (rarely used)
-.\" .Ev → environnment variable (rarely used)
 .\" .Er → error code (rarely used)
-.\" .Sh → Section (rarely used)
 .\" .Dl → cli invocation ? (in examples)
 .\"
+.\" .Op Fl x      → Optional command line stuff like `[-x]'
+.\" .Fl f Ar file → Flag with argument like `-f file'.
+.\" .Bl
+.\" .It Fl x
+.\" desc
+.\" .El        → Bl is kind of a list, It will left align stuff in followings
+.\"              .It (usually option or arguments) and desc will be right
+.\"              aligned.
 .\" ---------------------------------------------------------------------------
-.\"
-.Dd December 14, 2013
+.Dd December 16, 2013
 .Dt TAGUTIL 1
 .Os
 .Sh NAME
@@ -60,261 +57,216 @@
 .Nd edit and display music files tags
 .Sh SYNOPSIS
 .Nm
-.Op Ar
-.Nm
-[options]
-.Op Ar
+.Op Fl hpYN
+.Op Fl F Ar format
+.Op Ar action ...
+.Ar
 .Sh DESCRIPTION
 .Nm
-displays and changes tags in musics files. It supports ogg, mp3, flac and more
-(see taglib documentation).
+displays and modify tags stored in musics files.
 .Nm
-modify tags if asked, then start the edit action if
-.Fl e
-and finally rename if
-.Fl r .
+can support most music files format (including FLAC, ogg/vorbis and mp3) and
+multiple output formats including YAML (the default) to be both human and
+script friendly.
 .Sh OPTIONS
 .Pp
 .Bl -tag -width indent
-.It Fl e
-edit mode. for each
-.Ar file
-display its tags and ask to edit them. If response is
-.Sq y
-or
-.Sq yes
-,
+.It Fl h
+Show
 .Nm
-launch your favourite editor ($EDITOR).
+help displaying the version,
+.Sx OPTIONS ,
+.Sx ACTIONS ,
+output
+.Sx FORMATS ,
+and
+.Sx BACKENDS .
+.It Fl p
+Create intermediate directories as required on rename. This option is useful
+when the rename
+.Ar pattern
+expand to a path in a directory that does not exist. This option is ignored when there is no
+.Dq rename
+action. This option is inspired by the
+.Fl p
+option from
+.Xr mdkir 1 .
 .It Fl Y
-answer yes to all questions (useful for rename or edit actions). Ignored if no questions are asked.
+answer
+.Dq yes
+to all questions.
 .It Fl N
-answer no to all questions (useful for rename or edit actions). Ignored if no questions are asked.
-.It Fl r Ar pattern
-rename files with given
+answer
+.Dq no
+to all questions.
+.It Fl F Ar format
+Use
+.Ar format
+for tags output and parsing. The list of supported values for
+.Ar format
+can be seen by invoking
+.Nm Fl h .
+see also the
+.Sx FORMATS
+section.
+.El
+.Sh ACTIONS
+.Pp
+Each given actions are executed in order for each
+.Ar file .
+If no actions are given,
+.Ic print
+will be executed.
+.Bl -tag -width indent
+.It print
+Display the list of tags (default).
+See also
+.Sx FORMATS .
+.It backend
+Display the backend used.
+See also
+.Sx BACKENDS .
+.It clear:TAGNAME
+Erase all
+.Sx TAGNAME .
+if
+.Sx TAGNAME
+is empty, all tags are erased.
+.It add:TAGNAME=value
+Add a new tag at the end of the tag list.
+.It set:TAGNAME=value
+Replace the first instance of
+.Sx TAGNAME
+and clear the following. Equivalent to
+.Ic add:TAGNAME=value
+if there is no
+.Sx TAGNAME
+in the tag list.
+.It edit
+Execute
+.Ev EDITOR
+to prompt for tag editing in a temporary file, and then
+.Ic load
+the temporary file. The
+.Ic load
+action is cancelled if the editing process exited with a non-zero status code
+or if the temporary file was left unmodified.
+.It load:fmtfile
+Parse the given file at
+.Ar fmtfile
+and load the tags into the music file.
+.Ar fmtfile
+has to honor the given
+.Ar format
+(or the default) in order to be successfully parsed.
+If
+.Ar fmtfile
+is empty or
+.Dq - ,
+the standard input
+is used.
+.It rename:pattern
+rename files expanding given
 .Ar pattern .
 The
 .Ar pattern
-can contain special keywords expanded with file's tag.
-confirmation is asked before rename unless
+can contain
+.Sx TAGNAME
+keywords expanded with their value. To avoid accidental rename,
+confirmation is asked before rename (see
 .Fl Y
-or
+and
 .Fl N
-is given.
+options).
 .Pp
-The keywords are as follows:
+The pattern use \%% for
+.Sx TAGNAME
+expansion. A litteral \%% can be escaped with a backslash: \\\%%
 .Bl -tag -width indent
-.It \%%A
-artist
-.It \%%\%%
-litteral \%%
-.It \%%a
-album
-.It \%%c
-comment
-.It \%%g
-genre
-.It \%%T
-track
-.It \%%t
-title
-.It \%%y
-year
+.It \%%key
+Is replaced by the value of the first
+.Dq key
+tag found in the tag list.
+.Dq key
+cannot contains whitespace nor the \%% character.
+.It \%%{key}
+Is replaced by the value of the first
+.Dq key
+tag found in the tag list. Any character can be enclosed into the delimiting braces (to enclose the
+.Dq }
+character, escape it with a backslash).
 .El
 .Pp
-NOTE: if your pattern (or a tag expanded in your pattern) contains a
-.Sq /
+NOTE: if the
+.Ar pattern
+(or a tag expanded) contains a
+.Dq /
 character,
 .Nm
-will check if the destination directory exists. In that case,
+will check the destination directory. If the destination directory exists,
 .Nm
-will rename without any warning and the file's directoy will change. Otherwise
+will rename the
+.Ar file
+and its parent directoy will change. If the destination directory does not exist and
+.Fl p
+was given,
 .Nm
-will display an error message and exit with
-.Er ENOENT
-return value unless
-.Fl d
-is given. If
-.Fl d
-is given with
-.Fl r
-then
+will try to create the intermediate directories before the rename. If the destination directory does not exist and
+.Fl p
+was not given,
 .Nm
-will create any needed directory.
-.It Fl d
-created directories when rename action is called. Useful when you want to have one directory per artist and/or per album.
-.Fl d
-is only valid with the
-.Fl r
-(rename) option.
-.It Fl x Ar filter
-print to stdout files matching the given
-.Ar filter .
-.Pp
-The filter format is a C-like boolean expression, which keywords are
-.Sq album ,
-.Sq artist ,
-.Sq comment ,
-.Sq filename ,
-.Sq genre ,
-.Sq title ,
-.Sq track
-and
-.Sq year .
-.Sq track
-and
-.Sq year
-keywords are integers, while others are strings.
-.Pp
-A static integer is a number like 42, 0 or 1024. Since integer keywords (i.e
-.Sq year
-and
-.Sq track )
-are unsigned, negative integer are not allowed.
-.Pp
-A static string begins and ends with the " character (like in the C programming
-language) and you can escape " and \\ by writting \\" and \\\\.
-.Pp
-A regular expression begins and ends with the / character (like in Perl or
-Ruby programming languages) and you can escape / and \\ by writting \\/ and \\\\.
-.Nm
-support two modifiers on regular expressions:
-.Pp
-.Bl -tag -width indent
-.It Sq i
-case insensitive match. compile the regular expression with the
-.Dv REG_ICASE
-flag (see
-.Xr regex 3 ) .
-.It Sq m
-newline-sensitive match. compile the regular expression with the
-.Dv REG_NEWLINE
-flag (see
-.Xr regex 3 ) .
+will display an error message and exit.
 .El
-.Pp
-As in the C programming language, && and || are left associatif and && has a highest precedance than ||.
-.Pp
-You can see the full formal filter's grammar in the
-.Pa t_parser.h
-source file of tagutil. Here follows an informal description:
+.Sh BACKENDS
+.Nm
+is designed in a modular way, making it very easy to add support for any file
+format. While this section describe each music file format supported, the
+complete list supported by the installed version should be checked with
+.Nm Fl h .
 .Bl -tag -width indent
-.It expr0 || expr1
-true if
-.Sq expr0
-is true or if
-.Sq expr1
-is true.
-.It expr0 && expr1
-true if
-.Sq expr0
-is true and if
-.Sq expr1
-is true.
-.It keyword == value0
-true if
-.Sq keyword
-is equal to
-.Sq value0 .
-if
-.Sq keyword
-is an integer value,
-.Sq value0
-has to be a static integer.
-if
-.Sq keyword
-is a string value,
-.Sq value0
-can be another string keyword, or a static string.
-return true if
-.Sq keyword
-equals
-.Sq value .
-for string, a case-sensitive comparison is used (see
-.Xr strcmp 3 ) .
-.It keyword < value0
-return true if
-.Sq keyword
-is lower than
-.Sq value0 .
-.It keyword <= value0
-return true if
-.Sq keyword
-is lower or equals to than
-.Sq value0 .
-.It keyword > value0
-return true if
-.Sq keyword
-is greater than
-.Sq value0 .
-.It keyword >= value0
-return true if
-.Sq keyword
-is greater or equals than
-.Sq value0 .
-.It keyword != value0
-return true if
-.Sq keyword
-is different from
-.Sq value0 .
-.It keyword =~ regex0
-return true if
-.Sq keyword
-match
-.Sq regex0 .
-.Sq keyword
-has to be a string keyword.
-.It ( expr0 )
-override operator precedence.
-.Sq expr0
-will be evaluated first regardless of the operators precedance and
-associativity.
-.It !(expr0)
-true if
-.Sq expr0
-is false, false otherwise.
+.It libFLAC
+Free Lossless Audio Codec (FLAC) files format (https://xiph.org/flac/). The
+FLAC format use Vorbis Comment to store tags. This means that, like Ogg/Vorbis,
+FLAC supports an ordered, unlimited set of tags allowing duplicate keys.
+.It libvorbis
+Ogg/Vorbis files format (http://www.vorbis.com/). Ogg/Vorbis use Vorbis Comment
+to store tags and supports an ordered, unlimited set of tags allowing duplicate
+keys.
+.It TagLib
+TagLib is a library for reading and editing the meta-data of several popular
+audio formats (http://taglib.github.io/). This backend only support a limited
+set of tags :
+.Dq title ,
+.Dq artist ,
+.Dq album ,
+.Dq comment ,
+.Dq genre ,
+.Dq year
+and
+.Dq track .
+.It ID3V1
+A simple ID3v1.1 backend (built-in). ID3v1.0 and ID3v1.1 are only used by old
+mp3 files and has been superseded by ID3v2 more than ten years ago. It
+simplicity makes it a good example for backend implementation and it is
+disabled by default.
 .El
-.Pp
-Comparison operators are not commutatif, then you can't write
-.Dl 1 == track
-for example, write
-.Dl track == 1
-instead.
-.It Fl A Ar artist-name
-set
-.Sq artist
-tag to
-.Ar artist-name .
-.It Fl a Ar album-name
-set
-.Sq album
-tag to
-.Ar album-name .
-.It Fl c Ar a-comment
-set
-.Sq comment
-tag to
-.Ar a-comment .
-.It Fl g Ar a-genre
-set
-.Sq genre
-tag to
-.Ar a-genre
-.It Fl T Ar track-no
-set
-.Sq track
-tag to
-.Ar track-no
-.It Fl t Ar a-title
-set
-.Sq title
-tag to
-.Ar a-title
-.It Fl y Ar year-no
-set
-.Sq year
-tag to
-.Ar year-no
+.Sh OUTPUT FORMATS
+.Nm
+is designed in a modular way, making it very easy to add support for any output
+format. While this section describe each format implemented, the complete list
+supported by the installed version should be checked with
+.Nm Fl h .
+.Bl -tag -width indent
+.It yml
+YAML is the default format because it is both human friendly for
+.Ic edit
+and
+.Ic print
+and have good support in popular scripting languages. It is implemented using
+libyaml (http://pyyaml.org/wiki/LibYAML), which can produce very detailed error
+messages (useful to debug scripts).
+.It json
+JSON is intended to be used for scripting as an alternative to YAML.
 .El
 .Sh ENVIRONMENT
 The
@@ -325,55 +277,93 @@ environment variables affect the execution of
 .Nm .
 .Bl -tag -width indent
 .It Ev LC_ALL
-used to set the taglib encoding for reading and setting tags.
+Note that both standard YAML and JSON require UTF-8 and so will
+.Nm
+when using one of these format. Command line actions like
+.Dq add
+will honor
+.Ev LC_ALL
+by encoding the
+.Sx TAGNAME
+and
+.Dq value
+action arguments in UTF-8 if needed.
 .It Ev EDITOR
-used when the
-.Sq Fl e
-option is given.
+required when the
+.Ic edit
+action is invoked.
 .It Ev TMPDIR
-used to store a temporary file when
-.Sq Fl e
-option is given.
+used to store the temporary file used by the
+.Ic edit
+action.
 .El
 .Sh EXIT STATUS
 .Ex -std
 .Sh EXAMPLES
-print the tags of file.flac:
-.Dl Nm Ar file.flac
+Print the tags of file.flac:
+.Dl % tagutil file.flac
 .Pp
-interactivly edit the file.flac's tags:
-.Dl Nm Fl e Ar file.flac
+Set the title "foo" to file.ogg:
+.Dl % tagutil set:title=foo file.ogg
 .Pp
-rename all your music files in the current directory to "artist - album - [track] - title":
-.Dl Nm Fl r Ar '%A - %a - [%T] - %t' *
+Interactivly edit the file.flac's tags:
+.Dl % tagutil edit file.flac
 .Pp
-find all the files created after 2004:
-.Dl Nm Fl x Ar 'year >= 2004' *
+Rename file.flac using its artist, album, tracknumber and title tags:
+.Dl % tagutil rename:"%artist - %album - [%tracknumber] - %title" file.flac
 .Pp
-find the files that belongs to an album of the same name of their artist:
-.Dl Nm Fl x Ar 'artist == album' *
+Clear all tags and then add an artist and album tag.
+.Dl % tagutil clear: add:artist="Pink Floyd" add:album="Meddle" *.flac
 .Pp
-find music of the 60':
-.Dl Nm Fl x Ar 'year >= 1960 && year < 1970' *
+Switch all tag keys
+.Dq track
+to
+.Dq trackname
+.Dl % tagutil file.flac | sed -e 's/^- track:/- tracknumber:/' | tagutil load: file.flac
 .Pp
-find all Pink Floyd's music, or live music older than 1970:
-.Dl Nm Fl x Ar 'artist == \&"Pink Floyd\&" || year < 1970 && album =~ /live/i' *
-.Pp
-set the title "foo" to file.ogg:
-.Dl Nm Fl t Ar 'foo' file.ogg
-.Pp
-set the year number 2000 to file.mp3:
-.Dl Nm Fl y Ar 2000 file.mp3
-.Pp
-Save all your music into a json file to create a database.
-.Dl (echo '['; Nm Fl F Ar json ~/Music/* | sed -e 's/$/,/'; echo ']') | tee music.json
+A Ruby script that trim every tag values:
+.Bd -literal -offset indent
+#!/usr/bin/env ruby
+
+require 'yaml'
+require 'open3'
+
+ARGV.each do |arg|
+
+  Open3.popen3('tagutil', arg) do |_, pstdout, pstderr|
+    $s = pstdout.read
+    $e = pstderr.read
+  end
+  yaml = YAML.load($s)
+
+  if not yaml
+    STDERR.puts($e)
+  else
+    stripped = Array.new
+    yaml.each do |hash|
+      hash.each do |key, val|
+        newval = if val.respond_to?(:strip) then val.to_s.strip else val end
+        stripped << { key => newval }
+      end
+    end
+
+    Open3.popen3('tagutil', 'load:-', arg) do |pstdin, pstdout, pstderr|
+      pstdin << stripped.to_yaml
+      pstdin.close
+      STDERR.puts($e) unless ($e = pstderr.read).strip.empty?
+    end
+  end
+end
+.Ed
 .Sh AUTHORS
 .An "Alexandre Perrin" Aq alex@kaworu.ch
 .An "Baptiste Daroussin" Aq bapt@FreeBSD.org
 .Sh BUGS
-.Sq filter
-option can't compare
-.Sq year
-and
-.Sq track
-keywords.
+.Pp
+All current implemented output format will force UTF-8 for both output and parsing.
+.Pp
+When the TagLib backend is used with mp3 files it will interprete integer
+values for the
+.Dq genre
+tag as index for the ID3 Tag Genre ID (extended) list. Although this is
+intended as a feature, it make the interface inconsistant with other backends.

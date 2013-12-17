@@ -179,7 +179,7 @@ usage(void)
 
 	fprintf(stderr, "Options:\n");
 	fprintf(stderr, "  -h     show this help\n");
-	fprintf(stderr, "  -d     create destination directories if needed (used by rename)\n");
+	fprintf(stderr, "  -p     create destination directories if needed (used by rename)\n");
 	fprintf(stderr, "  -F fmt use the fmt format for print, edit and load actions (see Formats)\n");
 	fprintf(stderr, "  -Y     answer yes to all questions\n");
 	fprintf(stderr, "  -N     answer no  to all questions\n");
