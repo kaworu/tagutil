@@ -15,43 +15,6 @@ Installation
 Usage
 =====
 
---help
-------
-
-```
-% tagutil -h
-tagutil v3.0
-
-usage: tagutil [OPTION]... [ACTION:ARG]... [FILE]...
-Modify or display music file's tag.
-
-Options:
-  -h     show this help
-  -p     create destination directories if needed (used by rename)
-  -F fmt use the fmt format for print, edit and load actions (see Formats)
-  -Y     answer yes to all questions
-  -N     answer no  to all questions
-
-Actions:
-  print            print tags (default action)
-  backend          print the backend used (see Backend)
-  clear:TAG        clear all tag TAG. If TAG is empty, all tags are cleared
-  add:TAG=VALUE    add a TAG=VALUE pair
-  set:TAG=VALUE    set TAG to VALUE
-  edit             prompt for editing
-  load:PATH        load PATH yaml tag file
-  rename:PATTERN   rename to PATTERN
-
-Formats:
-         yml: YAML - YAML Ain't Markup Language
-        json: JSON - JavaScript Object Notation
-
-Backends:
-     libFLAC: Free Lossless Audio Codec (FLAC) files format
-   libvorbis: Ogg/Vorbis files format
-      TagLib: various file format but limited set of tags
-```
-
 reading tags
 ------------
 Use the **print** action. Since it is the default action, you can omit it from
@@ -101,6 +64,42 @@ directory:
   example using YAML parsing. What is does is very simple though, it just trim
   every tags of leading and trailing white space(s).
 
+full --help
+-----------
+
+```
+% tagutil -h
+tagutil v3.0
+
+usage: tagutil [OPTION]... [ACTION:ARG]... [FILE]...
+Modify or display music file's tag.
+
+Options:
+  -h     show this help
+  -p     create destination directories if needed (used by rename)
+  -F fmt use the fmt format for print, edit and load actions (see Formats)
+  -Y     answer yes to all questions
+  -N     answer no  to all questions
+
+Actions:
+  print            print tags (default action)
+  backend          print the backend used (see Backend)
+  clear:TAG        clear all tag TAG. If TAG is empty, all tags are cleared
+  add:TAG=VALUE    add a TAG=VALUE pair
+  set:TAG=VALUE    set TAG to VALUE
+  edit             prompt for editing
+  load:PATH        load PATH yaml tag file
+  rename:PATTERN   rename to PATTERN
+
+Formats:
+         yml: YAML - YAML Ain't Markup Language
+        json: JSON - JavaScript Object Notation
+
+Backends:
+     libFLAC: Free Lossless Audio Codec (FLAC) files format
+   libvorbis: Ogg/Vorbis files format
+      TagLib: various file format but limited set of tags
+```
 
 LICENSE
 =======
