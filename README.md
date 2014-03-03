@@ -72,15 +72,15 @@ the command line:
 editing tags
 ------------
 There are commands for basic editing stuff like **clear**, **add** and **set**.
-If you need to do something more complex, the `edit` action let you use your
+If you need to do something more complex, the **edit** action let you use your
 favourite `$EDITOR`.
 
 renaming files
 --------------
 One powerful feature of **tagutil** is the **rename** action. It rename the
-music files after deferring the new name from a _rename pattern_. In the
-_rename pattern_ `%{name}` is replaced by the `name`tag. You can also use the
-simpler `%name` (in that case the delimiter is a space). Example:
+music files after deferring the new name from a rename pattern. In the rename
+pattern, `%{name}` is replaced by the `name` tag. You can also use the simpler
+form `%name` (in that case the delimiter is a space). Example:
 
 ```
 % tagutil -p rename:"[%{date}] %{artist}/%tracknumber - %title" fearless.flac
@@ -94,12 +94,12 @@ while more complex scripts can use **print**, parse the output, do some
 modifications and then use **load**. There are two examples in the _scripts/_
 directory:
 
-* tagutil-track: this simple Perl script will take a tag name and some files as
-  arguments, and will set `01` for the first file, `02` for the second and so
-  on. Useful to set the track number of an album.
-* tagutil-trim: this Ruby script is a bit more complex and is an example using
-  YAML parsing. What is does is very simple though, it just trim every tags of
-  leading and trailing white space(s).
+* _scripts/tagutil-track_: this simple Perl script will take a tag name and
+  some files as arguments, and will set `01` for the first file, `02` for the
+  second and so on. Useful to set the track number of an album.
+* _scripts/tagutil-trim_: this Ruby script is a bit more complex and is an
+  example using YAML parsing. What is does is very simple though, it just trim
+  every tags of leading and trailing white space(s).
 
 
 LICENSE
