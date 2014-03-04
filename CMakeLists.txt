@@ -66,6 +66,15 @@ include(FindPkgConfig)
 # this sets up:
 # REQUIRED_LIBRARIES
 # REQUIRED_INCLUDE_DIRS
+
+include("./FindIconv.cmake")
+if (ICONV_FOUND)
+    set(REQUIRED_LIBRARIES ${REQUIRED_LIBRARIES} ${ICONV_LIBRARIES})
+    set(REQUIRED_INCLUDE_DIRS ${REQUIRED_INCLUDE_DIRS} ${ICONV_INCLUDE_DIR})
+else()
+    message(FATAL_ERROR "libyaml not found.")
+endif()
+
 pkg_check_modules(YAML yaml-0.1)
 if(YAML_FOUND)
     set(WITH_YAML YES)
@@ -133,13 +142,17 @@ endif()
 
 set(WITH_OGGVORBIS NO)
 if(NOT DEFINED WITHOUT_OGGVORBIS)
-    pkg_check_modules(OGGVORBIS vorbisfile)
-    if(OGGVORBIS_FOUND)
+    pkg_check_modules(OGG ogg)
+    pkg_check_modules(VORBIS vorbis)
+    pkg_check_modules(VORBISFILE vorbisfile)
+    if(OGG_FOUND AND VORBIS_FOUND AND VORBISFILE_FOUND)
         set(WITH_OGGVORBIS YES)
         add_definitions(-DWITH_OGGVORBIS)
         set(SRCS ${SRCS} t_ftoggvorbis.c)
-        set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${OGGVORBIS_LDFLAGS})
-        set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${OGGVORBIS_INCLUDE_DIRS})
+        set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES}
+            ${OGG_LDFLAGS} ${VORBIS_LDFLAGS} ${VORBISFILE_LDFLAGS})
+        set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS}
+            ${OGG_INCLUDE_DIRS} ${VORBIS_INCLUDE_DIRS} ${VORBISFILE_INCLUDE_DIRS})
     else()
         message(STATUS "libogg/libvorbis not found. Disabled.")
     endif()
