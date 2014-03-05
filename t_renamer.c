@@ -144,6 +144,8 @@ error_label:
 }
 
 
+#define	T_TAG		1
+#define	T_STRING	0
 struct t_rename_pattern *
 t_rename_parse(const char *source)
 {
@@ -177,7 +179,7 @@ t_rename_parse(const char *source)
 			if (sbuf_len(sb) > 0) {
 				if (sbuf_finish(sb) == -1)
 					goto error_label;
-				token = t_rename_token_new(0, sbuf_data(sb));
+				token = t_rename_token_new(T_STRING, sbuf_data(sb));
 				if (token == NULL)
 					goto error_label;
 				TAILQ_INSERT_TAIL(pattern, token, entries);
@@ -197,7 +199,7 @@ t_rename_parse(const char *source)
 				warnx("empty tag in rename pattern");
 			if (sbuf_finish(sb) == -1)
 				goto error_label;
-			token = t_rename_token_new(1, sbuf_data(sb));
+			token = t_rename_token_new(T_TAG, sbuf_data(sb));
 			if (token == NULL)
 				goto error_label;
 			sbuf_clear(sb);
@@ -235,7 +237,9 @@ t_rename_parse(const char *source)
 	if (state != PARSING_STRING || sbuf_len(sb) > 0) {
 		if (sbuf_finish(sb) == -1)
 			goto error_label;
-		token = t_rename_token_new(state != PARSING_STRING, sbuf_data(sb));
+		token = t_rename_token_new(
+			    (state == PARSING_STRING ? T_STRING : T_TAG),
+			    sbuf_data(sb));
 		if (token == NULL)
 			goto error_label;
 		TAILQ_INSERT_TAIL(pattern, token, entries);
@@ -249,6 +253,8 @@ error_label:
 	t_rename_pattern_delete(pattern);
 	return (NULL);
 }
+#undef	T_TAG
+#undef	T_STRING
 
 
 char *
