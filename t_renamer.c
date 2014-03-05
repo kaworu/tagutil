@@ -193,7 +193,7 @@ t_rename_parse(const char *source)
 				state = PARSING_SIMPLE_TAG;
 			}
 		/* if we parse a tag, check for the end of it */
-		} else if ((state == PARSING_SIMPLE_TAG && (isspace(*c) || *c == sep)) ||
+		} else if ((state == PARSING_SIMPLE_TAG && (*c == sep || !isalnum(*c))) ||
 		           (state == PARSING_BRACE_TAG  && *c == '}')) {
 			if (sbuf_len(sb) == 0)
 				warnx("empty tag in rename pattern");
