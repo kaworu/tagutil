@@ -43,10 +43,10 @@ renaming files
 One powerful feature of **tagutil** is the **rename** action. It rename the
 music files after deferring the new name from a rename pattern. In the rename
 pattern, `%{name}` is replaced by the `name` tag. You can also use the simpler
-form `%name` (in that case the delimiter is a space). Example:
+form `%name` if the tag is only composed of alphanumeric characters. Example:
 
 ```
-% tagutil -p rename:"[%{date}] %{artist}/%tracknumber - %title" fearless.flac
+% tagutil -p rename:"[%date] %artist/%tracknumber - %title" fearless.flac
 rename `fearless.flac' to `[1971] Pink Floyd/03 - Fearless.flac'? [y/n]
 ```
 
