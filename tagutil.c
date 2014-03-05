@@ -26,7 +26,7 @@ void usage(void) t__dead2;
 
 
 /* options */
-int			 dflag; /* create directory with rename */
+int			 pflag; /* create directory with rename */
 const struct t_format	*Fflag; /* output format */
 int			 Nflag; /* answer no to all questions */
 int			 Yflag; /* answer yes to all questions */
@@ -52,10 +52,10 @@ main(int argc, char *argv[])
 	   against at least libyaml as format. */
 	assert(Fflag = TAILQ_FIRST(t_all_formats()));
 
-	while ((i = getopt(argc, argv, "dhF:NY")) != -1) {
+	while ((i = getopt(argc, argv, "hpF:NY")) != -1) {
 		switch ((char)i) {
-		case 'd':
-			dflag = 1;
+		case 'p':
+			pflag = 1;
 			break;
 		case 'F':
 			Fflag = NULL;

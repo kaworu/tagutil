@@ -404,7 +404,7 @@ t_yesno(const char *question)
 static int
 t_rename_safe(const char *opath, const char *npath)
 {
-	extern int dflag;
+	extern int pflag;
 	int failed = 0;
 	struct stat st;
 	const char *s;
@@ -426,7 +426,7 @@ t_rename_safe(const char *opath, const char *npath)
 
 	if (strcmp(odir, ndir) != 0) {
 		/* srcdir != destdir, we need to check if destdir is OK */
-		if (dflag) { /* we are asked to create the directory */
+		if (pflag) { /* we are asked to create the directory */
 			char *d = strdup(ndir);
 			if (d == NULL)
 				return (-1);
@@ -435,7 +435,7 @@ t_rename_safe(const char *opath, const char *npath)
 		}
 		if (stat(ndir, &st) != 0) {
 			failed = 1;
-			if (errno == ENOENT && !dflag)
+			if (errno == ENOENT && !pflag)
 				warn("`%s' (forgot -p ?)", ndir);
 		} else if (!S_ISDIR(st.st_mode)) {
 			failed = 1;
