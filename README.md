@@ -1,7 +1,7 @@
 Tagutil - CLI music files tags editor
 =====================================
 
-`tagutil(1)` is a CLI tool to edit music file's tag. It aim to provide both an
+`tagutil(1)` is a CLI tool to edit music file's tag. It aims to provide both an
 easy-to-script interface and ease of use interactively. Unlike most other tag
 tools out there, it fully support _Vorbis Comments_ for both ogg/vorbis files
 and FLAC. _Vorbis Comments_ are sexy, because you can set tags with any
