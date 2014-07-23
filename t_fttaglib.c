@@ -156,6 +156,8 @@ t_fttaglib_read(void *opaque)
 
 	return (tlist);
 error:
+	/* NOTE: the documentation does not state if NULL is a valid argument
+	   for tablib_free() */
 	if (val != NULL)
 		taglib_free(val);
 	t_taglist_delete(tlist);
