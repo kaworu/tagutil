@@ -216,7 +216,7 @@ t_fttaglib_write(void *opaque, const struct t_taglist *tlist)
 		} else if (t_tag_keycmp(t->key, "genre") == 0)
 			taglib_tag_set_genre(data->tag, t->val);
 		else if (t_tag_keycmp(t->key, "comment") == 0)
-			taglib_tag_set_comment(data->tag, "");
+			taglib_tag_set_comment(data->tag, t->val);
 		else
 			warnx("unsupported tag for TagLib backend: %s", t->key);
 	}
