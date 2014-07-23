@@ -20,12 +20,16 @@ struct t_backend {
 	 * particular file.
 	 *
 	 * @return
-	 *   0 on success and tune is initialized, -1 otherwise.
+	 *   A pointer to the opaque data on success, NULL otherwise.
 	 */
 	void *	(*init)(const char *path);
 
 	/*
 	 * Read all the tags from the storage.
+	 *
+	 * @param opaque
+	 *   an opaque pointer that has been provided by the init member
+	 *   function.
 	 *
 	 * @return
 	 *   a complete and ordered t_taglist or NULL on error.
@@ -33,7 +37,14 @@ struct t_backend {
 	struct t_taglist *	(*read)(void *opaque);
 
 	/*
-	 * write the file.
+	 * write the given taglist to the file.
+	 *
+	 * @param opaque
+	 *   an opaque pointer that has been provided by the init member
+	 *   function.
+	 *
+	 * @param tlist
+	 *   the tag list to set for this tune.
 	 *
 	 * @return
 	 *   return -1 on error, 0 on success.
@@ -42,9 +53,17 @@ struct t_backend {
 
 	/*
 	 * free internal data.
+	 *
+	 * After this function return, the opaque pointer must not be used
+	 * anymore.
+	 *
+	 * @param opaque
+	 *   an opaque pointer that has been provided by the init member
+	 *   function.
 	 */
 	void	(*clear)(void *opaque);
 
+	/* used for the backend queue */
 	TAILQ_ENTRY(t_backend)	entries;
 };
 TAILQ_HEAD(t_backendQ, t_backend);
