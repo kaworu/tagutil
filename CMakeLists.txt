@@ -72,7 +72,7 @@ if (ICONV_FOUND)
     set(REQUIRED_LIBRARIES ${REQUIRED_LIBRARIES} ${ICONV_LIBRARIES})
     set(REQUIRED_INCLUDE_DIRS ${REQUIRED_INCLUDE_DIRS} ${ICONV_INCLUDE_DIR})
 else()
-    message(FATAL_ERROR "libyaml not found.")
+    message(FATAL_ERROR "iconv not found.")
 endif()
 
 pkg_check_modules(YAML yaml-0.1)
