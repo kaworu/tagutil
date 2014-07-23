@@ -148,7 +148,7 @@ t_json2tags(FILE *fp, char **errmsg_p)
 					 * unlikely. Maybe both
 					 * json_integer_value() and
 					 * JSON_INTEGER_FORMAT are lying, or I
-					 * just screwed something (unlikely).
+					 * just screwed something.
 					 */
 					ABANDON_SHIP();
 				}

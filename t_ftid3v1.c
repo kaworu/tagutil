@@ -185,9 +185,9 @@ struct id3v1_tag {
 
 struct t_ftid3v1_data {
 	const char	*libid; /* pointer to libid */
-	const char	*path; /* this is needed for t_ftid3v1_write() */
-	int		 id3; /* 1 if id3 tag is already present in the file, 0 otherwise */
-	FILE		*fp; /* read-only file pointer */
+	const char	*path;  /* this is needed for t_ftid3v1_write() */
+	int		 id3;   /* 1 if id3 tag is already present in the file, 0 otherwise */
+	FILE		*fp;    /* read-only file pointer */
 };
 
 
@@ -234,17 +234,21 @@ t_ftid3v1_init(const char *path)
 	plen = strlen(path);
 	data = malloc(sizeof(struct t_ftid3v1_data) + plen + 1);
 	if (data == NULL)
-		goto error;
+		goto error_label;
 	data->libid = libid;
 	data->path = p = (char *)(data + 1);
 	assert(strlcpy(p, path, plen + 1) == plen);
 
 	if ((data->fp = fp = fopen(data->path, "r")) == NULL)
-		goto error;
+		goto error_label;
+	/* go to the end of the file minus the ID3v1 metadata (128 bytes) */
 	if (fseek(fp, -(sizeof(struct id3v1_tag)), SEEK_END) != 0)
-		goto error;
+		goto error_label;
+	/* read the start of the ID3v1 metadata, where the magic is supposed to
+	   be */
 	if (fread(&magic, sizeof(char), NELEM(magic), fp) != NELEM(magic))
-		goto error;
+		goto error_label;
+	/* check if the magic bytes match a ID3v1 header */
 	data->id3 = (
 	    magic[0] == 'T' &&
 	    magic[1] == 'A' &&
@@ -252,25 +256,24 @@ t_ftid3v1_init(const char *path)
 	    1 : 0
 	);
 
+	/* go the the very beginning of the file */
 	if (fseek(fp, 0L, SEEK_SET) != 0)
-		goto error;
+		goto error_label;
 	if (fread(&magic, sizeof(char), NELEM(magic), fp) != NELEM(magic))
-		goto error;
-	if (data->id3) {
-		/* check that we don't handle a file with ID3v2 tags. */
-		if (magic[0] == 'I' &&
-		    magic[1] == 'D' &&
-		    magic[2] == '3')
-			goto error;
-	} else {
-		/* check that the file looks like mp3 */
-	if (!(magic[0] == 0xFF && magic[1] == 0xFB))
-		goto error;
+		goto error_label;
+	/* check that we don't handle a file with ID3v2 tags. */
+	if (magic[0] == 'I' &&
+	    magic[1] == 'D' &&
+	    magic[2] == '3') {
+		goto error_label;
+	/* check that the file looks like mp3 */
+	} else if (!(magic[0] == 0xFF && magic[1] == 0xFB)) {
+			goto error_label;
 	}
 
 	return (data);
 	/* NOTREACHED */
-error:
+error_label:
 	free(data);
 	if (fp != NULL)
 		(void)fclose(fp);
@@ -292,21 +295,21 @@ t_ftid3v1_read(void *opaque)
 
 	tlist = t_taglist_new();
 	if (tlist == NULL)
-		goto error;
+		goto error_label;
 
 	if (!data->id3)
 		return (tlist);
 
 	if (fseek(data->fp, -(sizeof(struct id3v1_tag)), SEEK_END) != 0)
-		goto error;
+		goto error_label;
 	if (fread(&id3tag, sizeof(struct id3v1_tag), 1, data->fp) != 1)
-		goto error;
+		goto error_label;
 
 	if (id3tag_to_taglist(&id3tag, tlist) != 0)
-		goto error;
+		goto error_label;
 
 	return (tlist);
-error:
+error_label:
 	t_taglist_delete(tlist);
 	return (NULL);
 }
@@ -333,22 +336,22 @@ t_ftid3v1_write(void *opaque, const struct t_taglist *tlist)
 
 	if (data->id3) {
 		if ((fp = fopen(data->path, "r+")) == NULL)
-			goto error;
+			goto error_label;
 		if (fseek(fp, -(sizeof(struct id3v1_tag)), SEEK_END) != 0)
 			err(-1, "fseek");
 	} else {
 		if ((fp = fopen(data->path, "a")) == NULL)
-			goto error;
+			goto error_label;
 	}
 	if (fwrite(&id3tag, sizeof(struct id3v1_tag), 1, fp) != 1)
-		goto error;
+		goto error_label;
 	if (fclose(fp) != 0)
-		goto error;
+		goto error_label;
 	fp = NULL;
 
 	data->fp = fopen(data->path, "r");
 	return (0);
-error:
+error_label:
 	if (fp != NULL);
 		(void)fclose(fp);
 	data->fp = fopen(data->path, "r");
@@ -468,8 +471,7 @@ taglist_to_id3tag(const struct t_taglist *tlist, struct id3v1_tag *tag)
 		 * means that leading whitespace are accepted (which is OK) and
 		 * leading sign `+' or `-' are accepted as well. A leading `-'
 		 * is likely to fail when the value is checked but `+' will be
-		 * accepted. This is, at the moment, considered as an
-		 * undocumented feature and not a bug.
+		 * accepted.
 		 */
 		if (strcasecmp(t->key, "tracknumber") == 0) {
 			char *endptr;

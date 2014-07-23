@@ -104,16 +104,16 @@ t_tags2yaml(const struct t_taglist *tlist, const char *path)
 
 	/* Create the Emitter object. */
 	if (!yaml_emitter_initialize(&emitter))
-		goto emitter_error;
+		goto emitter_error_label;
 
 	yaml_emitter_set_output(&emitter, t_yaml_whdl, sb);
 	yaml_emitter_set_unicode(&emitter, 1);
 
 	/* Create and emit the STREAM-START event. */
 	if (!yaml_stream_start_event_initialize(&event, YAML_UTF8_ENCODING))
-		goto event_error;
+		goto event_error_label;
 	if (!yaml_emitter_emit(&emitter, &event))
-		goto emitter_error;
+		goto emitter_error_label;
 
 	/* Create and emit the DOCUMENT-START event. */
 	if (!yaml_document_start_event_initialize(&event,
@@ -121,69 +121,69 @@ t_tags2yaml(const struct t_taglist *tlist, const char *path)
 	    /* tag_directives_start */NULL,
 	    /* tag_directives_end */NULL,
 	    /* implicit */0))
-		goto event_error;
+		goto event_error_label;
 	if (!yaml_emitter_emit(&emitter, &event))
-		goto emitter_error;
+		goto emitter_error_label;
 
 	/* Create and emit the SEQUENCE-START event. */
 	if (!yaml_sequence_start_event_initialize(&event, /* anchor */NULL,
 	    (yaml_char_t *)YAML_SEQ_TAG, /* implicit */1,
 	    YAML_BLOCK_SEQUENCE_STYLE))
-		goto event_error;
+		goto event_error_label;
 	if (!yaml_emitter_emit(&emitter, &event))
-		goto emitter_error;
+		goto emitter_error_label;
 
 	TAILQ_FOREACH(t, tlist->tags, entries) {
 		/* Create and emit the MAPPING-START event. */
 		if (!yaml_mapping_start_event_initialize(&event, /* anchor */NULL,
 		    (yaml_char_t *)YAML_MAP_TAG, /* implicit */1,
 		    YAML_BLOCK_MAPPING_STYLE))
-			goto event_error;
+			goto event_error_label;
 		if (!yaml_emitter_emit(&emitter, &event))
-			goto emitter_error;
+			goto emitter_error_label;
 
 		/* create and emit the SCALAR event for the key */
 		if (!yaml_scalar_event_initialize(&event, /* anchor */NULL,
 		    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->key,
 		    t->klen, /* plain_implicit */1, /* quoted_implicit */1,
 		    YAML_PLAIN_SCALAR_STYLE))
-			goto event_error;
+			goto event_error_label;
 		if (!yaml_emitter_emit(&emitter, &event))
-			goto emitter_error;
+			goto emitter_error_label;
 
 		/* create and emit the SCALAR event for the value */
 		if (!yaml_scalar_event_initialize(&event, /* anchor */NULL,
 		    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->val,
 		    t->vlen, /* plain_implicit */1, /* quoted_implicit */1,
 		    YAML_PLAIN_SCALAR_STYLE))
-			goto event_error;
+			goto event_error_label;
 		if (!yaml_emitter_emit(&emitter, &event))
-			goto emitter_error;
+			goto emitter_error_label;
 
 		/* Create and emit the MAPPING-END event. */
 		if (!yaml_mapping_end_event_initialize(&event))
-			goto event_error;
+			goto event_error_label;
 		if (!yaml_emitter_emit(&emitter, &event))
-			goto emitter_error;
+			goto emitter_error_label;
 	}
 
 	/* Create and emit the SEQUENCE-END event. */
 	if (!yaml_sequence_end_event_initialize(&event))
-		goto event_error;
+		goto event_error_label;
 	if (!yaml_emitter_emit(&emitter, &event))
-		goto emitter_error;
+		goto emitter_error_label;
 
 	/* Create and emit the DOCUMENT-END event. */
 	if (!yaml_document_end_event_initialize(&event, /* implicit */1))
-		goto event_error;
+		goto event_error_label;
 	if (!yaml_emitter_emit(&emitter, &event))
-		goto emitter_error;
+		goto emitter_error_label;
 
 	/* Create and emit the STREAM-END event. */
 	if (!yaml_stream_end_event_initialize(&event))
-		goto event_error;
+		goto event_error_label;
 	if (!yaml_emitter_emit(&emitter, &event))
-		goto emitter_error;
+		goto emitter_error_label;
 
 	/* Destroy the Emitter object. */
 	yaml_emitter_delete(&emitter);
@@ -199,12 +199,12 @@ t_tags2yaml(const struct t_taglist *tlist, const char *path)
 	sbuf_delete(sb);
 	return (ret);
 	/* NOTREACHED */
-event_error:
+event_error_label:
 	sbuf_delete(sb);
 	errno = ENOMEM;
 	return (NULL);
 	/* NOTREACHED */
-emitter_error:
+emitter_error_label:
 	warnx("t_tags2yaml: emit error");
 	ABANDON_SHIP();
 }
@@ -249,26 +249,27 @@ t_yaml2tags(FILE *fp, char **errmsg_p)
 	t_error_init(&FSM);
 
 	if (!yaml_parser_initialize(&parser))
-		goto parser_error;
+		goto parser_error_label;
 	yaml_parser_set_input_file(&parser, fp);
 
 	FSM.handle = t_yaml_parse_stream_start;
 	do {
 		if (!yaml_parser_parse(&parser, &event))
-			goto parser_error;
+			goto parser_error_label;
 		FSM.handle(&FSM, &event);
 		yaml_event_delete(&event);
 	} while (FSM.hungry);
 
 	if (t_error_msg(&FSM)) {
 		asprintf(&errmsg, "YAML parser: %s", t_error_msg(&FSM));
-		goto cleanup;
+		goto cleanup_label;
 	}
 
 	yaml_parser_delete(&parser);
 	return (FSM.tlist);
+	/* NOTREACHED */
 
-parser_error:
+parser_error_label:
 	switch (parser.error) {
 		case YAML_MEMORY_ERROR:
 			asprintf(&errmsg, "t_yaml2tags: YAML Parser (ENOMEM)");
@@ -312,7 +313,7 @@ parser_error:
 			break;
 	}
 
-cleanup:
+cleanup_label:
 	yaml_event_delete(&event);
 	yaml_parser_delete(&parser);
 	t_error_clear(&FSM);

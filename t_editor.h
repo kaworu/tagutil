@@ -8,8 +8,8 @@
 #include "t_tune.h"
 
 /*
- * Save the given tune's tags (YAML) in a temporary file, fork(2) to call
- * $EDITOR and then load the temporary file in the tune.
+ * Save the given tune's tags in a temporary file, fork(2) to call $EDITOR and
+ * then load the temporary file in the tune.
  *
  * @param tune
  *   The tune to edit.
