@@ -48,9 +48,7 @@ main(int argc, char *argv[])
 
 	errno = 0; /* this is a bug in malloc(3) */
 
-	/* we assert because only the build system ensure that tagutil is build
-	   against at least libyaml as format. */
-	assert(Fflag = TAILQ_FIRST(t_all_formats()));
+	Fflag = TAILQ_FIRST(t_all_formats());
 
 	while ((i = getopt(argc, argv, "hpF:NY")) != -1) {
 		switch ((char)i) {

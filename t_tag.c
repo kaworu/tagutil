@@ -29,10 +29,10 @@ t_tag_new(const char *key, const char *val)
 	t->klen = klen;
 	t->vlen = vlen;
 	t->key = s = (char *)(t + 1);
-	assert(strlcpy(s, key, t->klen + 1) == t->klen);
+	(void)memcpy(s, key, t->klen + 1);
 	t_strtolower(s);
 	t->val = s = (char *)(s + t->klen + 1);
-	assert(strlcpy(s, val, t->vlen + 1) == t->vlen);
+	(void)memcpy(s, val, t->vlen + 1);
 
 	return (t);
 }

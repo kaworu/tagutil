@@ -237,7 +237,7 @@ t_ftid3v1_init(const char *path)
 		goto error_label;
 	data->libid = libid;
 	data->path = p = (char *)(data + 1);
-	assert(strlcpy(p, path, plen + 1) == plen);
+	(void)memcpy(p, path, plen + 1);
 
 	if ((data->fp = fp = fopen(data->path, "r")) == NULL)
 		goto error_label;

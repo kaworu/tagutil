@@ -103,59 +103,63 @@ t_fttaglib_read(void *opaque)
 		return (NULL);
 
 	/*
-	 * we're abusing assert, mainly because TagLib does not document what
-	 * happen on error. There is a lot of duplication but it's ok because
-	 * it's very dumb code.
+	 * There is a lot of duplication around here but it's ok because it's
+	 * very dumb code.
 	 */
 
-	assert(val = taglib_tag_title(data->tag));
+	if ((val = taglib_tag_title(data->tag)) == NULL)
+		goto error_label;
 	if (strlen(val) > 0 && t_taglist_insert(tlist, "title", val) == -1)
-		goto error;
+		goto error_label;
 	taglib_free(val);
 	val = NULL;
 
-	assert(val = taglib_tag_artist(data->tag));
+	if ((val = taglib_tag_artist(data->tag)) == NULL)
+		goto error_label;
 	if (strlen(val) > 0 && t_taglist_insert(tlist, "artist", val) == -1)
-		goto error;
+		goto error_label;
 	taglib_free(val);
 	val = NULL;
 
 	uintval = taglib_tag_year(data->tag);
 	if (uintval > 0 && uintval < 10000) {
 		if (sprintf(buf, "%04u", uintval) < 0)
-			goto error;
+			goto error_label;
 		if (t_taglist_insert(tlist, "year", buf) == -1)
-			goto error;
+			goto error_label;
 	}
 
-	assert(val = taglib_tag_album(data->tag));
+	if ((val = taglib_tag_album(data->tag)) == NULL)
+		goto error_label;
 	if (strlen(val) > 0 && t_taglist_insert(tlist, "album", val) == -1)
-		goto error;
+		goto error_label;
 	taglib_free(val);
 	val = NULL;
 
 	uintval = taglib_tag_track(data->tag);
 	if (uintval > 0 && uintval < 10000) {
 		if (sprintf(buf, "%02u", uintval) < 0)
-			goto error;
+			goto error_label;
 		if (t_taglist_insert(tlist, "track", buf) == -1)
-			goto error;
+			goto error_label;
 	}
 
-	assert(val = taglib_tag_genre(data->tag));
+	if ((val = taglib_tag_genre(data->tag)) == NULL)
+		goto error_label;
 	if (strlen(val) > 0 && t_taglist_insert(tlist, "genre", val) == -1)
-		goto error;
+		goto error_label;
 	taglib_free(val);
 	val = NULL;
 
-	assert(val = taglib_tag_comment(data->tag));
+	if ((val = taglib_tag_comment(data->tag)) == NULL)
+		goto error_label;
 	if (strlen(val) > 0 && t_taglist_insert(tlist, "comment", val) == -1)
-		goto error;
+		goto error_label;
 	taglib_free(val);
 	val = NULL;
 
 	return (tlist);
-error:
+error_label:
 	/* NOTE: the documentation does not state if NULL is a valid argument
 	   for tablib_free() */
 	if (val != NULL)

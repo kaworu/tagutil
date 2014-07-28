@@ -68,7 +68,7 @@ t_ftoggvorbis_init(const char *path)
 		return (NULL);
 	data->libid = libid;
 	data->path = p = (char *)(data + 1);
-	assert(strlcpy(p, path, plen + 1) == plen);
+	(void)memcpy(p, path, plen + 1);
 	bzero(&data->vf, sizeof(struct OggVorbis_File));
 
 	if (ov_fopen(data->path, &data->vf) != 0) {

@@ -417,12 +417,18 @@ t_rename_safe(const char *opath, const char *npath)
 		warn("dirname");
 		return (-1);
 	}
-	assert(strlcpy(odir, s, sizeof(odir)) < sizeof(odir));
+	if (strlcpy(odir, s, sizeof(odir)) >= sizeof(odir)) {
+		warnx("path exceeding MAXPATHLEN");
+		return (-1);
+	}
 	if ((s = t_dirname(npath)) == NULL) {
 		warn("dirname");
 		return (-1);
 	}
-	assert(strlcpy(ndir, s, sizeof(odir)) < sizeof(odir));
+	if (strlcpy(ndir, s, sizeof(odir)) >= sizeof(odir)) {
+		warnx("path exceeding MAXPATHLEN");
+		return (-1);
+	}
 
 	if (strcmp(odir, ndir) != 0) {
 		/* srcdir != destdir, we need to check if destdir is OK */
