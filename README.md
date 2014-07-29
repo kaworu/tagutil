@@ -41,7 +41,7 @@ favourite `$EDITOR`.
 renaming files
 --------------
 One powerful feature of **tagutil** is the **rename** action. It rename the
-music files after deferring the new name from a rename pattern. In the rename
+music files after inferring the new name from a rename pattern. In the rename
 pattern, `%{name}` is replaced by the `name` tag. You can also use the simpler
 form `%name` if the tag is only composed of alphanumeric characters. Example:
 
