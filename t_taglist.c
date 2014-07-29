@@ -16,11 +16,10 @@ t_taglist_new(void)
 {
 	struct t_taglist *ret;
 
-	ret = malloc(sizeof(struct t_taglist) + sizeof(struct t_tagQ));
+	ret = malloc(sizeof(struct t_taglist));
 	if (ret == NULL)
 		return (NULL);
 
-	ret->tags = (struct t_tagQ *)(ret + 1);
 	ret->count = 0;
 	TAILQ_INIT(ret->tags);
 

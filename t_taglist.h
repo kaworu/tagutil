@@ -16,7 +16,9 @@
  */
 struct t_taglist {
 	size_t		count;
-	struct t_tagQ	*tags;
+	/* we want to access the tags member as it was a pointer for queue(3)
+	   macros */
+	struct t_tagQ	tags[1];
 };
 
 
