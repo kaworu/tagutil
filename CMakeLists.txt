@@ -167,7 +167,7 @@ else()
     set(WITH_ID3V1 NO)
 endif()
 
-# Output
+# Formats
 set(WITH_JSON NO)
 if(NOT DEFINED WITHOUT_JSON)
     pkg_check_modules(JSON jansson)
@@ -228,7 +228,7 @@ message(STATUS "  TagLib support:                  ${WITH_TAGLIB}")
 message(STATUS "  FLAC (libflac) support:          ${WITH_FLAC}")
 message(STATUS "  Ogg/Vorbis (vorbisfile) support: ${WITH_OGGVORBIS}")
 message(STATUS "  ID3v1.1 support:                 ${WITH_ID3V1}")
-message(STATUS "Output:")
+message(STATUS "Formats:")
 message(STATUS "   YAML (libyaml) support:         ${WITH_YAML}")
 message(STATUS "   JSON (jansson) support:         ${WITH_JSON}")
 message(STATUS "***********************************************")
