@@ -43,5 +43,15 @@ make
 
 ## Install:
 
+### From Source:
+
 build tagutil, then `cd build && make install`. You might need root access
 to call `make install`.
+
+### From Arch Linux:
+
+A [package](https://aur.archlinux.org/packages/tagutil/) is provided in the
+[AUR](https://wiki.archlinux.org/index.php/AUR). Use your favorite [AUR
+helper](https://wiki.archlinux.org/index.php/AUR_helpers)
+to install it or download the AUR tarball and run `makepkg -si` to build and
+install the package.
