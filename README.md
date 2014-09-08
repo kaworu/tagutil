@@ -10,7 +10,7 @@ a key).
 
 Installation
 ============
-**tagutil** use CMake for build and installation. See the INSTALL file.
+See [INSTALL](https://github.com/kAworu/tagutil/blob/master/INSTALL.md).
 
 Usage
 =====
