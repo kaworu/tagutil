@@ -101,6 +101,12 @@ Backends:
       TagLib: various file format but limited set of tags
 ```
 
+Test
+====
+```
+% gem install bundler
+```
+
 LICENSE
 =======
 It is a BSD 2-Clause license, see LICENSE.
