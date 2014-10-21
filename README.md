@@ -50,12 +50,12 @@ configure and build tagutil. Or if you want to gives some arguments to
 cmake do (for example):
 ```
 mkdir build && cd build
-cmake -DWITHOUT_TAGLIB=yes ..
+cmake -DWITHOUT_TAGLIB=yes ../src
 make
 ```
 
-## Installation:
-----------
+Installation:
+-------------
 
 ### From Source:
 
