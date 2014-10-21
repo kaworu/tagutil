@@ -21,3 +21,7 @@ end
 Then(/^I expect tagutil to fail$/) do
     expect(@status).not_to eq(0)
 end
+
+Before do
+    Tagutil.build
+end

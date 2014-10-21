@@ -6,9 +6,10 @@ module Tagutil
     Executable  = File.join(ProjectRoot, 'build', 'tagutil')
 
     def self.build
+        self.force_build unless File.exist?(Executable)
+    end
+
+    def self.force_build
         system "make -C #{ProjectRoot}"
-        File.join(ProjectRoot, 'build', 'tagutil')
     end
 end
-
-Tagutil.build
