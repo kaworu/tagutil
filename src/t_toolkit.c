@@ -199,15 +199,16 @@ t_basename(const char *path)
 
 
 static char *
-t_iconv_convert(int tou8, const char *src)
+t_iconv_convert(int tou8, const char *const_src)
 {
 	static int setlocale_called = 0;
+	int success = 0;
 	size_t n, srclen, destlen;
-	char *dest, *ret;
-	iconv_t cd;
+	char *dest, *ret = NULL, *src = NULL;
+	iconv_t cd = (iconv_t)-1;
 
-	if (src == NULL)
-		return (NULL);
+	if (const_src == NULL)
+		goto cleanup;
 
 	if (!setlocale_called) {
 		setlocale(LC_ALL, "");
@@ -219,23 +220,31 @@ t_iconv_convert(int tou8, const char *src)
 	else
 		cd = iconv_open("", "utf-8");
 	if (cd == (iconv_t)-1)
-		return (NULL);
+		goto cleanup;
 
-	srclen = strlen(src);
+	srclen = strlen(const_src);
 	ret = dest = calloc(srclen + 1, 4 * sizeof(char));
-	if (dest == NULL) {
-		iconv_close(cd);
-		return (NULL);
-	}
+	if (ret == NULL)
+		goto cleanup;
 	destlen = srclen * 4;
 
+#if defined(ICONV_SECOND_ARGUMENT_IS_CONST)
+	n = iconv(cd, &const_src, &srclen, &dest, &destlen);
+#else
+	src = strdup(const_src);
+	if (src == NULL)
+		goto cleanup;
 	n = iconv(cd, &src, &srclen, &dest, &destlen);
-	if (n == -1) {
-		free(ret);
-		iconv_close(cd);
-		return (NULL);
-	}
+#endif
+	success = (n != -1);
 
-	iconv_close(cd);
+cleanup:
+	if (!success) {
+		free(ret);
+		ret = NULL;
+	}
+	free(src);
+	if (cd != (iconv_t)-1)
+		iconv_close(cd);
 	return (ret);
 }

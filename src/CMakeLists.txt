@@ -30,7 +30,7 @@ include_directories(
 )
 
 # CFLAGS
-add_definitions(-std=c99 -g -Wall)
+add_definitions(-std=c99 -g -Wall -Werror)
 #}}}
 
 #{{{ portability tests
@@ -73,6 +73,9 @@ if (ICONV_FOUND)
     set(REQUIRED_INCLUDE_DIRS ${REQUIRED_INCLUDE_DIRS} ${ICONV_INCLUDE_DIR})
 else()
     message(FATAL_ERROR "iconv not found.")
+endif()
+if (${ICONV_SECOND_ARGUMENT_IS_CONST})
+    add_definitions(-DICONV_SECOND_ARGUMENT_IS_CONST)
 endif()
 
 pkg_check_modules(YAML yaml-0.1)

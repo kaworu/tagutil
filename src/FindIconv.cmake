@@ -1,13 +1,14 @@
-# stolen from https://github.com/onyx-intl/cmake_modules/blob/master/FindIconv.cmake
+# stolen and hacked from
+# https://github.com/onyx-intl/cmake_modules/blob/master/FindIconv.cmake
 #
-# - Try to find Iconv 
-# Once done this will define 
-# 
-#  ICONV_FOUND - system has Iconv 
-#  ICONV_INCLUDE_DIR - the Iconv include directory 
-#  ICONV_LIBRARIES - Link these to use Iconv 
+# - Try to find Iconv
+# Once done this will define
+#
+#  ICONV_FOUND - system has Iconv
+#  ICONV_INCLUDE_DIR - the Iconv include directory
+#  ICONV_LIBRARIES - Link these to use Iconv
 #  ICONV_SECOND_ARGUMENT_IS_CONST - the second argument for iconv() is const
-# 
+#
 include(CheckCSourceCompiles)
 
 IF (ICONV_INCLUDE_DIR AND ICONV_LIBRARIES)
@@ -26,6 +27,8 @@ ENDIF(ICONV_INCLUDE_DIR AND ICONV_LIBRARIES)
 set(CMAKE_REQUIRED_INCLUDES ${ICONV_INCLUDE_DIR})
 set(CMAKE_REQUIRED_LIBRARIES ${ICONV_LIBRARIES})
 IF(ICONV_FOUND)
+  SET(ICONV_SAFE_CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}")
+  SET(CMAKE_REQUIRED_DEFINITIONS "-Werror")
   check_c_source_compiles("
   #include <iconv.h>
   int main(int argc, char *argv[]){
@@ -37,7 +40,8 @@ IF(ICONV_FOUND)
     iconv(conv, &in, &ilen, &out, &olen);
     return 0;
   }
-" ICONV_SECOND_ARGUMENT_IS_CONST )
+" ICONV_SECOND_ARGUMENT_IS_CONST)
+  SET (CMAKE_REQUIRED_DEFINITIONS "${ICONV_SAFE_CMAKE_REQUIRED_DEFINITIONS}")
 ENDIF(ICONV_FOUND)
 set(CMAKE_REQUIRED_INCLUDES)
 set(CMAKE_REQUIRED_LIBRARIES)
