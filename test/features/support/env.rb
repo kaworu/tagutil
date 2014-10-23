@@ -1,8 +1,11 @@
 #!/usr/bin/env ruby
 # encoding: UTF-8
 
-require 'tmpdir'
 require 'fileutils'
+require 'open3'
+require 'tmpdir'
+require 'yaml'
+
 
 module Tagutil
     ProjectRoot = File.join(File.dirname(__FILE__), '..', '..', '..')
@@ -30,9 +33,28 @@ module Tagutil
 
     # create a music file by copying the blank file matching the requested
     # extension.
-    def self.create_tune filename, ext
-        target = @blankfiles.select { |f| f =~ /\.#{ext}$/ }.first
-        raise ArgumentError.new "#{ext}: bad file extension" unless target
-        FileUtils.cp target, "#{filename}.#{ext}"
+    def self.create_tune(filename, ext, tags=nil)
+        tune  = "#{filename}.#{ext}"
+        blank = @blankfiles.select { |f| f =~ /\.#{ext}$/ }.first
+        data  = "#{tags.to_yaml}\n"
+        raise ArgumentError.new "#{ext}: bad file extension" unless blank
+        FileUtils.cp blank, tune
+        if tags
+            output, status = Open3.capture2e("#{Executable} load:- #{tune}", stdin_data: data)
+            raise RuntimeError.new(output) unless status.exitstatus.zero? and output.empty?
+        end
     end
+
+    class World
+        def tags_from_cuke_table tbl
+            tbl.raw.map do |x|
+                {x.first => x.last}
+            end
+        end
+    end
+end
+
+
+World do
+    Tagutil::World.new
 end

@@ -2,14 +2,20 @@
 # encoding: UTF-8
 
 require 'open3'
-require 'yaml'
 require 'json'
+require 'yaml'
 require 'rspec/expectations'
 require 'expect'
 
-Given(/^I have a music file (\w+)\.(mp3|ogg|flac)$/) do |filename, ext|
+
+Given(/^I have a music file (\w+)\.(mp3|ogg|flac)?$/) do |filename, ext|
     Tagutil.create_tune(filename, ext)
 end
+
+Given(/^I have a music file (\w+)\.(mp3|ogg|flac) tagged with:$/) do |filename, ext, tbl|
+    Tagutil.create_tune(filename, ext, tags_from_cuke_table(tbl))
+end
+
 
 
 When(/^I run tagutil(.*)$/) do |params|
@@ -34,8 +40,11 @@ Then(/^I should see the help about (.+)$/) do |section|
 end
 
 Then(/^I should see an empty tag list$/) do
-    data = YAML.load(@output)
-    expect(data).to be_empty
+    expect(YAML.load(@output)).to be_empty
+end
+
+Then(/^I should see:$/) do |tbl|
+    expect(YAML.load(@output)).to eql(tags_from_cuke_table(tbl))
 end
 
 
