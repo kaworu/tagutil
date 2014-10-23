@@ -24,11 +24,11 @@ end
 
 
 Then(/^I expect tagutil to succeed$/) do
-    expect(@status).to eq(0)
+    expect(@status.exitstatus).to eq(0)
 end
 
 Then(/^I expect tagutil to fail$/) do
-    expect(@status).not_to eq(0)
+    expect(@status.exitstatus).not_to eq(0)
 end
 
 Then(/^I should see "(.*?)"$/) do |text|
@@ -39,12 +39,12 @@ Then(/^I should see the help about (.+)$/) do |section|
     expect(@output).to match(/^#{section}/m)
 end
 
-Then(/^I should see an empty tag list$/) do
-    expect(YAML.load(@output)).to be_empty
+Then(/^I should see an empty (YAML|JSON) tag list$/) do |fmt|
+    expect(Object.const_get(fmt).load(@output)).to be_empty
 end
 
-Then(/^I should see:$/) do |tbl|
-    expect(YAML.load(@output)).to eql(tags_from_cuke_table(tbl))
+Then(/^I should see the (YAML|JSON) tag list:$/) do |fmt, tbl|
+    expect(Object.const_get(fmt).load(@output)).to eql(tags_from_cuke_table(tbl))
 end
 
 
