@@ -204,7 +204,7 @@ t_iconv_convert(int tou8, const char *const_src)
 	static int setlocale_called = 0;
 	int success = 0;
 	size_t n, srclen, destlen;
-	char *dest, *ret = NULL, *src = NULL, *srcp;
+	char *dest, *ret = NULL, *srcdup = NULL;
 	iconv_t cd = (iconv_t)-1;
 
 	if (const_src == NULL)
@@ -231,10 +231,11 @@ t_iconv_convert(int tou8, const char *const_src)
 #if defined(ICONV_SECOND_ARGUMENT_IS_CONST)
 	n = iconv(cd, &const_src, &srclen, &dest, &destlen);
 #else
-	src = srcp = strdup(const_src);
+	char *src; /* given to iconv */
+	src = srcdup = strdup(const_src);
 	if (src == NULL)
 		goto cleanup;
-	n = iconv(cd, &srcp, &srclen, &dest, &destlen);
+	n = iconv(cd, &src, &srclen, &dest, &destlen);
 #endif
 	success = (n != -1);
 
@@ -243,7 +244,7 @@ cleanup:
 		free(ret);
 		ret = NULL;
 	}
-	free(src);
+	free(srcdup);
 	if (cd != (iconv_t)-1)
 		iconv_close(cd);
 	return (ret);

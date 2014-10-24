@@ -200,7 +200,7 @@ t_ftoggvorbis_write(void *opaque, const struct t_taglist *tlist)
 
 	nstream_in = 0;
 bos_label: /* beginning of a stream */
-	state = B_O_S; /* never read but that's fine */
+	state = B_O_S; /* never read, but that's fine */
 	nstream_in += 1;
 	npage_in = npacket_in = 0;
 	vorbis_info_init(&vi_in);
