@@ -3,7 +3,7 @@ Feature: Reading a file
     Scenario: reading tags of an empty file
         Given I have a music file track.mp3
         When  I run tagutil track.mp3
-        Then I expect tagutil to succeed
+        Then  I expect tagutil to succeed
         And   I should see an empty YAML tag list
 
     Scenario: reading tags of a tagged file
@@ -15,7 +15,7 @@ Feature: Reading a file
              | date        | 1970              |
              | genre       | Progressive Rock  |
         When  I run tagutil track.flac
-        Then I expect tagutil to succeed
+        Then  I expect tagutil to succeed
         And   I should see the YAML tag list:
              | title       | Atom Heart Mother |
              | artist      | Pink Floyd        |
@@ -33,7 +33,7 @@ Feature: Reading a file
              | date        | 1970              |
              | genre       | Progressive Rock  |
         When  I run tagutil -F json track.flac
-        Then I expect tagutil to succeed
+        Then  I expect tagutil to succeed
         And   I should see the JSON tag list:
              | title       | Atom Heart Mother |
              | artist      | Pink Floyd        |
