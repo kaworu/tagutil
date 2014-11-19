@@ -12,6 +12,7 @@ module Tagutil
     Executable  = File.join(ProjectRoot, 'build', 'tagutil')
     @tmpdir     = nil # temporary test directory
     @blankfiles = []  # music test files
+    @tmpfiles   = []  # generated files
 
     # build tagutil iff the executable does not exist
     def self.build
@@ -31,6 +32,10 @@ module Tagutil
         @blankfiles = Dir[File.join(ProjectRoot, 'test', 'files', '*')] if @blankfiles.empty?
     end
 
+    def self.teardown
+      @tmpfiles.each { |f| FileUtils.rm(f, force: true) }
+    end
+
     # create a music file by copying the blank file matching the requested
     # extension.
     def self.create_tune(filename, ext, tags=nil)
@@ -43,6 +48,7 @@ module Tagutil
             output, status = Open3.capture2e("#{Executable} load:- #{tune}", stdin_data: data)
             raise RuntimeError.new(output) unless status.exitstatus.zero? and output.empty?
         end
+        @tmpfiles << tune
     end
 
     class World

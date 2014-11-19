@@ -51,3 +51,6 @@ end
 Before do
     Tagutil.setup
 end
+After do
+    Tagutil.teardown
+end
