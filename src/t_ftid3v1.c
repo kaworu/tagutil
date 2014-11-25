@@ -338,7 +338,7 @@ t_ftid3v1_write(void *opaque, const struct t_taglist *tlist)
 		if ((fp = fopen(data->path, "r+")) == NULL)
 			goto error_label;
 		if (fseek(fp, -(sizeof(struct id3v1_tag)), SEEK_END) != 0)
-			err(-1, "fseek");
+			goto error_label;
 	} else {
 		if ((fp = fopen(data->path, "a")) == NULL)
 			goto error_label;

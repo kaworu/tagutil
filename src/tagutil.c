@@ -22,7 +22,7 @@
 /*
  * show usage and exit.
  */
-void usage(void) t__dead2;
+static void	usage(int status) t__dead2;
 
 
 /* options */
@@ -39,8 +39,7 @@ int			 Yflag; /* answer yes to all questions */
 int
 main(int argc, char *argv[])
 {
-	int	i, retval;
-	int	write = 0; /* write access needed ? */
+	int	i;
 	struct t_tune		*tune;
 	struct t_action		*a;
 	struct t_format		*fmt;
@@ -70,19 +69,25 @@ main(int argc, char *argv[])
 			}
 			break;
 		case 'N':
-			if (Yflag)
-				err(errno = EINVAL, "cannot set both -Y and -N");
+			if (Yflag) {
+				errno = EINVAL;
+				err(EXIT_FAILURE, "cannot set both -Y and -N");
+			}
 			Nflag = 1;
 			break;
 		case 'Y':
-			if (Nflag)
-				err(errno = EINVAL, "cannot set both -Y and -N");
+			if (Nflag) {
+				errno = EINVAL;
+				err(EXIT_FAILURE, "cannot set both -Y and -N");
+			}
 			Yflag = 1;
 			break;
-		case 'h': /* FALLTHROUGH */
+		case 'h':
+			usage(EXIT_SUCCESS);
+			/* NOTREACHED */
 		case '?': /* FALLTHROUGH */
 		default:
-			usage();
+			usage(EXIT_FAILURE);
 			/* NOTREACHED */
 		}
 	}
@@ -92,11 +97,11 @@ main(int argc, char *argv[])
 	aQ = t_actionQ_new(&argc, &argv);
 	if (aQ == NULL) {
 		if (errno == ENOMEM)
-			err(ENOMEM, "malloc");
+			err(EXIT_FAILURE, "malloc");
 		else /* if EINVAL */ {
 			fprintf(stderr, "Try `%s -h' for help.\n",
 			    getprogname());
-			exit(EINVAL);
+			exit(EXIT_FAILURE);
 		}
 		/* NOTREACHED */
 	}
@@ -107,28 +112,29 @@ main(int argc, char *argv[])
 	}
 
 	/* find if any action need write access */
+	int write = 0;
 	TAILQ_FOREACH(a, aQ, entries)
 		write += a->write;
 
 	/*
 	 * main loop, foreach files
 	 */
-	retval = EXIT_SUCCESS;
+	int grand_success = 1;
 	for (i = 0; i < argc; i++) {
 		/* check file path and access */
 		const char *path = argv[i];
 		int success = 1;
 		if (access(path, (write ? (R_OK | W_OK) : R_OK)) == -1) {
 			warn("%s", path);
-			retval = EINVAL;
+			grand_success = 0;
 			continue;
 		}
 
 		if ((tune = t_tune_new(path)) == NULL) {
 			if (errno == ENOMEM)
-				err(ENOMEM, "malloc");
+				err(EXIT_FAILURE, "malloc");
 			warnx("%s: unsupported file format", path);
-			retval = EINVAL;
+			grand_success = 0;
 			continue;
 		}
 
@@ -149,20 +155,22 @@ main(int argc, char *argv[])
 			if (t_tune_save(tune) == -1) {
 				warnx("%s: could not write tags to the file,",
 				    t_tune_path(tune));
+				grand_success = 0;
 			}
 		}
 		t_tune_delete(tune);
+		grand_success &= success;
 	}
 	t_actionQ_delete(aQ);
-	return (retval);
+	return (grand_success ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 
 /*
  * show usage and exit.
  */
-void
-usage(void)
+static void
+usage(int status)
 {
 	const struct t_formatQ	*fmtQ = t_all_formats();
 	const struct t_backendQ	*bQ   = t_all_backends();
@@ -205,5 +213,5 @@ usage(void)
 		fprintf(stderr, "  %10s: %s\n", b->libid, b->desc);
 	fprintf(stderr, "\n");
 
-	exit(1);
+	exit(status);
 }

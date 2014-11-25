@@ -381,7 +381,7 @@ t_yesno(const char *question)
 			if (feof(stdin))
 				return (0);
 			else
-				err(errno, "fgets");
+				err(EXIT_FAILURE, "fgets");
 		}
 
 		endl = strchr(buffer, '\n');

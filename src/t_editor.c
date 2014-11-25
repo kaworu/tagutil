@@ -86,7 +86,8 @@ t_edit(struct t_tune *tune)
 		/* NOTREACHED */
 	case 0: /* child (edit process) */
 		execlp(editor, /* argv[0] */editor, /* argv[1] */tmp, NULL);
-		err(errno, "execlp");
+		/* if we reach here, execlp(3) has failed */
+		err(EXIT_FAILURE, "execlp");
 		/* NOTREACHED */
 	default: /* parent (tagutil process) */
 		waitpid(editpid, &status, 0);

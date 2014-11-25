@@ -32,7 +32,7 @@
 #define	t_error_set(o, fmt, ...)                                         \
 	do {                                                             \
 		if (asprintf(&t_error_msg(o), fmt, ##__VA_ARGS__) == -1) \
-			err(errno, "asprintf");                          \
+			err(EXIT_FAILURE, "asprintf");                   \
 	} while (/*CONSTCOND*/0)
 /* reset the error message. free it if needed, set to NULL */
 #define	t_error_clear(o) \
@@ -369,7 +369,7 @@ t_yaml_parse_stream_start(struct t_yaml_fsm *FSM, const yaml_event_t *e)
 
 	if (e->type == YAML_STREAM_START_EVENT) {
 		if ((FSM->tlist = t_taglist_new()) == NULL)
-			err(ENOMEM, "malloc");
+			err(EXIT_FAILURE, "malloc");
 		FSM->handle = t_yaml_parse_document_start;
 		FSM->hungry = 1;
 	}
@@ -476,7 +476,7 @@ t_yaml_parse_scalar_key(struct t_yaml_fsm *FSM,
     if (e->type == YAML_SCALAR_EVENT) {
         FSM->parsed_key = calloc(e->data.scalar.length + 1, sizeof(char));
 	if (FSM->parsed_key == NULL)
-		err(ENOMEM, "calloc");
+		err(EXIT_FAILURE, "calloc");
         (void)memcpy(FSM->parsed_key, e->data.scalar.value, e->data.scalar.length);
         FSM->handle = t_yaml_parse_scalar_value;
     }
@@ -502,11 +502,11 @@ t_yaml_parse_scalar_value(struct t_yaml_fsm *FSM,
 	if (e->type == YAML_SCALAR_EVENT) {
 		val = calloc(e->data.scalar.length + 1, sizeof(char));
 		if (val == NULL)
-			err(ENOMEM, "calloc");
+			err(EXIT_FAILURE, "calloc");
 		(void)memcpy(val, e->data.scalar.value, e->data.scalar.length);
 		/* FIXME: convert to UTF-8 */
 		if ((t_taglist_insert(FSM->tlist, FSM->parsed_key, val)) == -1)
-			err(ENOMEM, "malloc");
+			err(EXIT_FAILURE, "malloc");
 		free(FSM->parsed_key);
 		FSM->parsed_key = NULL;
 		free(val);
