@@ -163,6 +163,7 @@ Test
 ====
 ```
 % gem install bundler
+% make test
 ```
 
 LICENSE
