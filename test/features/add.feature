@@ -17,7 +17,7 @@ Feature: Adding tags to a file
             | title  | Atom Heart Mother |
             | artist | Pink Floyd        |
 
-    Scenario: multiples tags with the same key using libflac
+    Scenario: multiples tags with the same key
         Given I have a music file track.flac
         When  I run tagutil add:singer="Richard Wright" add:"singer=David Gilmour" track.flac
         And   I run tagutil print track.flac
@@ -26,16 +26,7 @@ Feature: Adding tags to a file
             | singer | Richard Wright |
             | singer | David Gilmour  |
 
-    Scenario: multiples tags with the same key using libvorbis
-        Given I have a music file track.ogg
-        When  I run tagutil add:singer="Richard Wright" add:"singer=David Gilmour" track.ogg
-        And   I run tagutil print track.ogg
-        Then  I expect tagutil to succeed
-        And   I should see the YAML tag list:
-            | singer | Richard Wright |
-            | singer | David Gilmour  |
-
-    Scenario: multiples tags with the same key using TagLib
+    Scenario: multiples tags with the same key (using TagLib)
         Given I have a music file track.mp3
         When  I run tagutil add:artist="Richard Wright" add:"artist=David Gilmour" track.mp3
         And   I run tagutil print track.mp3

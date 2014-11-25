@@ -1,8 +1,8 @@
 Feature: Reading a file
 
     Scenario: reading tags of an empty file
-        Given I have a music file track.mp3
-        When  I run tagutil track.mp3
+        Given I have a music file track.flac
+        When  I run tagutil track.flac
         Then  I expect tagutil to succeed
         And   I should see an empty YAML tag list
 
