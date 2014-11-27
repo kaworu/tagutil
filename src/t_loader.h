@@ -8,19 +8,18 @@
 #include "t_tune.h"
 
 /*
- * parse a given jsonfile and set the given tune's tags accordingly.
+ * parse a given fmtfile and set the given tune's tags accordingly.
  *
  * @param tune
  *   The tune to load the parsed tags into.
  *
- * @param jsonfile
- *   The path of a file containing YAML tags to parse. if `-' is given, stdin is
+ * @param fmtfile
+ *   The path of a file containing tags to parse. if `-' is given, stdin is
  *   used.
  *
  * @return
  *   -1 on error, 0 on success.
  */
-int	t_load(struct t_tune *tune, const char *jsonfile);
+int	t_load(struct t_tune *tune, const char *fmtfile);
 
 #endif /* ndef T_LOADER_H */
-
