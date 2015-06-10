@@ -301,10 +301,10 @@ bos_label: /* beginning of a stream */
 				/* write page(s) if needed */
 				if (state == READING_DATA_NEED_FLUSH) {
 					while (ogg_stream_flush(&os_out, &og_out))
-						sbuf_write_ogg_page(sb, &og_out);
+						(void)sbuf_write_ogg_page(sb, &og_out);
 				} else if (state == READING_DATA_NEED_PAGEOUT) {
 					while (ogg_stream_pageout(&os_out, &og_out))
-						sbuf_write_ogg_page(sb, &og_out);
+						(void)sbuf_write_ogg_page(sb, &og_out);
 				}
 
 				/*
@@ -344,7 +344,7 @@ bos_label: /* beginning of a stream */
 	/* forces remaining packets into a last page */
 	os_out.e_o_s = 1;
 	while (ogg_stream_flush(&os_out, &og_out))
-		sbuf_write_ogg_page(sb, &og_out);
+		(void)sbuf_write_ogg_page(sb, &og_out);
 	/* ogg_page and ogg_packet structs always point to storage in libvorbis.
 	   They're never freed or manipulated directly */
 
