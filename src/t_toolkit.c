@@ -249,3 +249,18 @@ cleanup:
 		iconv_close(cd);
 	return (ret);
 }
+
+
+void
+xasprintf(char **strp, const char *fmt, ...)
+{
+	va_list args;
+	int ret;
+
+	va_start(args, fmt);
+	ret = vasprintf(strp, fmt, args);
+	va_end(args);
+
+	if (ret == -1)
+		err(EXIT_FAILURE, "vasprintf");
+}

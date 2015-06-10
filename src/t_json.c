@@ -109,17 +109,17 @@ t_json2tags(FILE *fp, char **errmsg_p)
 	/* parse and load the JSON */
 	root = json_loadf(fp, JSON_DISABLE_EOF_CHECK, &error);
 	if (root == NULL) {
-		asprintf(&errmsg, "json parsing error on line %d: %s\n",
+		xasprintf(&errmsg, "json parsing error on line %d: %s\n",
 		    error.line, error.text);
 		goto error_label;
 	}
 	if (!json_is_array(root)) {
-		asprintf(&errmsg, "json parsing error: root is not an array");
+		xasprintf(&errmsg, "json parsing error: root is not an array");
 		goto error_label;
 	}
 
 	if ((tlist = t_taglist_new()) == NULL) {
-		asprintf(&errmsg, "%s", strerror(errno));
+		xasprintf(&errmsg, "%s", strerror(errno));
 		goto error_label;
 	}
 
@@ -127,7 +127,7 @@ t_json2tags(FILE *fp, char **errmsg_p)
 		const char *key;
 		if (json_object_size(obj) != 1) {
 			/* this also test if obj is an object */
-			asprintf(&errmsg, "json parsing error: element#%zu is "
+			xasprintf(&errmsg, "json parsing error: element#%zu is "
 			    "not an object (or has many elements)", idx);
 			goto error_label;
 		}
@@ -153,13 +153,13 @@ t_json2tags(FILE *fp, char **errmsg_p)
 					ABANDON_SHIP();
 				}
 			} else {
-				asprintf(&errmsg, "json parsing error: object#"
+				xasprintf(&errmsg, "json parsing error: object#"
 				    "%zu's value is not a string nor a number",
 				    idx);
 				goto error_label;
 			}
 			if (t_taglist_insert(tlist, key, vstr) == -1) {
-				asprintf(&errmsg, "%s", strerror(errno));
+				xasprintf(&errmsg, "%s", strerror(errno));
 				goto error_label;
 			}
 		}

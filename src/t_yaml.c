@@ -21,6 +21,7 @@
 #include "t_format.h"
 
 
+
 /* t_error handling macros */
 /* used for any struct that need to behave like a t_error */
 #define	T_ERROR_MSG_MEMBER	char *t__errmsg /* t__deprecated XXX: whine too much */
@@ -51,7 +52,6 @@ static struct t_taglist	*t_yaml2tags(FILE *fp, char **errmsg_p);
  * libyaml emitter helper.
  */
 yaml_write_handler_t t_yaml_whdl;
-
 
 struct t_format *
 t_yaml_format(void)
@@ -264,7 +264,7 @@ t_yaml2tags(FILE *fp, char **errmsg_p)
 	} while (FSM.hungry);
 
 	if (t_error_msg(&FSM)) {
-		asprintf(&errmsg, "YAML parser: %s", t_error_msg(&FSM));
+		xasprintf(&errmsg, "YAML parser: %s", t_error_msg(&FSM));
 		goto cleanup_label;
 	}
 
@@ -275,28 +275,28 @@ t_yaml2tags(FILE *fp, char **errmsg_p)
 parser_error_label:
 	switch (parser.error) {
 		case YAML_MEMORY_ERROR:
-			asprintf(&errmsg, "t_yaml2tags: YAML Parser (ENOMEM)");
+			xasprintf(&errmsg, "t_yaml2tags: YAML Parser (ENOMEM)");
 			break;
 		case YAML_READER_ERROR:
 			if (parser.problem_value != -1) {
-				asprintf(&errmsg, "t_yaml2tags: Reader error: %s: #%X at %zu\n",
+				xasprintf(&errmsg, "t_yaml2tags: Reader error: %s: #%X at %zu\n",
 				    parser.problem, parser.problem_value, parser.problem_offset);
 			} else {
-				asprintf(&errmsg, "t_yaml2tags: Reader error: %s at %zu\n",
+				xasprintf(&errmsg, "t_yaml2tags: Reader error: %s at %zu\n",
 				    parser.problem, parser.problem_offset);
 			}
 			break;
 		case YAML_SCANNER_ERROR: /* FALLTHROUGH */
 		case YAML_PARSER_ERROR:
 			if (parser.context) {
-				asprintf(&errmsg, "t_yaml2tags: %s error: %s at line %zu, column %zu\n"
+				xasprintf(&errmsg, "t_yaml2tags: %s error: %s at line %zu, column %zu\n"
 				    "%s at line %zu, column %zu\n",
 				    parser.error == YAML_SCANNER_ERROR ? "Scanner" : "Parser",
 				    parser.context, parser.context_mark.line + 1,
 				    parser.context_mark.column + 1, parser.problem,
 				    parser.problem_mark.line + 1, parser.problem_mark.column + 1);
 			} else {
-				asprintf(&errmsg, "t_yaml2tags: %s error: %s at line %zu, column %zu\n",
+				xasprintf(&errmsg, "t_yaml2tags: %s error: %s at line %zu, column %zu\n",
 				    parser.error == YAML_SCANNER_ERROR ? "Scanner" : "Parser",
 				    parser.problem, parser.problem_mark.line + 1,
 				    parser.problem_mark.column + 1);
@@ -306,7 +306,7 @@ parser_error_label:
 		case YAML_COMPOSER_ERROR: /* FALLTHROUGH */
 		case YAML_WRITER_ERROR:   /* FALLTHROUGH */
 		case YAML_EMITTER_ERROR:
-			asprintf(&errmsg, "libyaml internal error\n"
+			xasprintf(&errmsg, "libyaml internal error\n"
 			    "bad error type while parsing: %s",
 			    parser.error == YAML_NO_ERROR ? "YAML_NO_ERROR" :
 			    parser.error == YAML_COMPOSER_ERROR ? "YAML_COMPOSER_ERROR" :

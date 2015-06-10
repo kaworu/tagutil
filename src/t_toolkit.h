@@ -81,4 +81,6 @@ char	*t_dirname(const char *);
  */
 char	*t_basename(const char *);
 
+/* XXX: to avoid -Werror=return-type */
+void	 xasprintf(char **strp, const char *fmt, ...);
 #endif /* ndef T_TOOLKIT_H */
