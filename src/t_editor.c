@@ -27,7 +27,7 @@ t_edit(struct t_tune *tune)
 	struct stat before, after;
 	extern const struct t_format *Fflag;
 
-	assert_not_null(tune);
+	assert(tune != NULL);
 
 	/* convert the tags into the requested format */
 	tlist = t_tune_tags(tune);

@@ -18,8 +18,8 @@ t_load(struct t_tune *tune, const char *fmtfile)
 	extern const struct t_format *Fflag;
 	FILE *fp;
 
-	assert_not_null(tune);
-	assert_not_null(fmtfile);
+	assert(tune != NULL);
+	assert(fmtfile != NULL);
 
 	if (strlen(fmtfile) == 0 || strcmp(fmtfile, "-") == 0)
 		fp = stdin;

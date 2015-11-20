@@ -56,7 +56,7 @@ t_tags2json(const struct t_taglist *tlist, const char *path)
 	const struct t_tag *t;
 	char *ret = NULL;
 
-	assert_not_null(tlist);
+	assert(tlist != NULL);
 
 	if ((root = json_array()) == NULL)
 		goto error_label;
@@ -104,7 +104,7 @@ t_json2tags(FILE *fp, char **errmsg_p)
 	json_error_t error;
 	char *errmsg = NULL;
 
-	assert_not_null(fp);
+	assert(fp != NULL);
 
 	/* parse and load the JSON */
 	root = json_loadf(fp, JSON_DISABLE_EOF_CHECK, &error);

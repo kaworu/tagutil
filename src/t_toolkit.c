@@ -27,7 +27,7 @@ t_strtoupper(char *str)
 {
 	char *s;
 
-	assert_not_null(str);
+	assert(str != NULL);
 
 	for (s = str; *s != '\0'; s++)
 		*s = toupper(*s);
@@ -40,7 +40,7 @@ t_strtolower(char *str)
 {
 	char *s;
 
-	assert_not_null(str);
+	assert(str != NULL);
 
 	for (s = str; *s != '\0'; s++)
 		*s = tolower(*s);

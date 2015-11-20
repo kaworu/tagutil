@@ -17,8 +17,8 @@ t_tag_new(const char *key, const char *val)
 	char *s;
 	size_t klen, vlen;
 
-	assert_not_null(key);
-	assert_not_null(val);
+	assert(key != NULL);
+	assert(val != NULL);
 	klen = strlen(key);
 	vlen = strlen(val);
 

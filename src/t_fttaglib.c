@@ -68,7 +68,7 @@ t_fttaglib_init(const char *path)
 	TagLib_File *f;
 	struct t_fttaglib_data *data;
 
-	assert_not_null(path);
+	assert(path != NULL);
 
 	data = calloc(1, sizeof(struct t_fttaglib_data));
 	if (data == NULL)
@@ -95,7 +95,7 @@ t_fttaglib_read(void *opaque)
 	struct t_fttaglib_data *data;
 	struct t_taglist *tlist = NULL;
 
-	assert_not_null(opaque);
+	assert(opaque != NULL);
 	data = opaque;
 	assert(data->libid == libid);
 
@@ -176,7 +176,7 @@ t_fttaglib_write(void *opaque, const struct t_taglist *tlist)
 	char *endptr;
 	unsigned long ulongval;
 
-	assert_not_null(opaque);
+	assert(opaque != NULL);
 	data = opaque;
 	assert(data->libid == libid);
 
@@ -235,7 +235,7 @@ t_fttaglib_clear(void *opaque)
 {
 	struct t_fttaglib_data *data;
 
-	assert_not_null(opaque);
+	assert(opaque != NULL);
 	data = opaque;
 	assert(data->libid == libid);
 

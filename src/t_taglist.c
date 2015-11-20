@@ -53,9 +53,9 @@ t_taglist_insert(struct t_taglist *tlist, const char *key, const char *val)
 {
 	struct t_tag *t;
 
-	assert_not_null(tlist);
-	assert_not_null(key);
-	assert_not_null(val);
+	assert(tlist != NULL);
+	assert(key != NULL);
+	assert(val != NULL);
 
 	t = t_tag_new(key, val);
 	if (t == NULL)
@@ -73,8 +73,8 @@ t_taglist_find_all(const struct t_taglist *tlist, const char *key)
 	struct t_taglist *r;
 	const struct t_tag *t;
 
-	assert_not_null(tlist);
-	assert_not_null(key);
+	assert(tlist != NULL);
+	assert(key != NULL);
 	if ((r = t_taglist_new()) == NULL)
 		goto error;
 
@@ -98,7 +98,7 @@ t_taglist_tag_at(const struct t_taglist *tlist, unsigned int index)
 {
 	struct t_tag *t;
 
-	assert_not_null(tlist);
+	assert(tlist != NULL);
 
 	t = TAILQ_FIRST(tlist->tags);
 	while (t != NULL && index-- > 0)
@@ -115,8 +115,8 @@ t_taglist_join(const struct t_taglist *tlist, const char *glue)
 	struct t_tag *t, *last;
 	char *ret;
 
-	assert_not_null(tlist);
-	assert_not_null(glue);
+	assert(tlist != NULL);
+	assert(glue != NULL);
 
 	sb = sbuf_new_auto();
 	if (sb == NULL)

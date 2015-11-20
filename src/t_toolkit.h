@@ -33,9 +33,7 @@
 /* compute the length of a fixed size array */
 #define NELEM(ary) (sizeof(ary) / sizeof((ary)[0]))
 
-/* some handy assert macros */
-#define	assert_not_null(x) assert((x) != NULL)
-#define	assert_null(x) assert((x) == NULL)
+/* some handy macros */
 #define	ABANDON_SHIP() abort()
 
 

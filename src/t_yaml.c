@@ -73,8 +73,8 @@ int
 t_yaml_whdl(void *sb, unsigned char *buffer, size_t size)
 {
 
-	assert_not_null(sb);
-	assert_not_null(buffer);
+	assert(sb != NULL);
+	assert(buffer != NULL);
 
 	if (sb == NULL || buffer == NULL)
 		return (0); /* error */
@@ -94,7 +94,7 @@ t_tags2yaml(const struct t_taglist *tlist, const char *path)
 	const struct t_tag *t;
 	char *ret;
 
-	assert_not_null(tlist);
+	assert(tlist != NULL);
 
 	sb = sbuf_new_auto();
 	if (sb == NULL)
@@ -246,7 +246,7 @@ t_yaml2tags(FILE *fp, char **errmsg_p)
 	yaml_event_t event;
 	char *errmsg = NULL;
 
-	assert_not_null(fp);
+	assert(fp != NULL);
 
 	(void)memset(&FSM, 0, sizeof(FSM));
 	t_error_init(&FSM);
@@ -364,8 +364,8 @@ void
 t_yaml_parse_stream_start(struct t_yaml_fsm *FSM, const yaml_event_t *e)
 {
 
-	assert_not_null(FSM);
-	assert_not_null(e);
+	assert(FSM != NULL);
+	assert(e != NULL);
 
 	if (e->type == YAML_STREAM_START_EVENT) {
 		if ((FSM->tlist = t_taglist_new()) == NULL)
@@ -388,8 +388,8 @@ t_yaml_parse_document_start(struct t_yaml_fsm *FSM,
     const yaml_event_t *e)
 {
 
-    assert_not_null(FSM);
-    assert_not_null(e);
+    assert(FSM != NULL);
+    assert(e != NULL);
 
     switch (e->type) {
     case YAML_DOCUMENT_START_EVENT:
@@ -416,8 +416,8 @@ t_yaml_parse_sequence_start(struct t_yaml_fsm *FSM,
     const yaml_event_t *e)
 {
 
-    assert_not_null(FSM);
-    assert_not_null(e);
+    assert(FSM != NULL);
+    assert(e != NULL);
 
     switch (e->type) {
     case YAML_SEQUENCE_START_EVENT:
@@ -443,8 +443,8 @@ t_yaml_parse_mapping_start(struct t_yaml_fsm *FSM,
     const yaml_event_t *e)
 {
 
-    assert_not_null(FSM);
-    assert_not_null(e);
+    assert(FSM != NULL);
+    assert(e != NULL);
 
     switch (e->type) {
     case YAML_MAPPING_START_EVENT:
@@ -470,8 +470,8 @@ t_yaml_parse_scalar_key(struct t_yaml_fsm *FSM,
     const yaml_event_t *e)
 {
 
-    assert_not_null(FSM);
-    assert_not_null(e);
+    assert(FSM != NULL);
+    assert(e != NULL);
 
     if (e->type == YAML_SCALAR_EVENT) {
         FSM->parsed_key = calloc(e->data.scalar.length + 1, sizeof(char));
@@ -496,8 +496,8 @@ t_yaml_parse_scalar_value(struct t_yaml_fsm *FSM,
 {
 	char *val;
 
-	assert_not_null(FSM);
-	assert_not_null(e);
+	assert(FSM != NULL);
+	assert(e != NULL);
 
 	if (e->type == YAML_SCALAR_EVENT) {
 		val = calloc(e->data.scalar.length + 1, sizeof(char));
@@ -527,8 +527,8 @@ t_yaml_parse_mapping_end(struct t_yaml_fsm *FSM,
     const yaml_event_t *e)
 {
 
-    assert_not_null(FSM);
-    assert_not_null(e);
+    assert(FSM != NULL);
+    assert(e != NULL);
 
     if (e->type == YAML_MAPPING_END_EVENT)
         FSM->handle = t_yaml_parse_mapping_start;
@@ -547,8 +547,8 @@ t_yaml_parse_document_end(struct t_yaml_fsm *FSM,
     const yaml_event_t *e)
 {
 
-    assert_not_null(FSM);
-    assert_not_null(e);
+    assert(FSM != NULL);
+    assert(e != NULL);
 
     if (e->type == YAML_DOCUMENT_END_EVENT)
         FSM->handle = t_yaml_parse_stream_end;
@@ -567,8 +567,8 @@ t_yaml_parse_stream_end(struct t_yaml_fsm *FSM,
     const yaml_event_t *e)
 {
 
-    assert_not_null(FSM);
-    assert_not_null(e);
+    assert(FSM != NULL);
+    assert(e != NULL);
 
     if (e->type == YAML_STREAM_END_EVENT) {
         FSM->handle = t_yaml_parse_nop;

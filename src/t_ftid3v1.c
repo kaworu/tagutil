@@ -229,7 +229,7 @@ t_ftid3v1_init(const char *path)
 	FILE *fp = NULL;
 	size_t plen;
 
-	assert_not_null(path);
+	assert(path != NULL);
 
 	plen = strlen(path);
 	data = malloc(sizeof(struct t_ftid3v1_data) + plen + 1);
@@ -288,10 +288,10 @@ t_ftid3v1_read(void *opaque)
 	struct t_taglist *tlist = NULL;
 	struct t_ftid3v1_data *data;
 
-	assert_not_null(opaque);
+	assert(opaque != NULL);
 	data = opaque;
 	assert(data->libid == libid);
-	assert_not_null(data->fp);
+	assert(data->fp != NULL);
 
 	tlist = t_taglist_new();
 	if (tlist == NULL)
@@ -322,11 +322,11 @@ t_ftid3v1_write(void *opaque, const struct t_taglist *tlist)
 	struct t_ftid3v1_data *data;
 	FILE *fp = NULL;
 
-	assert_not_null(opaque);
-	assert_not_null(tlist);
+	assert(opaque != NULL);
+	assert(tlist != NULL);
 	data = opaque;
 	assert(data->libid == libid);
-	assert_not_null(data->fp);
+	assert(data->fp != NULL);
 
 	if (taglist_to_id3tag(tlist, &id3tag) != 0)
 		return (-1);
@@ -364,7 +364,7 @@ t_ftid3v1_clear(void *opaque)
 {
 	struct t_ftid3v1_data *data;
 
-	assert_not_null(opaque);
+	assert(opaque != NULL);
 	data = opaque;
 	assert(data->libid == libid);
 
@@ -379,8 +379,8 @@ id3tag_to_taglist(const struct id3v1_tag *tag, struct t_taglist *tlist)
 {
 	char buf[31];
 
-	assert_not_null(tag);
-	assert_not_null(tlist);
+	assert(tag != NULL);
+	assert(tlist != NULL);
 
 	if (tag->magic[0] != 'T' ||
 	    tag->magic[1] != 'A' ||
@@ -453,8 +453,8 @@ taglist_to_id3tag(const struct t_taglist *tlist, struct id3v1_tag *tag)
 {
 	const struct t_tag *t;
 
-	assert_not_null(tlist);
-	assert_not_null(tag);
+	assert(tlist != NULL);
+	assert(tag != NULL);
 
 	/* strlen is right here, we dont want it NUL-terminated */
 	bzero(tag, sizeof(struct id3v1_tag));

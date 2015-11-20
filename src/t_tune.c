@@ -40,7 +40,7 @@ t_tune_new(const char *path)
 {
 	struct t_tune *tune;
 
-	assert_not_null(path);
+	assert(path != NULL);
 
 	tune = malloc(sizeof(struct t_tune));
 	if (tune != NULL) {
@@ -60,8 +60,8 @@ t_tune_init(struct t_tune *tune, const char *path)
 	const struct t_backend  *b;
 	const struct t_backendQ *bQ;
 
-	assert_not_null(tune);
-	assert_not_null(path);
+	assert(tune != NULL);
+	assert(path != NULL);
 
 	bzero(tune, sizeof(struct t_tune));
 	tune->path = strdup(path);
@@ -91,7 +91,7 @@ struct t_taglist *
 t_tune_tags(struct t_tune *tune)
 {
 
-	assert_not_null(tune);
+	assert(tune != NULL);
 
 	if (tune->tlist == NULL)
 		tune->tlist = tune->backend->read(tune->opaque);
@@ -103,7 +103,7 @@ t_tune_tags(struct t_tune *tune)
 const char *
 t_tune_path(struct t_tune *tune)
 {
-	assert_not_null(tune);
+	assert(tune != NULL);
 
 	return (tune->path);
 }
@@ -112,7 +112,7 @@ t_tune_path(struct t_tune *tune)
 const struct t_backend *
 t_tune_backend(struct t_tune *tune)
 {
-	assert_not_null(tune);
+	assert(tune != NULL);
 
 	return (tune->backend);
 }
@@ -121,8 +121,8 @@ t_tune_backend(struct t_tune *tune)
 int
 t_tune_set_tags(struct t_tune *tune, const struct t_taglist *tlist)
 {
-	assert_not_null(tune);
-	assert_not_null(tlist);
+	assert(tune != NULL);
+	assert(tlist != NULL);
 
 	if (tune->tlist != tlist) {
 		t_taglist_delete(tune->tlist);
@@ -140,7 +140,7 @@ int
 t_tune_save(struct t_tune *tune)
 {
 
-	assert_not_null(tune);
+	assert(tune != NULL);
 
 	if (tune->dirty) {
 		if (tune->backend->write(tune->opaque, tune->tlist) == 0) {
@@ -157,7 +157,7 @@ static void
 t_tune_clear(struct t_tune *tune)
 {
 
-	assert_not_null(tune);
+	assert(tune != NULL);
 
 	/* tune is either initialized with both path and backend set, or it's
 	 uninitialized */
@@ -184,7 +184,7 @@ t_tune_delete(struct t_tune *tune)
 int
 t__tune_reload__(struct t_tune *tune, const char *path)
 {
-	assert_not_null(tune);
+	assert(tune != NULL);
 
 	t_tune_clear(tune);
 	return (t_tune_init(tune, path));

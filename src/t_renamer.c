@@ -84,8 +84,8 @@ t_rename(struct t_tune *tune, const struct t_rename_pattern *pattern)
 	/* XXX: these are undocumented hacky interfaces for the rename feature. */
 	int	t__tune_reload__(struct t_tune *tune, const char *path);
 
-	assert_not_null(pattern);
-	assert_not_null(tune);
+	assert(pattern != NULL);
+	assert(tune != NULL);
 
 	/* ensure a clean file state */
 	if (t_tune_save(tune) == -1)
@@ -265,8 +265,8 @@ t_rename_eval(struct t_tune *tune, const struct t_rename_pattern *pattern)
 	struct t_taglist *tlist = NULL, *l = NULL;
 	char *s = NULL, *ret;
 
-	assert_not_null(tune);
-	assert_not_null(pattern);
+	assert(tune != NULL);
+	assert(pattern != NULL);
 
 	sb = sbuf_new_auto();
 	if (sb == NULL)
@@ -410,8 +410,8 @@ t_rename_safe(const char *opath, const char *npath)
 	const char *s;
 	char odir[MAXPATHLEN], ndir[MAXPATHLEN];
 
-	assert_not_null(opath);
-	assert_not_null(npath);
+	assert(opath != NULL);
+	assert(npath != NULL);
 
 	if ((s = t_dirname(opath)) == NULL) {
 		warn("dirname");

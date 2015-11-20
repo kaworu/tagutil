@@ -55,7 +55,7 @@ t_ftflac_init(const char *path)
 	FLAC__Metadata_Iterator *it;
 	struct t_ftflac_data *data;
 
-	assert_not_null(path);
+	assert(path != NULL);
 
 	data = calloc(1, sizeof(struct t_ftflac_data));
 	if (data == NULL)
@@ -113,7 +113,7 @@ t_ftflac_read(void *opaque)
 	FLAC__StreamMetadata_VorbisComment_Entry e;
 	uint32_t i;
 
-	assert_not_null(opaque);
+	assert(opaque != NULL);
 	data = opaque;
 	assert(data->libid == libid);
 
@@ -150,7 +150,7 @@ t_ftflac_write(void *opaque, const struct t_taglist *tlist)
 	struct t_tag *t;
 	FLAC__StreamMetadata_VorbisComment_Entry e;
 
-	assert_not_null(opaque);
+	assert(opaque != NULL);
 	data = opaque;
 	assert(data->libid == libid);
 
@@ -184,7 +184,7 @@ t_ftflac_clear(void *opaque)
 {
 	struct t_ftflac_data *data;
 
-	assert_not_null(opaque);
+	assert(opaque != NULL);
 	data = opaque;
 	assert(data->libid == libid);
 

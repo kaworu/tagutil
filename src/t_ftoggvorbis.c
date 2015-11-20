@@ -60,7 +60,7 @@ t_ftoggvorbis_init(const char *path)
 	char *p;
 	struct t_ftoggvorbis_data *data;
 
-	assert_not_null(path);
+	assert(path != NULL);
 
 	plen = strlen(path);
 	data = malloc(sizeof(struct t_ftoggvorbis_data) + plen + 1);
@@ -89,7 +89,7 @@ t_ftoggvorbis_read(void *opaque)
 	struct vorbis_comment *vc;
 	int i;
 
-	assert_not_null(opaque);
+	assert(opaque != NULL);
 	data = opaque;
 	assert(data->libid == libid);
 
@@ -160,7 +160,7 @@ t_ftoggvorbis_write(void *opaque, const struct t_taglist *tlist)
 		WRITE_FINISH, RENAMING, DONE_SUCCESS,
 	} state;
 
-	assert_not_null(opaque);
+	assert(opaque != NULL);
 	data = opaque;
 	assert(data->libid == libid);
 
@@ -406,7 +406,7 @@ t_ftoggvorbis_clear(void *opaque)
 {
 	struct t_ftoggvorbis_data *data;
 
-	assert_not_null(opaque);
+	assert(opaque != NULL);
 	data = opaque;
 	assert(data->libid == libid);
 
@@ -432,8 +432,8 @@ sbuf_write_ogg_page(struct sbuf *sb, ogg_page *og)
 {
 	int ret = 0;
 
-	assert_not_null(sb);
-	assert_not_null(og);
+	assert(sb != NULL);
+	assert(og != NULL);
 
 	ret += sbuf_bcat(sb, og->header, og->header_len);
 	ret += sbuf_bcat(sb, og->body,   og->body_len);

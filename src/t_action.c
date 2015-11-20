@@ -71,8 +71,8 @@ t_actionQ_new(int *argc_p, char ***argv_p)
 	struct t_action  *a;
 	struct t_actionQ *aQ;
 
-	assert_not_null(argc_p);
-	assert_not_null(argv_p);
+	assert(argc_p != NULL);
+	assert(argv_p != NULL);
 
 	argc = *argc_p;
 	argv = *argv_p;
@@ -185,7 +185,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 
 	switch (a->kind) {
 	case T_ACTION_ADD:
-		assert_not_null(arg);
+		assert(arg != NULL);
 		if ((key = strdup(arg)) == NULL)
 			goto error_label;
 		eq = strchr(key, '=');
@@ -207,7 +207,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		a->apply = t_action_backend;
 		break;
 	case T_ACTION_CLEAR:
-		assert_not_null(arg);
+		assert(arg != NULL);
 		if (strlen(arg) > 0) {
 			a->opaque = strdup(arg);
 			if (a->opaque == NULL)
@@ -221,7 +221,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		a->apply = t_action_edit;
 		break;
 	case T_ACTION_LOAD:
-		assert_not_null(arg);
+		assert(arg != NULL);
 		a->opaque = strdup(arg);
 		if (a->opaque == NULL)
 			goto error_label;
@@ -233,7 +233,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		break;
 	case T_ACTION_RENAME:
 		/* FIXME: what about encoding in t_rename_safe() ? */
-		assert_not_null(arg);
+		assert(arg != NULL);
 		if (strlen(arg) == 0) {
 			errno = EINVAL;
 			warn("empty rename pattern");
@@ -249,7 +249,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		a->apply = t_action_rename;
 		break;
 	case T_ACTION_SET:
-		assert_not_null(arg);
+		assert(arg != NULL);
 		if ((key = strdup(arg)) == NULL)
 			goto error_label;
 		eq = strchr(key, '=');
@@ -312,9 +312,9 @@ t_action_add(struct t_action *self, struct t_tune *tune)
 	const struct t_tag *t;
 	struct t_taglist *tlist = NULL;
 
-	assert_not_null(self);
+	assert(self != NULL);
 	assert(self->kind == T_ACTION_ADD);
-	assert_not_null(tune);
+	assert(tune != NULL);
 
 	t = self->opaque;
 
@@ -340,8 +340,8 @@ static int
 t_action_backend(struct t_action *self, struct t_tune *tune)
 {
 
-	assert_not_null(self);
-	assert_not_null(tune);
+	assert(self != NULL);
+	assert(tune != NULL);
 	assert(self->kind == T_ACTION_BACKEND);
 
 	(void)printf("%s %s\n", t_tune_backend(tune)->libid, t_tune_path(tune));
@@ -357,9 +357,9 @@ t_action_clear(struct t_action *self, struct t_tune *tune)
 	struct t_taglist *ret;
 	const char *clear_key;
 
-	assert_not_null(self);
+	assert(self != NULL);
 	assert(self->kind == T_ACTION_CLEAR);
-	assert_not_null(tune);
+	assert(tune != NULL);
 
 	clear_key = self->opaque;
 	ret = t_taglist_new();
@@ -394,9 +394,9 @@ static int
 t_action_edit(struct t_action *self, struct t_tune *tune)
 {
 
-	assert_not_null(self);
+	assert(self != NULL);
 	assert(self->kind == T_ACTION_EDIT);
-	assert_not_null(tune);
+	assert(tune != NULL);
 
 	return (t_edit(tune));
 }
@@ -406,9 +406,9 @@ static int
 t_action_load(struct t_action *self, struct t_tune *tune)
 {
 
-	assert_not_null(self);
+	assert(self != NULL);
 	assert(self->kind == T_ACTION_LOAD);
-	assert_not_null(tune);
+	assert(tune != NULL);
 
 	return (t_load(tune, self->opaque));
 }
@@ -422,9 +422,9 @@ t_action_print(struct t_action *self, struct t_tune *tune)
 	struct t_taglist *tlist = NULL;
 	extern const struct t_format *Fflag;
 
-	assert_not_null(self);
+	assert(self != NULL);
 	assert(self->kind == T_ACTION_PRINT);
-	assert_not_null(tune);
+	assert(tune != NULL);
 
 	tlist = t_tune_tags(tune);
 	if (tlist == NULL)
@@ -447,9 +447,9 @@ static int
 t_action_rename(struct t_action *self, struct t_tune *tune)
 {
 
-	assert_not_null(self);
+	assert(self != NULL);
 	assert(self->kind == T_ACTION_RENAME);
-	assert_not_null(tune);
+	assert(tune != NULL);
 
 	return (t_rename(tune, self->opaque));
 }
@@ -462,9 +462,9 @@ t_action_set(struct t_action *self, struct t_tune *tune)
 	struct t_taglist *tlist;
 	int n, status;
 
-	assert_not_null(self);
+	assert(self != NULL);
 	assert(self->kind == T_ACTION_SET);
-	assert_not_null(tune);
+	assert(tune != NULL);
 
 	t_tmp = self->opaque;
 	neo = t_tag_new(t_tmp->key, t_tmp->val);
@@ -510,8 +510,8 @@ t_action_token_cmp(const void *vstr, const void *vtoken)
 	int		cmp;
 	const struct t_action_token *token;
 
-	assert_not_null(vstr);
-	assert_not_null(vtoken);
+	assert(vstr != NULL);
+	assert(vtoken != NULL);
 
 	token = vtoken;
 	str   = vstr;
