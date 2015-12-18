@@ -49,7 +49,7 @@
 .\"              .It (usually option or arguments) and desc will be right
 .\"              aligned.
 .\" ---------------------------------------------------------------------------
-.Dd December 16, 2013
+.Dd December 18, 2015
 .Dt TAGUTIL 1
 .Os
 .Sh NAME
@@ -63,13 +63,12 @@
 .Ar
 .Sh DESCRIPTION
 .Nm
-displays and modify tags stored in musics files.
+displays and modifies tags stored in music files.
 .Nm
-can support most music files format (including FLAC, ogg/vorbis and mp3) and
+can support most music file formats (including FLAC, Ogg/Vorbis and MP3) and
 multiple output formats including YAML (the default) to be both human and
 script friendly.
 .Sh OPTIONS
-.Pp
 .Bl -tag -width indent
 .It Fl h
 Show
@@ -82,15 +81,16 @@ output
 and
 .Sx BACKENDS .
 .It Fl p
-Create intermediate directories as required on rename. Useful
+Create intermediate directories as required on rename.  Useful
 when the rename
 .Ar pattern
-expand to a path in a directory that does not exist. It is ignored when there is no
+expands to a path in a directory that does not exist.  It is ignored
+when there is no
 .Dq rename
-action. This option is inspired by the
+action.  This option is inspired by the
 .Fl p
 option from
-.Xr mdkir 1 .
+.Xr mkdir 1 .
 .It Fl Y
 answer
 .Dq yes
@@ -102,19 +102,18 @@ to all questions.
 .It Fl F Ar format
 Use
 .Ar format
-for tags output and parsing. The list of supported values for
+for tags output and parsing.  The list of supported values for
 .Ar format
 can be seen by invoking
 .Nm Fl h .
-see also the
+See also the
 .Sx FORMATS
 section.
 .El
 .Sh ACTIONS
-.Pp
-Each given actions are executed in order for each
+Each action is executed in order for each
 .Ar file .
-If no actions are given,
+If no action is given,
 .Ic print
 will be executed.
 .Bl -tag -width indent
@@ -129,7 +128,7 @@ See also
 .It clear:TAGNAME
 Erase all
 .Sx TAGNAME .
-if
+If
 .Sx TAGNAME
 is empty, all tags are erased.
 .It add:TAGNAME=value
@@ -137,7 +136,7 @@ Add a new tag at the end of the tag list.
 .It set:TAGNAME=value
 Replace the first instance of
 .Sx TAGNAME
-and clear the following. Equivalent to
+and clear the following.  Equivalent to
 .Ic add:TAGNAME=value
 if there is no
 .Sx TAGNAME
@@ -147,7 +146,7 @@ Execute
 .Ev EDITOR
 to prompt for tag editing in a temporary file, and then
 .Ic load
-the temporary file. The
+the temporary file.  The
 .Ic load
 action is cancelled if the editing process exited with a non-zero status code
 or if the temporary file was left unmodified.
@@ -166,52 +165,57 @@ is empty or
 the standard input
 is used.
 .It rename:pattern
-rename files expanding given
+Rename files according to the given
 .Ar pattern .
 The
 .Ar pattern
 can contain
 .Sx TAGNAME
-keywords expanded with their value. To avoid accidental rename,
-confirmation is asked before rename (see
+keywords which will be expanded with their value.
+.Nm
+will ask for confirmation to avoid accidental renames (see
 .Fl Y
 and
 .Fl N
 options).
 .Pp
-The pattern use \%% for
+The pattern language uses \%% for
 .Sx TAGNAME
-expansion. A litteral \%% can be escaped with a backslash: \\\%%
+expansion.  A literal \%% can be escaped with a backslash: \\\%%
 .Bl -tag -width indent
 .It \%%key
-Is replaced by the value of the first
+is replaced by the value of the first
 .Dq key
-tag found in the tag list. This syntax is used when
+tag found in the tag list.  This syntax is used when
 .Dq key
 does contains only alphanumeric character(s).
 .It \%%{key}
-Is replaced by the value of the first
+is replaced by the value of the first
 .Dq key
-tag found in the tag list. Any character can be enclosed into the delimiting braces (to enclose the
+tag found in the tag list.  Any character can be enclosed into the
+delimiting braces (to enclose the
 .Dq }
 character, escape it with a backslash).
 .El
 .Pp
-NOTE: if the
+NOTE: If the
 .Ar pattern
-(or a tag expanded) contains a
+(or an expanded tag) contains a
 .Dq /
 character,
 .Nm
-will check the destination directory. If the destination directory exists,
+will check the destination directory.  If the destination directory
+exists,
 .Nm
 will rename the
 .Ar file
-and its parent directoy will change. If the destination directory does not exist and
+and its parent directory will change.  If the destination directory
+does not exist and
 .Fl p
 was given,
 .Nm
-will try to create the intermediate directories before the rename. If the destination directory does not exist and
+will try to create the intermediate directories before the rename.  If
+the destination directory does not exist and
 .Fl p
 was not given,
 .Nm
@@ -219,23 +223,25 @@ will display an error message and exit.
 .El
 .Sh BACKENDS
 .Nm
-is designed in a modular way, making it very easy to add support for any file
-format. While this section describe each music file format supported, the
-complete list supported by the installed version should be checked with
+is designed in a modular way, making it very easy to add support for
+any file format.  While this section describe each music file format
+supported, the complete list supported by the installed version should
+be checked with
 .Nm Fl h .
 .Bl -tag -width indent
 .It libFLAC
-Free Lossless Audio Codec (FLAC) files format (https://xiph.org/flac/). The
-FLAC format use Vorbis Comment to store tags. This means that, like Ogg/Vorbis,
-FLAC supports an ordered, unlimited set of tags allowing duplicate keys.
+Free Lossless Audio Codec (FLAC) files format
+(https://xiph.org/flac/).  The FLAC format use Vorbis Comments to
+store tags.  This means that, like Ogg/Vorbis, FLAC supports an
+ordered, unlimited set of tags allowing duplicate keys.
 .It libvorbis
-Ogg/Vorbis files format (http://www.vorbis.com/). Ogg/Vorbis use Vorbis Comment
-to store tags and supports an ordered, unlimited set of tags allowing duplicate
-keys.
+Ogg/Vorbis files format (http://www.vorbis.com/).  Ogg/Vorbis uses
+Vorbis Comments to store tags and supports an ordered, unlimited set of
+tags allowing duplicate keys.
 .It TagLib
-TagLib is a library for reading and editing the meta-data of several popular
-audio formats (http://taglib.github.io/). This backend only support a limited
-set of tags :
+TagLib is a library for reading and editing the meta-data of several
+popular audio formats (http://taglib.github.io/).  This backend only
+supports a limited set of tags:
 .Dq title ,
 .Dq artist ,
 .Dq album ,
@@ -245,16 +251,17 @@ set of tags :
 and
 .Dq track .
 .It ID3V1
-A simple ID3v1.1 backend (built-in). ID3v1.0 and ID3v1.1 are only used by old
-mp3 files and has been superseded by ID3v2 more than ten years ago. It
-simplicity makes it a good example for backend implementation and it is
-disabled by default.
+A simple ID3v1.1 backend (built-in).  ID3v1.0 and ID3v1.1 are only
+used by old MP3 files and has been superseded by ID3v2 more than ten
+years ago.  Its simplicity makes it a good example for backend
+implementation and it is disabled by default.
 .El
 .Sh OUTPUT FORMATS
 .Nm
-is designed in a modular way, making it very easy to add support for any output
-format. While this section describe each format implemented, the complete list
-supported by the installed version should be checked with
+is designed in a modular way, making it very easy to add support for
+any output format.  While this section describes each implemented
+format, the complete list supported by the installed version should be
+checked with
 .Nm Fl h .
 .Bl -tag -width indent
 .It yml
@@ -262,9 +269,9 @@ YAML is the default format because it is both human friendly for
 .Ic edit
 and
 .Ic print
-and have good support in popular scripting languages. It is implemented using
-libyaml (http://pyyaml.org/wiki/LibYAML), which can produce very detailed error
-messages (useful to debug scripts).
+and has good support in popular scripting languages.  It is
+implemented using libyaml (http://pyyaml.org/wiki/LibYAML), which can
+produce very detailed error messages (useful to debug scripts).
 .It json
 JSON is intended to be used for scripting as an alternative to YAML.
 .El
@@ -279,7 +286,7 @@ environment variables affect the execution of
 .It Ev LC_ALL
 Note that both standard YAML and JSON require UTF-8 and so will
 .Nm
-when using one of these format. Command line actions like
+when using one of these format.  Command line actions like
 .Dq add
 will honor
 .Ev LC_ALL
@@ -306,10 +313,10 @@ Print the tags of file.flac:
 Set the title "foo" to file.ogg:
 .Dl % tagutil set:title=foo file.ogg
 .Pp
-Interactivly edit the file.flac's tags:
+Interactively edit the file.flac's tags:
 .Dl % tagutil edit file.flac
 .Pp
-Rename file.flac using its artist, album, tracknumber and title tags:
+Rename file.flac using its artist, album, track number and title tags:
 .Dl % tagutil rename:"%artist - %album - [%tracknumber] - %title" file.flac
 .Pp
 Clear all tags and then add an artist and album tag.
@@ -359,11 +366,12 @@ end
 .An "Alexandre Perrin" Aq alex@kaworu.ch
 .An "Baptiste Daroussin" Aq bapt@FreeBSD.org
 .Sh BUGS
+All current implemented output formats will force UTF-8 for both output
+and parsing.
 .Pp
-All current implemented output format will force UTF-8 for both output and parsing.
-.Pp
-When the TagLib backend is used with mp3 files it will interprete integer
-values for the
+When the TagLib backend is used with MP3 files it will interpret
+integer values for the
 .Dq genre
-tag as index for the ID3 Tag Genre ID (extended) list. Although this is
-intended as a feature, it make the interface inconsistant with other backends.
+tag as index for the ID3 Tag Genre ID (extended) list.  Although this
+is intended as a feature, it make the interface inconsistent with
+other backends.
