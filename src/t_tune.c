@@ -120,16 +120,19 @@ t_tune_backend(struct t_tune *tune)
 
 
 int
-t_tune_set_tags(struct t_tune *tune, const struct t_taglist *tlist)
+t_tune_set_tags(struct t_tune *tune, const struct t_taglist *neo)
 {
-	assert(tune != NULL);
-	assert(tlist != NULL);
+	struct t_taglist *copy;
 
-	if (tune->tlist != tlist) {
-		t_taglist_delete(tune->tlist);
-		tune->tlist = t_taglist_clone(tlist);
-		if (tune->tlist == NULL)
+	assert(tune  != NULL);
+	assert(neo   != NULL);
+
+	if (tune->tlist != neo) {
+		copy = t_taglist_clone(neo);
+		if (copy == NULL)
 			return (-1);
+		t_taglist_delete(tune->tlist);
+		tune->tlist = copy;
 		tune->dirty++;
 	}
 
