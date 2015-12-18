@@ -12,8 +12,8 @@
 /* t_tune definition */
 struct t_tune {
 	char	*path;    /* the file's path */
-	int	dirty;   /* 0 if clean (tags have not changed), >0 otherwise. */
-	void	*opaque; /* pointer used by the backend's read and write routines */
+	int	 dirty;   /* 0 if clean (tags have not changed), >0 otherwise. */
+	void	*opaque;  /* pointer used by the backend's read and write routines */
 	const struct t_backend	*backend; /* backend used to handle this file. */
 	struct t_taglist	*tlist; /* used internal by t_tune routines. use t_tune_tags() instead */
 };
@@ -68,6 +68,7 @@ t_tune_init(struct t_tune *tune, const char *path)
 	if (tune->path == NULL)
 		return (-1);
 
+	/* find the first backend able to handle path */
 	bQ = t_all_backends();
 	TAILQ_FOREACH(b, bQ, entries) {
 		if (b->init != NULL) {
@@ -79,8 +80,8 @@ t_tune_init(struct t_tune *tune, const char *path)
 			}
 		}
 	}
-
 	/* no backend found */
+
 	free(tune->path);
 	tune->path = NULL;
 	return (-1);
@@ -143,10 +144,9 @@ t_tune_save(struct t_tune *tune)
 	assert(tune != NULL);
 
 	if (tune->dirty) {
-		if (tune->backend->write(tune->opaque, tune->tlist) == 0) {
-			/* success */
+		int ret = tune->backend->write(tune->opaque, tune->tlist);
+		if (ret == 0) /* success */
 			tune->dirty = 0;
-		}
 	}
 
 	return (tune->dirty ? -1 : 0);
