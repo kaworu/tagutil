@@ -1,12 +1,18 @@
-.PHONY: all debug test clean
+.PHONY: all release debug grim _mkdir_build test clean
 
-all:
-	test -d build || mkdir build
-	cd build && cmake ../src && make
+all: release
 
-debug:
+release: _mkdir_build
+	cd build && cmake -DCMAKE_BUILD_TYPE=RELEASE ../src && make
+
+debug: _mkdir_build
+	cd build && cmake -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_VERBOSE_MAKEFILE=YES ../src && make
+
+grim: _mkdir_build
+	cd build && cmake -DCMAKE_BUILD_TYPE=GRIM -DCMAKE_VERBOSE_MAKEFILE=YES ../src && make
+
+_mkdir_build:
 	test -d build || mkdir build
-	cd build && CFLAGS="-g -Wall -O0" cmake -DCMAKE_VERBOSE_MAKEFILE=YES ../src && make
 
 test:
 	make -C test
