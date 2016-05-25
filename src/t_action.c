@@ -420,7 +420,7 @@ t_action_load(struct t_action *self, struct t_tune *tune)
 static int
 t_action_print(struct t_action *self, struct t_tune *tune)
 {
-	int success = 0;
+	int nprinted, success = 0;
 	char *fmtdata = NULL;
 	struct t_taglist *tlist = NULL;
 	extern const struct t_format *Fflag;
@@ -437,7 +437,12 @@ t_action_print(struct t_action *self, struct t_tune *tune)
 	if (fmtdata == NULL)
 		goto error_label;
 
-	success = (printf("%s\n", fmtdata) == (strlen(fmtdata) + 1));
+	nprinted = printf("%s\n", fmtdata);
+	if (nprinted > 0) {
+		// +1 for the trailing \n
+		success = ((unsigned)nprinted == (strlen(fmtdata) + 1));
+	}
+
 	/* FALLTHROUGH */
 error_label:
 	t_taglist_delete(tlist);

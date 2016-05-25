@@ -50,7 +50,7 @@ t_json_format(void)
 
 
 static char *
-t_tags2json(const struct t_taglist *tlist, const char *path)
+t_tags2json(const struct t_taglist *tlist, t__unused const char *path)
 {
 	json_t *root = NULL, *obj = NULL;
 	const struct t_tag *t;
@@ -139,6 +139,11 @@ t_json2tags(FILE *fp, char **errmsg_p)
 			if (json_is_string(val))
 				vstr = json_string_value(val);
 			else if (json_is_integer(val)) {
+				/*
+				 * XXX: ugly ugly ugly we should just
+				 * xasprintf() and strdup when
+				 * json_is_string(val)
+				 */
 				int n = snprintf(buf, sizeof(buf),
 				    "%"JSON_INTEGER_FORMAT,
 				    json_integer_value(val));

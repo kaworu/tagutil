@@ -146,8 +146,8 @@ t_ftoggvorbis_write(void *opaque, const struct t_taglist *tlist)
 	unsigned long     nstream_in; /* stream counter */
 	unsigned long     npage_in;   /* page counter */
 	unsigned long     npacket_in; /* packet counter */
-	unsigned long     bs;     /* blocksize of the current packet */
-	unsigned long     lastbs; /* blocksize of the last packet */
+	long              bs;     /* blocksize of the current packet */
+	long              lastbs; /* blocksize of the last packet */
 	ogg_int64_t       granulepos; /* granulepos of the current page */
 	struct sbuf *sb = NULL;
 	char *tempfile  = NULL;
@@ -221,13 +221,13 @@ bos_label: /* beginning of a stream */
 			} else {
 				/* read more data and try again to get a page. */
 				char *buf;
-				size_t s;
 				/* get a buffer */
 				if ((buf = ogg_sync_buffer(&oy_in, BUFSIZ)) == NULL)
 					goto cleanup_label;
 				/* read a part of the file */
-				if ((s = fread(buf, sizeof(char), BUFSIZ, fp_in)) == -1)
-					goto cleanup_label;
+				/* casting fread return value to int is fine: it
+				   is at most BUFSIZ */
+				int s = (int)fread(buf, 1, BUFSIZ, fp_in);
 				/* tell ogg how much was read */
 				if (ogg_sync_wrote(&oy_in, s) == -1)
 					goto cleanup_label;
@@ -295,6 +295,8 @@ bos_label: /* beginning of a stream */
 				 * XXX: check if this is not a vorbis stream ?
 				 */
 				bs = vorbis_packet_blocksize(&vi_in, &op_in);
+				if (bs < 0)
+					goto cleanup_label;
 				granulepos += (lastbs == 0 ? 0 : (bs + lastbs) / 4);
 				lastbs = bs;
 
@@ -418,11 +420,10 @@ t_ftoggvorbis_clear(void *opaque)
 static int
 fwrite_drain_func(void *fp, const char *data, int len)
 {
-	size_t s;
-
-	if (fp == NULL)
+	if (fp == NULL || len < 0)
 		return (-1);
-	s = fwrite(data, 1, len, fp);
+	/* casting fwrite return value to int is fine: it is at most len */
+	int s = (int)fwrite(data, 1, (size_t)len, fp);
 	return (s == 0 ? -1 : s);
 }
 
@@ -430,13 +431,14 @@ fwrite_drain_func(void *fp, const char *data, int len)
 static int
 sbuf_write_ogg_page(struct sbuf *sb, ogg_page *og)
 {
-	int ret = 0;
-
 	assert(sb != NULL);
 	assert(og != NULL);
 
-	ret += sbuf_bcat(sb, og->header, og->header_len);
-	ret += sbuf_bcat(sb, og->body,   og->body_len);
-
-	return (ret == 0 ? 0 : -1);
+	if (og->header_len < 0 || og->body_len < 0)
+		return (-1);
+	if (sbuf_bcat(sb, og->header, (size_t)og->header_len) == -1)
+		return (-1);
+	if (sbuf_bcat(sb, og->body, (size_t)og->body_len) == -1)
+		return (-1);
+	return (0);
 }

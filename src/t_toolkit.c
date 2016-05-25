@@ -30,7 +30,7 @@ t_strtoupper(char *str)
 	assert(str != NULL);
 
 	for (s = str; *s != '\0'; s++)
-		*s = toupper(*s);
+		*s = (char)toupper(*s);
 	return (str);
 }
 
@@ -43,7 +43,7 @@ t_strtolower(char *str)
 	assert(str != NULL);
 
 	for (s = str; *s != '\0'; s++)
-		*s = tolower(*s);
+		*s = (char)tolower(*s);
 	return (str);
 }
 
@@ -237,7 +237,7 @@ t_iconv_convert(int tou8, const char *const_src)
 		goto cleanup;
 	n = iconv(cd, &src, &srclen, &dest, &destlen);
 #endif
-	success = (n != -1);
+	success = (n != (size_t)-1);
 
 cleanup:
 	if (!success) {
