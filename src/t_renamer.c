@@ -230,7 +230,8 @@ t_rename_parse(const char *source)
 	case PARSING_SIMPLE_TAG:
 		if (sbuf_len(sb) == 0)
 			warnx("empty tag at the end of the rename pattern");
-	case PARSING_STRING:
+	case PARSING_STRING: /* FALLTHROUGH */
+	default:
 		/* all is right */;
 	}
 	/* finish the last tag unless it is the empty string */
