@@ -267,6 +267,9 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		a->write = 1;
 		a->apply = t_action_set;
 		break;
+	default: /* unexpected, unhandled t_actionkind */
+		errno = EINVAL;
+		goto error_label;
 	}
 
 	return (a);
