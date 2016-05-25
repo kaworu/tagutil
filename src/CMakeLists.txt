@@ -30,7 +30,31 @@ include_directories(
 )
 
 # CFLAGS
-add_definitions(-std=c99 -g -Wall -Werror)
+add_definitions(-std=c99 -g -Wall)
+option(GRIM "*very* strict compiler options" off)
+if (GRIM)
+    include(CheckCCompilerFlag)
+    check_c_compiler_flag(-Wsign-conversion HAS_WSIGN_CONVERSION)
+    check_c_compiler_flag(-Wdouble-promotion HAS_WDOUBLE_PROMOTION)
+    check_c_compiler_flag(-Wlogical-op HAS_WLOGICAL_OP)
+    check_c_compiler_flag(-Wjump-misses-init HAS_WJUMP_MISSES_INIT)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -Wconversion -Wstrict-prototypes -Wcast-qual -Wcast-align -Wshadow -Wredundant-decls -Wundef -Wfloat-equal -Wmissing-include-dirs -Wswitch-default -Wpointer-arith -Wbad-function-cast -Wnested-externs -Wold-style-definition -Wformat=2 -Winit-self -Wwrite-strings -Wmissing-prototypes -pipe")
+    if(HAS_WSIGN_CONVERSION)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wsign-conversion")
+    endif()
+    if(HAS_WDOUBLE_PROMOTION)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wdouble-promotion")
+    endif()
+    if(HAS_WLOGICAL_OP)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wlogical-op")
+    endif()
+    if(HAS_WJUMP_MISSES_INIT)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wjump-misses-init")
+    endif()
+
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O3 -flto -DNDEBUG")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -g3 -ggdb3 -Wpacked")
+endif()
 #}}}
 
 #{{{ portability tests
