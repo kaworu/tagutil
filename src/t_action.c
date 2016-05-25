@@ -287,7 +287,7 @@ t_action_delete(struct t_action *victim)
 
 	switch (victim->kind) {
 	case T_ACTION_ADD: /* FALLTHROUGH */
-	case T_ACTION_SET: /* FALLTHROUGH */
+	case T_ACTION_SET:
 		t_tag_delete(victim->opaque);
 		break;
 	case T_ACTION_CLEAR: /* FALLTHROUGH */

@@ -370,10 +370,10 @@ t_yesno(const char *question)
 		}
 
 		if (Yflag) {
-			(void)printf("y\n");
+			(void)printf("yes\n");
 			return (1);
 		} else if (Nflag) {
-			(void)printf("n\n");
+			(void)printf("no\n");
 			return (0);
 		}
 
