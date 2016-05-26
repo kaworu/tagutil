@@ -13,7 +13,6 @@ addons:
             - libyaml-dev
             - libjansson-dev
             - libflac-dev
-            - libflac-dev
             - libogg-dev
             - libvorbis-dev
             - libtagc0-dev
