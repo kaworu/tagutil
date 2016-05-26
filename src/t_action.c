@@ -66,7 +66,7 @@ static int	t_action_token_cmp(const void *vstr, const void *vtoken);
 struct t_actionQ *
 t_actionQ_new(int *argc_p, char ***argv_p)
 {
-	int argc;
+	int argc, success = 0;
 	char **argv;
 	struct t_action  *a;
 	struct t_actionQ *aQ;
@@ -78,11 +78,11 @@ t_actionQ_new(int *argc_p, char ***argv_p)
 	argv = *argv_p;
 	aQ = malloc(sizeof(struct t_actionQ));
 	if (aQ == NULL)
-		goto error_label;
+		goto cleanup;
 	TAILQ_INIT(aQ);
 
 	while (argc > 0) {
-		char	*arg;
+		char	*arg = NULL;
 		struct t_action_token *t;
 
 		t = bsearch(*argv, t_action_keywords,
@@ -92,21 +92,21 @@ t_actionQ_new(int *argc_p, char ***argv_p)
 			/* it doesn't look like an option */
 			break;
 		}
-		if (t->argc == 0)
+		if (t->argc == 0) {
 			arg = NULL;
-		else if (t->argc == 1) {
+		} else if (t->argc == 1) {
 			arg = strchr(*argv, ':');
 			if (arg == NULL) {
 				warnx("option %s requires an argument", t->word);
 				errno = EINVAL;
-				goto error_label;
+				goto cleanup;
 				/* NOTREACHED */
 			}
 			arg++; /* skip the `:' char */
 			/* convert arg to UTF-8 */
 			arg = t_iconv_loc_to_utf8(arg);
 			if (arg == NULL)
-				goto error_label;
+				goto cleanup;
 		} else {
 			/* t->argc > 1 is unsuported */
 			ABANDON_SHIP();
@@ -115,29 +115,35 @@ t_actionQ_new(int *argc_p, char ***argv_p)
 		a = t_action_new(t->kind, arg);
 		free(arg);
 		if (a == NULL)
-			goto error_label;
+			goto cleanup;
 		TAILQ_INSERT_TAIL(aQ, a, entries);
 
 		argc--;
 		argv++;
 	}
 
+	/* if no action could be parsed, add a default print action */
 	if (TAILQ_EMPTY(aQ)) {
-		/* no action given, fallback to default which is print */
 		a = t_action_new(T_ACTION_PRINT, NULL);
 		if (a == NULL)
-			goto error_label;
+			goto cleanup;
 		TAILQ_INSERT_TAIL(aQ, a, entries);
 	}
 
-	*argc_p = argc;
-	*argv_p = argv;
+	/* All went well. */
+	success = 1;
+
+	/* FALLTHROUGH */
+cleanup:
+	if (success) {
+		*argc_p = argc;
+		*argv_p = argv;
+	} else {
+		assert(errno == EINVAL || errno == ENOMEM);
+		t_actionQ_delete(aQ);
+		aQ = NULL;
+	}
 	return (aQ);
-	/* NOTREACHED */
-error_label:
-	t_actionQ_delete(aQ);
-	assert(errno == EINVAL || errno == ENOMEM);
-	return (NULL);
 }
 
 
@@ -175,29 +181,30 @@ t_actionQ_delete(struct t_actionQ *aQ)
 static struct t_action *
 t_action_new(enum t_actionkind kind, const char *arg)
 {
+	int success = 0;
 	char *key = NULL, *val, *eq;
 	struct t_action *a;
 
 	a = calloc(1, sizeof(struct t_action));
 	if (a == NULL)
-		goto error_label;
+		goto cleanup;
 	a->kind = kind;
 
 	switch (a->kind) {
-	case T_ACTION_ADD:
+	case T_ACTION_ADD: /* very similar to T_ACTION_SET */
 		assert(arg != NULL);
 		if ((key = strdup(arg)) == NULL)
-			goto error_label;
+			goto cleanup;
 		eq = strchr(key, '=');
 		if (eq == NULL) {
 			errno = EINVAL;
 			warn("add: missing '='");
-			goto error_label;
+			goto cleanup;
 		}
 		*eq = '\0';
 		val = eq + 1;
 		if ((a->opaque = t_tag_new(key, val)) == NULL)
-			goto error_label;
+			goto cleanup;
 		free(key);
 		key = NULL;
 		a->write = 1;
@@ -211,7 +218,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		if (strlen(arg) > 0) {
 			a->opaque = strdup(arg);
 			if (a->opaque == NULL)
-				goto error_label;
+				goto cleanup;
 		}
 		a->write = 1;
 		a->apply = t_action_clear;
@@ -224,7 +231,7 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		assert(arg != NULL);
 		a->opaque = strdup(arg);
 		if (a->opaque == NULL)
-			goto error_label;
+			goto cleanup;
 		a->write = 1;
 		a->apply = t_action_load;
 		break;
@@ -237,31 +244,31 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		if (strlen(arg) == 0) {
 			errno = EINVAL;
 			warn("empty rename pattern");
-			goto error_label;
+			goto cleanup;
 		}
 		a->opaque = t_rename_parse(arg);
 		if (a->opaque == NULL) {
 			errno = EINVAL;
 			warn("rename: bad rename pattern");
-			goto error_label;
+			goto cleanup;
 		}
 		a->write = 1;
 		a->apply = t_action_rename;
 		break;
-	case T_ACTION_SET:
+	case T_ACTION_SET: /* very similar to T_ACTION_ADD */
 		assert(arg != NULL);
 		if ((key = strdup(arg)) == NULL)
-			goto error_label;
+			goto cleanup;
 		eq = strchr(key, '=');
 		if (eq == NULL) {
 			errno = EINVAL;
 			warn("set: missing '='");
-			goto error_label;
+			goto cleanup;
 		}
 		*eq = '\0';
 		val = eq + 1;
 		if ((a->opaque = t_tag_new(key, val)) == NULL)
-			goto error_label;
+			goto cleanup;
 		free(key);
 		key = NULL;
 		a->write = 1;
@@ -269,15 +276,20 @@ t_action_new(enum t_actionkind kind, const char *arg)
 		break;
 	default: /* unexpected, unhandled t_actionkind */
 		errno = EINVAL;
-		goto error_label;
+		goto cleanup;
 	}
 
-	return (a);
-	/* NOTREACHED */
-error_label:
+	/* All went well. */
+	success = 1;
+
+	/* FALLTHROUGH */
+cleanup:
 	free(key);
-	t_action_delete(a);
-	return (NULL);
+	if (!success) {
+		t_action_delete(a);
+		a = NULL;
+	}
+	return (a);
 }
 
 
@@ -285,24 +297,23 @@ static void
 t_action_delete(struct t_action *victim)
 {
 
-	if (victim == NULL)
-		return;
-
-	switch (victim->kind) {
-	case T_ACTION_ADD: /* FALLTHROUGH */
-	case T_ACTION_SET:
-		t_tag_delete(victim->opaque);
-		break;
-	case T_ACTION_CLEAR: /* FALLTHROUGH */
-	case T_ACTION_LOAD:
-		free(victim->opaque);
-		break;
-	case T_ACTION_RENAME:
-		t_rename_pattern_delete(victim->opaque);
-		break;
-	default:
-		/* do nada */
-		break;
+	if (victim != NULL) {
+		switch (victim->kind) {
+		case T_ACTION_ADD: /* FALLTHROUGH */
+		case T_ACTION_SET:
+			t_tag_delete(victim->opaque);
+			break;
+		case T_ACTION_CLEAR: /* FALLTHROUGH */
+		case T_ACTION_LOAD:
+			free(victim->opaque);
+			break;
+		case T_ACTION_RENAME:
+			t_rename_pattern_delete(victim->opaque);
+			break;
+		default:
+			/* do nada */
+			break;
+		}
 	}
 	free(victim);
 }
@@ -311,7 +322,7 @@ t_action_delete(struct t_action *victim)
 static int
 t_action_add(struct t_action *self, struct t_tune *tune)
 {
-
+	int success = 0;
 	const struct t_tag *t;
 	struct t_taglist *tlist = NULL;
 
@@ -323,19 +334,20 @@ t_action_add(struct t_action *self, struct t_tune *tune)
 
 	tlist = t_tune_tags(tune);
 	if (tlist == NULL)
-		goto error_label;
+		goto cleanup;
 
 	if (t_taglist_insert(tlist, t->key, t->val) != 0)
-		goto error_label;
+		goto cleanup;
 	if (t_tune_set_tags(tune, tlist) != 0)
-		goto error_label;
+		goto cleanup;
 
+	/* All went well. */
+	success = 1;
+
+	/* FALLTHROUGH */
+cleanup:
 	t_taglist_delete(tlist);
-	return (0);
-	/* NOTREACHED */
-error_label:
-	t_taglist_delete(tlist);
-	return (-1);
+	return (success ? 0 : -1);
 }
 
 
@@ -355,9 +367,10 @@ t_action_backend(struct t_action *self, struct t_tune *tune)
 static int
 t_action_clear(struct t_action *self, struct t_tune *tune)
 {
+	int success = 0;
 	const struct t_tag *t;
 	struct t_taglist *tlist = NULL;
-	struct t_taglist *ret;
+	struct t_taglist *cleared;
 	const char *clear_key;
 
 	assert(self != NULL);
@@ -365,31 +378,31 @@ t_action_clear(struct t_action *self, struct t_tune *tune)
 	assert(tune != NULL);
 
 	clear_key = self->opaque;
-	ret = t_taglist_new();
-	if (ret == NULL)
-		goto error_label;
+	cleared = t_taglist_new();
+	if (cleared == NULL)
+		goto cleanup;
 
 	if (clear_key != NULL) {
 		if ((tlist = t_tune_tags(tune)) == NULL)
-			goto error_label;
+			goto cleanup;
 		TAILQ_FOREACH(t, tlist->tags, entries) {
 			if (t_tag_keycmp(t->key, clear_key) != 0) {
-				if (t_taglist_insert(ret, t->key, t->val) != 0)
-					goto error_label;
+				if (t_taglist_insert(cleared, t->key, t->val) != 0)
+					goto cleanup;
 			}
 		}
 	}
-	if (t_tune_set_tags(tune, ret) != 0)
-		goto error_label;
+	if (t_tune_set_tags(tune, cleared) != 0)
+		goto cleanup;
 
-	t_taglist_delete(ret);
+	/* All went well. */
+	success = 1;
+
+	/* FALLTHROUGH */
+cleanup:
+	t_taglist_delete(cleared);
 	t_taglist_delete(tlist);
-	return (0);
-	/* NOTREACHED */
-error_label:
-	t_taglist_delete(ret);
-	t_taglist_delete(tlist);
-	return (-1);
+	return (success ? 0 : -1);
 }
 
 
@@ -401,7 +414,8 @@ t_action_edit(struct t_action *self, struct t_tune *tune)
 	assert(self->kind == T_ACTION_EDIT);
 	assert(tune != NULL);
 
-	return (t_edit(tune));
+	int success = (t_edit(tune) == 0);
+	return (success ? 0 : -1);
 }
 
 
@@ -413,7 +427,8 @@ t_action_load(struct t_action *self, struct t_tune *tune)
 	assert(self->kind == T_ACTION_LOAD);
 	assert(tune != NULL);
 
-	return (t_load(tune, self->opaque));
+	int success = (t_load(tune, self->opaque) == 0);
+	return (success ? 0 : -1);
 }
 
 
@@ -431,11 +446,11 @@ t_action_print(struct t_action *self, struct t_tune *tune)
 
 	tlist = t_tune_tags(tune);
 	if (tlist == NULL)
-		goto error_label;
+		goto cleanup;
 
 	fmtdata = Fflag->tags2fmt(tlist, t_tune_path(tune));
 	if (fmtdata == NULL)
-		goto error_label;
+		goto cleanup;
 
 	nprinted = printf("%s\n", fmtdata);
 	if (nprinted > 0) {
@@ -444,7 +459,7 @@ t_action_print(struct t_action *self, struct t_tune *tune)
 	}
 
 	/* FALLTHROUGH */
-error_label:
+cleanup:
 	t_taglist_delete(tlist);
 	free(fmtdata);
 	return (success ? 0 : -1);
@@ -459,7 +474,8 @@ t_action_rename(struct t_action *self, struct t_tune *tune)
 	assert(self->kind == T_ACTION_RENAME);
 	assert(tune != NULL);
 
-	return (t_rename(tune, self->opaque));
+	int success = (t_rename(tune, self->opaque) == 0);
+	return (success ? 0 : -1);
 }
 
 
@@ -523,13 +539,22 @@ t_action_token_cmp(const void *vstr, const void *vtoken)
 
 	token = vtoken;
 	str   = vstr;
-	slen = strlen(str);
-	tlen = strlen(token->word);
-	cmp = strncmp(str, token->word, tlen);
+	slen  = strlen(str);
+	tlen  = strlen(token->word);
+	cmp   = strncmp(str, token->word, tlen);
 
-	/* we accept either slen == tlen or a finishing `:' */
-	if (cmp == 0 && slen > tlen && str[tlen] != ':')
-		cmp = str[tlen] - '\0';
+	if (cmp == 0) {
+		/* we have a match from 0 to tlen */
+		if (slen == tlen) {
+			/* exact match */
+			cmp = 0;
+		} else if (str[tlen] == ':') {
+			/* it's token->word followed by `:' */
+			cmp = 0;
+		} else {
+			cmp = str[tlen] - '\0';
+		}
+	}
 
 	return (cmp);
 }
