@@ -1,0 +1,19 @@
+language: c
+
+compiler:
+    - clang
+    - gcc
+
+script: make && make test
+
+addons:
+    apt:
+        packages:
+            - cmake
+            - libyaml-dev
+            - libjansson-dev
+            - libflac-dev
+            - libflac-dev
+            - libogg-dev
+            - libvorbis-dev
+            - libtagc0-dev
