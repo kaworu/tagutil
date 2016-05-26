@@ -17,3 +17,6 @@ addons:
             - libogg-dev
             - libvorbis-dev
             - libtagc0-dev
+
+sudo: required
+dist: trusty
