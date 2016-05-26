@@ -38,7 +38,9 @@ module Tagutil
     end
 
     def self.teardown
-      @tmpfiles.each { |f| FileUtils.rm(f, force: true) }
+        while (victim = @tmpfiles.pop) do
+            FileUtils.rm(victim, force: true)
+        end
     end
 
     # create a music file by copying the blank file matching the requested
