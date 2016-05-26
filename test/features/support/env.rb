@@ -21,7 +21,12 @@ module Tagutil
 
     # build tagutil
     def self.force_build
-        system "make -C #{ProjectRoot}"
+        STDOUT.print "===> running a debug build..."
+        STDOUT.flush
+        output, status = Open3.capture2e("make -C #{ProjectRoot}")
+        raise RuntimeException.new('Could not build tagutil') unless status.success?
+        STDOUT.puts "done."
+        STDOUT.flush
     end
 
     # called by a Before hook

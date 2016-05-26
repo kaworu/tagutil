@@ -48,9 +48,14 @@ Then(/^I should see the (YAML|JSON) tag list:$/) do |fmt, tbl|
 end
 
 
+AfterConfiguration do
+    Tagutil.build
+end
+
 Before do
     Tagutil.setup
 end
+
 After do
     Tagutil.teardown
 end
