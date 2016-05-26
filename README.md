@@ -1,3 +1,5 @@
+[<img src="https://travis-ci.org/kAworu/tagutil.svg?branch=master" />](https://travis-ci.org/kAworu/tagutil)
+
 Tagutil - CLI music files tags editor
 =====================================
 
