@@ -48,12 +48,12 @@ module Tagutil
     def self.create_tune(filename, ext, tags=nil)
         tune  = "#{filename}.#{ext}"
         blank = @blankfiles.select { |f| f =~ /\.#{ext}$/ }.first
-        data  = "#{tags.to_yaml}\n"
         raise ArgumentError.new "#{ext}: bad file extension" unless blank
         FileUtils.cp blank, tune
         if tags
+            data = "#{tags.to_yaml}\n"
             output, status = Open3.capture2e("#{Executable} load:- #{tune}", stdin_data: data)
-            raise RuntimeError.new(output) unless status.exitstatus.zero? and output.empty?
+            raise RuntimeError.new(output) unless status.success? and output.empty?
         end
         @tmpfiles << tune
     end

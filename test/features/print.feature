@@ -11,7 +11,7 @@ Feature: Reading a file
             | track.ogg  |
             | track.mp3  |
 
-    Scenario Outline: reading tags of a tagged file
+    Scenario Outline: reading tags of a tagged file in YAML
         Given I have a music file <music-file> tagged with:
             | title       | Atom Heart Mother |
             | artist      | Pink Floyd        |
