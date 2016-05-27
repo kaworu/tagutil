@@ -12,17 +12,17 @@ add_definitions(-DT_TAGUTIL_VERSION="3.0.3")
 project(${PROJECT_NAME} C)
 
 set(SRCS
-    tagutil.c
-    t_action.c
-    t_renamer.c
-    t_editor.c
-    t_loader.c
-    t_tune.c
-    t_taglist.c
-    t_tag.c
-    t_backend.c
-    t_format.c
-    t_toolkit.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/tagutil.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_action.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_renamer.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_editor.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_loader.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_tune.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_taglist.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_tag.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_backend.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_format.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_toolkit.c
 )
 
 include_directories(
@@ -57,7 +57,7 @@ endif()
 macro(t_try_compile variable test_file compat_file)
     try_compile(${variable}
         ${CMAKE_BINARY_DIR}
-        ${CMAKE_SOURCE_DIR}/compat/tests/${test_file}
+        ${CMAKE_CURRENT_SOURCE_DIR}/compat/tests/${test_file}
         ${ARGN}
     )
     if(${variable})
@@ -119,7 +119,7 @@ if(NOT DEFINED WITHOUT_TAGLIB)
         set(WITH_TAGLIB YES)
         math(EXPR BACKEND_COUNT "${BACKEND_COUNT} + 1")
         add_definitions(-DWITH_TAGLIB)
-        set(SRCS ${SRCS} t_fttaglib.c)
+        set(SRCS ${SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/t_fttaglib.c)
         set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${TAGLIB_LDFLAGS})
         set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${TAGLIB_INCLUDE_DIRS})
     else()
@@ -134,7 +134,7 @@ if(NOT DEFINED WITHOUT_FLAC)
         set(WITH_FLAC YES)
         math(EXPR BACKEND_COUNT "${BACKEND_COUNT} + 1")
         add_definitions(-DWITH_FLAC)
-        set(SRCS ${SRCS} t_ftflac.c)
+        set(SRCS ${SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/t_ftflac.c)
         set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${FLAC_LDFLAGS})
         set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${FLAC_INCLUDE_DIRS})
         # test if libFLAC assert.h does clash with the system one. FLAC >= 1.3
@@ -142,7 +142,7 @@ if(NOT DEFINED WITHOUT_FLAC)
         # FIXME: not working correctly, false positive with libflac 1.3
         try_compile(FLAC_CLASH_WORKAROUND
             ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/compat/tests/libFLAC_assert_clash.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/compat/tests/libFLAC_assert_clash.c
             CMAKE_FLAGS "-DCOMPILE_DEFINITIONS=${FLAC_LDFLAGS} -DINCLUDE_DIRECTORIES=${FLAC_INCLUDE_DIRS}"
         )
         if(FLAC_CLASH_WORKAROUND)
@@ -165,7 +165,7 @@ if(NOT DEFINED WITHOUT_OGGVORBIS)
         set(WITH_OGGVORBIS YES)
         math(EXPR BACKEND_COUNT "${BACKEND_COUNT} + 1")
         add_definitions(-DWITH_OGGVORBIS)
-        set(SRCS ${SRCS} t_ftoggvorbis.c)
+        set(SRCS ${SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/t_ftoggvorbis.c)
         set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES}
             ${OGG_LDFLAGS} ${VORBIS_LDFLAGS} ${VORBISFILE_LDFLAGS})
         set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS}
@@ -180,7 +180,7 @@ if(DEFINED WITH_ID3V1)
     set(WITH_ID3V1 YES)
     math(EXPR BACKEND_COUNT "${BACKEND_COUNT} + 1")
     add_definitions(-DWITH_ID3V1)
-    set(SRCS ${SRCS} t_ftid3v1.c)
+    set(SRCS ${SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/t_ftid3v1.c)
 else()
     set(WITH_ID3V1 NO)
 endif()
@@ -194,7 +194,7 @@ pkg_check_modules(YAML yaml-0.1)
 if(YAML_FOUND)
     set(WITH_YAML YES)
     math(EXPR FORMAT_COUNT "${FORMAT_COUNT} + 1")
-    set(SRCS ${SRCS} t_yaml.c)
+    set(SRCS ${SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/t_yaml.c)
     set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${YAML_LDFLAGS})
     set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${YAML_INCLUDE_DIRS})
 else()
@@ -208,7 +208,7 @@ if(NOT DEFINED WITHOUT_JSON)
         set(WITH_JSON YES)
         math(EXPR FORMAT_COUNT "${FORMAT_COUNT} + 1")
         add_definitions(-DWITH_JSON)
-        set(SRCS ${SRCS} t_json.c)
+        set(SRCS ${SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/t_json.c)
         set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${JSON_LDFLAGS})
         set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${JSON_INCLUDE_DIRS})
     else()
