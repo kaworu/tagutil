@@ -1,4 +1,4 @@
-Feature: Adding tags to a file
+Feature: Clearing tags from a file
 
     Scenario Outline: clearing all tags
         Given I have a music file <music-file> tagged with:
