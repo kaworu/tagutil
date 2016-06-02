@@ -58,6 +58,11 @@ module Tagutil
         @tmpfiles << tune
     end
 
+    def self.run(env: {}, argv: "")
+      cmd = "#{Executable} #{argv}"
+      Open3.capture2e(env, cmd)
+    end
+
     class World
         def tags_from_cuke_table tbl
             tbl.raw.map do |x|

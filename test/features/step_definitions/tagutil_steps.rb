@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 # encoding: UTF-8
 
-require 'open3'
 require 'json'
 require 'yaml'
 require 'rspec/expectations'
@@ -19,7 +18,7 @@ end
 
 
 When(/^I run tagutil(.*)$/) do |params|
-    @output, @status = Open3.capture2e("#{Tagutil::Executable} #{params}")
+    @output, @status = Tagutil.run(argv: params)
 end
 
 
