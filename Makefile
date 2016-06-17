@@ -6,7 +6,7 @@ release: _mkdir_build
 	cd build && cmake -DCMAKE_BUILD_TYPE=RELEASE ../src && make
 
 debug: _mkdir_build
-	cd build && cmake -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_VERBOSE_MAKEFILE=YES ../src && make
+	cd build && cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_VERBOSE_MAKEFILE=YES ../src && make
 
 grim: _mkdir_build
 	cd build && cmake -DCMAKE_BUILD_TYPE=GRIM ../src && make
