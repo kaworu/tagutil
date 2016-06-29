@@ -16,9 +16,17 @@ Given(/^I have a music file (\w+)\.(mp3|ogg|flac) tagged with:$/) do |filename, 
   Tagutil.create_tune(filename, ext, tags_from_cuke_table(tbl))
 end
 
+Given(/^my favourite editor is ([^\s]+)$/) do |desc|
+  name = desc.strip
+  editor = Tagutil::Editor.find(name.strip)
+  throw Exception.new("couldn't find the `#{desc}' editor") unless editor
+  (@env ||= Hash.new)['EDITOR'] = editor
+end
 
 When(/^I run tagutil(.*)$/) do |params|
-  @output, @status = Tagutil.run(argv: params)
+  env  = @env || Hash.new
+  argv = params
+  @output, @status = Tagutil.run(env: env, argv: argv)
 end
 
 

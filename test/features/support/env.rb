@@ -70,6 +70,19 @@ module Tagutil
       end
     end
   end
+
+  # fake editors used to test the edit action
+  module Editor
+    EVIL = File.join(ProjectRoot, 'test', 'scripts', 'evil-editor.rb')
+
+    # helper to find an editor path by keyword
+    def self.find key
+      case key
+      when 'evil-edit'
+        EVIL
+      end
+    end
+  end
 end
 
 
