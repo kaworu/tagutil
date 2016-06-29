@@ -11,16 +11,15 @@ module Tagutil
   ProjectRoot = File.join(File.dirname(__FILE__), '..', '..', '..')
   Executable  = File.join(ProjectRoot, 'build', 'tagutil')
   @tmpdir     = nil # temporary test directory
-  @blankfiles = []  # music test files
-  @tmpfiles   = []  # generated files
+  @blankfiles = Dir[File.join(ProjectRoot, 'test', 'files', '*')]
 
   # build tagutil iff the executable does not exist
   def self.build
-    self.force_build unless File.exist?(Executable)
+    self.build! unless File.exist?(Executable)
   end
 
   # build tagutil
-  def self.force_build
+  def self.build!
     STDOUT.print "===> running a debug build..."
     STDOUT.flush
     output, status = Open3.capture2e("make -C #{ProjectRoot}")
@@ -32,30 +31,29 @@ module Tagutil
   # called by a Before hook
   def self.setup
     self.build
-    @tmpdir ||= Dir.mktmpdir('tagutil-cucumber-')
+    @tmpdir = Dir.mktmpdir('tagutil-cucumber-')
     Dir.chdir @tmpdir
-    @blankfiles = Dir[File.join(ProjectRoot, 'test', 'files', '*')] if @blankfiles.empty?
   end
 
   def self.teardown
-    while (victim = @tmpfiles.pop) do
-      FileUtils.rm(victim, force: true)
-    end
+    Dir.chdir '/'
+    FileUtils.rm_rf(@tmpdir)
+    @tmpdir = nil
   end
 
   # create a music file by copying the blank file matching the requested
   # extension.
   def self.create_tune(filename, ext, tags=nil)
     tune  = "#{filename}.#{ext}"
+    path  = File.join(@tmpdir, tune)
     blank = @blankfiles.select { |f| f =~ /\.#{ext}$/ }.first
     raise ArgumentError.new "#{ext}: bad file extension" unless blank
-    FileUtils.cp blank, tune
+    FileUtils.cp blank, path
     if tags
       data = "#{tags.to_yaml}\n"
-      output, status = Open3.capture2e("#{Executable} load:- #{tune}", stdin_data: data)
+      output, status = Open3.capture2e("#{Executable} load:- #{path}", stdin_data: data)
       raise RuntimeError.new(output) unless status.success? and output.empty?
     end
-    @tmpfiles << tune
   end
 
   def self.run(env: {}, argv: "")
