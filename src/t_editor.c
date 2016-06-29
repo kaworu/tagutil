@@ -23,7 +23,7 @@ t_edit(struct t_tune *tune)
 	char *tmp = NULL, *fmtdata = NULL;
 	const char *editor, *tmpdir;
 	pid_t editpid; /* child process */
-	int status;
+	int status, success = 0;
 	struct stat before, after;
 	extern const struct t_format *Fflag;
 
@@ -32,12 +32,12 @@ t_edit(struct t_tune *tune)
 	/* convert the tags into the requested format */
 	tlist = t_tune_tags(tune);
 	if (tlist == NULL)
-		goto error_label;
+		goto out;
 	fmtdata = Fflag->tags2fmt(tlist, t_tune_path(tune));
 	t_taglist_delete(tlist);
 	tlist = NULL;
 	if (fmtdata == NULL)
-		goto error_label;
+		goto out;
 
 	tmpdir = getenv("TMPDIR");
 	if (tmpdir == NULL)
@@ -45,24 +45,24 @@ t_edit(struct t_tune *tune)
 	/* print the format data into a temp file */
 	if (asprintf(&tmp, "%s/%s-XXXXXX.%s", tmpdir, getprogname(),
 	    Fflag->fileext) < 0) {
-		goto error_label;
+		goto out;
 	}
 	if (mkstemps(tmp, strlen(Fflag->fileext) + 1) == -1) {
 		warn("mkstemps");
-		goto error_label;
+		goto out;
 	}
 	fp = fopen(tmp, "w");
 	if (fp == NULL) {
 		warn("%s: fopen", tmp);
-		goto error_label;
+		goto out;
 	}
 	if (fprintf(fp, "%s", fmtdata) < 0) {
 		warn("%s: fprintf", tmp);
-		goto error_label;
+		goto out;
 	}
 	if (fclose(fp) != 0) {
 		warn("%s: fclose", tmp);
-		goto error_label;
+		goto out;
 	}
 	fp = NULL;
 
@@ -70,19 +70,19 @@ t_edit(struct t_tune *tune)
 	editor = getenv("EDITOR");
 	if (editor == NULL) {
 		warnx("please set the $EDITOR environment variable.");
-		goto error_label;
+		goto out;
 	}
 
 	/* save the current mtime so we know later if the file has been
 	   modified */
 	if (stat(tmp, &before) != 0)
-		goto error_label;
+		goto out;
 
 	/* launch the editor */
 	switch (editpid = fork()) {
 	case -1: /* error */
 		warn("fork");
-		goto error_label;
+		goto out;
 		/* NOTREACHED */
 	case 0: /* child (edit process) */
 		execlp(editor, /* argv[0] */editor, /* argv[1] */tmp, NULL);
@@ -95,26 +95,26 @@ t_edit(struct t_tune *tune)
 
 	/* get the mtime now that the editor has been run */
 	if (stat(tmp, &after) != 0)
-		goto error_label;
+		goto out;
+
+	int modified = (after.st_mtim.tv_sec  > before.st_mtim.tv_sec ||
+		        after.st_mtim.tv_nsec > before.st_mtim.tv_nsec);
 
 	/* we perform the load iff the file has been modified by the edit
 	   process and that process exited with success */
-	if (after.st_mtime > before.st_mtime &&
-	    WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+	if (modified && WIFEXITED(status) && WEXITSTATUS(status) == 0) {
 		if (t_load(tune, tmp) == -1)
-			goto error_label;
+			goto out;
 	}
 
-	(void)unlink(tmp);
-	free(tmp);
-	free(fmtdata);
-	return (0);
-error_label:
+	success = 1;
+	/* FALLTHROUGH */
+out:
 	if (fp != NULL)
 		(void)fclose(fp);
 	if (tmp != NULL)
 		(void)unlink(tmp);
 	free(tmp);
 	free(fmtdata);
-	return (-1);
+	return (success ? 0 : -1);
 }
