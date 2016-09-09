@@ -75,6 +75,12 @@ Then(/^I should see the JSON tag list:$/) do |tbl|
 end
 
 
+Then(/^I debug$/) do
+  require "pp"
+  pp "ENV:", @env, "STATUS:", @status, "OUTPUT:", @output
+end
+
+
 AfterConfiguration do
   Tagutil.build
 end
