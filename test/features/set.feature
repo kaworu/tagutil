@@ -1,7 +1,7 @@
 Feature: Setting tags to a file
 
     Scenario Outline: Setting tags to an empty file
-        Given I have a music file <music-file>
+        Given There is a music file <music-file>
         When  I run tagutil set:title=Atom\ Heart\ Mother <music-file>
         And   I run tagutil print <music-file>
         Then  I expect tagutil to succeed
@@ -14,7 +14,7 @@ Feature: Setting tags to a file
             | track.mp3  |
 
     Scenario Outline: chaining multiple set
-        Given I have a music file <music-file>
+        Given There is a music file <music-file>
         When  I run tagutil "set:title=Atom Heart Mother" "set:artist=Pink Floyd" <music-file>
         And   I run tagutil print <music-file>
         Then  I expect tagutil to succeed
@@ -28,7 +28,7 @@ Feature: Setting tags to a file
             | track.mp3  |
 
     Scenario Outline: replacing an existing tag
-        Given I have a music file <music-file> tagged with:
+        Given There is a music file <music-file> tagged with:
             | title       | Atom Heart Mother |
             | artist      | Pink Floyd        |
         When  I run tagutil "set:title=Fearless" <music-file>
@@ -44,7 +44,7 @@ Feature: Setting tags to a file
             | track.mp3  |
 
     Scenario Outline: replacing many tags by one set
-        Given I have a music file <music-file> tagged with:
+        Given There is a music file <music-file> tagged with:
             | title  | Echoes         |
             | singer | Richard Wright |
             | artist | Pink Floyd     |

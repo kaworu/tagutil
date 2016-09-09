@@ -1,7 +1,7 @@
 Feature: Clearing tags from a file
 
     Scenario Outline: clearing all tags
-        Given I have a music file <music-file> tagged with:
+        Given There is a music file <music-file> tagged with:
             | title       | Atom Heart Mother |
             | artist      | Pink Floyd        |
             | year        | 1970              |
@@ -19,7 +19,7 @@ Feature: Clearing tags from a file
             | track.mp3  |
 
     Scenario Outline: clearing a single tag
-        Given I have a music file <music-file> tagged with:
+        Given There is a music file <music-file> tagged with:
             | title  | Echoes         |
             | artist | Pink Floyd     |
         When  I run tagutil clear:title <music-file>
@@ -34,7 +34,7 @@ Feature: Clearing tags from a file
             | track.mp3  |
 
     Scenario Outline: clearing multiples tags with the same key
-        Given I have a music file <music-file> tagged with:
+        Given There is a music file <music-file> tagged with:
             | title  | Echoes         |
             | singer | Richard Wright |
             | artist | Pink Floyd     |

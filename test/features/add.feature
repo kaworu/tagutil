@@ -1,7 +1,7 @@
 Feature: Adding tags to a file
 
     Scenario Outline: Adding tags to an empty file
-        Given I have a music file <music-file>
+        Given There is a music file <music-file>
         When  I run tagutil add:title=Atom\ Heart\ Mother <music-file>
         And   I run tagutil print <music-file>
         Then  I expect tagutil to succeed
@@ -14,7 +14,7 @@ Feature: Adding tags to a file
             | track.mp3  |
 
     Scenario Outline: chaining multiple add
-        Given I have a music file <music-file>
+        Given There is a music file <music-file>
         When  I run tagutil "add:title=Atom Heart Mother" "add:artist=Pink Floyd" <music-file>
         And   I run tagutil print <music-file>
         Then  I expect tagutil to succeed
@@ -28,7 +28,7 @@ Feature: Adding tags to a file
             | track.mp3  |
 
     Scenario Outline: multiples tags with the same key
-        Given I have a music file <music-file>
+        Given There is a music file <music-file>
         When  I run tagutil add:singer="Richard Wright" add:"singer=David Gilmour" <music-file>
         And   I run tagutil print <music-file>
         Then  I expect tagutil to succeed
@@ -41,7 +41,7 @@ Feature: Adding tags to a file
             | track.ogg  |
 
     Scenario Outline: multiples tags with the same key (using TagLib)
-        Given I have a music file <music-file>
+        Given There is a music file <music-file>
         When  I run tagutil add:artist="Richard Wright" add:"artist=David Gilmour" <music-file>
         And   I run tagutil print <music-file>
         Then  I expect tagutil to succeed

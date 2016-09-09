@@ -7,12 +7,12 @@ require 'rspec/expectations'
 require 'expect'
 
 
-Given(/^I have a music file (\w+)\.(mp3|ogg|flac)?$/) do |filename, ext|
+Given(/^There is a music file (\w+)\.(mp3|ogg|flac)?$/) do |filename, ext|
   Tagutil.create_tune(filename, ext)
 end
 
 
-Given(/^I have a music file (\w+)\.(mp3|ogg|flac) tagged with:$/) do |filename, ext, tbl|
+Given(/^There is a music file (\w+)\.(mp3|ogg|flac) tagged with:$/) do |filename, ext, tbl|
   Tagutil.create_tune(filename, ext, tags_from_cuke_table(tbl))
 end
 
