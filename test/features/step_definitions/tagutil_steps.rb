@@ -16,6 +16,10 @@ Given(/^there is a music file (\w+)\.(mp3|ogg|flac) tagged with:$/) do |filename
   Tagutil.create_tune(filename, ext, tags_from_cuke_table(tbl))
 end
 
+Given(/^there is a text file named (\w+\.\w+) containing:$/) do |filename, content|
+  File.write filename, content
+end
+
 Given(/^my favourite editor is ([^\s]+)$/) do |desc|
   name = desc.strip
   editor = Tagutil::Editor.find(name.strip)
