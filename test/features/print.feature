@@ -1,7 +1,7 @@
 Feature: Reading a file
 
     Scenario Outline: reading tags of an empty file
-        Given There is a music file <music-file>
+        Given there is a music file <music-file>
         When  I run tagutil <music-file>
         Then  I expect tagutil to succeed
         And   I should see an empty YAML tag list
@@ -12,7 +12,7 @@ Feature: Reading a file
             | track.mp3  |
 
     Scenario Outline: reading tags of a tagged file in YAML
-        Given There is a music file <music-file> tagged with:
+        Given there is a music file <music-file> tagged with:
             | title       | Atom Heart Mother |
             | artist      | Pink Floyd        |
             | year        | 1970              |
@@ -35,7 +35,7 @@ Feature: Reading a file
             | track.mp3  |
 
     Scenario Outline: reading tags of a tagged file in JSON
-        Given There is a music file <music-file> tagged with:
+        Given there is a music file <music-file> tagged with:
             | title       | Atom Heart Mother |
             | artist      | Pink Floyd        |
             | year        | 1970              |

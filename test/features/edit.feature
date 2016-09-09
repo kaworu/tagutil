@@ -1,7 +1,7 @@
 Feature: Editing a file tags
 
     Scenario Outline: replacing an existing tag
-        Given There is a music file <music-file> tagged with:
+        Given there is a music file <music-file> tagged with:
             | title       | Feeling Good |
             | artist      | Nina Simone  |
         And my favourite editor is evil-edit
