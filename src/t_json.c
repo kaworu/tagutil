@@ -147,7 +147,7 @@ t_json2tags(FILE *fp, char **errmsg_p)
 				int n = snprintf(buf, sizeof(buf),
 				    "%"JSON_INTEGER_FORMAT,
 				    json_integer_value(val));
-				if (n >= sizeof(buf)) {
+				if (n < 0 || (size_t)n >= sizeof(buf)) {
 					/* json_int_t should be `long long' (at
 					 * max) and sizeof(long long) > 8 is
 					 * unlikely. Maybe both
