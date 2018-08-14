@@ -352,7 +352,7 @@ cleanup:
 
 
 static int
-t_action_backend(struct t_action *self, struct t_tune *tune)
+t_action_backend(t__unused struct t_action *self, struct t_tune *tune)
 {
 
 	assert(self != NULL);
@@ -407,7 +407,7 @@ cleanup:
 
 
 static int
-t_action_edit(struct t_action *self, struct t_tune *tune)
+t_action_edit(t__unused struct t_action *self, struct t_tune *tune)
 {
 
 	assert(self != NULL);
@@ -433,7 +433,7 @@ t_action_load(struct t_action *self, struct t_tune *tune)
 
 
 static int
-t_action_print(struct t_action *self, struct t_tune *tune)
+t_action_print(t__unused struct t_action *self, struct t_tune *tune)
 {
 	int nprinted, success = 0;
 	char *fmtdata = NULL;

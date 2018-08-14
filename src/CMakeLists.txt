@@ -30,10 +30,13 @@ include_directories(
 )
 
 # CFLAGS
-add_definitions(-std=c99 -Wall)
-set(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS} -g -O0 -Wpacked")
+add_compile_options(-std=c11 -Wall -Wextra)
+add_compile_options(-fstack-protector-strong -o aslr -fpie)
+set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} -pie)
+# Per build type flags.
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -O0 -g -fsanitize=undefined")
 # CMAKE_BUILD_TYPE=GRIM: *very* strict compiler options
-set(CMAKE_C_FLAGS_GRIM "${CMAKE_C_FLAGS_DEBUG} -Wextra -pedantic -Wconversion -Wstrict-prototypes -Wcast-qual -Wcast-align -Wshadow -Wredundant-decls -Wundef -Wfloat-equal -Wmissing-include-dirs -Wswitch-default -Wpointer-arith -Wbad-function-cast -Wnested-externs -Wold-style-definition -Wformat=2 -Winit-self -Wwrite-strings -Wmissing-prototypes -pipe")
+set(CMAKE_C_FLAGS_GRIM "${CMAKE_C_FLAGS_DEBUG} -Wextra -pedantic -Wconversion -Wstrict-prototypes -Wcast-qual -Wcast-align -Wshadow -Wredundant-decls -Wundef -Wfloat-equal -Wmissing-include-dirs -Wswitch-default -Wpointer-arith -Wbad-function-cast -Wnested-externs -Wold-style-definition -Wformat=2 -Winit-self -Wwrite-strings -Wmissing-prototypes")
 include(CheckCCompilerFlag)
 check_c_compiler_flag(-Wsign-conversion HAS_WSIGN_CONVERSION)
 check_c_compiler_flag(-Wdouble-promotion HAS_WDOUBLE_PROMOTION)
@@ -75,7 +78,7 @@ t_try_compile(HAS_STRDUP      i_can_haz_strdup.c       compat/strdup.c)
 t_try_compile(HAS_SBUF        i_can_haz_sbuf.c         compat/subr_sbuf.c CMAKE_FLAGS "-DLINK_LIBRARIES=-lsbuf")
 
 # make GNU libc happy
-add_definitions(-D_GNU_SOURCE -D_BSD_SOURCE)
+add_compile_options(-D_GNU_SOURCE -D_BSD_SOURCE)
 #}}}
 
 #{{{ Libraries
