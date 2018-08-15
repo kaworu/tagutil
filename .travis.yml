@@ -4,10 +4,16 @@ compiler:
     - clang
     - gcc
 
-script: make && make test
+script:
+    # see https://gist.github.com/cotsog/3ce84675af0d74438d91
+    - sudo unlink /usr/bin/gcc && sudo ln -s /usr/bin/gcc-5 /usr/bin/gcc
+    - gcc --version
+    - make && make test
 
 addons:
     apt:
+        sources:
+            - ubuntu-toolchain-r-test
         packages:
             - cmake
             - libyaml-dev
@@ -16,6 +22,8 @@ addons:
             - libogg-dev
             - libvorbis-dev
             - libtagc0-dev
+            - gcc-5
+            - g++-5
 
 sudo: required
 dist: trusty
