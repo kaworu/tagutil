@@ -155,10 +155,12 @@ t_tags2yaml(const struct t_taglist *tlist, const char *path)
 			goto emitter_error_label;
 
 		/* create and emit the SCALAR event for the value */
+		yaml_scalar_style_t style = strchr(t->val, '\n') == NULL ?
+			YAML_PLAIN_SCALAR_STYLE : YAML_LITERAL_SCALAR_STYLE;
 		if (!yaml_scalar_event_initialize(&event, /* anchor */NULL,
 		    (yaml_char_t *)YAML_STR_TAG, (yaml_char_t *)t->val,
 		    t->vlen, /* plain_implicit */1, /* quoted_implicit */1,
-		    YAML_PLAIN_SCALAR_STYLE))
+		    style))
 			goto event_error_label;
 		if (!yaml_emitter_emit(&emitter, &event))
 			goto emitter_error_label;
