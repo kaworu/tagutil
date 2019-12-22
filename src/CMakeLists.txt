@@ -8,7 +8,7 @@ endif()
 #{{{ Basic App setup
 set(PROJECT_NAME tagutil)
 set(CMAKE_BUILD_TYPE DEBUG)
-add_definitions(-DT_TAGUTIL_VERSION="3.0.3")
+add_definitions(-DT_TAGUTIL_VERSION="3.1")
 project(${PROJECT_NAME} C)
 
 set(SRCS
@@ -276,4 +276,3 @@ endif()
 if (NOT FORMAT_COUNT)
     message(FATAL_ERROR "no format available.")
 endif()
-# vim: filetype=cmake:expandtab:shiftwidth=4:tabstop=8:softtabstop=4:textwidth=80
