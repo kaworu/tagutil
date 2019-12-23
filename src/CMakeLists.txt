@@ -32,7 +32,7 @@ include_directories(
 # CFLAGS
 add_compile_options(-std=c11 -Wall -Wextra)
 add_compile_options(-fstack-protector-strong -o aslr -fpie)
-set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} -pie)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie")
 # Per build type flags.
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -O0 -g -fsanitize=undefined")
 # CMAKE_BUILD_TYPE=GRIM: *very* strict compiler options
