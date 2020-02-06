@@ -78,6 +78,13 @@ Then(/^I should see the JSON tag list:$/) do |tbl|
   expect(JSON.load(@output)).to eql(tags)
 end
 
+Then("I expect the file {string} not to exist") do |file|
+  expect(File).not_to exist(file)
+end
+
+Then("I expect the file {string} to exist") do |file|
+  expect(File).to exist(file)
+end
 
 Then(/^I debug$/) do
   require "pp"
