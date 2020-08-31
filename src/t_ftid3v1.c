@@ -352,7 +352,7 @@ t_ftid3v1_write(void *opaque, const struct t_taglist *tlist)
 	data->fp = fopen(data->path, "r");
 	return (0);
 error_label:
-	if (fp != NULL);
+	if (fp != NULL)
 		(void)fclose(fp);
 	data->fp = fopen(data->path, "r");
 	return (-1);
