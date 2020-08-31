@@ -76,6 +76,7 @@ t_try_compile(HAS_STRLCPY     i_can_haz_strlcpy.c      compat/strlcpy.c)
 t_try_compile(HAS_STRLCAT     i_can_haz_strlcat.c      compat/strlcat.c)
 t_try_compile(HAS_STRDUP      i_can_haz_strdup.c       compat/strdup.c)
 t_try_compile(HAS_SBUF        i_can_haz_sbuf.c         compat/subr_sbuf.c CMAKE_FLAGS "-DLINK_LIBRARIES=-lsbuf")
+t_try_compile(HAS_EACCESS     i_can_haz_eaccess.c      compat/eaccess.c)
 
 # make GNU libc happy
 add_compile_options(-D_GNU_SOURCE -D_DEFAULT_SOURCE -D_BSD_SOURCE)
