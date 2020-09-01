@@ -11,30 +11,19 @@ set(CMAKE_BUILD_TYPE DEBUG)
 add_definitions(-DT_TAGUTIL_VERSION="3.1")
 project(${PROJECT_NAME} C)
 
-set(SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/tagutil.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/t_action.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/t_renamer.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/t_editor.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/t_loader.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/t_tune.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/t_taglist.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/t_tag.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/t_backend.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/t_format.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/t_toolkit.c
-)
-
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
 # CFLAGS
-add_compile_options(-std=c11 -Wall -Wextra)
-add_compile_options(-fstack-protector-strong -o aslr -fpie)
+add_compile_options(-D_GNU_SOURCE -D_DEFAULT_SOURCE -D_BSD_SOURCE) # make GNU libc happy
+add_compile_options(-std=c11 -Wall -Wextra -fno-strict-aliasing)
+add_compile_options(-fstack-protector-strong -o aslr -fPIC)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie")
 # Per build type flags.
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -O0 -g -fsanitize=undefined")
+set(CMAKE_C_FLAGS_DEBUG    "${CMAKE_C_FLAGS} -O0 -g -fno-omit-frame-pointer")
+set(CMAKE_C_FLAGS_ASAN     "${CMAKE_C_FLAGS} -O1 -g -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize=address -fsanitize=undefined")
+set(CMAKE_C_FLAGS_VALGRIND "${CMAKE_C_FLAGS_RELEASE} -g -fno-omit-frame-pointer")
+set(CMAKE_C_FLAGS_COVERAGE "${CMAKE_C_FLAGS_DEBUG} -fprofile-arcs -ftest-coverage")
+if(CMAKE_BUILD_TYPE MATCHES COVERAGE)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+endif()
 # CMAKE_BUILD_TYPE=GRIM: *very* strict compiler options
 set(CMAKE_C_FLAGS_GRIM "${CMAKE_C_FLAGS_DEBUG} -Wextra -pedantic -Wconversion -Wstrict-prototypes -Wcast-qual -Wcast-align -Wshadow -Wredundant-decls -Wundef -Wfloat-equal -Wmissing-include-dirs -Wswitch-default -Wpointer-arith -Wbad-function-cast -Wnested-externs -Wold-style-definition -Wformat=2 -Winit-self -Wwrite-strings -Wmissing-prototypes")
 include(CheckCCompilerFlag)
@@ -54,6 +43,24 @@ endif()
 if(HAS_WJUMP_MISSES_INIT)
     set(CMAKE_C_FLAGS_GRIM "${CMAKE_C_FLAGS_GRIM} -Wjump-misses-init")
 endif()
+
+set(SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/tagutil.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_action.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_renamer.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_editor.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_loader.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_tune.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_taglist.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_tag.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_backend.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_format.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/t_toolkit.c
+)
+
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
 #}}}
 
 #{{{ portability tests
@@ -78,8 +85,6 @@ t_try_compile(HAS_STRDUP      i_can_haz_strdup.c       compat/strdup.c)
 t_try_compile(HAS_SBUF        i_can_haz_sbuf.c         compat/subr_sbuf.c CMAKE_FLAGS "-DLINK_LIBRARIES=-lsbuf")
 t_try_compile(HAS_EACCESS     i_can_haz_eaccess.c      compat/eaccess.c)
 
-# make GNU libc happy
-add_compile_options(-D_GNU_SOURCE -D_DEFAULT_SOURCE -D_BSD_SOURCE)
 #}}}
 
 #{{{ Libraries
