@@ -1,4 +1,6 @@
 /*-
+ * SPDX-License-Identifier: BSD-2-Clause-FreeBSD
+ *
  * Copyright (c) 2000-2008 Poul-Henning Kamp
  * Copyright (c) 2000-2008 Dag-Erling Coïdan Smørgrav
  * All rights reserved.
@@ -25,24 +27,27 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- *      $FreeBSD: release/10.0.0/sys/sys/sbuf.h 249377 2013-04-11 19:49:18Z trociny $
+ *      $FreeBSD: releng/12.1/sys/sys/sbuf.h 349823 2019-07-07 18:44:51Z mav $
  */
 
 #ifndef _SYS_SBUF_H_
 #define	_SYS_SBUF_H_
 
-/* HACK */
-/*
-#include <sys/_types.h>
-*/
-#define	__BEGIN_DECLS
-#define	__END_DECLS
+/* diff from fbsd src */
+/*#include <sys/_types.h>*/
+#ifndef	__BEGIN_DECLS
+#define        __BEGIN_DECLS
+#endif /* ndef __BEGIN_DECLS */
+#ifndef	__END_DECLS
+#define        __END_DECLS
+#endif /* ndef __END_DECLS */
 #ifndef __printflike
-#define	__printflike(fmtarg, firstvarg) t__printflike(fmtarg, firstvarg)
+#define        __printflike(fmtarg, firstvarg) t__printflike(fmtarg, firstvarg)
 #endif /* ndef __printflike */
 #include <stdarg.h>
-#define	__va_list va_list
-/* /HACK */
+#define        __va_list va_list
+/* /diff from fbsd src */
+
 
 struct sbuf;
 typedef int (sbuf_drain_func)(void *, const char *, int);
@@ -59,6 +64,8 @@ struct sbuf {
 	ssize_t		 s_len;		/* current length of string */
 #define	SBUF_FIXEDLEN	0x00000000	/* fixed length buffer (default) */
 #define	SBUF_AUTOEXTEND	0x00000001	/* automatically extend buffer */
+#define	SBUF_INCLUDENUL	0x00000002	/* nulterm byte is counted in len */
+#define	SBUF_DRAINTOEOR	0x00000004	/* use section 0 as drain EOR marker */
 #define	SBUF_USRFLAGMSK	0x0000ffff	/* mask of flags the user may specify */
 #define	SBUF_DYNAMIC	0x00010000	/* s_buf must be freed */
 #define	SBUF_FINISHED	0x00020000	/* set by sbuf_finish() */
@@ -66,7 +73,16 @@ struct sbuf {
 #define	SBUF_INSECTION	0x00100000	/* set by sbuf_start_section() */
 	int		 s_flags;	/* flags */
 	ssize_t		 s_sect_len;	/* current length of section */
+	ssize_t		 s_rec_off;	/* current record start offset */
 };
+
+#ifndef HD_COLUMN_MASK
+#define	HD_COLUMN_MASK	0xff
+#define	HD_DELIM_MASK	0xff00
+#define	HD_OMIT_COUNT	(1 << 16)
+#define	HD_OMIT_HEX	(1 << 17)
+#define	HD_OMIT_CHARS	(1 << 18)
+#endif /* HD_COLUMN_MASK */
 
 __BEGIN_DECLS
 /*
@@ -75,6 +91,9 @@ __BEGIN_DECLS
 struct sbuf	*sbuf_new(struct sbuf *, char *, int, int);
 #define		 sbuf_new_auto()				\
 	sbuf_new(NULL, NULL, 0, SBUF_AUTOEXTEND)
+int		 sbuf_get_flags(struct sbuf *);
+void		 sbuf_clear_flags(struct sbuf *, int);
+void		 sbuf_set_flags(struct sbuf *, int);
 void		 sbuf_clear(struct sbuf *);
 int		 sbuf_setpos(struct sbuf *, ssize_t);
 int		 sbuf_bcat(struct sbuf *, const void *, size_t);
@@ -96,6 +115,10 @@ int		 sbuf_done(const struct sbuf *);
 void		 sbuf_delete(struct sbuf *);
 void		 sbuf_start_section(struct sbuf *, ssize_t *);
 ssize_t		 sbuf_end_section(struct sbuf *, ssize_t, size_t, int);
+void		 sbuf_hexdump(struct sbuf *, const void *, int, const char *,
+		     int);
+int		 sbuf_count_drain(void *arg, const char *data, int len);
+void		 sbuf_putbuf(struct sbuf *);
 
 #ifdef _KERNEL
 struct uio;
