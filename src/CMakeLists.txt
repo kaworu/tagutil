@@ -76,6 +76,7 @@ t_try_compile(HAS_STRLCPY     i_can_haz_strlcpy.c      compat/strlcpy.c)
 t_try_compile(HAS_STRLCAT     i_can_haz_strlcat.c      compat/strlcat.c)
 t_try_compile(HAS_STRDUP      i_can_haz_strdup.c       compat/strdup.c)
 t_try_compile(HAS_SBUF        i_can_haz_sbuf.c         compat/subr_sbuf.c CMAKE_FLAGS "-DLINK_LIBRARIES=-lsbuf")
+t_try_compile(HAS_EACCESS     i_can_haz_eaccess.c      compat/eaccess.c)
 
 # make GNU libc happy
 add_compile_options(-D_GNU_SOURCE -D_DEFAULT_SOURCE -D_BSD_SOURCE)
@@ -140,20 +141,6 @@ if(NOT DEFINED WITHOUT_FLAC)
         set(SRCS ${SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/t_ftflac.c)
         set(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${FLAC_LDFLAGS})
         set(OPTIONAL_INCLUDE_DIRS ${OPTIONAL_INCLUDE_DIRS} ${FLAC_INCLUDE_DIRS})
-        # test if libFLAC assert.h does clash with the system one. FLAC >= 1.3
-        # did solve this issue.
-        # FIXME: not working correctly, false positive with libflac 1.3
-        try_compile(FLAC_CLASH_WORKAROUND
-            ${CMAKE_BINARY_DIR}
-            ${CMAKE_CURRENT_SOURCE_DIR}/compat/tests/libFLAC_assert_clash.c
-            CMAKE_FLAGS "-DCOMPILE_DEFINITIONS=${FLAC_LDFLAGS} -DINCLUDE_DIRECTORIES=${FLAC_INCLUDE_DIRS}"
-        )
-        if(FLAC_CLASH_WORKAROUND)
-            # success, no need for workaround
-        else()
-            message(STATUS "using libFLAC workaround for <assert.h>")
-            add_definitions(-DFLAC_CLASH_WORKAROUND)
-        endif()
     else()
         message(STATUS "libFLAC not found. Disabled.")
     endif()

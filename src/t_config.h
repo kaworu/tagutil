@@ -47,4 +47,12 @@
 #	include <sys/sbuf.h>
 #endif
 
+/*
+ * macOS is the only known platform to provide these alternatives names to POSIX
+ * st_mtim members.
+ */
+#if defined(__APPLE__)
+#	define st_mtim st_mtimespec
+#endif
+
 #endif /* ndef T_CONFIG_H */
