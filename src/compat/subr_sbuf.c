@@ -28,7 +28,6 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
 /*
 __FBSDID("$FreeBSD: releng/12.0/sys/kern/subr_sbuf.c 326271 2017-11-27 15:20:12Z pfg $");
 */
