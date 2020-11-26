@@ -179,7 +179,7 @@ struct id3v1_tag {
 			unsigned char	has_tracknumber;
 			unsigned char	tracknumber;
 		} v1_1;
-	} comment;
+	};
 	unsigned char	genre;
 } t__packed;
 
@@ -416,22 +416,22 @@ id3tag_to_taglist(const struct id3v1_tag *tag, struct t_taglist *tlist)
 			return (-1);
 	}
 	/* comment & tracknumber */
-	if (tag->comment.v1_1.has_tracknumber == 0x00) {
-		(void)memcpy(buf, tag->comment.v1_1.comment, 28);
+	if (tag->v1_1.has_tracknumber == 0x00) {
+		(void)memcpy(buf, tag->v1_1.comment, 28);
 		buf[28] = '\0';
 		if (strlen(buf) > 0) {
 			if (t_taglist_insert(tlist, "comment", buf) != 0)
 				return (-1);
 		}
-		if (tag->comment.v1_1.tracknumber > 0) {
-			sprintf(buf, "%d", (int)tag->comment.v1_1.tracknumber);
+		if (tag->v1_1.tracknumber > 0) {
+			sprintf(buf, "%d", (int)tag->v1_1.tracknumber);
 			if (strlen(buf) > 0) {
 				if (t_taglist_insert(tlist, "tracknumber", buf) != 0)
 					return (-1);
 			}
 		}
 	} else {
-		(void)memcpy(buf, tag->comment.v1_0.comment, 30);
+		(void)memcpy(buf, tag->v1_0.comment, 30);
 		buf[30] = '\0';
 		if (strlen(buf) > 0) {
 			if (t_taglist_insert(tlist, "comment", buf) != 0)
@@ -479,10 +479,10 @@ taglist_to_id3tag(const struct t_taglist *tlist, struct id3v1_tag *tag)
 			if (*endptr != '\0' || endptr == t->val || lu > UCHAR_MAX || lu == 0)
 				warnx("ID3v1: %s: invalid tracknumber value.", t->val);
 			else /* casting is safe now */
-				tag->comment.v1_1.tracknumber = (unsigned char)lu;
+				tag->v1_1.tracknumber = (unsigned char)lu;
 			continue;
 		} else if (strcasecmp(t->key, "genre") == 0) {
-			int i;
+			unsigned i;
 			for (i = 0; i < NELEM(id3v1_genre_str); i++) {
 				if (strcasecmp(t->val, id3v1_genre_str[i]) == 0) {
 					tag->genre = i;
@@ -509,7 +509,7 @@ taglist_to_id3tag(const struct t_taglist *tlist, struct id3v1_tag *tag)
 				siz = 4;
 			}
 		} else if (strcasecmp(t->key, "comment") == 0) {
-			p = tag->comment.v1_1.comment;
+			p = tag->v1_1.comment;
 			siz = 28;
 		}
 		if (len > siz) {
