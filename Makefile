@@ -12,4 +12,4 @@ test:
 clean:
 	rm -rf build
 
-.PHONY: all release debug grim test clean
+.PHONY: all debug test clean
