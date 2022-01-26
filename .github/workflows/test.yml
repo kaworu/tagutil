@@ -1,0 +1,40 @@
+name: test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        compiler: [gcc, clang]
+        build: [DEBUG, RELEASE]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Install dependencies
+      run: |
+        sudo apt-get update && sudo apt-get install -y \
+          cmake \
+          libyaml-dev \
+          libjansson-dev \
+          libflac-dev \
+          libogg-dev \
+          libvorbis-dev \
+          libtagc0-dev \
+          ${{ matrix.compiler }}
+    - name: Compile
+      run: make CC=${{ matrix.compiler }} BUILD_TYPE=${{ matrix.build }}
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.1'
+    - name: Test
+      run: make CC=${{ matrix.compiler }} BUILD_TYPE=${{ matrix.build }} test
