@@ -1,14 +1,13 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (6.0.3.4)
+    activesupport (7.0.3.1)
       concurrent-ruby (~> 1.0, >= 1.0.2)
-      i18n (>= 0.7, < 2)
-      minitest (~> 5.1)
-      tzinfo (~> 1.1)
-      zeitwerk (~> 2.2, >= 2.2.2)
+      i18n (>= 1.6, < 2)
+      minitest (>= 5.1)
+      tzinfo (~> 2.0)
     builder (3.2.4)
-    concurrent-ruby (1.1.7)
+    concurrent-ruby (1.1.10)
     cucumber (5.2.0)
       builder (~> 3.2, >= 3.2.4)
       cucumber-core (~> 8.0, >= 8.0.1)
@@ -42,10 +41,10 @@ GEM
       cucumber-messages (~> 13.0, >= 13.0.1)
     diff-lcs (1.4.4)
     ffi (1.13.1)
-    i18n (1.8.5)
+    i18n (1.12.0)
       concurrent-ruby (~> 1.0)
     middleware (0.1.0)
-    minitest (5.14.2)
+    minitest (5.16.2)
     multi_test (0.1.2)
     protobuf-cucumber (3.10.8)
       activesupport (>= 3.2)
@@ -67,11 +66,10 @@ GEM
     rspec-support (3.10.0)
     sys-uname (1.2.2)
       ffi (~> 1.1)
-    thor (1.0.1)
+    thor (1.2.1)
     thread_safe (0.3.6)
-    tzinfo (1.2.8)
-      thread_safe (~> 0.1)
-    zeitwerk (2.4.1)
+    tzinfo (2.0.5)
+      concurrent-ruby (~> 1.0)
 
 PLATFORMS
   ruby
