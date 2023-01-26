@@ -1,8 +1,6 @@
 # {{{ CMake stuff
-cmake_minimum_required(VERSION 2.6.0)
-if(COMMAND cmake_policy)
-    cmake_policy(VERSION 2.6)
-endif()
+cmake_minimum_required(VERSION 3.8)
+cmake_policy(VERSION 3.8)
 # }}}
 
 #{{{ Basic App setup
@@ -14,7 +12,11 @@ project(${PROJECT_NAME} C)
 # CFLAGS
 add_compile_options(-D_GNU_SOURCE -D_DEFAULT_SOURCE -D_BSD_SOURCE) # make GNU libc happy
 add_compile_options(-std=c11 -Wall -Wextra -fno-strict-aliasing)
-add_compile_options(-fstack-protector-strong -o aslr -fPIC)
+if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+add_compile_options(-fstack-protector-strong -o aslr -fPIE)
+else()
+add_compile_options(-fstack-protector-strong -fPIE)
+endif()
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie")
 # Per build type flags.
 set(CMAKE_C_FLAGS_DEBUG    "${CMAKE_C_FLAGS} -O0 -g -fno-omit-frame-pointer")
