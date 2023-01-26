@@ -92,7 +92,7 @@ Then(/^I debug$/) do
 end
 
 
-AfterConfiguration do
+BeforeAll do
   Tagutil.build
 end
 
