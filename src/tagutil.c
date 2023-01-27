@@ -6,8 +6,8 @@
  *           |___/
  *
  * tagutil is a simple command line tool to edit music file's tag. It use
- * TagLib, libvorbis and / or libflac  to get and set music file's tags.
- * for help, launch tagutil without argument and enjoy the show.
+ * TagLib, libvorbis and / or libflac to get and set music file's tags.
+ * For help, launch tagutil without argument and enjoy the show.
  *
  * tagutil is under a BSD 2-Clause license, see LICENSE.
  */
@@ -49,7 +49,7 @@ main(int argc, char *argv[])
 
 	Fflag = TAILQ_FIRST(t_all_formats());
 
-	while ((i = getopt(argc, argv, "hpF:NY")) != -1) {
+	while ((i = getopt(argc, argv, "hpvF:NY")) != -1) {
 		switch ((char)i) {
 		case 'p':
 			pflag = 1;
@@ -82,6 +82,9 @@ main(int argc, char *argv[])
 			}
 			Yflag = 1;
 			break;
+		case 'v':
+			printf("%s\n", T_TAGUTIL_VERSION);
+			return (EXIT_SUCCESS);
 		case 'h':
 			usage(EXIT_SUCCESS);
 			/* NOTREACHED */
