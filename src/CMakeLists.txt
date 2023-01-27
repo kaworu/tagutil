@@ -5,7 +5,6 @@ cmake_policy(VERSION 3.8)
 
 #{{{ Basic App setup
 set(PROJECT_NAME tagutil)
-set(CMAKE_BUILD_TYPE DEBUG)
 add_definitions(-DT_TAGUTIL_VERSION="3.1")
 project(${PROJECT_NAME} C)
 
