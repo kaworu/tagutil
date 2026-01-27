@@ -13,6 +13,10 @@
 #include <locale.h>
 #include <iconv.h>
 
+#ifdef __NetBSD__
+#include <langinfo.h>
+#endif
+
 #include "t_config.h"
 #include "t_toolkit.h"
 #include "t_action.h"
@@ -215,10 +219,17 @@ t_iconv_convert(int tou8, const char *const_src)
 		setlocale_called = 1;
 	}
 
+#ifdef __NetBSD__
+// NetBSD does not accept "", "char", or "wchar_t" as encoding names.
+  char *enc = nl_langinfo(CODESET);
+#else
+  char *enc = "";
+#endif
+
 	if (tou8)
-		cd = iconv_open("utf-8", "");
+		cd = iconv_open("utf-8", enc);
 	else
-		cd = iconv_open("", "utf-8");
+		cd = iconv_open(enc, "utf-8");
 	if (cd == (iconv_t)-1)
 		goto cleanup;
 
